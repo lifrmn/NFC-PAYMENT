@@ -385,7 +385,51 @@ Jika ada masalah atau pertanyaan:
 
 ---
 
-## 📄 License
+## � GitHub Repository
+
+### **Repository Link:**
+**https://github.com/lifrmn/NF**
+
+### **Clone Repository:**
+```bash
+git clone https://github.com/lifrmn/NF.git
+cd NF
+npm install
+```
+
+### **Update Code ke GitHub:**
+
+Setiap kali ada perubahan code:
+
+```bash
+# 1. Add semua perubahan
+git add .
+
+# 2. Commit dengan pesan
+git commit -m "Deskripsi perubahan"
+
+# 3. Push ke GitHub
+git push origin main
+```
+
+### **Pull Update dari GitHub:**
+```bash
+# Ambil update terbaru
+git pull origin main
+```
+
+### **Cek Status:**
+```bash
+# Lihat file yang berubah
+git status
+
+# Lihat history commit
+git log --oneline
+```
+
+---
+
+## �📄 License
 
 MIT License - Free to use for educational purposes
 
