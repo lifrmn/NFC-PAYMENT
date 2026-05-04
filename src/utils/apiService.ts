@@ -30,7 +30,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { API_URL } from './configuration';
+import { API_URL, APP_SECRET } from './configuration';
 
 /* ==================================================================================
  * 🔹 APISERVICE CLASS - SINGLETON PATTERN
@@ -181,6 +181,7 @@ export class APIService {
           'Accept': 'application/json', // Expect respons dalam format JSON
           'ngrok-skip-browser-warning': 'true', // Header khusus agar Ngrok tidak redirect ke warning page
           'User-Agent': 'NFC-Payment-Mobile', // Identitas aplikasi untuk logging backend
+          'x-app-key': APP_SECRET, // App secret untuk bypass JWT check (development mode)
           ...(options.headers || {}), // Merge dengan custom headers jika ada
           
           // Jika ada token (user login), tambahkan Authorization header
@@ -234,7 +235,18 @@ export class APIService {
           errorData = { error: errorText }; // Jika bukan JSON, wrap dalam object
         }
         
-        // SUBSTEP 8d: Buat pesan error detail dan throw exception
+        // SUBSTEP 8d: Log error (kecuali 404 untuk card info check - itu expected)
+        // 404 pada /api/nfc-cards/info adalah normal behavior untuk kartu yang belum terdaftar
+        const isCardCheck = endpoint.includes('/api/nfc-cards/info');
+        const is404 = response.status === 404;
+        
+        if (!(isCardCheck && is404)) {
+          // Log sebagai error untuk kasus lain
+          console.error(`❌ API Request failed: API Error ${response.status}: ${JSON.stringify(errorData)}`);
+        }
+        // Untuk card check 404, tidak perlu log error karena itu expected behavior
+        
+        // SUBSTEP 8e: Buat pesan error detail dan throw exception
         const errorMessage = `API Error ${response.status}: ${JSON.stringify(errorData)}`; // Format pesan
         throw new Error(errorMessage); // Lempar exception yang akan di-catch oleh caller
       }

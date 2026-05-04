@@ -301,9 +301,19 @@ export default function DashboardScreen({ user, onLogout, onNavigateToNFC, onNav
     
     // Setup interval: cek backend setiap 90 detik (dikurangi dari 30s untuk hindari rate limit)
     const statusInterval = setInterval(checkBackendStatus, 90000); // 90000 ms = 90 detik
+    
+    // ✨ AUTO-REFRESH REALTIME: Update balance & transaksi setiap 15 detik
+    console.log('⏰ Starting auto-refresh timer for balance (15s interval)');
+    const dataRefreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing balance and transactions...');
+      refreshData();
+    }, 15000); // 15 detik = 15000 ms
+    
     return () => {
       clearTimeout(initialHealthCheck);
       clearInterval(statusInterval);
+      clearInterval(dataRefreshInterval); // Cleanup data refresh timer
+      console.log('⏰ Stopped all auto-refresh timers');
     };
   }, []);
 

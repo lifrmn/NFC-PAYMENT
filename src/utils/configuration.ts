@@ -51,6 +51,10 @@
 // PENTING: Ganti URL ini dengan URL Ngrok terbaru setiap kali Ngrok di-restart
 export const API_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // URL Ngrok aktif
 
+// App Secret untuk bypass JWT check (development only)
+// Ini matching dengan APP_SECRET di backend .env
+export const APP_SECRET = 'NFC2025SecureApp';
+
 // INSTRUKSI UPDATE URL (UNTUK DEVELOPMENT):
 // 1. Buka terminal, jalankan: ngrok http 4000
 // 2. Copy URL yang muncul (contoh: https://abc-123-xyz.ngrok-free.dev)

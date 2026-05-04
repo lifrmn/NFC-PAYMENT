@@ -158,6 +158,19 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     console.log('🎴 MyCardsScreen mounted');
     console.log('👤 User:', JSON.stringify(user, null, 2));
     loadMyCards();
+
+    // ✨ AUTO-REFRESH REALTIME: Update data setiap 10 detik
+    console.log('⏰ Starting auto-refresh timer (10s interval)');
+    const refreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing card data...');
+      loadMyCards();
+    }, 10000); // 10 detik = 10000 ms
+
+    // Cleanup: Stop timer saat component unmount
+    return () => {
+      console.log('⏰ Stopping auto-refresh timer');
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const loadMyCards = async () => {
@@ -409,9 +422,19 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
               {/* Card Body */}
               <View style={styles.cardBody}>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardInfoLabel}>💰 Saldo:</Text>
-                  <Text style={[styles.cardInfoValue, styles.balanceValue]}>{formatCurrency(user?.balance || 0)}</Text>
+                  <Text style={styles.cardInfoLabel}>💰 Saldo Kartu:</Text>
+                  <Text style={[styles.cardInfoValue, styles.balanceValue]}>{formatCurrency(card.balance || 0)}</Text>
                 </View>
+                
+                {user?.balance !== card.balance && (
+                  <View style={[styles.cardInfo, { backgroundColor: '#fff3cd', padding: 8, borderRadius: 8, marginTop: 8 }]}>
+                    <Text style={[styles.cardInfoLabel, { color: '#856404' }]}>⚠️ Saldo User:</Text>
+                    <Text style={[styles.cardInfoValue, { color: '#856404' }]}>{formatCurrency(user?.balance || 0)}</Text>
+                    <Text style={{ fontSize: 10, color: '#856404', marginTop: 4 }}>
+                      (Saldo tidak sinkron - swipe untuk refresh)
+                    </Text>
+                  </View>
+                )}
                 
                 <View style={styles.cardDivider} />
                 

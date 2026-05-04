@@ -42,17 +42,45 @@ const authenticateToken = async (req, res, next) => {
       return next(); // Langsung lanjut ke endpoint (bypass JWT check)
     }
 
-    console.log(token) // Log token untuk debug
+    console.log('🔐 Auth middleware: Checking token...'); // Log untuk debug
+    console.log('Token:', token ? 'Present' : 'Missing'); // Cek ada token atau tidak
 
     // STEP 3: Validasi token wajib ada (jika tidak pakai app key)
     if (!token) {
+      console.log('❌ No token provided'); // Log untuk debug
       return res.status(401).json({ error: 'Access token required' }); // 401 Unauthorized
     }
 
     // STEP 4: Verify JWT token
     // jwt.verify() akan throw error jika token invalid atau expired
     const jwtSecret = process.env.JWT_SECRET || 'nfc-payment-jwt-secret-2025-ultra-secure-key'; // JWT secret dari .env
-    const decoded = jwt.verify(token, jwtSecret); // Decode dan verify token
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, jwtSecret); // Decode dan verify token
+      console.log('✅ Token verified for user:', decoded.userId); // Log sukses
+    } catch (jwtError) {
+      // Handle JWT-specific errors dengan pesan yang lebih jelas
+      console.error('❌ JWT verification failed:', jwtError.message);
+      
+      if (jwtError.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          error: 'Token expired',
+          message: 'Your session has expired. Please login again.' 
+        });
+      } else if (jwtError.name === 'JsonWebTokenError') {
+        return res.status(403).json({ 
+          error: 'Invalid token',
+          message: 'Authentication token is invalid. Please login again.' 
+        });
+      } else {
+        return res.status(403).json({ 
+          error: 'Token verification failed',
+          message: 'Unable to verify authentication token.' 
+        });
+      }
+    }
+    
     // decoded = { userId: 123, username: 'john', iat: 1234567890, exp: 1234571490 }
     
     // STEP 5: Cek apakah user masih ada di database dan session masih valid
@@ -72,18 +100,35 @@ const authenticateToken = async (req, res, next) => {
     });
 
     // STEP 6: Validasi user dan session
-    if (!user || user.userSessions.length === 0) { // Jika user tidak ada atau session tidak valid
-      return res.status(401).json({ error: 'Invalid or expired token' }); // 401 Unauthorized
+    if (!user) {
+      console.log('❌ User not found for ID:', decoded.userId); // Log untuk debug
+      return res.status(401).json({ 
+        error: 'User not found',
+        message: 'User account no longer exists.' 
+      });
+    }
+    
+    if (user.userSessions.length === 0) {
+      console.log('❌ No valid session found for user:', decoded.userId); // Log untuk debug
+      return res.status(401).json({ 
+        error: 'Session expired',
+        message: 'Your session has expired or been logged out. Please login again.' 
+      });
     }
 
     // STEP 7: Token valid! Attach user data ke request object
+    console.log('✅ Authentication successful for user:', user.username); // Log sukses
     req.user = user; // Agar endpoint bisa akses user via req.user
     req.token = token; // Agar endpoint bisa akses token via req.token
     next(); // Lanjut ke endpoint handler
+    
   } catch (error) {
-    // STEP 8: Handle error (token invalid, expired, dll)
-    console.error('Auth error:', error); // Log error untuk debug
-    return res.status(403).json({ error: 'Invalid token' }); // 403 Forbidden
+    // STEP 8: Handle error (unexpected errors)
+    console.error('❌ Auth middleware error:', error); // Log error untuk debug
+    return res.status(500).json({ 
+      error: 'Authentication error',
+      message: 'An error occurred during authentication.' 
+    });
   }
 };
 

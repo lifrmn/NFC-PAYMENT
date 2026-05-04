@@ -8,33 +8,82 @@ Daftar lengkap semua dokumentasi dalam project untuk memudahkan navigasi.
 
 Jika Anda baru pertama kali membuka project ini, baca dokumen dalam urutan berikut:
 
-1. **[TUTORIAL-MENJALANKAN-SISTEM.md](TUTORIAL-MENJALANKAN-SISTEM.md)** ← **MULAI DI SINI!**
+### 🌟 **REKOMENDASI UTAMA (Baru!)**
+
+1. **[TUTORIAL-LENGKAP.md](TUTORIAL-LENGKAP.md)** ⭐ **← MULAI DI SINI!** ⭐
+   - **Tutorial TERBARU & PALING MUDAH**
+   - Step-by-step super detail dalam Bahasa Indonesia
+   - Dari setup awal sampai testing lengkap
+   - Troubleshooting lengkap
+   - **PERFECT untuk pemula yang belum pernah jalankan app!**
+
+2. **[QUICK-REFERENCE.md](QUICK-REFERENCE.md)** ⚡ **← QUICK START**
+   - Panduan cepat 3 langkah
+   - Untuk jalankan app setelah setup pertama
+   - Perintah-perintah berguna
+   - **PERFECT untuk daily use!**
+
+3. **[NPM-COMMANDS-GUIDE.md](NPM-COMMANDS-GUIDE.md)** 📦 **← NPM REFERENCE**
+   - **Daftar LENGKAP semua perintah npm**
+   - Semua scripts yang tersedia
+   - Troubleshooting commands
+   - Development workflow
+   - **PERFECT untuk reference perintah!**
+
+---
+
+### 🐛 Troubleshooting & Penjelasan Khusus
+
+| File | Deskripsi | Kapan Digunakan |
+|------|-----------|-----------------|
+| ⚠️ [AUTH-ERROR-FIX.md](AUTH-ERROR-FIX.md) | **Fix error 403/401 Invalid Token** | **Authentication error** |
+| 📇 [PENJELASAN-404-NORMAL.md](PENJELASAN-404-NORMAL.md) | **Penjelasan: Kenapa 404 saat register kartu NFC?** | **Registrasi kartu NFC** |
+| 🔌 [CONNECTION-GUIDE.md](CONNECTION-GUIDE.md) | Connection troubleshooting | Mobile app tidak connect |
+| 🐛 [BUG-FIXES-CHECKLIST.md](BUG-FIXES-CHECKLIST.md) | Checklist bugs yang sudah di-fix | Track bug fixes |
+
+---
+
+### 📚 Tutorial Alternatif (Masih Valid)
+
+4. **[TUTORIAL-MENJALANKAN-SISTEM.md](TUTORIAL-MENJALANKAN-SISTEM.md)**
    - Tutorial step-by-step SUPER LENGKAP
    - Screenshot & penjelasan detail
    - Troubleshooting lengkap
    - Checklist untuk memastikan semua benar
-   - **RECOMMENDED untuk pemula!**
 
-2. **[QUICK-START.md](QUICK-START.md)**
+5. **[QUICK-START.md](QUICK-START.md)**
    - Quick setup guide (5-10 menit)
    - Common commands
    - Untuk yang sudah familiar
 
-3. **[CARA-MENJALANKAN.md](CARA-MENJALANKAN.md)**
+6. **[CARA-MENJALANKAN.md](CARA-MENJALANKAN.md)**
    - Setup project (install dependencies)
    - Jalankan backend server
    - Jalankan mobile app
    - Setup Ngrok tunnel
    - Test basic functionality
 
-3. **[PANDUAN-LENGKAP-SISTEM.md](PANDUAN-LENGKAP-SISTEM.md)**
+---
+
+### 📖 Dokumentasi Mendalam
+
+7. **[PANDUAN-LENGKAP-SISTEM.md](PANDUAN-LENGKAP-SISTEM.md)**
    - Arsitektur sistem lengkap
    - Flow diagram semua fitur
    - Penjelasan konsep (JWT, bcrypt, Socket.IO, dll)
    - Testing & debugging guide
    - Deployment guide
 
-4. **[PENJELASAN-FILE-BY-FILE.md](PENJELASAN-FILE-BY-FILE.md)**
+8. **[PENJELASAN-FILE-BY-FILE.md](PENJELASAN-FILE-BY-FILE.md)**
+
+7. **[PANDUAN-LENGKAP-SISTEM.md](PANDUAN-LENGKAP-SISTEM.md)**
+   - Arsitektur sistem lengkap
+   - Flow diagram semua fitur
+   - Penjelasan konsep (JWT, bcrypt, Socket.IO, dll)
+   - Testing & debugging guide
+   - Deployment guide
+
+8. **[PENJELASAN-FILE-BY-FILE.md](PENJELASAN-FILE-BY-FILE.md)**
    - Penjelasan detail SETIAP file dalam project
    - Backend files (server.js, routes, middleware)
    - Frontend files (screens, hooks, utils)
@@ -49,8 +98,10 @@ Jika Anda baru pertama kali membuka project ini, baca dokumen dalam urutan berik
 
 | File | Deskripsi | Kapan Digunakan |
 |------|-----------|-----------------|
-| [TUTORIAL-MENJALANKAN-SISTEM.md](TUTORIAL-MENJALANKAN-SISTEM.md) | **Tutorial lengkap step-by-step** | **Setup pertama kali (RECOMMENDED)** |
-| [TUTORIAL-ADMIN-DASHBOARD.md](TUTORIAL-ADMIN-DASHBOARD.md) | **Tutorial Admin Dashboard lengkap** | **Akses & kelola dashboard admin** |
+| ⭐ [TUTORIAL-LENGKAP.md](TUTORIAL-LENGKAP.md) | **Tutorial TERBARU paling mudah & lengkap** | **Setup pertama kali (HIGHLY RECOMMENDED!)** |
+| ⚡ [QUICK-REFERENCE.md](QUICK-REFERENCE.md) | **Panduan cepat 3 langkah** | **Daily use - jalankan app setelah setup** |
+| [TUTORIAL-MENJALANKAN-SISTEM.md](TUTORIAL-MENJALANKAN-SISTEM.md) | Tutorial lengkap step-by-step (alternatif) | Setup pertama kali |
+| [TUTORIAL-ADMIN-DASHBOARD.md](TUTORIAL-ADMIN-DASHBOARD.md) | Tutorial Admin Dashboard lengkap | Akses & kelola dashboard admin |
 | [QUICK-START.md](QUICK-START.md) | Quick start guide (5-10 menit) | Setup cepat (sudah familiar) |
 | [CARA-MENJALANKAN.md](CARA-MENJALANKAN.md) | Cara setup dan menjalankan project | Setup pertama kali (alternatif) |
 | [SETUP-NGROK.md](SETUP-NGROK.md) | Setup Ngrok tunnel untuk development | Saat ngrok restart |
@@ -60,9 +111,11 @@ Jika Anda baru pertama kali membuka project ini, baca dokumen dalam urutan berik
 
 | File | Deskripsi | Kapan Digunakan |
 |------|-----------|-----------------|
+| ⭐ [README.md](README.md) | **Main entry point - Overview lengkap project** | **Pertama kali buka project** |
+| 📊 [FLOWCHART-STARTUP.md](FLOWCHART-STARTUP.md) | **Diagram visual alur startup & sistem** | **Memahami flow sistem** |
 | [PANDUAN-LENGKAP-SISTEM.md](PANDUAN-LENGKAP-SISTEM.md) | Dokumentasi lengkap sistem dari A-Z | Memahami arsitektur keseluruhan |
 | [PENJELASAN-FILE-BY-FILE.md](PENJELASAN-FILE-BY-FILE.md) | Penjelasan setiap file | Memahami code specific file |
-| [PENJELASAN-KOLOM-DEVICE.md](PENJELASAN-KOLOM-DEVICE.md) | **FAQ: Kenapa kolom Device "Manual Account"?** | **Troubleshooting dashboard** |
+| [PENJELASAN-KOLOM-DEVICE.md](PENJELASAN-KOLOM-DEVICE.md) | FAQ: Kenapa kolom Device "Manual Account"? | Troubleshooting dashboard |
 | [backend/routes/README-PENJELASAN.md](backend/routes/README-PENJELASAN.md) | Penjelasan lengkap semua API endpoints | Memahami backend API |
 | [SYSTEM_STATUS.md](SYSTEM_STATUS.md) | Status implementasi fitur | Check progress development |
 

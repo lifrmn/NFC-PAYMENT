@@ -241,26 +241,35 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
     setLoading(true);
 
     try {
+      console.log('🔍 Checking if card is already registered...');
       const checkResponse = await apiService.get(`/api/nfc-cards/info/${cardId}`);
+      
+      // Card found - sudah terdaftar
       if (checkResponse.success && checkResponse.card) {
+        console.log('📋 Card found in database');
+        
         if (checkResponse.card.userId === user.id) {
+          console.log('✅ Card already registered to current user');
           const alert = ALERTS.cardAlreadyRegistered(cardId, checkResponse.card.cardStatus, checkResponse.card.balance);
           Alert.alert(alert.title, alert.message, [{ text: 'OK', onPress: () => setRegistrationStatus('success') }]);
         } else {
+          console.log('❌ Card already registered to another user');
           const alert = ALERTS.cardAlreadyUsed(cardId);
           Alert.alert(alert.title, alert.message, [{ text: 'OK', onPress: () => setRegistrationStatus('error') }]);
         }
         return;
       }
     } catch (error: any) {
-      // Error 404 berarti kartu belum terdaftar - lanjutkan registrasi
+      // 404 berarti kartu belum terdaftar - ini adalah EXPECTED behavior untuk kartu baru
       if (error.message?.includes('404') || error.message?.includes('not found') || error.message?.includes('Card not found')) {
-        console.log('✅ Card not registered yet, proceeding with registration...');
+        console.log('✅ Card NOT found in database (expected for new cards)');
+        console.log('📝 Proceeding with card registration...');
         await registerNewCard(cardId);
         return;
       }
       
-      console.error('Check card error:', error);
+      // Error lainnya (network, server error, dll) - ini baru error beneran
+      console.error('❌ Unexpected error while checking card:', error);
       Alert.alert('Error', 'Gagal memeriksa status kartu. Silakan coba lagi.');
       setRegistrationStatus('error');
     } finally {
