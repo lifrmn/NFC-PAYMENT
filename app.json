@@ -35,11 +35,11 @@
     ],
     "extra": {
       "EXPO_PUBLIC_API_BASE": "http://192.168.137.1:4000",
-      "EXPO_PUBLIC_ADMIN_BASE": "http://192.168.137.1:3001",
+      "EXPO_PUBLIC_ADMIN_BASE": "http://192.168.137.1:3000",
       "EXPO_PUBLIC_BACKEND_URL": "http://192.168.137.1:4000",
-      "EXPO_PUBLIC_ADMIN_URL": "http://192.168.137.1:3001",
+      "EXPO_PUBLIC_ADMIN_URL": "http://192.168.137.1:3000",
       "EXPO_PUBLIC_SERVER_IP": "192.168.137.1",
-      "EXPO_PUBLIC_ADMIN_PORT": "3001",
+      "EXPO_PUBLIC_ADMIN_PORT": "3000",
       "EXPO_PUBLIC_PORT": "4000",
       "eas": {
         "projectId": "ef194602-4e64-4774-b083-ff91cbb76d8a"

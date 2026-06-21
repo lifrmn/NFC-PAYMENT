@@ -5,9 +5,7 @@
   "main": "simple-admin.js",
   "scripts": {
     "start": "node simple-admin.js",
-    "admin": "node simple-admin.js",
-    "monitor": "node monitor-database.js",
-    "backup": "node backup-database.js"
+    "admin": "node simple-admin.js"
   },
   "dependencies": {
     "@types/crypto-js": "^4.2.2",

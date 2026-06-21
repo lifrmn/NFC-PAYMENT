@@ -83,9 +83,7 @@ export class APIService {
       APIService.instance = new APIService(); // Hanya dijalankan sekali di awal
       console.log('✅ APIService instance created (Singleton)'); // Log pertama kali dibuat
     }
-    
-    // Return instance yang sudah ada (shared across all files)
-    return APIService.instance; // Selalu return object yang sama
+    return APIService.instance; // Return instance yang sudah ada (shared across all files)
   }
 
   /* ================================================================================
@@ -117,9 +115,10 @@ export class APIService {
       this.userId = await AsyncStorage.getItem('userId'); // Ambil userId yang tersimpan
       
       // STEP 3: Log hasil initialization untuk debugging
+      const hasToken = this.token ? 'Yes' : 'No';
       console.log('🔧 API Service initialized'); // Konfirmasi init berhasil
       console.log('📡 Backend URL:', this.baseUrl); // Tampilkan URL backend
-      console.log('🔑 Token loaded:', this.token ? 'Yes' : 'No'); // Cek apakah ada token (jangan print token lengkap, security risk)
+      console.log('🔑 Token loaded:', hasToken); // Cek apakah ada token
       console.log('👤 User ID loaded:', this.userId || 'No user'); // Tampilkan userId atau "No user"
       
       // STEP 4: Return true untuk menandakan initialization berhasil
@@ -161,7 +160,8 @@ export class APIService {
     // Contoh: baseUrl='https://xyz.ngrok.io' + endpoint='/api/auth/login'
     // Hasil: 'https://xyz.ngrok.io/api/auth/login'
     // Cek apakah endpoint sudah dimulai dengan '/', jika belum tambahkan
-    const fullUrl = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`; // Build URL lengkap
+    const sep = endpoint.startsWith('/') ? '' : '/';
+    const fullUrl = `${this.baseUrl}${sep}${endpoint}`; // Build URL lengkap
     
     try {
       // STEP 2: Setup timeout dengan AbortController agar request tidak hang selamanya
@@ -173,34 +173,35 @@ export class APIService {
       const timeout = setTimeout(() => controller.abort(), 15000); // Auto-cancel setelah 15 detik
       
       // STEP 3: Build konfigurasi untuk HTTP request
-      const requestConfig = {
+      const headers: any = {
+        'Content-Type': 'application/json', // Kirim data dalam format JSON
+        'Accept': 'application/json', // Expect respons dalam format JSON
+        'ngrok-skip-browser-warning': 'true', // Header khusus agar Ngrok tidak redirect ke warning page
+        'User-Agent': 'NFC-Payment-Mobile', // Identitas aplikasi untuk logging backend
+        'x-app-key': APP_SECRET, // App secret untuk bypass JWT check (development mode)
+      };
+
+      // Jika ada token (user login), tambahkan Authorization header
+      // Format: "Bearer <token>" adalah standar OAuth 2.0
+      if (this.token) headers['Authorization'] = `Bearer ${this.token}`; // Conditional header
+
+      // Jika ada userId, tambahkan custom header untuk tracking
+      if (this.userId) headers['x-user-id'] = this.userId; // Custom header userId
+
+      // Merge dengan custom headers jika ada
+      if (options.headers) Object.assign(headers, options.headers);
+
+      const requestConfig: any = {
         method: options.method || 'GET', // Method HTTP: GET, POST, PUT, DELETE (default: GET)
-        
-        headers: {
-          'Content-Type': 'application/json', // Kirim data dalam format JSON
-          'Accept': 'application/json', // Expect respons dalam format JSON
-          'ngrok-skip-browser-warning': 'true', // Header khusus agar Ngrok tidak redirect ke warning page
-          'User-Agent': 'NFC-Payment-Mobile', // Identitas aplikasi untuk logging backend
-          'x-app-key': APP_SECRET, // App secret untuk bypass JWT check (development mode)
-          ...(options.headers || {}), // Merge dengan custom headers jika ada
-          
-          // Jika ada token (user login), tambahkan Authorization header
-          // Format: "Bearer <token>" adalah standar OAuth 2.0
-          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}), // Conditional header
-          
-          // Jika ada userId, tambahkan custom header untuk tracking
-          ...(this.userId ? { 'x-user-id': this.userId } : {}), // Custom header userId
-        },
-        
+        headers,
         // Jika ada body data (untuk POST/PUT), convert object JavaScript ke JSON string
         body: options.body ? JSON.stringify(options.body) : undefined, // Serialize body
-        
         // Hubungkan dengan AbortController untuk fitur timeout
         signal: controller.signal, // Signal untuk cancel request
       };
 
       // STEP 4: Log request untuk memudahkan debugging
-      console.log(`📱 API Call: ${options.method || 'GET'} ${fullUrl}`); // Log method dan URL
+      console.log(`📱 API Call: ${requestConfig.method} ${fullUrl}`); // Log method dan URL
       
       // STEP 5: Jalankan HTTP request dengan fetch() API (built-in JavaScript)
       // fetch() return Promise yang resolve ke Response object
@@ -228,7 +229,7 @@ export class APIService {
         }
         
         // SUBSTEP 8c: Parse error text sebagai JSON jika memungkinkan
-        let errorData;
+        let errorData: any;
         try {
           errorData = JSON.parse(errorText); // Coba parse JSON
         } catch {
@@ -247,8 +248,7 @@ export class APIService {
         // Untuk card check 404, tidak perlu log error karena itu expected behavior
         
         // SUBSTEP 8e: Buat pesan error detail dan throw exception
-        const errorMessage = `API Error ${response.status}: ${JSON.stringify(errorData)}`; // Format pesan
-        throw new Error(errorMessage); // Lempar exception yang akan di-catch oleh caller
+        throw new Error(`API Error ${response.status}: ${JSON.stringify(errorData)}`); // Lempar exception yang akan di-catch oleh caller
       }
 
       // STEP 9: Parse respons berdasarkan Content-Type yang dikirim backend
@@ -729,9 +729,8 @@ export class APIService {
     location?: { latitude: number; longitude: number };
   }) {
     // STEP 1: Send POST request ke NFC payment endpoint
-    // Endpoint: POST /api/nfc/payment
-    // Backend akan validate NFC data, check fraud, dan process payment
-    return await this.makeRequest('/api/nfc/payment', {
+    // Endpoint: POST /api/nfc-cards/payment (backend aktif di route ini)
+    return await this.makeRequest('/api/nfc-cards/payment', {
       method: 'POST',
       body: paymentData,
     });
@@ -757,12 +756,165 @@ export class APIService {
    * ================================================================================
    */
   async validateNFCReceiver(nfcData: any) {
-    // STEP 1: Send POST request ke NFC validate endpoint
-    // Endpoint: POST /api/nfc/validate
-    // Backend akan check apakah user exists, not blocked, card linked properly
-    return await this.makeRequest('/api/nfc/validate', {
+    // STEP 1: Send POST request ke NFC tap endpoint untuk validasi kartu penerima
+    // Endpoint: POST /api/nfc-cards/tap (backend aktif di route ini)
+    return await this.makeRequest('/api/nfc-cards/tap', {
       method: 'POST',
       body: { nfcData },
+    });
+  }
+
+  /* ================================================================================
+   * NFC CARD MANAGEMENT METHODS - OPERASI MANAGEMENT KARTU NFC
+   * ================================================================================
+   * TUJUAN:
+   * Method-method untuk manage NFC cards (get, update, delete).
+   * 
+   * Card Management:
+   * - Get user's NFC cards
+   * - Update card status (ACTIVE, BLOCKED, LOST, EXPIRED)
+   * - Check card balance
+   * - View card transaction history
+   * ================================================================================
+   */
+
+  /* ================================================================================
+   * METHOD: getUserCards()
+   * ================================================================================
+   * TUJUAN:
+   * Mengambil semua NFC cards milik user tertentu.
+   * 
+   * USE CASE:
+   * - Display "My Cards" screen
+   * - Show active cards di Dashboard
+   * - Check card status dan balance
+   * 
+   * PARAMETER:
+   * - userId: number - ID user yang akan diambil kartu-nya
+   * 
+   * RETURN:
+   * - { 
+   *     user: {...},
+   *     cards: [
+   *       {
+   *         id: number,
+   *         cardId: string,
+   *         balance: number,
+   *         cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED',
+   *         createdAt: string,
+   *         lastUsed: string
+   *       }
+   *     ]
+   *   }
+   * ================================================================================
+   */
+  async getUserCards(userId: number) {
+    // STEP 1: Call user cards endpoint
+    // Endpoint: GET /api/users/{userId}/cards
+    // Backend akan query semua NFC cards where userId = userId
+    return await this.makeRequest(`/api/users/${userId}/cards`);
+  }
+
+  /* ================================================================================
+   * METHOD: updateCardStatus()
+   * ================================================================================
+   * TUJUAN:
+   * Update status kartu NFC (block, activate, mark as lost, dll).
+   * 
+   * USE CASE:
+   * - User block kartu yang hilang
+   * - User activate kartu baru
+   * - Admin suspend kartu karena fraud
+   * 
+   * PARAMETER:
+   * - cardId: string - UID kartu NFC (contoh: "04A1B2C3D4E5F6")
+   * - status: string - Status baru ('ACTIVE', 'BLOCKED', 'LOST', 'EXPIRED')
+   * 
+   * RETURN:
+   * - { success: true, message: "Card status updated", card: {...} }
+   * ================================================================================
+   */
+  async updateCardStatus(cardId: string, status: string) {
+    // STEP 1: Send PUT request ke card status endpoint
+    // Endpoint: PUT /api/nfc-cards/status
+    // Backend akan update cardStatus di database
+    return await this.makeRequest('/api/nfc-cards/status', {
+      method: 'PUT',
+      body: { cardId, status },
+    });
+  }
+
+  /* ================================================================================
+   * METHOD: getCardInfo()
+   * ================================================================================
+   * TUJUAN:
+   * Mendapatkan informasi detail kartu NFC berdasarkan cardId (UID).
+   * 
+   * USE CASE:
+   * - Check apakah kartu sudah terdaftar
+   * - Validasi kartu sebelum payment
+   * - Display card details di UI
+   * 
+   * PARAMETER:
+   * - cardId: string - UID kartu NFC
+   * 
+   * RETURN:
+   * - {
+   *     id: number,
+   *     cardId: string,
+   *     userId: number,
+   *     balance: number,
+   *     cardStatus: string,
+   *     user: { name, username }
+   *   }
+   * ================================================================================
+   */
+  async getCardInfo(cardId: string) {
+    // STEP 1: Call card info endpoint
+    // Endpoint: GET /api/nfc-cards/info/{cardId}
+    // Backend akan return card details dengan user info
+    return await this.makeRequest(`/api/nfc-cards/info/${cardId}`);
+  }
+
+  /* ================================================================================
+   * METHOD: registerCard()
+   * ================================================================================
+   * TUJUAN:
+   * Register kartu NFC baru ke sistem dan link ke user.
+   * 
+   * USE CASE:
+   * - User register kartu NFC fisik pertama kali
+   * - Link kartu ke akun user
+   * - Initialize balance
+   * 
+   * PARAMETER:
+   * - cardData: {
+   *     cardId: string - UID kartu NFC,
+   *     userId: number - ID user pemilik,
+   *     balance?: number - Initial balance (default: 0),
+   *     deviceId?: string - Device yang melakukan registrasi
+   *   }
+   * 
+   * RETURN:
+   * - {
+   *     success: true,
+   *     message: "Card registered successfully",
+   *     card: { id, cardId, userId, balance, cardStatus }
+   *   }
+   * ================================================================================
+   */
+  async registerCard(cardData: {
+    cardId: string;
+    userId: number;
+    balance?: number;
+    deviceId?: string;
+  }) {
+    // STEP 1: Send POST request ke register endpoint
+    // Endpoint: POST /api/nfc-cards/register
+    // Backend akan create new card record di database
+    return await this.makeRequest('/api/nfc-cards/register', {
+      method: 'POST',
+      body: cardData,
     });
   }
 
@@ -774,9 +926,9 @@ export class APIService {
    * 
    * Fraud Detection System:
    * - Uses Z-Score algorithm untuk deteksi anomali statistik
-   * - Analyze velocity, amount, frequency, behavior patterns
-   * - Generate risk score (0-100) dan risk level (LOW, MEDIUM, HIGH, CRITICAL)
-   * - Auto-block transaksi jika risk score terlalu tinggi
+   * - Hitung Z = |X - μ| / σ berdasarkan 20 transaksi historis
+   * - Generate Z-Score dan riskLevel (NORMAL, SUSPICIOUS, ANOMALY)
+   * - Auto-block transaksi jika Z-Score > 3
    * - Create fraud alerts untuk admin review
    * ================================================================================
    */
@@ -790,7 +942,7 @@ export class APIService {
    * USE CASE:
    * - Validate transaksi sebelum payment diproses
    * - Display warning ke user jika transaksi berisiko
-   * - Block transaksi otomatis jika risk critical
+   * - Block transaksi otomatis jika Z > 3 (ANOMALY)
    * 
    * PARAMETER:
    * - transactionData: {
@@ -802,8 +954,8 @@ export class APIService {
    * 
    * RETURN:
    * - {
-   *     riskScore: number (0-100),
-   *     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+   *     zScore: number | null,
+   *     riskLevel: 'NORMAL' | 'SUSPICIOUS' | 'ANOMALY',
    *     decision: 'ALLOW' | 'REVIEW' | 'BLOCK',
    *     reasons: string[]
    *   }

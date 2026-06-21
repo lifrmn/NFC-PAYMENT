@@ -57,10 +57,10 @@
  * │   ↓                        ─> Tidak ada kartu aktif? ──> BERHENTI│
  * │ PROSES PEMBAYARAN (API Backend)                                  │
  * │   ↓                                                             │
- * │ CEK SKOR PENIPUAN:                                              │
- * │   - Skor > 60: DIBLOKIR (Peringatan error)                      │
- * │   - Skor 40-60: DITINJAU (Peringatan warning)                   │
- * │   - Skor < 40: SUKSES (Peringatan sukses)                       │
+ * │ CEK Z-SCORE FRAUD DETECTION:                                     │
+ * │   - Z > 3 (ANOMALY/BLOCK): Diblokir backend, tidak sampai di sini │
+ * │   - Z > 2 (SUSPICIOUS/REVIEW): Diterima, ditandai untuk review    │
+ * │   - Z ≤ 2 (NORMAL/ALLOW): Sukses normal                           │
  * │   ↓                                                             │
  * │ SEGARKAN SALDO (callback onSuccess)                             │
  * │   ↓                                                             │
@@ -152,10 +152,12 @@ export const usePayment = () => {
    *   - Create transaction record
    *   - Run fraud detection
    * 
-   * STEP 6: Handle Fraud Score
-   *   - Score > 60: BLOCKED (show error)
-   *   - Score 40-60: REVIEW (show warning)
-   *   - Score < 40: SUCCESS (show success)
+   * STEP 6: Handle Z-Score Anomaly Detection Result
+   *   - Z ≤ 2: ALLOW / NORMAL
+   *   - 2 < Z ≤ 3: REVIEW / SUSPICIOUS
+   *   - Z > 3: BLOCK / ANOMALY
+   *   - σ = 0 dan X = μ: ALLOW
+   *   - σ = 0 dan X ≠ μ: BLOCK
    * 
    * STEP 7: Refresh Balance
    *   - Call onSuccess() callback
@@ -303,12 +305,12 @@ export const usePayment = () => {
       }
 
       // VALIDASI 3.4: Check buyer balance
-      // IMPORTANT: Gunakan saldo USER, bukan saldo kartu fisik
+      // IMPORTANT: Gunakan saldo USER (users.balance), bukan saldo kartu fisik
       // Kenapa?
-      // - System ini balance-based, bukan card-based
-      // - User bisa punya multiple cards dengan shared balance
-      // - Balance disimpan di users table, bukan nfc_cards table
-      // 
+      // - System ini balance-based: saldo disimpan di tabel users, bukan nfc_cards
+      // - Setiap user hanya memiliki satu kartu NFC aktif (policy 1 user = 1 kartu)
+      // - Card.balance hanya sinkronisasi tampilan; sumber kebenaran ada di users.balance
+      //
       // buyerCheck.card.user.balance = Saldo user pembeli dari users table
       // Fallback ke 0 jika user object tidak ada (safety)
       const buyerBalance = buyerCheck.card.user?.balance || 0;
@@ -403,12 +405,9 @@ export const usePayment = () => {
       // VALIDASI 4.3: Find ACTIVE card
       // Array.find() akan return first match atau undefined jika not found
       // Filter: cardStatus === 'ACTIVE'
-      // 
-      // Kenapa ambil yang pertama saja?
-      // - Simple merchant payment scenario
-      // - User biasanya punya 1 kartu aktif
-      // - Jika multiple cards, ambil yang pertama
-      // TODO: Future improvement - let user choose card
+      //
+      // Policy sistem: setiap user hanya memiliki SATU kartu NFC aktif (1 user = 1 kartu)
+      // find() mengambil kartu pertama yang ACTIVE — seharusnya hanya ada satu.
       const receiverCard = receiverCardsResponse.cards.find((c: any) => c.cardStatus === 'ACTIVE');
       
       // Check apakah ada kartu ACTIVE
@@ -437,8 +436,8 @@ export const usePayment = () => {
       // 4. Add to receiver: receiver.balance += amount
       // 5. Create transaction record in transactions table
       // 6. Run fraud detection algorithm (Z-Score)
-      // 7. Create fraud alert if score high
-      // 8. Return transaction result + fraud score
+      // 7. Create fraud alert jika Z-Score > 2 (SUSPICIOUS) atau > 3 (ANOMALY)
+      // 8. Return transaction result + Z-Score fraud detection result
       // 
       // Request payload:
       // {
@@ -484,7 +483,7 @@ export const usePayment = () => {
         return false; // Early return: payment failed
       }
 
-      // STEP 6: Handle Payment Success & Fraud Score
+      // STEP 6: Handle Payment Success & Z-Score Fraud Detection
       // Check paymentResult.success untuk determine result
       if (paymentResult && paymentResult.success) {
         // STEP 6.1: Refresh balance setelah transaksi berhasil
@@ -500,35 +499,26 @@ export const usePayment = () => {
           }
         }
         
-        // STEP 6.2: Check Fraud Score
-        // Backend calculate fraud score dengan Z-Score algorithm
-        // Score range: 0-100
-        // Thresholds:
-        // - CRITICAL (80-100): Auto-block + flag for review
-        // - HIGH (60-79): Block transaction + alert admin
-        // - MEDIUM (40-59): Allow but mark for review
-        // - LOW (0-39): Allow normally
-        const fraudScore = paymentResult.transaction?.fraudScore || 0;
+        // STEP 6.2: Tampilkan notifikasi berdasarkan riskLevel Z-Score
+        // Backend menggunakan Z-Score Based Anomaly Detection:
+        // - Z > 3 (ANOMALY/BLOCK): Transaksi diblokir, tidak sampai di sini
+        // - Z > 2 (SUSPICIOUS/REVIEW): Transaksi diproses, ditandai untuk review admin
+        // - Z ≤ 2 (NORMAL/ALLOW): Transaksi normal, tidak ada alert
+        const riskLevel = paymentResult.transaction?.fraudRiskLevel || 'NORMAL';
+        const zScore = paymentResult.transaction?.fraudRiskScore;
         
-        if (fraudScore > 60) {
-          // HIGH/CRITICAL: Transaction blocked by fraud detection
+        if (riskLevel === 'SUSPICIOUS') {
+          // REVIEW: Transaksi diproses tapi perlu ditinjau admin
           Alert.alert(
-            '⚠️ Transaksi Diblokir',
-            `Terdeteksi mencurigakan.\nFraud Score: ${fraudScore}%\n\nHubungi admin.`,
-            [{ text: 'OK' }]
-          );
-        } else if (fraudScore > 40) {
-          // MEDIUM: Transaction allowed tapi marked for review
-          Alert.alert(
-            '✅ Pembayaran Diterima (Review)',
-            `✅ Anda menerima Rp ${amount.toLocaleString('id-ID')} dari:\n💳 ${buyerCheck.card.userName}\n\n⚠️ Transaksi akan direview sistem (Fraud Score: ${fraudScore}%).\n\n💰 Saldo Anda Sekarang: Rp ${paymentResult.transaction?.receiverBalance?.toLocaleString('id-ID')}`,
+            '✅ Pembayaran Diterima (Perlu Review)',
+            `✅ Anda menerima Rp ${amount.toLocaleString('id-ID')} dari:\n💳 ${buyerCheck.card.user?.name || buyerCheck.card.user?.username || 'Pembeli'}\n\n⚠️ Z-Score: ${zScore != null ? parseFloat(String(zScore)).toFixed(4) : 'tidak dihitung'} — transaksi akan ditinjau admin (SUSPICIOUS).\n\n💰 Saldo Anda Sekarang: Rp ${paymentResult.transaction?.receiverBalance?.toLocaleString('id-ID')}`,
             [{ text: 'OK' }]
           );
         } else {
-          // LOW: Normal success (no fraud detected)
+          // NORMAL / ALLOW: Transaksi berhasil, tidak ada anomali
           Alert.alert(
             '✅ Pembayaran Berhasil Diterima! 🎉',
-            `✅ Anda menerima Rp ${amount.toLocaleString('id-ID')} dari:\n💳 ${buyerCheck.card.userName}\n\n💰 Saldo Anda Sekarang: Rp ${paymentResult.transaction?.receiverBalance?.toLocaleString('id-ID')}\n💳 Saldo Pembeli: Rp ${paymentResult.transaction?.senderBalance?.toLocaleString('id-ID')}`,
+            `✅ Anda menerima Rp ${amount.toLocaleString('id-ID')} dari:\n💳 ${buyerCheck.card.user?.name || buyerCheck.card.user?.username || 'Pembeli'}\n\n💰 Saldo Anda Sekarang: Rp ${paymentResult.transaction?.receiverBalance?.toLocaleString('id-ID')}\n💳 Saldo Pembeli: Rp ${paymentResult.transaction?.senderBalance?.toLocaleString('id-ID')}`,
             [{ text: 'OK' }]
           );
         }
@@ -539,9 +529,9 @@ export const usePayment = () => {
         // STEP 6.3: Handle Payment Failure
         // success = false, check error code untuk specific handling
         
-        // Error: ACCOUNT_BANNED
-        // User account diblokir karena fraud activity
-        if (paymentResult.error === 'ACCOUNT_BANNED' || paymentResult.message?.includes('diblokir')) {
+        // Error: TRANSACTION_BLOCKED
+        // Transaksi diblokir fraud detection (Z-Score > 3 / σ=0 edge case)
+        if (paymentResult.error === 'TRANSACTION_BLOCKED' || paymentResult.error === 'ACCOUNT_BANNED' || paymentResult.message?.includes('diblokir')) {
           Alert.alert(
             '🚫 Akun Diblokir',
             paymentResult.message || 'Maaf, kamu tidak bisa akses pembayaran ini karena akun kamu di-ban. Harap hubungi Customer Service untuk informasi lebih lanjut.\n\n📞 CS: +62-XXX-XXX-XXXX\n📧 cs@nfcpayment.com',

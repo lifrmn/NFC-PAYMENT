@@ -21,7 +21,7 @@
 
 const express = require('express'); // Framework untuk membuat API routes
 const { body, validationResult } = require('express-validator'); // Validasi input dari client
-const { PrismaClient } = require('@prisma/client'); // ORM untuk akses database PostgreSQL
+const { PrismaClient } = require('@prisma/client'); // ORM untuk akses database SQLite
 
 const router = express.Router(); // Buat router baru untuk endpoint /api/users
 const prisma = new PrismaClient(); // Buat koneksi ke database

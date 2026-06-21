@@ -109,17 +109,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomButton from '../components/CustomButton';
-import { registerUser } from '../utils/database';
 import { apiService } from '../utils/apiService';
+import styles from './RegisterScreen.styles';
 
 /* ==================================================================================
  * TYPE DEFINITIONS
@@ -245,81 +244,21 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     try {
       console.log('📝 Attempting registration for:', username);
       
-      // STEP 1: Try Backend API Registration (Primary Method)
-      // Try-catch untuk handle backend unavailable
-      // Jika backend error, akan fallback ke offline SQLite
-      try {
-        // API Call: POST /api/auth/register
-        // Backend akan:
-        // 1. Check apakah username sudah exist (unique constraint)
-        // 2. Hash password dengan bcrypt (salt rounds: 10)
-        // 3. Insert new user ke users table dengan balance = 0
-        // 4. Generate JWT token (valid 24 jam)
-        // 5. Return { user, token } jika success
-        // 6. Return { message } jika username already exists
-        const response = await apiService.register({ name, username, password });
+      // Kirim data registrasi ke backend
+      const response = await apiService.register({ name, username, password });
 
-        // SUCCESS CASE: Backend return user object
-        if (response?.user) {
-          console.log('✅ Registration success (backend):', response.user.username);
-
-          // STEP 1.1: Save authentication data to AsyncStorage (jika ada token)
-          // Token untuk auto-login after registration
-          // userId untuk API calls
-          if (response.token) await AsyncStorage.setItem('token', response.token);
-          if (response.user?.id) await AsyncStorage.setItem('userId', response.user.id.toString());
-
-          // STEP 1.2: Show success alert dengan callback
-          // Alert.alert dengan button callback
-          // onPress: () => onRegisterSuccess() akan dipanggil saat user tap "OK"
-          // Parent (App.tsx) akan navigate back ke LoginScreen
-          Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [
-            { text: 'OK', onPress: onRegisterSuccess },
-          ]);
-          return; // Early return: backend registration success
-        } 
-        // ERROR CASE: Backend return error message (e.g., username exists)
-        else if (response?.message) {
-          Alert.alert('Error', response.message);
-          return; // Early return: backend validation error
-        }
-      } catch (err) {
-        // Backend unavailable or network error
-        // Tidak throw error, continue ke offline fallback
-        console.log('⚠️ Backend unavailable, using offline mode:', err);
+      if (response?.user) {
+        if (response.token) await AsyncStorage.setItem('token', response.token);
+        if (response.user?.id) await AsyncStorage.setItem('userId', response.user.id.toString());
+        Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [
+          { text: 'OK', onPress: onRegisterSuccess },
+        ]);
+        return;
+      } else if (response?.message) {
+        Alert.alert('Gagal', response.message);
+        return;
       }
-
-      // STEP 2: Fallback to SQLite Offline Registration (Secondary Method)
-      // Call registerUser() dari database.ts
-      // registerUser() akan:
-      // 1. Check apakah username sudah exist di local SQLite
-      // 2. Hash password dengan bcrypt
-      // 3. INSERT INTO users (name, username, password, balance)
-      // 4. Return user object jika success
-      // 5. Throw error jika username duplicate
-      try {
-        const newUser = await registerUser(name, username, password);
-        
-        if (newUser) {
-          // Offline registration berhasil
-          console.log('✅ Registration success (local):', newUser.username);
-          
-          // Show success alert dengan callback
-          // Navigate back ke LoginScreen untuk user login
-          Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [
-            { text: 'OK', onPress: onRegisterSuccess },
-          ]);
-          return; // Early return: offline registration success
-        }
-      } catch (localErr) {
-        // Offline registration gagal
-        // Possible causes:
-        // - Username already exists di local database
-        // - SQLite database error
-        // - bcrypt hashing error
-        console.error('❌ Local registration failed:', localErr);
-        Alert.alert('Error', 'Username sudah digunakan atau terjadi kesalahan');
-      }
+      Alert.alert('Gagal', 'Registrasi gagal. Coba lagi.');
 
     } catch (error) {
       // GLOBAL ERROR HANDLER
@@ -498,51 +437,3 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
  * - Shadows: subtle depth
  * ==================================================================================
  */
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  keyboardView: { flex: 1 },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
-  content: { padding: 20 },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#2c3e50',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#7f8c8d',
-  },
-  form: { width: '100%' },
-  input: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#2c3e50',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    minHeight: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  registerButton: { marginBottom: 20 },
-  loginLinkContainer: {
-    paddingVertical: 20,
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  loginLinkText: {
-    color: '#3498db',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

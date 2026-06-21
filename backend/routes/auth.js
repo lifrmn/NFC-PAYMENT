@@ -188,10 +188,13 @@ router.post(
         return res.status(401).json({ error: 'Username atau password salah' }); // 401 Unauthorized
       }
 
-      console.log('🎉 LOGIN BERHASIL untuk user:', username);
+      const loginTime = new Date().toLocaleTimeString('id-ID');
+      console.log(`🎉 LOGIN BERHASIL - ${username} pukul ${loginTime}`);
 
       // STEP 6: Buat token JWT
       const jwtSecret = process.env.JWT_SECRET || 'nfc-payment-jwt-secret-2025-ultra-secure-key';
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      const expireDate = new Date(Date.now() + sevenDays); // Expire 7 hari dari sekarang
       const token = jwt.sign(
         { userId: user.id, username: user.username }, // Payload
         jwtSecret, // Secret key
@@ -203,7 +206,7 @@ router.post(
         where: { token }, // WHERE token = token (cari session dengan token ini)
         update: { // Jika sudah ada, update:
           isActive: true, // Set aktif
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Perpanjang expire time
+          expiresAt: expireDate, // Perpanjang expire time
           ipAddress: req.ip || '0.0.0.0', // Update IP
           userAgent: req.headers['user-agent'] || 'unknown', // Update user agent
         },
@@ -212,7 +215,7 @@ router.post(
           deviceId: deviceId || 'unknown', // Device ID
           token, // JWT token
           isActive: true, // Session aktif
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expire 7 hari
+          expiresAt: expireDate, // Expire 7 hari
           ipAddress: req.ip || '0.0.0.0', // IP address
           userAgent: req.headers['user-agent'] || 'unknown', // User agent
         },

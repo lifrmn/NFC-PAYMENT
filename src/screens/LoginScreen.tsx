@@ -99,16 +99,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
-  Platform,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomButton from '../components/CustomButton';
 import { loginUser } from '../utils/database';
 import { apiService } from '../utils/apiService';
+import styles from './LoginScreen.styles';
 
 /* ==================================================================================
  * TYPE DEFINITIONS
@@ -285,16 +285,15 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
    * 
    * Component Hierarchy:
    * <SafeAreaView>                      - Respect device safe area (notch, status bar)
-   *   <KeyboardAvoidingView>            - Auto-adjust saat keyboard muncul
-   *     <View style={content}>          - Main content container
-   *       <Text>NFC Payment</Text>      - App title
-   *       <Text>Masuk ke akun Anda</Text> - Subtitle
-   *       <View style={form}>           - Form container
-   *         <TextInput username />      - Username input (controlled)
-   *         <TextInput password />      - Password input (controlled, secure)
-   *         <CustomButton />            - Login button dengan loading state
-   *         <TouchableOpacity>         - Register link (pressable)
-   *           <Text>Belum punya akun?  - Link text
+   *   <ScrollView>                      - Scrollable container
+   *     <KeyboardAvoidingView>            - Auto-adjust saat keyboard muncul
+   *       <View style={header}>          - Header dengan logo dan judul
+   *       <View style={card}>            - Card putih dengan form
+   *         <TextInput username />      - Username input dengan icon
+   *         <TextInput password />      - Password input dengan icon
+   *         <TouchableOpacity>         - Link lupa password
+   *         <CustomButton />            - Login button biru besar
+   *       <TouchableOpacity>           - Link register
    * 
    * Controlled Components Pattern:
    * - value={username} - Bind state to TextInput value
@@ -309,72 +308,85 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
    * ================================================================================
    */
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={styles.container}
       >
         <View style={styles.content}>
-          {/* App Title */}
-          <Text style={styles.title}>NFC Payment</Text>
-          <Text style={styles.subtitle}>Masuk ke akun Anda</Text>
+          {/* Header dengan Logo dan Judul */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logo}>
+                <Text style={styles.logoIcon}>💳</Text>
+                <Text style={styles.logoWave}>)))</Text>
+              </View>
+              <View style={styles.logoShield}>
+                <Text style={styles.shieldIcon}>🛡️</Text>
+              </View>
+            </View>
+            <Text style={styles.title}>Dompet Digital NFC</Text>
+            <Text style={styles.subtitle}>Pembayaran NFC aman dengan deteksi fraud</Text>
+          </View>
 
-          <View style={styles.form}>
-            {/* Username Input */}
-            {/* TextInput controlled component: value + onChangeText */}
-            {/* autoCapitalize="none": Prevent auto-capitalize untuk username */}
-            {/* autoComplete="username": OS suggestion untuk autofill */}
-            <TextInput
-              style={styles.input}
-              placeholder="Username"
-              placeholderTextColor="#95a5a6"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoComplete="username"
-            />
+          {/* Card Form */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Masuk</Text>
             
-            {/* Password Input */}
-            {/* secureTextEntry: Mask password dengan bullets */}
-            {/* autoComplete="password": OS suggestion untuk autofill */}
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#95a5a6"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
+            {/* Input Username */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputIcon}>👤</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan username"
+                placeholderTextColor="#94a3b8"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoComplete="username"
+              />
+            </View>
 
-            {/* Login Button */}
-            {/* CustomButton component dengan loading state */}
-            {/* title: Change text saat loading */}
-            {/* disabled: Disable saat loading (prevent double-tap) */}
-            {/* loading: Show spinner saat loading */}
-            {/* variant="primary": Blue button style */}
-            {/* size="large": Large button untuk easy tap */}
-            <CustomButton
-              title={loading ? 'Masuk...' : 'Masuk'}
+            {/* Input Password */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan kata sandi"
+                placeholderTextColor="#94a3b8"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="password"
+              />
+            </View>
+
+            {/* Link Lupa Password */}
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Lupa kata sandi?</Text>
+            </TouchableOpacity>
+
+            {/* Tombol Login */}
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
               onPress={handleLogin}
               disabled={loading}
-              loading={loading}
-              variant="primary"
-              size="large"
-              style={styles.loginButton}
-            />
-
-            {/* Register Link */}
-            {/* TouchableOpacity: Pressable dengan opacity feedback */}
-            {/* activeOpacity: 0.7 = slightly transparent saat pressed */}
-            <TouchableOpacity
-              style={styles.registerLinkContainer}
-              onPress={handleNavigateToRegister}
-              activeOpacity={0.7}
             >
-              <Text style={styles.registerLinkText}>
-                Belum punya akun? Daftar di sini
-              </Text>
+              {loading ? (
+                <View style={styles.processingRow}>
+                  <Text style={styles.loginButtonText}>Memproses </Text>
+                </View>
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Link Daftar Akun */}
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Belum punya akun?</Text>
+            <TouchableOpacity onPress={handleNavigateToRegister}>
+              <Text style={styles.registerLink}>  Daftar Akun  →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -414,65 +426,3 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
  *   * Inputs: subtle shadow untuk depth
  * ==================================================================================
  */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#2c3e50',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#7f8c8d',
-  },
-  form: {
-    width: '100%',
-  },
-  input: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#2c3e50',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    minHeight: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  loginButton: {
-    marginBottom: 20,
-  },
-  registerLinkContainer: {
-    paddingVertical: 20,
-    marginTop: 10,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-  },
-  registerLinkText: {
-    textAlign: 'center',
-    color: '#3498db',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

@@ -1,297 +1,33 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
+const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 /* -------------------------------------------------------------------------- */
-/*                         LAYANAN DETEKSI FRAUD                              */
-/*                  DETEKSI ANOMALI BERBASIS Z-SCORE                         */
+/*                    Z-SCORE BASED ANOMALY DETECTION                         */
+/*          Deteksi anomali transaksi berdasarkan 20 histori terakhir         */
 /* -------------------------------------------------------------------------- */
 /**
- * Deteksi Fraud Tingkat Akademis menggunakan Deteksi Anomali Statistik
- * 
- * Algoritma: Weighted Risk Scoring Berbasis Z-Score
- * Referensi:
- * - Chandola, V., Banerjee, A., & Kumar, V. (2009). "Anomaly detection: A survey"
- * - Bolton, R. J., & Hand, D. J. (2002). "Statistical fraud detection: A review"
- * 
- * TANPA LOGIKA IF-ELSE - Formula matematika murni dengan operator ternary hanya untuk mapping
+ * Fraud Detection menggunakan Z-Score Based Anomaly Detection.
+ * Metode: Ambil 20 transaksi historis terakhir sebagai baseline,
+ * hitung mean/variance/stddev, lalu Z-Score transaksi baru.
+ * Keputusan: Z<=2 ALLOW | 2<Z<=3 REVIEW | Z>3 BLOCK
+ *
+ * REFERENSI AKADEMIS:
+ *   [1] Bolton & Hand (2002). Statistical fraud detection. Statistical Science.
+ *       https://doi.org/10.1214/ss/1042727940
+ *   [2] Chandola et al. (2009). Anomaly detection: A survey. ACM Comput. Surv.
+ *       https://doi.org/10.1145/1541880.1541882
+ *   [3] Tagle (2024). ML for Real-time Fraud Detection in NFC Transactions.
+ *       https://doi.org/10.62718/vmca.tech-gjtdsi.3.1.sc-1124-009
+ *   [4] Vanini et al. (2023). Online payment fraud. Financial Innovation.
+ *       https://doi.org/10.1186/s40854-023-00470-w
+ *   [5] Zhukabayeva et al. (2025). Anomaly detection via Z-Score.
  */
-class FraudDetectionService {
-  /**
-   * Hitung Z-Score untuk deteksi anomali
-   * Z = (X - μ) / σ
-   * di mana X = nilai observasi, μ = rata-rata, σ = deviasi standar
-   */
-  static calculateZScore(value, mean, stdDev) {
-    return stdDev === 0 ? 0 : (value - mean) / stdDev;
-  }
-
-  /**
-   * Hitung deviasi standar dari array nilai
-   */
-  static calculateStdDev(values, mean) {
-    const n = values.length;
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / Math.max(n, 1);
-    return Math.sqrt(variance);
-  }
-
-  /**
-   * Normalisasi skor ke rentang 0-1 menggunakan fungsi sigmoid
-   */
-  static normalizeScore(zScore) {
-    return 1 / (1 + Math.exp(-zScore));
-  }
-
-  /**
-   * Analisis deteksi fraud utama menggunakan algoritma Z-Score
-   */
-  static async analyzeTransaction({ senderId, receiverId, amount, deviceId }) {
-    const reasons = [];
-    const riskFactors = {};
-
-    // ========================================================================
-    // FAKTOR 1: SKOR KECEPATAN (bobot 35%)
-    // Mengukur anomali frekuensi transaksi menggunakan Z-Score berbasis waktu
-    // ========================================================================
-    const timeWindows = {
-      '5min': 5 * 60 * 1000,
-      '1hour': 60 * 60 * 1000,
-      '24hour': 24 * 60 * 60 * 1000
-    };
-
-    const recentTransactions = await Promise.all([
-      prisma.transaction.findMany({
-        where: {
-          senderId,
-          createdAt: { gte: new Date(Date.now() - timeWindows['5min']) }
-        }
-      }),
-      prisma.transaction.findMany({
-        where: {
-          senderId,
-          createdAt: { gte: new Date(Date.now() - timeWindows['1hour']) }
-        }
-      }),
-      prisma.transaction.findMany({
-        where: {
-          senderId,
-          createdAt: { gte: new Date(Date.now() - timeWindows['24hour']) }
-        }
-      })
-    ]);
-
-    const counts = {
-      last5min: recentTransactions[0].length,
-      lastHour: recentTransactions[1].length,
-      last24h: recentTransactions[2].length
-    };
-
-    // Perhitungan rata-rata historis
-    const allUserTxs = await prisma.transaction.findMany({
-      where: { senderId },
-      select: { createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: 100
-    });
-
-    const avgTxPerHour = allUserTxs.length > 0 
-      ? (allUserTxs.length / Math.max((Date.now() - new Date(allUserTxs[allUserTxs.length - 1].createdAt).getTime()) / (60 * 60 * 1000), 1))
-      : 0;
-
-    // Perhitungan Z-Score untuk kecepatan
-    const velocityZScore = this.calculateZScore(
-      counts.lastHour,
-      avgTxPerHour,
-      Math.sqrt(avgTxPerHour) // Aproksimasi distribusi Poisson
-    );
-
-    const velocityScore = this.normalizeScore(velocityZScore) * 100;
-
-    riskFactors.velocityScore = velocityScore;
-    riskFactors.velocityDetails = {
-      last5min: counts.last5min,
-      lastHour: counts.lastHour,
-      last24h: counts.last24h,
-      historicalAvgPerHour: Math.round(avgTxPerHour * 100) / 100,
-      zScore: Math.round(velocityZScore * 100) / 100
-    };
-
-    // Buat alasan menggunakan ternary (tanpa if-else)
-    velocityScore > 70 ? reasons.push(`Kecepatan transaksi tinggi terdeteksi (Z-Score: ${Math.round(velocityZScore * 100) / 100})`) : null;
-
-    // ========================================================================
-    // FAKTOR 2: Z-SCORE JUMLAH (bobot 40%)
-    // Anomali statistik pada jumlah transaksi
-    // ========================================================================
-    const userStats = await prisma.transaction.aggregate({
-      where: { senderId },
-      _avg: { amount: true },
-      _count: true
-    });
-
-    const historicalAmounts = await prisma.transaction.findMany({
-      where: { senderId },
-      select: { amount: true },
-      take: 50
-    });
-
-    const amounts = historicalAmounts.map(t => t.amount);
-    const meanAmount = amounts.length > 0 ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
-    const stdDevAmount = this.calculateStdDev(amounts, meanAmount);
-
-    const amountZScore = this.calculateZScore(amount, meanAmount, stdDevAmount);
-    const normalizedAmountScore = this.normalizeScore(amountZScore) * 100;
-
-    riskFactors.amountZScore = normalizedAmountScore;
-    riskFactors.amountDetails = {
-      currentAmount: amount,
-      historicalMean: Math.round(meanAmount * 100) / 100,
-      standardDeviation: Math.round(stdDevAmount * 100) / 100,
-      zScore: Math.round(amountZScore * 100) / 100
-    };
-
-    normalizedAmountScore > 70 ? reasons.push(`Jumlah transaksi secara statistik anomali (Z-Score: ${Math.round(amountZScore * 100) / 100})`) : null;
-
-    // ========================================================================
-    // FAKTOR 3: SKOR FREKUENSI (bobot 15%)
-    // Deviasi pola dari perilaku khas pengguna
-    // ========================================================================
-    const last7Days = await prisma.transaction.findMany({
-      where: {
-        senderId,
-        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-      }
-    });
-
-    const dailyTxCounts = [];
-    for (let i = 0; i < 7; i++) {
-      const dayStart = new Date(Date.now() - (i + 1) * 24 * 60 * 60 * 1000);
-      const dayEnd = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-      const count = last7Days.filter(tx => 
-        new Date(tx.createdAt) >= dayStart && new Date(tx.createdAt) < dayEnd
-      ).length;
-      dailyTxCounts.push(count);
-    }
-
-    const avgDailyTx = dailyTxCounts.reduce((a, b) => a + b, 0) / 7;
-    const todayTxCount = last7Days.filter(tx => 
-      new Date(tx.createdAt) >= new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ).length;
-
-    const frequencyZScore = this.calculateZScore(
-      todayTxCount,
-      avgDailyTx,
-      this.calculateStdDev(dailyTxCounts, avgDailyTx)
-    );
-
-    const frequencyScore = this.normalizeScore(frequencyZScore) * 100;
-
-    riskFactors.frequencyScore = frequencyScore;
-    riskFactors.frequencyDetails = {
-      todayCount: todayTxCount,
-      last7DaysAvg: Math.round(avgDailyTx * 100) / 100,
-      zScore: Math.round(frequencyZScore * 100) / 100
-    };
-
-    frequencyScore > 70 ? reasons.push(`Pola frekuensi transaksi tidak biasa (Z-Score: ${Math.round(frequencyZScore * 100) / 100})`) : null;
-
-    // ========================================================================
-    // FAKTOR 4: SKOR PERILAKU (bobot 10%)
-    // Pola perilaku tidak biasa (penerima baru, waktu tidak biasa, dll.)
-    // ========================================================================
-    const previousReceiverTxs = await prisma.transaction.count({
-      where: {
-        senderId,
-        receiverId
-      }
-    });
-
-    const isNewReceiver = previousReceiverTxs === 0 ? 1 : 0;
-    
-    // Anomali berbasis waktu (jam tidak biasa)
-    const currentHour = new Date().getHours();
-    const hourlyTxs = await prisma.transaction.findMany({
-      where: { senderId },
-      select: { createdAt: true },
-      take: 100
-    });
-
-    const hourCounts = new Array(24).fill(0);
-    hourlyTxs.forEach(tx => {
-      const hour = new Date(tx.createdAt).getHours();
-      hourCounts[hour]++;
-    });
-
-    const avgHourlyTxCount = hourCounts.reduce((a, b) => a + b, 0) / 24;
-    const currentHourCount = hourCounts[currentHour];
-    const isUnusualTime = currentHourCount < avgHourlyTxCount * 0.5 ? 1 : 0;
-
-    // Perhitungan skor perilaku (tanpa if-else, formula murni)
-    const behaviorScore = (isNewReceiver * 50 + isUnusualTime * 50);
-
-    riskFactors.behaviorScore = behaviorScore;
-    riskFactors.behaviorDetails = {
-      isNewReceiver: isNewReceiver === 1,
-      previousTransactionsWithReceiver: previousReceiverTxs,
-      isUnusualTime: isUnusualTime === 1,
-      currentHour,
-      avgTransactionsAtThisHour: Math.round(currentHourCount * 100) / 100
-    };
-
-    behaviorScore > 70 ? reasons.push(`Pola perilaku tidak biasa terdeteksi`) : null;
-    isNewReceiver === 1 ? reasons.push('Transaksi ke penerima baru') : null;
-
-    // ========================================================================
-    // PERHITUNGAN RISIKO TERTIMBANG (TANPA IF-ELSE)
-    // ========================================================================
-    const weights = {
-      velocity: 0.35,
-      amount: 0.40,
-      frequency: 0.15,
-      behavior: 0.10
-    };
-
-    const overallRiskScore = (
-      velocityScore * weights.velocity +
-      normalizedAmountScore * weights.amount +
-      frequencyScore * weights.frequency +
-      behaviorScore * weights.behavior
-    );
-
-    // ========================================================================
-    // PEMETAAN TINGKAT RISIKO (Menggunakan operator ternary - pemetaan ambang akademis)
-    // ========================================================================
-    const riskLevel = 
-      overallRiskScore >= 80 ? 'CRITICAL' :
-      overallRiskScore >= 60 ? 'HIGH' :
-      overallRiskScore >= 40 ? 'MEDIUM' : 'LOW';
-
-    const decision =
-      overallRiskScore >= 80 ? 'BLOCK' :
-      overallRiskScore >= 60 ? 'REVIEW' : 'ALLOW';
-
-    // Keyakinan berdasarkan ketersediaan data (lebih banyak data = keyakinan lebih tinggi)
-    const dataPoints = amounts.length + hourlyTxs.length + allUserTxs.length;
-    const confidence = Math.min(0.95, 0.5 + (dataPoints / 300) * 0.45);
-
-    reasons.length === 0 ? reasons.push('Tidak ada faktor risiko signifikan terdeteksi') : null;
-
-    return {
-      riskScore: Math.round(overallRiskScore * 100) / 100,
-      riskLevel,
-      decision,
-      reasons,
-      confidence: Math.round(confidence * 100) / 100,
-      riskFactors,
-      timestamp: new Date().toISOString(),
-      algorithm: 'Deteksi Anomali Z-Score',
-      weights
-    };
-  }
-}
+/* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
 /*                          DAPATKAN SEMUA TRANSAKSI                          */
@@ -467,46 +203,75 @@ router.post(
         return res.status(400).json({ error: 'Insufficient balance' });
       }
 
-      // Deteksi fraud
-      const fraudResult = await FraudDetectionService.analyzeTransaction({
-        senderId: Number(senderId),
-        receiverId: receiver.id,
-        amount: amountNum,
-        deviceId,
+      // ======================================================================
+      // DETEKSI FRAUD: Z-Score Based Anomaly Detection
+      // Ambil 20 transaksi historis terakhir pengguna sebagai baseline
+      // Transaksi baru (amountNum) adalah X = transaksi ke-21
+      // ======================================================================
+      const historicalTxs = await prisma.transaction.findMany({
+        where: { senderId: Number(senderId), status: 'completed' },
+        select: { amount: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: HISTORY_SIZE,
       });
 
+      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs);
+      // Handle edge case: zScore null (σ=0, amount≠mean) → Z tidak terdefinisi → ANOMALY/BLOCK
+      const zScoreLevel = (fraudResult.zScore === null)
+        ? 'ANOMALY'
+        : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY');
+
+      // BLOCK: Tolak transaksi, catat sebagai percobaan fraud
       if (fraudResult.decision === 'BLOCK') {
         await prisma.fraudAlert.create({
           data: {
             userId: Number(senderId),
             deviceId: deviceId || 'unknown',
-            riskScore: fraudResult.riskScore,
-            riskLevel: fraudResult.riskLevel,
-            decision: fraudResult.decision,
+            deviceName: 'Mobile App',
+            // zScore null = edge case sigma=0 (Z tidak terdefinisi). Simpan -1 sebagai sentinel.
+            riskScore: fraudResult.zScore ?? -1,
+            riskLevel: 'ANOMALY',
+            decision: 'BLOCK',
             reasons: JSON.stringify(fraudResult.reasons),
-            confidence: fraudResult.confidence,
-            riskFactors: JSON.stringify(fraudResult.riskFactors),
+            confidence: 0.997,
+            riskFactors: JSON.stringify({
+              zScore: fraudResult.zScore,
+              mean: fraudResult.mean,
+              stdDev: fraudResult.stdDev,
+              variance: fraudResult.variance,
+              n: fraudResult.n,
+              currentAmount: amountNum,
+              algorithm: 'Z-Score Based Anomaly Detection',
+              thresholds: { allow: 2, review: 3 }
+            }),
             ipAddress: req.ip,
             userAgent: req.headers['user-agent'],
           },
         });
-        return res.status(403).json({ error: 'Transaction blocked due to fraud risk', fraudResult });
+        return res.status(403).json({
+          error: 'Transaksi diblokir – anomali terdeteksi (Z-Score > 3)',
+          zScore: fraudResult.zScore,
+          riskLevel: 'ANOMALY',
+          decision: 'BLOCK',
+          reasons: fraudResult.reasons,
+          mean: fraudResult.mean,
+          stdDev: fraudResult.stdDev,
+          historyCount: fraudResult.n
+        });
       }
 
-      // Transaksi atomic
+      // ALLOW / REVIEW: Proses transaksi, perbarui saldo
       const transaction = await prisma.$transaction(async (tx) => {
-        // update saldo
-        const updatedSender = await tx.user.update({
+        await tx.user.update({
           where: { id: Number(senderId) },
           data: { balance: { decrement: amountNum } },
         });
 
-        const updatedReceiver = await tx.user.update({
+        await tx.user.update({
           where: { id: receiver.id },
           data: { balance: { increment: amountNum } },
         });
 
-        // create trx
         const created = await tx.transaction.create({
           data: {
             senderId: Number(senderId),
@@ -514,8 +279,8 @@ router.post(
             amount: amountNum,
             description,
             deviceId,
-            fraudRiskScore: fraudResult.riskScore,
-            fraudRiskLevel: fraudResult.riskLevel,
+            fraudRiskScore: fraudResult.zScore ?? null,  // Float? di schema — null saat edge case sigma=0
+            fraudRiskLevel: zScoreLevel,
             fraudReasons: JSON.stringify(fraudResult.reasons),
             ipAddress: req.ip,
           },
@@ -532,26 +297,36 @@ router.post(
         return created;
       });
 
-      // Log fraud HIGH
-      if (fraudResult.riskLevel === 'HIGH') {
+      // REVIEW: Buat fraud alert untuk admin
+      if (fraudResult.decision === 'REVIEW') {
         await prisma.fraudAlert.create({
           data: {
             userId: Number(senderId),
             transactionId: transaction.id,
             deviceId: deviceId || 'unknown',
-            riskScore: fraudResult.riskScore,
-            riskLevel: fraudResult.riskLevel,
-            decision: fraudResult.decision,
+            deviceName: 'Mobile App',
+            riskScore: fraudResult.zScore ?? -1,  // -1 = sentinel: Z tidak terdefinisi (σ=0)
+            riskLevel: 'SUSPICIOUS',
+            decision: 'REVIEW',
             reasons: JSON.stringify(fraudResult.reasons),
-            confidence: fraudResult.confidence,
-            riskFactors: JSON.stringify(fraudResult.riskFactors),
+            confidence: 0.95,
+            riskFactors: JSON.stringify({
+              zScore: fraudResult.zScore,
+              mean: fraudResult.mean,
+              stdDev: fraudResult.stdDev,
+              variance: fraudResult.variance,
+              n: fraudResult.n,
+              currentAmount: amountNum,
+              algorithm: 'Z-Score Based Anomaly Detection',
+              thresholds: { allow: 2, review: 3 }
+            }),
             ipAddress: req.ip,
             userAgent: req.headers['user-agent'],
           },
         });
       }
 
-      // Emit realtime (cek deviceId dulu)
+      // Emit realtime
       if (req.io) {
         req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult });
         if (transaction.sender?.deviceId) {

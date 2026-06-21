@@ -24,7 +24,7 @@
  * │ 9. System validate buyer card (registered, active, balance cukup)  │
  * │ 10. System ambil receiver card dari database (auto-detect)         │
  * │ 11. System proses payment: buyer → merchant                         │
- * │ 12. Backend check fraud score                                       │
+ * │ 12. Backend jalankan Z-Score fraud detection                            │
  * │ 13. Success alert dengan info transaksi                            │
  * │ 14. Balance auto-refresh di screen                                 │
  * │ 15. Form reset, ready untuk transaksi berikutnya                   │
@@ -118,16 +118,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   ScrollView,
-  ActivityIndicator,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NFCService } from '../utils/nfc';
 import { useNFCScanner } from '../hooks/useNFCScanner';
 import { usePayment } from '../hooks/usePayment';
 import { apiService } from '../utils/apiService';
+import styles from './NFCScreen.styles';
 
 /* ==================================================================================
  * TYPE DEFINITIONS
@@ -340,8 +340,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     }
 
     // CATATAN PENTING: Tidak ada batasan minimum jumlah transfer
-    // Sistem fraud detection AI akan mendeteksi jumlah yang tidak normal
-    // AI menganalisis 20 transaksi historis untuk mendeteksi pola anomali
+    // Sistem Z-Score Based Anomaly Detection akan mendeteksi jumlah yang tidak normal
+    // Algoritma menganalisis 20 transaksi historis untuk mendeteksi pola anomali
 
     // PAYMENT PROCESSING
     // Call processTapToPayTransfer dari usePayment hook
@@ -356,7 +356,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     // 3. Validate buyer card
     // 4. Get merchant card (auto-detect dari database)
     // 5. Process payment: buyer → merchant
-    // 6. Check fraud score
+    // 6. Z-Score fraud detection (Z≤2 ALLOW | 2<Z≤3 REVIEW | Z>3 BLOCK)
     // 7. Show success/error alert
     // 8. Call fetchBalance() if success
     const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance);
@@ -395,8 +395,11 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContent}>
+          {/* Error Icon - Mobile dengan NFC */}
+          <Text style={styles.errorIcon}>📲</Text>
+          
           {/* Error Message */}
-          <Text style={styles.errorText}>📡 NFC Tidak Aktif</Text>
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
           
           {/* Info Text */}
           <Text style={styles.infoText}>
@@ -486,7 +489,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
         <Text style={styles.title}>💳 NFC Payment</Text>
         
         {/* Empty Spacer (untuk symmetry dengan back button) */}
-        <View style={{ width: 70 }} />
+        <View style={styles.headerSpacerLarge} />
       </View>
 
       {/* ===== SCROLLABLE CONTENT ===== */}
@@ -604,125 +607,3 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
  *   * Hint: 12px gray
  * ==================================================================================
  */
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backText: { color: '#3498db', fontSize: 16, width: 70 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#2c3e50' },
-  content: { flex: 1 },
-  contentContainer: { padding: 20 },
-  errorText: { fontSize: 18, color: '#e74c3c', textAlign: 'center', marginBottom: 30 },
-  infoText: { fontSize: 14, color: '#7f8c8d', textAlign: 'center', marginBottom: 20 },
-  instructionBox: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginVertical: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3498db',
-  },
-  instructionText: { fontSize: 14, color: '#2c3e50', lineHeight: 22 },
-  backButton: {
-    backgroundColor: '#3498db',
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  backButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  userCard: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  userName: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 8 },
-  userBalance: { fontSize: 16, color: '#27ae60', fontWeight: '600' },
-  warningCard: {
-    backgroundColor: '#fff3cd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f39c12',
-  },
-  warningText: { fontSize: 14, color: '#856404', textAlign: 'center' },
-  instructionCard: {
-    backgroundColor: '#e3f2fd',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196f3',
-  },
-  instructionTitle: { 
-    fontSize: 16, 
-    fontWeight: 'bold', 
-    color: '#1565c0', 
-    marginBottom: 12,
-    textAlign: 'center'
-  },
-  cardStatusCard: {
-    backgroundColor: '#d4edda',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#27ae60',
-  },
-  cardStatusTitle: { fontSize: 16, fontWeight: 'bold', color: '#155724', marginBottom: 5 },
-  cardStatusUid: {
-    fontSize: 13,
-    color: '#155724',
-    fontFamily: 'monospace',
-    marginBottom: 3,
-  },
-  cardStatusSubtext: { fontSize: 12, color: '#155724' },
-  actionButton: {
-    backgroundColor: '#3498db',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  scanCardButton: { backgroundColor: '#9b59b6' },
-  sendButton: { backgroundColor: '#27ae60' },
-  receiveButton: { backgroundColor: '#2196f3' },
-  disabledButton: { backgroundColor: '#95a5a6', opacity: 0.6 },
-  actionButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  actionButtonSubtext: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 },
-  inputCard: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  inputLabel: { fontSize: 16, fontWeight: '600', color: '#2c3e50', marginBottom: 10 },
-  input: {
-    backgroundColor: '#f8f9fa',
-    padding: 15,
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  inputHint: { fontSize: 12, color: '#7f8c8d', marginTop: 5 },
-});

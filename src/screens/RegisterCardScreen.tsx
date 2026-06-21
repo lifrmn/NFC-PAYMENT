@@ -1,709 +1,441 @@
 // src/screens/RegisterCardScreen.tsx
 /* ==================================================================================
- * 📇 SCREEN: RegisterCardScreen
+ * 📋 SCREEN: RegisterCardScreen
  * ==================================================================================
- * 
+ *
  * Purpose:
- * NFC card registration screen untuk link physical NFC card ke user account.
- * User scan NTag215 card, system validate, dan register ke database.
- * 
+ * Screen untuk mendaftarkan kartu NFC fisik ke akun user.
+ * User menempelkan kartu NFC fisik (NTag215) ke HP → sistem baca UID → daftar ke backend.
+ *
  * User Flow:
- * ┌────────────────────────────────────────────────────────────────────┐
- * │ DashboardScreen → Tap "📇 Register Card" → RegisterCardScreen      │
- * │                                                                     │
- * │ Registration Flow:                                                  │
- * │ 1. System check NFC supported                                      │
- * │ 2. System check NFC enabled                                        │
- * │ 3. User tap "Scan Kartu NFC" button                                │
- * │ 4. User tap physical NTag215 card ke HP                            │
- * │ 5. System read card UID                                            │
- * │ 6. System check card status (registered or not)                    │
- * │    - If already registered to THIS user: Show info alert           │
- * │    - If already registered to OTHER user: Show error               │
- * │    - If not registered (404): Proceed to register                  │
- * │ 7. System register card: POST /api/nfc-cards/register              │
- * │ 8. Success alert with card info                                    │
- * │ 9. Navigate back to MyCardsScreen (if onSuccess callback)          │
- * └────────────────────────────────────────────────────────────────────┘
- * 
- * Key Features:
- * 
- * 1. NFC Hardware Validation:
- *    - Check device support NFC
- *    - Check NFC enabled in settings
- *    - Show alerts with instructions if disabled
- *    - initializeNFC() on component mount
- * 
- * 2. Duplicate Card Prevention:
- *    - Check card already registered (GET /api/nfc-cards/info/{cardId})
- *    - If registered to THIS user: Show success message (allow re-register)
- *    - If registered to OTHER user: Block registration
- *    - 1 card per user policy enforcement
- * 
- * 3. Card Validation:
- *    - Read physical card UID (NFCService.readPhysicalCard)
- *    - NTag215 card type required (13.56 MHz)
- *    - Handle card read errors gracefully
- * 
- * 4. Registration States:
- *    - 'idle': Initial state
- *    - 'scanning': Reading physical card
- *    - 'registering': Sending to backend
- *    - 'success': Registration succeeded
- *    - 'error': Registration failed
- * 
- * 5. Alert Messages:
- *    - Predefined ALERTS constant dengan consistent messaging
- *    - nfcDisabled: Instructions untuk enable NFC
- *    - nfcNotSupported: Device tidak support NFC
- *    - cardAlreadyRegistered: Card info (status, balance)
- *    - cardAlreadyUsed: Block registration (card owned by other user)
- *    - registerSuccess: Success message dengan card ID
- * 
- * API Endpoints Used:
- * - GET /api/nfc-cards/info/{cardId}: Check card registration status
- * - POST /api/nfc-cards/register: Register new card
- *   Request: { cardId, userId, balance: 0, deviceId }
- *   Response: { success, card: { id, cardId, userId, balance, cardStatus } }
- * 
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ 1. User tap "➕ Daftar Kartu" di DashboardScreen/MyCardsScreen     │
+ * │ 2. RegisterCardScreen muncul                                        │
+ * │ 3. System check NFC:                                                │
+ * │    - Tidak didukung perangkat: Tampilkan pesan error "NFC Tidak    │
+ * │      Didukung"                                                      │
+ * │    - Didukung tapi tidak aktif: Tampilkan instruksi aktifkan NFC  │
+ * │    - Didukung & aktif: Tampilkan tombol "Scan Kartu"              │
+ * │ 4. User tap tombol "Scan Kartu NFC"                                 │
+ * │ 5. Alert muncul: "Tempelkan kartu NFC Anda ke perangkat"           │
+ * │ 6. User tempelkan kartu NFC fisik ke HP                            │
+ * │ 7. System baca UID kartu                                            │
+ * │ 8. System cek apakah kartu sudah terdaftar:                        │
+ * │    - Sudah di akun ini: Tampilkan info kartu                       │
+ * │    - Sudah di akun lain: Tampilkan error "kartu milik orang lain"  │
+ * │    - Belum terdaftar (404): Lanjut ke step 9                       │
+ * │ 9. System daftarkan kartu ke backend (balance awal = 0)            │
+ * │ 10. Berhasil: Alert sukses → kembali ke screen sebelumnya          │
+ * └─────────────────────────────────────────────────────────────────────┘
+ *
+ * Features:
+ * 1. Deteksi Kemampuan NFC:
+ *    - Cek apakah perangkat mendukung NFC (hardware check)
+ *    - Cek apakah NFC diaktifkan user (settings check)
+ *    - Tampilkan screen berbeda untuk tiap kondisi
+ *
+ * 2. Scan Kartu NFC Fisik:
+ *    - Baca UID kartu NTag215 via NFCService.readPhysicalCard()
+ *    - Validasi kartu berhasil dibaca
+ *    - Cleanup listener NFC setelah selesai
+ *
+ * 3. Validasi Kepemilikan Kartu:
+ *    - Cek apakah kartu sudah terdaftar (GET /api/nfc-cards/info/:cardId)
+ *    - Handle 3 skenario: milik sendiri, milik orang lain, belum terdaftar
+ *    - Hanya lanjutkan registrasi jika kartu belum pernah didaftarkan
+ *
+ * 4. Registrasi Kartu:
+ *    - Kirim ke backend: POST /api/nfc-cards/register
+ *    - Payload: cardId, userId, balance (0), deviceId
+ *    - Tampilkan alert sukses dengan UID kartu
+ *
+ * 5. Status Tracking:
+ *    - registrationStatus: 'idle' | 'scanning' | 'success' | 'error'
+ *    - UI berubah sesuai status untuk feedback yang jelas ke user
+ *
  * State Management:
- * - nfcSupported: Boolean device support NFC
- * - nfcEnabled: Boolean NFC enabled in settings
- * - loading: Boolean untuk button loading state
- * - scanning: Boolean untuk scan animation
- * - scannedCardId: String last scanned card UID
- * - registrationStatus: Enum registration state
- * 
+ * - nfcSupported: boolean       - Apakah hardware NFC ada
+ * - nfcEnabled: boolean         - Apakah NFC diaktifkan
+ * - loading: boolean            - Sedang proses registrasi API
+ * - scanning: boolean           - Sedang scan kartu NFC
+ * - scannedCardId: string       - UID kartu yang berhasil di-scan
+ * - registrationStatus: string  - Status registrasi (idle/scanning/success/error)
+ *
  * Props:
- * - user: Current user object (id, deviceId)
- * - onBack: Callback untuk navigate back
- * - onSuccess: Optional callback after successful registration
- * 
+ * - user: any              - Data user yang login
+ * - onBack: () => void     - Callback kembali ke screen sebelumnya
+ * - onSuccess?: () => void - Callback opsional setelah registrasi berhasil
+ *
  * ==================================================================================
  */
 
+/* ==================================================================================
+ * IMPORTS
+ * ==================================================================================
+ * React & Hooks:
+ * - useState: State management (6 state variables)
+ * - useEffect: Init NFC saat mount + cleanup saat unmount
+ *
+ * React Native Core:
+ * - View, Text: Layout & teks
+ * - TouchableOpacity: Tombol interaktif
+ * - StyleSheet: Styling type-safe
+ * - Alert: Dialog notifikasi & konfirmasi
+ * - ActivityIndicator: Spinner loading
+ *
+ * Safe Area:
+ * - SafeAreaView: Hindari area notch/status bar
+ *
+ * Utils:
+ * - NFCService: Utilitas NFC (init, read physical card, cleanup)
+ * - apiService: HTTP client (getCardInfo, registerCard)
+ * ==================================================================================
+ */
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NFCService } from '../utils/nfc';
 import { apiService } from '../utils/apiService';
+import styles from './RegisterCardScreen.styles';
 
-/* ==================================================================================
- * CONSTANTS: Alert Messages
- * ==================================================================================
- * Predefined alert messages untuk consistent user feedback.
- * 
- * Messages:
- * - nfcDisabled: Instructions untuk enable NFC di settings
- * - nfcNotSupported: Error message untuk device tanpa NFC
- * - cardAlreadyRegistered: Success message dengan card info
- * - cardAlreadyUsed: Error message untuk duplicate card (owned by other user)
- * - registerSuccess: Success message dengan registration confirmation
- * ==================================================================================
- */
-const ALERTS = {
-  nfcDisabled: {
-    title: '📱 NFC Tidak Aktif',
-    message: 'NFC belum diaktifkan di HP Anda. Silakan aktifkan NFC terlebih dahulu:\n\n1. Buka Settings\n2. Pilih Connected devices / Connections\n3. Aktifkan NFC'
-  },
-  nfcNotSupported: {
-    title: '❌ NFC Tidak Didukung',
-    message: 'HP Anda tidak mendukung NFC. Kartu fisik hanya dapat digunakan di HP dengan fitur NFC.'
-  },
-  cardAlreadyRegistered: (cardId: string, status: string, balance: number) => ({
-    title: '✅ Kartu Sudah Terdaftar',
-    message: `Kartu ini sudah terdaftar untuk akun Anda.\n\nCard ID: ${cardId.slice(0, 12)}...\nStatus: ${status}\nBalance: Rp ${balance.toLocaleString('id-ID')}`
-  }),
-  cardAlreadyUsed: (cardId: string) => ({
-    title: '❌ Kartu Sudah Digunakan',
-    message: `Kartu ini sudah terdaftar untuk akun lain.\n\nCard ID: ${cardId.slice(0, 12)}...\n\nGunakan kartu NFC yang belum terdaftar.`
-  }),
-  registerSuccess: (cardId: string) => ({
-    title: '✅ Kartu Berhasil Didaftarkan!',
-    message: `Kartu NFC Anda telah terdaftar dan siap digunakan.\n\nCard ID: ${cardId.slice(0, 12)}...\nBalance: Rp 0\n\nAnda dapat top-up saldo melalui admin atau menggunakan kartu untuk transaksi.`
-  })
-};
-/* ==================================================================================
- * TYPE DEFINITIONS
- * ==================================================================================
- * RegisterCardScreenProps:
- * - user: Current user object (id, deviceId for tracking)
- * - onBack: Callback untuk navigate back to previous screen
- * - onSuccess: Optional callback after successful card registration
- *   Called after user taps OK di success alert
- * ==================================================================================
- */interface RegisterCardScreenProps {
-  user: any;
-  onBack: () => void;
-  onSuccess?: () => void;
+// Props yang diterima dari parent (App.tsx atau MyCardsScreen)
+interface RegisterCardScreenProps {
+  user: any;               // Data user login: id, name, deviceId, dll
+  onBack: () => void;      // Callback kembali ke screen sebelumnya
+  onSuccess?: () => void;  // Callback opsional setelah registrasi berhasil
 }
 
-/* ==================================================================================
- * COMPONENT: RegisterCardScreen
- * ==================================================================================
- * NFC card registration screen dengan hardware validation dan duplicate prevention.
- * 
- * PARAMS:
- * @param user - Current user object
- * @param onBack - Navigate back callback
- * @param onSuccess - Optional success callback
- * ==================================================================================
- */
 export default function RegisterCardScreen({ user, onBack, onSuccess }: RegisterCardScreenProps) {
-  // STATE 1: nfcSupported - Apakah device punya hardware NFC
-  // true = device support NFC, false = tidak support (tampilkan error)
-  const [nfcSupported, setNfcSupported] = useState(false); // Asumsi awal: tidak support
-  
-  // STATE 2: nfcEnabled - Apakah NFC sudah diaktifkan di pengaturan device
-  // true = aktif, false = tidak aktif (tampilkan instruksi)
-  const [nfcEnabled, setNfcEnabled] = useState(false); // Asumsi awal: tidak aktif
-  
-  // STATE 3: loading - Flag untuk disable tombol saat operasi berlangsung
-  // Mencegah user tap tombol berkali-kali
-  const [loading, setLoading] = useState(false); // Awalnya tidak loading
-  
-  // STATE 4: scanning - Flag untuk menampilkan animasi scanning
-  // Memberikan feedback visual bahwa sistem sedang membaca kartu
-  const [scanning, setScanning] = useState(false); // Awalnya tidak scanning
-  
-  // STATE 5: scannedCardId - UID kartu terakhir yang berhasil di-scan
-  // Disimpan untuk keperluan debugging dan display
-  const [scannedCardId, setScannedCardId] = useState<string>(''); // Awalnya kosong
-  
-  // STATE 6: registrationStatus - Status proses registrasi saat ini
-  // Digunakan untuk menentukan UI yang ditampilkan
-  // 'idle' = siap scan, 'scanning' = sedang baca kartu, 'registering' = kirim ke backend
-  // 'success' = berhasil, 'error' = gagal
-  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'registering' | 'success' | 'error'>('idle'); // Awal: idle
+  // STATE 1: nfcSupported - Apakah perangkat mendukung NFC secara hardware
+  // false → tampilkan screen "NFC Tidak Didukung"
+  const [nfcSupported, setNfcSupported] = useState(false);
 
+  // STATE 2: nfcEnabled - Apakah user sudah mengaktifkan NFC di Settings
+  // false → tampilkan instruksi cara mengaktifkan NFC
+  const [nfcEnabled, setNfcEnabled] = useState(false);
+
+  // STATE 3: loading - Flag saat proses registrasi API berlangsung
+  // true → tampilkan spinner, disable tombol
+  const [loading, setLoading] = useState(false);
+
+  // STATE 4: scanning - Flag saat sedang scan kartu NFC
+  // true → sedang menunggu user tempelkan kartu ke HP
+  const [scanning, setScanning] = useState(false);
+
+  // STATE 5: scannedCardId - Menyimpan UID kartu yang berhasil di-scan
+  // Digunakan untuk ditampilkan ke user & dikirim ke backend
+  const [scannedCardId, setScannedCardId] = useState('');
+
+  // STATE 6: registrationStatus - Status proses registrasi kartu
+  // 'idle'     → Belum mulai (tampilkan tombol scan)
+  // 'scanning' → Sedang scan kartu NFC
+  // 'success'  → Registrasi berhasil
+  // 'error'    → Registrasi gagal
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+
+  // useEffect: Inisialisasi NFC saat screen mount
+  // Cleanup listener NFC saat screen unmount (cegah memory leak)
   useEffect(() => {
     initializeNFC();
+    return () => {
+      NFCService.cleanup();
+    };
   }, []);
 
+  // Fungsi: Inisialisasi NFC hardware dan cek status NFC
+  // Dipanggil saat screen pertama kali dibuka
   const initializeNFC = async () => {
-    try {
-      const supported = await NFCService.initNFC();
-      setNfcSupported(supported);
-
-      if (supported) {
-        const enabled = await NFCService.checkNFCEnabled();
-        setNfcEnabled(enabled);
-        if (!enabled) {
-          Alert.alert(ALERTS.nfcDisabled.title, ALERTS.nfcDisabled.message, [{ text: 'OK' }]);
-        }
-      } else {
-        Alert.alert(ALERTS.nfcNotSupported.title, ALERTS.nfcNotSupported.message, [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      console.error('NFC initialization error:', error);
-      setNfcSupported(false);
+    const supported = await NFCService.initNFC(); // Init NFC library, return true jika didukung
+    setNfcSupported(supported); // Simpan status dukungan NFC hardware
+    
+    if (supported) {
+      // Jika hardware NFC ada, cek apakah user sudah aktifkan NFC di Settings
+      const enabled = await NFCService.checkNFCEnabled();
+      setNfcEnabled(enabled); // true = NFC aktif, false = NFC mati
     }
   };
 
+  // Fungsi: Handler utama saat tombol "Scan Kartu NFC" ditekan
+  // Flow: Tampilkan alert → scan kartu → validasi → daftarkan
   const handleScanCard = async () => {
+    // Guard: NFC harus aktif sebelum bisa scan
     if (!nfcEnabled) {
-      Alert.alert('Error', 'NFC belum aktif. Aktifkan NFC terlebih dahulu.');
+      Alert.alert('NFC Tidak Aktif', 'Aktifkan NFC untuk melanjutkan');
       return;
     }
 
-    setScanning(true);
-    setRegistrationStatus('scanning');
-    setLoading(true);
+    setScanning(true);               // Tandai sedang scanning
+    setRegistrationStatus('scanning'); // Update status UI
 
     try {
-      const cardInfo = await NFCService.readPhysicalCard();
-      if (!cardInfo) {
-        Alert.alert('Error', 'Kartu tidak terdeteksi. Pastikan kartu NTag215 didekatkan dengan benar.');
-        setRegistrationStatus('error');
-        return;
-      }
-      setScannedCardId(cardInfo.id);
-      await checkAndRegisterCard(cardInfo.id);
-    } catch (error: any) {
-      console.error('Scan card error:', error);
-      Alert.alert('Error', error.message || 'Gagal membaca kartu NFC. Pastikan kartu adalah NTag215 yang valid.');
-      setRegistrationStatus('error');
-    } finally {
-      setScanning(false);
-      setLoading(false);
-    }
-  };
+      // STEP 1: Tampilkan instruksi ke user untuk tempelkan kartu
+      Alert.alert(
+        'Scan Kartu NFC',
+        'Tempelkan kartu NFC Anda ke perangkat',
+        [{ text: 'OK' }]
+      );
 
-  const checkAndRegisterCard = async (cardId: string) => {
-    if (!user?.id) {
-      Alert.alert('Error', 'User tidak valid. Silakan login ulang.');
-      setRegistrationStatus('error');
-      setLoading(false);
-      return;
-    }
-
-    setRegistrationStatus('registering');
-    setLoading(true);
-
-    try {
-      console.log('🔍 Checking if card is already registered...');
-      const checkResponse = await apiService.get(`/api/nfc-cards/info/${cardId}`);
+      // STEP 2: Baca kartu NFC fisik (menunggu user tempelkan kartu)
+      // Return: { id: "UID_HEX", type: "NTag215", manufacturer: "NXP" }
+      const cardData = await NFCService.readPhysicalCard();
       
-      // Card found - sudah terdaftar
-      if (checkResponse.success && checkResponse.card) {
-        console.log('📋 Card found in database');
+      // Validasi: pastikan data kartu berhasil dibaca dengan UID yang valid
+      if (!cardData || !cardData.id) {
+        throw new Error('Gagal membaca kartu NFC');
+      }
+
+      setScannedCardId(cardData.id); // Simpan UID untuk ditampilkan ke user
+
+      // STEP 3: Cek apakah kartu sudah pernah terdaftar di backend
+      // Endpoint: GET /api/nfc-cards/info/:cardId
+      try {
+        const cardInfo = await apiService.getCardInfo(cardData.id);
         
-        if (checkResponse.card.userId === user.id) {
-          console.log('✅ Card already registered to current user');
-          const alert = ALERTS.cardAlreadyRegistered(cardId, checkResponse.card.cardStatus, checkResponse.card.balance);
-          Alert.alert(alert.title, alert.message, [{ text: 'OK', onPress: () => setRegistrationStatus('success') }]);
-        } else {
-          console.log('❌ Card already registered to another user');
-          const alert = ALERTS.cardAlreadyUsed(cardId);
-          Alert.alert(alert.title, alert.message, [{ text: 'OK', onPress: () => setRegistrationStatus('error') }]);
+        if (cardInfo && cardInfo.userId === user.id) {
+          // SKENARIO A: Kartu sudah terdaftar di akun INI → tampilkan info, jangan daftar ulang
+          Alert.alert(
+            'Kartu Sudah Terdaftar',
+            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.cardStatus}\nSaldo: Rp${cardInfo.balance?.toLocaleString('id-ID') || 0}`,
+            [{ text: 'OK', onPress: () => setRegistrationStatus('success') }]
+          );
+          return; // Hentikan proses registrasi
+        } else if (cardInfo && cardInfo.userId !== user.id) {
+          // SKENARIO B: Kartu sudah terdaftar di akun ORANG LAIN → tolak registrasi
+          Alert.alert(
+            'Kartu Sudah Digunakan',
+            'Kartu ini sudah terdaftar di akun pengguna lain',
+            [{ text: 'OK', onPress: () => setRegistrationStatus('error') }]
+          );
+          return; // Hentikan, tidak bisa daftar kartu orang lain
         }
-        return;
+      } catch (error: any) {
+        // SKENARIO C: Error 404 = kartu BELUM terdaftar → lanjutkan registrasi
+        // Error lain (jaringan, server) → lempar ke catch utama
+        if (!error.message?.includes('404')) {
+          throw error; // Re-throw error selain 404
+        }
+        // Jika 404: card not found = belum terdaftar, lanjutkan ke STEP 4
       }
-    } catch (error: any) {
-      // 404 berarti kartu belum terdaftar - ini adalah EXPECTED behavior untuk kartu baru
-      if (error.message?.includes('404') || error.message?.includes('not found') || error.message?.includes('Card not found')) {
-        console.log('✅ Card NOT found in database (expected for new cards)');
-        console.log('📝 Proceeding with card registration...');
-        await registerNewCard(cardId);
-        return;
-      }
-      
-      // Error lainnya (network, server error, dll) - ini baru error beneran
-      console.error('❌ Unexpected error while checking card:', error);
-      Alert.alert('Error', 'Gagal memeriksa status kartu. Silakan coba lagi.');
-      setRegistrationStatus('error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const registerNewCard = async (cardId: string) => {
-    try {
-      const response = await apiService.post('/api/nfc-cards/register', {
-        cardId, userId: user.id, balance: 0, deviceId: user.deviceId || 'unknown'
+      // STEP 4: Daftarkan kartu baru ke backend
+      setLoading(true); // Tampilkan loading saat request API
+      // Endpoint: POST /api/nfc-cards/register
+      const registerResponse = await apiService.registerCard({
+        cardId: cardData.id,              // UID kartu dari scan
+        userId: user.id,                  // ID user pemilik
+        balance: 0,                       // Saldo awal = 0
+        deviceId: user.deviceId || 'mobile-app', // Device ID untuk audit trail
       });
 
-      if (response.success) {
-        setRegistrationStatus('success');
-        const alert = ALERTS.registerSuccess(cardId);
-        Alert.alert(alert.title, alert.message, [{ 
-          text: 'OK', 
-          onPress: () => { 
-            console.log('✅ Card registered successfully, navigating to MyCards');
-            setRegistrationStatus('idle');
-            setScannedCardId('');
-            if (onSuccess) {
-              onSuccess(); // Navigate to MyCards
-            } else {
-              onBack(); // Fallback to dashboard
-            }
-          } 
-        }]);
-      } else {
-        Alert.alert('Error', response.error || 'Gagal mendaftarkan kartu');
-        setRegistrationStatus('error');
-      }
-    } catch (error: any) {
-      console.error('Register card error:', error);
-      
-      // Handle Error 409: User already has a registered card
-      if (error.message?.includes('409') || error.message?.includes('already has a registered card')) {
-        const existingCardData = error.message.match(/existingCard":\{([^}]+)\}/);
-        let existingCardInfo = '';
-        
-        if (existingCardData) {
-          try {
-            const cardMatch = error.message.match(/"cardId":"([^"]+)"/);
-            const statusMatch = error.message.match(/"cardStatus":"([^"]+)"/);
-            const balanceMatch = error.message.match(/"balance":(\d+)/);
-            
-            if (cardMatch && statusMatch && balanceMatch) {
-              const existingCardId = cardMatch[1];
-              const status = statusMatch[1];
-              const balance = parseInt(balanceMatch[1]);
-              existingCardInfo = `\n\n🎴 Kartu Terdaftar:\nCard ID: ${existingCardId.slice(0, 16)}...\nStatus: ${status}\nSaldo: Rp ${balance.toLocaleString('id-ID')}`;
-            }
-          } catch (parseError) {
-            console.error('Failed to parse existing card info:', parseError);
-          }
-        }
-        
+      if (registerResponse && registerResponse.success) {
+        setRegistrationStatus('success'); // Update status ke sukses
         Alert.alert(
-          '⚠️ Kartu Sudah Ada', 
-          `Anda sudah memiliki kartu NFC terdaftar.\n\nKebijakan: 1 USER = 1 CARD\n\nSetiap user hanya dapat mendaftarkan SATU kartu NFC.${existingCardInfo}\n\nJika ingin mengganti kartu, hubungi admin.`,
+          'Berhasil!',
+          `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`,
           [
-            { 
-              text: 'Lihat Kartu Saya', 
-              onPress: () => { 
-                setRegistrationStatus('idle');
-                setScannedCardId('');
-                if (onSuccess) {
-                  onSuccess(); // Ini akan trigger navigasi ke MyCards
-                } else {
-                  onBack(); // Fallback ke dashboard jika onSuccess tidak ada
-                }
-              } 
+            {
+              text: 'OK',
+              onPress: () => {
+                // Panggil callback yang sesuai setelah sukses:
+                // onSuccess (jika ada) atau onBack sebagai fallback
+                if (onSuccess) onSuccess();
+                else onBack();
+              },
             },
-            { text: 'OK', style: 'cancel', onPress: () => onBack() }
           ]
         );
-        setRegistrationStatus('error');
-        return;
+      } else {
+        throw new Error('Gagal mendaftarkan kartu'); // Respons tidak sukses
       }
-      
-      Alert.alert('Error', error.response?.data?.error || error.message || 'Gagal mendaftarkan kartu. Silakan coba lagi.');
-      setRegistrationStatus('error');
+    } catch (error: any) {
+      console.error('Error registering card:', error);
+      setRegistrationStatus('error'); // Update status ke error
+      Alert.alert('Error', error.message || 'Gagal mendaftarkan kartu NFC');
+    } finally {
+      // Cleanup: selalu matikan loading & scanning, apapun hasilnya
+      setLoading(false);
+      setScanning(false);
     }
   };
 
-  const getStatusColor = () => {
-    switch (registrationStatus) {
-      case 'success': return '#27ae60';
-      case 'error': return '#e74c3c';
-      case 'scanning': return '#3498db';
-      case 'registering': return '#f39c12';
-      default: return '#95a5a6';
-    }
-  };
+  // ── RENDER KONDISIONAL 1: NFC Tidak Didukung Perangkat ──
+  // Hardware NFC tidak ada di perangkat (langka tapi perlu di-handle)
+  if (!nfcSupported) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-  const getStatusText = () => {
-    switch (registrationStatus) {
-      case 'scanning': return '📡 Scanning kartu...';
-      case 'registering': return '⏳ Mendaftarkan kartu...';
-      case 'success': return '✅ Kartu berhasil didaftarkan!';
-      case 'error': return '❌ Gagal, silakan coba lagi';
-      default: return '📝 Siap mendaftarkan kartu';
-    }
-  };
+        <View style={styles.centerContent}>
+          <Text style={styles.errorIcon}>❌</Text>
+          <Text style={styles.errorTitle}>NFC Tidak Didukung</Text>
+          <Text style={styles.errorText}>
+            Perangkat Anda tidak mendukung teknologi NFC
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
+  // ── RENDER KONDISIONAL 2: NFC Tidak Aktif ──
+  // Hardware ada tapi user belum aktifkan NFC di Settings
+  if (!nfcEnabled) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={styles.centerContent}>
+          <Text style={styles.errorIcon}>📡</Text>
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
+          <Text style={styles.errorText}>
+            Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda:
+          </Text>
+
+          {/* Panduan langkah-langkah mengaktifkan NFC */}
+          <View style={styles.instructionCard}>
+            <Text style={styles.instructionTitle}>Cara Mengaktifkan NFC:</Text>
+            <Text style={styles.instructionItem}>1. Buka Pengaturan HP</Text>
+            <Text style={styles.instructionItem}>2. Cari menu "Koneksi Perangkat" atau "NFC"</Text>
+            <Text style={styles.instructionItem}>3. Aktifkan toggle NFC</Text>
+            <Text style={styles.instructionItem}>4. Kembali ke aplikasi ini</Text>
+          </View>
+
+          {/* Tombol coba lagi: re-init NFC setelah user aktifkan di Settings */}
+          <TouchableOpacity style={styles.retryButton} onPress={initializeNFC}>
+            <Text style={styles.retryButtonText}>Coba Lagi</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── RENDER UTAMA: Form Registrasi Kartu ──
+  // Ditampilkan jika NFC didukung dan aktif
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header navigasi */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backText}>← Kembali</Text>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Daftarkan Kartu NFC</Text>
-        <View style={{ width: 70 }} />
+        <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text>
+        <View style={styles.headerSpacer} />{/* Spacer */}
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {/* Status Card */}
-        <View style={[styles.statusCard, { borderLeftColor: getStatusColor() }]}>
-          <Text style={styles.statusTitle}>{getStatusText()}</Text>
-          {scannedCardId && (
-            <Text style={styles.cardIdText}>Card ID: {scannedCardId.slice(0, 16)}...</Text>
-          )}
-        </View>
-
-        {/* Instructions */}
-        <View style={styles.instructionsCard}>
-          <Text style={styles.instructionsTitle}>📋 Cara Mendaftarkan Kartu:</Text>
-          <View style={styles.step}>
-            <Text style={styles.stepNumber}>1</Text>
-            <Text style={styles.stepText}>Aktifkan NFC di HP{'\n'}<Text style={styles.stepSubtext}>(Settings → Connections → NFC)</Text></Text>
-          </View>
-          <View style={styles.step}>
-            <Text style={styles.stepNumber}>2</Text>
-            <Text style={styles.stepText}>Siapkan kartu NTag215{'\n'}<Text style={styles.stepSubtext}>(Kartu NFC 13.56MHz)</Text></Text>
-          </View>
-          <View style={styles.step}>
-            <Text style={styles.stepNumber}>3</Text>
-            <Text style={styles.stepText}>Tekan "Scan Kartu NFC" di bawah</Text>
-          </View>
-          <View style={styles.step}>
-            <Text style={styles.stepNumber}>4</Text>
-            <Text style={styles.stepText}>Tempelkan kartu di belakang HP{'\n'}<Text style={styles.stepSubtext}>(Bagian tengah belakang HP)</Text></Text>
-          </View>
-          <View style={styles.step}>
-            <Text style={styles.stepNumber}>5</Text>
-            <Text style={styles.stepText}>Tunggu notifikasi berhasil</Text>
-          </View>
-        </View>
-
-        {/* Visual Guide */}
-        <View style={styles.visualGuide}>
-          <Text style={styles.guideTitle}>📱 Posisi Kartu:</Text>
-          <View style={styles.phoneIllustration}>
-            <View style={styles.phone}>
-              <Text style={styles.phoneText}>HP</Text>
+      <View style={styles.content}>
+        {/* ── Hero Section: Logo & Judul ── */}
+        {/* Visual branding & identitas halaman */}
+        <View style={styles.heroSection}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logo}>
+              <Text style={styles.logoIcon}>💳</Text>
+              <Text style={styles.logoWave}>)))</Text>{/* Animasi gelombang NFC */}
             </View>
-            <View style={styles.card}>
-              <Text style={styles.cardText}>🎴 Kartu NFC</Text>
-              <Text style={styles.cardSubtext}>Tempelkan di belakang HP</Text>
+            <View style={styles.logoShield}>
+              <Text style={styles.shieldIcon}>✓</Text>{/* Badge keamanan */}
             </View>
           </View>
-          <Text style={styles.guideHint}>💡 Tahan 1-2 detik sampai terdeteksi</Text>
-        </View>
-
-        {/* NFC Status */}
-        <View style={styles.nfcStatusCard}>
-          <Text style={styles.nfcStatusTitle}>Status NFC:</Text>
-          <Text style={[styles.nfcStatusValue, { color: nfcEnabled ? '#27ae60' : '#e74c3c' }]}>
-            {nfcSupported 
-              ? (nfcEnabled ? '✅ Aktif' : '❌ Tidak Aktif') 
-              : '❌ Tidak Didukung'}
-          </Text>
-          {!nfcEnabled && nfcSupported && (
-            <Text style={styles.nfcHint}>Aktifkan NFC di Settings HP Anda</Text>
-          )}
-        </View>
-
-        {/* Scan Button */}
-        <TouchableOpacity
-          style={[
-            styles.scanButton,
-            (!nfcEnabled || loading) && styles.scanButtonDisabled
-          ]}
-          onPress={handleScanCard}
-          disabled={!nfcEnabled || loading}
-        >
-          {loading ? (
-            <>
-              <ActivityIndicator color="white" size="small" />
-              <Text style={styles.scanButtonText}>  {scanning ? 'Scanning...' : 'Processing...'}</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.scanButtonText}>🎴 Scan Kartu NFC</Text>
-              <Text style={styles.scanButtonSubtext}>Tap untuk mulai scan</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        {/* Info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>ℹ️ Informasi:</Text>
-          <Text style={styles.infoText}>
-            • Kartu hanya perlu didaftarkan sekali{'\n'}
-            • Satu kartu hanya bisa untuk satu akun{'\n'}
-            • Balance awal kartu: Rp 0{'\n'}
-            • Top-up dapat dilakukan melalui admin{'\n'}
-            • Kartu dapat digunakan untuk semua transaksi
+          <Text style={styles.title}>Registrasi Kartu NFC</Text>
+          <Text style={styles.subtitle}>
+            Daftarkan kartu NFC Anda untuk digunakan dalam pembayaran aman
           </Text>
         </View>
-      </ScrollView>
+
+        {registrationStatus === 'success' ? (
+          <View style={styles.successCard}>
+            <Text style={styles.successIcon}>✅</Text>
+            <Text style={styles.successTitle}>Kartu terdeteksi</Text>
+            {scannedCardId && (
+              <View style={styles.cardIdContainer}>
+                <Text style={styles.cardIdLabel}>UID Kartu</Text>
+                <View style={styles.cardIdBox}>
+                  <Text style={styles.cardIdIcon}>💳</Text>
+                  <Text style={styles.cardIdText}>{scannedCardId}</Text>
+                  <TouchableOpacity style={styles.copyButton}>
+                    <Text style={styles.copyIcon}>📋</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <View style={styles.infoBox}>
+              <Text style={styles.infoIcon}>ℹ️</Text>
+              <Text style={styles.infoText}>
+                Tempelkan kartu ke perangkat untuk membaca UID
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.registerButton} onPress={handleScanCard}>
+              <Text style={styles.registerButtonText}>Daftarkan Kartu</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.scanCard}>
+            <View style={styles.nfcAnimation}>
+              <View style={styles.nfcCircle}>
+                <Text style={styles.nfcIcon}>📲</Text>
+              </View>
+              <View style={[styles.nfcWave, styles.nfcWave1]} />
+              <View style={[styles.nfcWave, styles.nfcWave2]} />
+              <View style={[styles.nfcWave, styles.nfcWave3]} />
+            </View>
+
+            {scannedCardId ? (
+              <View style={styles.cardIdContainer}>
+                <Text style={styles.cardIdLabel}>UID Kartu</Text>
+                <View style={styles.cardIdBox}>
+                  <Text style={styles.cardIdIcon}>💳</Text>
+                  <Text style={styles.cardIdText}>{scannedCardId}</Text>
+                  <TouchableOpacity style={styles.copyButton}>
+                    <Text style={styles.copyIcon}>📋</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
+            <View style={styles.infoBox}>
+              <Text style={styles.infoIcon}>ℹ️</Text>
+              <Text style={styles.infoText}>
+                Tempelkan kartu ke perangkat untuk membaca UID
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.scanButton, (scanning || loading) && styles.scanButtonDisabled]}
+              onPress={handleScanCard}
+              disabled={scanning || loading}
+            >
+              {scanning || loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.scanButtonText}>Scan Kartu NFC</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.securityInfo}>
+          <Text style={styles.securityIcon}>🛡️</Text>
+          <Text style={styles.securityText}>
+            Gunakan kartu NFC untuk pembayaran cepat dan aman. Pastikan kartu Anda selalu aman.
+          </Text>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backText: {
-    color: '#3498db',
-    fontSize: 16,
-    width: 70,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
-  statusCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statusTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 8,
-  },
-  cardIdText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    fontFamily: 'monospace',
-  },
-  instructionsCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  instructionsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 15,
-  },
-  step: {
-    flexDirection: 'row',
-    marginBottom: 15,
-    alignItems: 'flex-start',
-  },
-  stepNumber: {
-    width: 30,
-    height: 30,
-    backgroundColor: '#3498db',
-    color: 'white',
-    textAlign: 'center',
-    lineHeight: 30,
-    borderRadius: 15,
-    fontWeight: 'bold',
-    marginRight: 12,
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#2c3e50',
-    lineHeight: 22,
-  },
-  stepSubtext: {
-    fontSize: 13,
-    color: '#7f8c8d',
-    fontStyle: 'italic',
-  },
-  visualGuide: {
-    backgroundColor: '#e8f4f8',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  guideTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 15,
-  },
-  phoneIllustration: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  phone: {
-    width: 120,
-    height: 200,
-    backgroundColor: '#34495e',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: -30,
-    zIndex: 1,
-  },
-  phoneText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  card: {
-    width: 140,
-    padding: 15,
-    backgroundColor: '#e91e63',
-    borderRadius: 8,
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  cardText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  cardSubtext: {
-    color: 'white',
-    fontSize: 11,
-    marginTop: 5,
-  },
-  guideHint: {
-    fontSize: 13,
-    color: '#7f8c8d',
-    fontStyle: 'italic',
-  },
-  nfcStatusCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  nfcStatusTitle: {
-    fontSize: 15,
-    color: '#2c3e50',
-    fontWeight: '600',
-  },
-  nfcStatusValue: {
-    fontSize: 15,
-    fontWeight: 'bold',
-  },
-  nfcHint: {
-    fontSize: 12,
-    color: '#e74c3c',
-    marginTop: 5,
-  },
-  scanButton: {
-    backgroundColor: '#e91e63',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  scanButtonDisabled: {
-    backgroundColor: '#95a5a6',
-    opacity: 0.6,
-  },
-  scanButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  scanButtonSubtext: {
-    color: 'white',
-    fontSize: 13,
-    marginTop: 5,
-    opacity: 0.9,
-  },
-  infoCard: {
-    backgroundColor: '#fff3cd',
-    borderRadius: 12,
-    padding: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f39c12',
-  },
-  infoTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#856404',
-    marginBottom: 10,
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#856404',
-    lineHeight: 20,
-  },
-});

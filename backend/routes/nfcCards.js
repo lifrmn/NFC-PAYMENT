@@ -22,6 +22,8 @@
 const express = require('express'); // Express framework untuk routing
 const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk database access
 const crypto = require('crypto'); // Node.js crypto untuk encryption & hashing
+const { analyzeZScoreAnomaly } = require('../utils/fraudDetection'); // Engine Z-Score (satu-satunya engine fraud)
+const { authenticateToken } = require('../middleware/auth'); // JWT middleware untuk autentikasi endpoint sensitif
 
 const router = express.Router(); // Buat instance Express Router
 const prisma = new PrismaClient(); // Buat instance Prisma client
@@ -88,166 +90,12 @@ const formatCurrency = (amount) => {
 };
 
 // ============================================================================
+// FRAUD DETECTION: Z-Score Based Anomaly Detection
 // ============================================================================
-// FRAUD DETECTION: Statistical Anomaly Detection
+// Engine utama: backend/utils/fraudDetection.js (analyzeZScoreAnomaly)
+// Semua analisis fraud di route ini menggunakan engine yang sama.
+// Tidak ada fungsi fraud lokal di file ini.
 // ============================================================================
-// Method: Statistical Anomaly Detection (Machine Learning Approach)
-// Algorithm: Z-Score Based Anomaly Detection
-// Academic Reference: Chandola et al. (2009) - Anomaly Detection Survey
-//
-// Konsep:
-// - Fraud detection menggunakan statistical anomaly detection
-// - Transaksi dianggap fraud jika nilainya jauh berbeda dari pola normal user
-// - Menggunakan Z-Score untuk mengukur seberapa "abnormal" suatu transaksi
-// - Z-Score > 3 = Extreme outlier (block), Z-Score > 2 = Review, Z-Score ≤ 2 = Normal
-//
-// Cara Kerja:
-// 1. Load 20 transaksi terakhir user (historical data)
-// 2. Hitung mean (rata-rata) dan standard deviation (σ)
-// 3. Hitung Z-Score transaksi sekarang: Z = (X - μ) / σ
-// 4. Klasifikasi risk berdasarkan Z-Score
-// 5. Return decision: ALLOW / REVIEW / BLOCK
-// ============================================================================
-const analyzeFraudRisk = async (senderCard, amount, deviceId, prisma) => {
-  // SPECIAL CASE: Jika card tidak link ke user, skip fraud check
-  // (Card tanpa user tidak punya historical data untuk comparison)
-  if (!senderCard.userId) {
-    return { 
-      riskScore: 0, // Risk score = 0 (low risk)
-      decision: 'ALLOW', // Izinkan transaksi
-      riskLevel: 'LOW', // Risk level rendah
-      riskFactors: ['No user data - skipping fraud check'] // Alasan skip
-    };
-  }
-
-  try {
-    // Load historical transaction data (last 20 transactions)
-    const recentTransactions = await prisma.transaction.findMany({
-      where: { senderId: senderCard.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    });
-
-    // =========================================================================
-    // SPECIAL CASE: First transaction (no history)
-    // =========================================================================
-    if (recentTransactions.length === 0) {
-      console.log('ℹ️ First transaction for user - No fraud risk');
-      return {
-        riskScore: 0,
-        decision: 'ALLOW',
-        riskLevel: 'LOW',
-        riskFactors: ['First transaction - No historical data for comparison'],
-        zScore: '0.00',
-        avgAmount: '0',
-        stdDev: '0'
-      };
-    }
-
-    // =========================================================================
-    // Z-SCORE ANOMALY DETECTION
-    // =========================================================================
-    // Formula: Z = (X - μ) / σ
-    // Where:
-    //   X = current transaction amount
-    //   μ = mean (average of historical transactions)
-    //   σ = standard deviation
-    // =========================================================================
-    
-    const amounts = recentTransactions.map(t => t.amount);
-    
-    // Step 1: Calculate mean (μ)
-    const avgAmount = amounts.length > 0 
-      ? amounts.reduce((a, b) => a + b, 0) / amounts.length 
-      : 0;
-    
-    // Step 2: Calculate variance (σ²)
-    const variance = amounts.length > 1 
-      ? amounts.reduce((sum, val) => sum + Math.pow(val - avgAmount, 2), 0) / amounts.length 
-      : 0;
-    
-    // Step 3: Calculate standard deviation (σ)
-    const stdDev = Math.sqrt(variance);
-    
-    // Step 4: Calculate Z-Score
-    const zScore = stdDev > 0 ? Math.abs((amount - avgAmount) / stdDev) : 0;
-
-    // =========================================================================
-    // RISK CLASSIFICATION BASED ON Z-SCORE
-    // =========================================================================
-    // Using 3-Sigma Rule (Empirical Rule):
-    //   Z > 3σ → BLOCK  (99.7% confidence - extreme outlier)
-    //   Z > 2σ → REVIEW (95% confidence - significant outlier)
-    //   Z ≤ 2σ → ALLOW  (normal transaction)
-    // =========================================================================
-    
-    const classificationRules = [
-      { 
-        threshold: 3, 
-        decision: 'BLOCK', 
-        riskLevel: 'HIGH',
-        riskScore: 100,
-        message: '⛔ Transaction BLOCKED - Extreme outlier (>3σ, 99.7% confidence)'
-      },
-      { 
-        threshold: 2, 
-        decision: 'REVIEW', 
-        riskLevel: 'MEDIUM',
-        riskScore: 50,
-        message: '⚠️ Manual REVIEW required - Significant outlier (>2σ, 95% confidence)'
-      },
-      { 
-        threshold: 0, 
-        decision: 'ALLOW', 
-        riskLevel: 'LOW',
-        riskScore: 0,
-        message: '✅ Transaction ALLOWED - Normal pattern (≤2σ)'
-      }
-    ];
-    
-    const matchedRule = classificationRules.find(rule => zScore > rule.threshold);
-    const { decision, riskLevel, riskScore, message } = matchedRule;
-
-    // Build risk factors for explainability
-    const riskFactors = [
-      `Z-Score: ${zScore.toFixed(2)}σ deviation from mean`,
-      `Historical average: Rp ${avgAmount.toFixed(0)}`,
-      `Standard deviation: Rp ${stdDev.toFixed(0)}`,
-      `Current amount: Rp ${amount}`,
-      message
-    ];
-
-    console.log(`📊 Fraud Analysis - User: ${senderCard.userId}`);
-    console.log(`   Amount: Rp ${amount} | Avg: Rp ${avgAmount.toFixed(0)} | StdDev: Rp ${stdDev.toFixed(0)}`);
-    console.log(`   Z-Score: ${zScore.toFixed(2)}σ | Decision: ${decision} | Risk: ${riskLevel}`);
-
-    // Return fraud analysis result
-    return {
-      riskScore,
-      decision,
-      riskLevel,
-      riskFactors,
-      
-      // Detailed metrics for logging
-      zScore: zScore.toFixed(2),
-      avgAmount: avgAmount.toFixed(0),
-      stdDev: stdDev.toFixed(0)
-    };
-
-  } catch (error) {
-    console.error('❌ Fraud analysis error:', error);
-    // Fail-safe: Allow transaction if analysis fails
-    return { 
-      riskScore: 0, 
-      decision: 'ALLOW', 
-      riskLevel: 'LOW', 
-      riskFactors: ['Fraud analysis failed - transaction allowed by default'],
-      zScore: '0.00',
-      avgAmount: '0',
-      stdDev: '0'
-    };
-  }
-};
 
 // ============================================================================
 // ENDPOINT: POST /register - Registrasi kartu NFC baru ke sistem
@@ -311,66 +159,66 @@ const analyzeFraudRisk = async (senderCard, amount, deviceId, prisma) => {
 router.post('/register', async (req, res) => {
   try {
     // STEP 1: Extract data dari request body
-    const { cardId, userId, cardData, deviceId, metadata } = req.body;
+    const { cardId, userId, cardData, deviceId, metadata } = req.body; // Destructuring: ambil semua input dari JSON body HTTP request
 
     // STEP 2: Validasi cardId format (harus ada dan valid hex string 14-20 chars)
-    if (!cardId) return res.status(400).json({ error: 'Card ID (UID) required' });
-    if (!validateCardId(cardId)) {
+    if (!cardId) return res.status(400).json({ error: 'Card ID (UID) required' }); // Wajib ada: UID adalah primary key kartu NFC
+    if (!validateCardId(cardId)) { // Cek format UID: harus 14-20 karakter hexadecimal
       // Format invalid - kembalikan error dengan expected format
-      return res.status(400).json({ error: 'Invalid NTag215 UID format', expected: '7-10 bytes hex string' });
+      return res.status(400).json({ error: 'Invalid NTag215 UID format', expected: '7-10 bytes hex string' }); // Format salah: bukan hex 14-20 chars
     }
 
     // STEP 3: Check duplikasi - pastikan UID belum terdaftar di sistem
-    const existingCard = await prisma.nFCCard.findUnique({ where: { cardId } });
-    if (existingCard) {
+    const existingCard = await prisma.nFCCard.findUnique({ where: { cardId } }); // Query DB: cari kartu dengan UID ini
+    if (existingCard) { // Jika ditemukan: UID sudah ada di DB (duplikat)
       // Kartu sudah terdaftar - kembalikan 409 Conflict dengan info kartu existing
-      return res.status(409).json({ error: 'Kartu sudah terdaftar', card: { id: existingCard.id, cardId: existingCard.cardId, status: existingCard.cardStatus, userId: existingCard.userId } });
+      return res.status(409).json({ error: 'Kartu sudah terdaftar', card: { id: existingCard.id, cardId: existingCard.cardId, status: existingCard.cardStatus, userId: existingCard.userId } }); // 409 Conflict: prevent double registration
     }
 
     // STEP 4 & 5: Validasi user dan POLICY CHECK (1 USER = 1 CARD)
-    if (userId) {
+    if (userId) { // Hanya validasi jika userId disediakan (kartu boleh unassigned)
       // STEP 4: Validate user exists di database
-      const user = await validateUser(userId);
-      if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+      const user = await validateUser(userId); // Cari user berdasarkan ID di tabel User
+      if (!user) return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // User tidak ada: return 404 Not Found
 
       // STEP 5: 🔒 BUSINESS RULE - 1 USER = 1 CARD POLICY
       // Alasan policy ini:
       // 1. Keamanan: Prevent user dari abuse system dengan multiple cards
       // 2. Simplicity: 1-to-1 mapping memudahkan tracking & fraud detection
       // 3. User experience: Clear ownership (1 user owns exactly 1 physical card)
-      const userExistingCards = await checkUserHasCard(userId);
-      if (userExistingCards.length > 0) {
+      const userExistingCards = await checkUserHasCard(userId); // Ambil semua kartu milik user ini
+      if (userExistingCards.length > 0) { // Jika ada kartu: user sudah punya 1 kartu (policy dilanggar)
         // User sudah punya kartu - reject registration
-        return res.status(409).json({ 
+        return res.status(409).json({ // 409 Conflict: 1 user hanya boleh punya 1 kartu
           error: 'Pengguna sudah memiliki kartu terdaftar',
           message: 'Each user can only register ONE NFC card',
-          existingCard: { cardId: userExistingCards[0].cardId, cardStatus: userExistingCards[0].cardStatus, balance: userExistingCards[0].balance, registeredAt: userExistingCards[0].registeredAt }
+          existingCard: { cardId: userExistingCards[0].cardId, cardStatus: userExistingCards[0].cardStatus, balance: userExistingCards[0].balance, registeredAt: userExistingCards[0].registeredAt } // Info kartu yang sudah ada
         });
       }
     }
 
     // STEP 6: Enkripsi cardData jika provided (AES-256-CBC encryption)
-    const encryptedData = cardData ? encryptCardData(cardData) : null;
+    const encryptedData = cardData ? encryptCardData(cardData) : null; // Jika ada cardData: enkripsi dengan AES-256, jika tidak: null
     // cardData bisa berisi: PIN, biometric data, security tokens
     // Format encrypted: "iv:encryptedData" (32 bytes IV + encrypted payload)
 
     // STEP 7: Sync initial balance dengan user balance (jika userId provided)
-    let initialBalance = 0;
-    if (userId) {
+    let initialBalance = 0; // Default 0 jika tidak ada user (kartu unassigned)
+    if (userId) { // Hanya sync jika kartu dihubungkan ke user
       // Query user balance dari database
-      const userWithBalance = await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        select: { balance: true }
+      const userWithBalance = await prisma.user.findUnique({ // Ambil data user dengan hanya field balance
+        where: { id: parseInt(userId) }, // Konversi userId string ke integer
+        select: { balance: true } // Hanya ambil field balance (efisiensi query)
       });
       // Set card balance = user balance (sinkronisasi)
       // Ini memastikan balance kartu selalu match dengan balance user
-      initialBalance = userWithBalance?.balance || 0;
-      console.log(`💰 Syncing card balance with user balance: Rp ${initialBalance.toLocaleString('id-ID')}`);
+      initialBalance = userWithBalance?.balance || 0; // Optional chaining: jika null gunakan 0
+      console.log(`💰 Syncing card balance with user balance: Rp ${initialBalance.toLocaleString('id-ID')}`); // Log sinkronisasi untuk monitoring
     }
     // Jika no userId: initialBalance = 0 (kartu unassigned/guest)
 
     // STEP 8: Insert kartu NFC baru ke database (Prisma ORM create operation)
-    const nfcCard = await prisma.nFCCard.create({
+    const nfcCard = await prisma.nFCCard.create({ // Simpan record kartu baru ke tabel NFCCard
       data: {
         cardId,                          // UID kartu (unique identifier)
         cardType: 'NTag215',             // Tipe chip NFC
@@ -467,53 +315,52 @@ router.post('/register', async (req, res) => {
 router.post('/link', async (req, res) => {
   try {
     // STEP 1: Extract required parameters dari request body
-    const { cardId, userId } = req.body;
-    if (!cardId || !userId) return res.status(400).json({ error: 'ID Kartu dan ID Pengguna diperlukan' });
+    const { cardId, userId } = req.body; // Ambil cardId (UID kartu) dan userId dari request body
+    if (!cardId || !userId) return res.status(400).json({ error: 'ID Kartu dan ID Pengguna diperlukan' }); // Kedua parameter wajib ada
 
     // STEP 2: Validate card exists (Prisma findUnique query)
-    const card = await prisma.nFCCard.findUnique({ where: { cardId } });
-    if (!card) return res.status(404).json({ error: 'Card not found' });
+    const card = await prisma.nFCCard.findUnique({ where: { cardId } }); // Cari kartu berdasarkan UID di database
+    if (!card) return res.status(404).json({ error: 'Card not found' }); // Kartu tidak ditemukan: return 404
     
     // STEP 3: Check card status - hanya ACTIVE card yang bisa di-link
-    if (card.cardStatus !== 'ACTIVE') {
+    if (card.cardStatus !== 'ACTIVE') { // Status selain ACTIVE tidak bisa di-link
       // BLOCKED/LOST/EXPIRED card tidak bisa di-link ke user baru
-      return res.status(400).json({ error: `Tidak dapat menghubungkan kartu berstatus ${card.cardStatus.toLowerCase()}` });
+      return res.status(400).json({ error: `Tidak dapat menghubungkan kartu berstatus ${card.cardStatus.toLowerCase()}` }); // Return status sebenarnya ke client
     }
 
     // STEP 4: Validate user exists (gunakan helper function)
-    const user = await validateUser(userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = await validateUser(userId); // Cari user berdasarkan userId di tabel User
+    if (!user) return res.status(404).json({ error: 'User not found' }); // User tidak ada: return 404
 
     // STEP 5: Update card - assign userId (Prisma update operation)
-    const updatedCard = await prisma.nFCCard.update({
-      where: { cardId },
+    const updatedCard = await prisma.nFCCard.update({ // Update record kartu di database
+      where: { cardId }, // Identifikasi kartu berdasarkan UID
       data: { 
-        userId: parseInt(userId),  // Foreign key ke User table
-        updatedAt: new Date()      // Update timestamp
+        userId: parseInt(userId),  // Foreign key ke User table (string → int)
+        updatedAt: new Date()      // Update timestamp waktu saat ini
       },
       include: { 
-        user: {  // Include user data dalam response
-          select: { id: true, name: true, username: true, balance: true } 
+        user: {  // Include user data dalam response agar client tidak perlu query lagi
+          select: { id: true, name: true, username: true, balance: true } // Hanya field yang dibutuhkan
         } 
       }
     });
     // Setelah update: card.userId not null, berarti card sudah owned by user
 
     // STEP 6: Log linking event untuk audit trail
-    console.log(`🔗 Card ${cardId.slice(0, 8)}... linked to user ${user.username}`);
+    console.log(`🔗 Card ${cardId.slice(0, 8)}... linked to user ${user.username}`); // Log: 8 char pertama UID + username
     
     // STEP 7: Return success response
     res.json({ 
       success: true, 
       message: 'Card linked to user successfully', 
       card: updatedCard  // Include updated card dengan user relation
-    });
-    // Client akan terima card object dengan user property terisi
+    }); // Client akan terima card object dengan user property terisi
     
   } catch (error) {
     // Error handling - tangkap semua error (Prisma, validation, dll)
-    console.error('❌ Card linking error:', error);
-    res.status(500).json({ error: 'Gagal menghubungkan kartu', details: error.message });
+    console.error('❌ Card linking error:', error); // Log error ke console untuk debugging
+    res.status(500).json({ error: 'Gagal menghubungkan kartu', details: error.message }); // Return 500 dengan detail error
   }
 });
 // ============================================================================
@@ -550,9 +397,9 @@ router.post('/link', async (req, res) => {
 //         Return 403 Forbidden dengan info expiry date
 //         Kartu sudah kadaluarsa (jika ada mekanisme expiry)
 //
-// STEP 6: Handle LOST card - CRITICAL SECURITY CHECK
+// STEP 6: Handle LOST card - KEAMANAN KRITIS
 //         Jika kartu reported as LOST, ini bisa jadi fraud attempt!
-//         Create fraud alert dengan riskLevel CRITICAL
+//         Create fraud alert dengan riskLevel ANOMALY (kartu hilang = anomali ekstrem)
 //         Log location & device info untuk investigation
 //         Block transaction dan return 403
 //
@@ -572,40 +419,40 @@ router.post('/link', async (req, res) => {
 router.post('/tap', async (req, res) => {
   try {
     // STEP 1: Extract request data
-    const { cardId, deviceId, location, signalStrength, readTime } = req.body;
-    if (!cardId || !deviceId) return res.status(400).json({ error: 'ID Kartu dan ID Perangkat diperlukan' });
+    const { cardId, deviceId, location, signalStrength, readTime } = req.body; // Destructuring: ambil semua data dari request body
+    if (!cardId || !deviceId) return res.status(400).json({ error: 'ID Kartu dan ID Perangkat diperlukan' }); // Dua parameter wajib: UID kartu + ID device NFC reader
 
     // STEP 2: Query card dari database dengan user relation
-    const card = await prisma.nFCCard.findUnique({
-      where: { cardId },
-      include: { user: { select: { id: true, name: true, username: true, balance: true } } }
+    const card = await prisma.nFCCard.findUnique({ // Cari kartu di database berdasarkan UID
+      where: { cardId }, // Kondisi: cardId = UID yang dikirim
+      include: { user: { select: { id: true, name: true, username: true, balance: true } } } // Sertakan data user pemilik kartu
     });
     // Include user: untuk mendapatkan balance & user info tanpa query terpisah
 
     // Validasi: card tidak ditemukan
-    if (!card) {
+    if (!card) { // Jika kartu tidak ada di database: belum pernah didaftarkan
       return res.status(404).json({ 
         error: 'Kartu tidak dikenali',
         suggestion: 'Register this card first'  // Guide user untuk register kartu
-      });
+      }); // Return 404: kartu tidak dikenali sistem
     }
 
     // STEP 3-6: Check card status dengan berbagai scenario
     
     // STEP 4: Handle BLOCKED card (diblokir oleh admin karena fraud/violation)
-    if (card.cardStatus === 'BLOCKED') {
+    if (card.cardStatus === 'BLOCKED') { // Kartu dalam status BLOCKED: tidak bisa digunakan
       return res.status(403).json({ 
         error: 'Kartu diblokir',
-        reason: 'Contact admin for assistance'
-      });
+        reason: 'Contact admin for assistance'  // Suruh user hubungi admin
+      }); // Return 403 Forbidden: akses ditolak
     }
 
     // STEP 5: Handle EXPIRED card (kartu sudah kadaluarsa)
-    if (card.cardStatus === 'EXPIRED') {
+    if (card.cardStatus === 'EXPIRED') { // Kartu kadaluarsa: melewati tanggal expired
       return res.status(403).json({ 
         error: 'Kartu telah kadaluarsa',
         expiredAt: card.expiresAt  // Inform user kapan expired
-      });
+      }); // Return 403 Forbidden: kartu tidak lagi valid
     }
 
     // STEP 6: 🚨 Handle LOST card - CRITICAL SECURITY EVENT
@@ -617,9 +464,10 @@ router.post('/tap', async (req, res) => {
           userId: card.userId,
           deviceId,
           deviceName: 'NFC Reader',
-          riskScore: 95,               // Very high risk (0-100 scale, 95 = critical)
-          riskLevel: 'CRITICAL',       // Critical security event
-          decision: 'BLOCK',           // Auto-block transaction
+          // Kartu dilaporkan hilang → anomali pasti → simpan Z sentinel -1 (undefined, non-calculated)
+          riskScore: -1,
+          riskLevel: 'ANOMALY',       // Anomali kritis - kartu hilang
+          decision: 'BLOCK',
           reasons: JSON.stringify(['Card reported as LOST', `Tap attempt at ${location || 'unknown location'}`]),
           confidence: 1.0,             // 100% confidence (kartu confirmed LOST)
           riskFactors: JSON.stringify({
@@ -707,10 +555,6 @@ router.post('/tap', async (req, res) => {
 // ============================================================================
 
 // ============================================================================
-// END OF ENDPOINT: POST /tap
-// ============================================================================
-
-// ============================================================================
 // ENDPOINT: POST /payment - Proses pembayaran NFC card-to-card atau card-to-user
 // ============================================================================
 // KOMPLEKSITAS TINGGI - Endpoint ini mengimplementasikan:
@@ -740,9 +584,9 @@ router.post('/tap', async (req, res) => {
 //
 // STEP 6: 🛡️ AI FRAUD DETECTION - Z-Score Anomaly Detection
 //         Algoritma: Statistical outlier detection based on historical patterns
-//         Input: sender card history (last 15 transactions)
-//         Output: Risk score (0-100), decision (ALLOW/REVIEW/BLOCK)
-//         Reference: Chandola et al. (2009) - Anomaly Detection Survey
+//         Input: sender card history (last 20 transactions)
+//         Output: Z-Score, riskLevel (NORMAL/SUSPICIOUS/ANOMALY), decision (ALLOW/REVIEW/BLOCK)
+//         Reference: Tagle (2024) - NFC Fraud Detection with Z-Score
 //
 //         6a. Analyze transaction amount vs historical mean
 //         6b. Calculate Z-Score: Z = (X - μ) / σ
@@ -776,10 +620,12 @@ router.post('/tap', async (req, res) => {
 // STEP 10: Return success response
 //          Response: transaction amount, updated balances, timestamp
 // ============================================================================
-router.post('/payment', async (req, res) => {
+// POST /payment dilindungi JWT: user yang terautentikasi wajib hadir
+// sebagai penerima (merchant) yang memulai transaksi penerimaan.
+router.post('/payment', authenticateToken, async (req, res) => { // Endpoint payment: dilindungi JWT middleware
   try {
     // STEP 1: Extract request parameters
-    const { 
+    const { // Destructuring semua parameter dari JSON body
       cardId,              // Sender card UID
       amount,              // Transfer amount (Rupiah)
       receiverCardId,      // Receiver card UID (optional, untuk card-to-card)
@@ -790,134 +636,146 @@ router.post('/payment', async (req, res) => {
     } = req.body;
 
     // Validate required parameters
-    if (!cardId || !amount || !deviceId) {
-      return res.status(400).json({ 
+    if (!cardId || !amount || !deviceId) { // Tiga parameter wajib: cardId, amount, deviceId
+      return res.status(400).json({ // Return 400 jika salah satu parameter wajib tidak ada
         error: 'Card ID, amount, and device ID required' 
-      });
+      }); // Informasi parameter mana yang kurang
     }
 
     // STEP 2: Parse & validate amount (must be positive number)
-    const amountNum = parseFloat(amount);
-    if (!amountNum || isNaN(amountNum) || amountNum <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
+    const amountNum = parseFloat(amount); // Konversi string/number ke float (misal: "50000" → 50000.0)
+    if (!amountNum || isNaN(amountNum) || amountNum <= 0) { // Validasi: bukan NaN, bukan 0, harus positif
+      return res.status(400).json({ error: 'Invalid amount' }); // Tolak jika amount tidak valid
     }
 
     // STEP 3: Query sender card dengan user relation (Prisma include)
-    const senderCard = await prisma.nFCCard.findUnique({
-      where: { cardId },
+    const senderCard = await prisma.nFCCard.findUnique({ // Cari kartu pengirim di database
+      where: { cardId }, // Cari berdasarkan UID kartu pengirim
       include: { user: true }  // Include untuk mendapatkan user balance & info
     });
 
-    if (!senderCard) {
-      return res.status(404).json({ error: 'Sender card not found' });
+    if (!senderCard) { // Kartu pengirim tidak ditemukan di database
+      return res.status(404).json({ error: 'Sender card not found' }); // Return 404: kartu belum terdaftar
     }
 
     // STEP 4: Validate sender card status
-    if (senderCard.cardStatus !== 'ACTIVE') {
-      return res.status(403).json({ error: 'Sender card is not active' });
+    if (senderCard.cardStatus !== 'ACTIVE') { // Hanya ACTIVE card yang bisa melakukan payment
+      return res.status(403).json({ error: 'Sender card is not active' }); // Return 403: kartu tidak aktif
     }
 
     // STEP 5: Check USER balance (bukan card balance!)
     // ⚠️ IMPORTANT DESIGN DECISION: User balance adalah single source of truth
-    const userBalance = senderCard.user?.balance || 0;
-    console.log(`💰 Balance Check: User ${senderCard.userId} has Rp ${userBalance.toLocaleString('id-ID')}, trying to send Rp ${amountNum.toLocaleString('id-ID')}`);
+    const userBalance = senderCard.user?.balance || 0; // Ambil balance user (null-safe, default 0)
+    console.log(`💰 Balance Check: User ${senderCard.userId} has Rp ${userBalance.toLocaleString('id-ID')}, trying to send Rp ${amountNum.toLocaleString('id-ID')}`); // Log balance check untuk monitoring
     
     // Validate sufficient balance
-    if (userBalance < amountNum) {
-      return res.status(400).json({ 
+    if (userBalance < amountNum) { // Saldo tidak cukup: user tidak bisa membayar
+      return res.status(400).json({ // Return 400: insufficient balance
         error: 'Insufficient balance',
-        balance: userBalance,
-        required: amountNum
-      });
+        balance: userBalance,  // Saldo saat ini
+        required: amountNum    // Saldo yang dibutuhkan
+      }); // Client akan show: "Saldo tidak cukup. Saldo: Rp X, Dibutuhkan: Rp Y"
     }
 
-    // STEP 6: 🛡️ AI FRAUD DETECTION - Z-Score Anomaly Detection Algorithm
+    // STEP 6: FRAUD DETECTION — Z-Score Anomaly Detection
     // =========================================================================
-    // PURPOSE: Detect suspicious transactions before processing payment
-    // METHOD: Statistical outlier detection using Z-Score
-    // REFERENCE: Chandola et al. (2009) - "Anomaly Detection: A Survey"
+    // REFERENSI AKADEMIS:
+    //   Tagle, R. A. (2024). Machine Learning Integration for Real-time Fraud
+    //   Detection in Near Field Communication (NFC) Card Transactions.
+    //   Technologique, 3(1), 69–76.
+    //   https://doi.org/10.62718/vmca.tech-gjtdsi.3.1.sc-1124-009
     //
-    // ALGORITHM:
-    // 1. Load last 15 transactions untuk establish baseline pattern
-    // 2. Calculate statistical metrics: mean (μ), standard deviation (σ)
-    // 3. Calculate Z-Score untuk current transaction: Z = (X - μ) / σ
-    // 4. Apply 3-Sigma Rule (99.7% confidence interval):
-    //    - Z > 3σ → BLOCK (extreme outlier, 0.3% probability = very suspicious)
-    //    - Z > 2σ → REVIEW (significant outlier, 5% probability = needs investigation)
-    //    - Z ≤ 2σ → ALLOW (within normal range, 95% probability = safe)
+    // FORMULA Z-SCORE [Tagle, 2024]:
+    //   Z = (X − μ) / σ                                ...(4)
+    //   X = nominal saat ini, μ = rata-rata historis, σ = std deviasi sampel
     //
-    // EXAMPLE SCENARIO:
-    // - User history: transaksi rata-rata Rp 50.000 ± Rp 10.000
-    // - Current transaction: Rp 500.000
-    // - Z-Score: (500000 - 50000) / 10000 = 45σ → BLOCK!!
+    // THREE-SIGMA RULE [Tagle, 2024]:
+    //   Z ≤ 2σ → ALLOW  (95.0% confidence: transaksi dalam batas normal)
+    //   Z > 2σ → REVIEW (keluar dari interval 95% confidence)
+    //   Z > 3σ → BLOCK  (99.7% confidence: extreme outlier)
+    //
+    // SAMPLE VARIANCE (Bessel's Correction) [Zhukabayeva et al., 2025]:
+    //   σ = √[Σ(xᵢ−μ)²/(n−1)] — estimator tidak bias untuk n < 100
     // =========================================================================
-    if (senderCard.userId) {
+    let lastFraudAnalysis = null; // untuk dikirim ke response client (null jika no fraud analysis)
+    if (senderCard.userId) { // Hanya lakukan fraud detection jika kartu terhubung ke user
       try {
-        // Call fraud detection function (implemented di atas)
-        const fraudAnalysis = await analyzeFraudRisk(senderCard, amountNum, deviceId, prisma);
-        
-        // Log fraud detection results untuk monitoring
-        console.log('🔍 Fraud Detection Analysis:');
-        console.log(`   └─ Risk Score: ${fraudAnalysis.riskScore}`);  // 0-100 scale
-        console.log(`   └─ Decision: ${fraudAnalysis.decision} (${fraudAnalysis.riskLevel} risk)`);
-        console.log(`   └─ Z-Score: ${fraudAnalysis.zScore}σ deviation from mean`);
-        
-        // STEP 6a: Create fraud alert untuk kasus REVIEW dan BLOCK
-        // Alert ini akan muncul di admin dashboard untuk manual investigation
-        if (fraudAnalysis.decision === 'REVIEW' || fraudAnalysis.decision === 'BLOCK') {
+        // STEP 6a: Ambil 20 transaksi historis terakhir sebelum transaksi baru disimpan
+        // PENTING: historis diambil SEBELUM transaksi baru disimpan agar X tidak ikut baseline
+        const historicalTxs = await prisma.transaction.findMany({ // Query transaksi historis user
+          where: { senderId: senderCard.userId, status: 'completed' }, // Hanya transaksi sukses milik sender
+          orderBy: { createdAt: 'desc' }, // Urutkan dari terbaru ke terlama
+          take: 20, // Ambil maksimal 20 transaksi terakhir (sample size)
+          select: { amount: true, createdAt: true } // Hanya field yang dibutuhkan untuk Z-Score
+        });
+
+        // STEP 6b: Panggil engine utama Z-Score (satu-satunya engine, tidak ada duplikat)
+        const fraudAnalysis = analyzeZScoreAnomaly(amountNum, historicalTxs); // Hitung Z-Score anomali
+        lastFraudAnalysis = fraudAnalysis; // Simpan hasil untuk dikirim ke response
+
+        // Log hasil analisis
+        console.log('🔍 Fraud Detection Analysis (Z-Score Based Anomaly Detection):');
+        console.log(`   └─ Z-Score: ${fraudAnalysis.zScore} | Decision: ${fraudAnalysis.decision} | Risk: ${fraudAnalysis.decision === 'ALLOW' ? 'NORMAL' : fraudAnalysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY'}`);
+        console.log(`   └─ Mean: ${fraudAnalysis.mean} | StdDev: ${fraudAnalysis.stdDev} | n: ${fraudAnalysis.n}`);
+        console.log(`   └─ Threshold: Z≤2 ALLOW | 2<Z≤3 REVIEW | Z>3 BLOCK`);
+
+        // STEP 6c: Buat FraudAlert HANYA untuk BLOCK (sebelum transaction, karena BLOCK = tidak ada transaction)
+        // REVIEW: FraudAlert dibuat SETELAH transaction selesai agar transactionId tersedia.
+        // Urutan: Transaction dibuat dulu → transactionId diperoleh → FraudAlert REVIEW dibuat.
+        const riskLevelMapped = fraudAnalysis.decision === 'ALLOW' ? 'NORMAL' : fraudAnalysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY'; // Map decision ke risk level string
+        if (fraudAnalysis.decision === 'BLOCK') { // Hanya buat FraudAlert jika BLOCK (sebelum transaction)
           try {
-            await prisma.fraudAlert.create({
+            // BLOCK: Tidak ada transaction yang dibuat → transactionId null (sesuai skripsi)
+            await prisma.fraudAlert.create({ // Buat record fraud alert di database
               data: {
-                userId: senderCard.userId,
-                deviceId,
-                deviceName: 'NFC Card Reader',
-                riskScore: fraudAnalysis.riskScore,  // 50 (REVIEW) atau 100 (BLOCK)
-                riskLevel: fraudAnalysis.riskLevel,  // MEDIUM atau HIGH
-                decision: fraudAnalysis.decision,     // REVIEW atau BLOCK
-                reasons: JSON.stringify(fraudAnalysis.riskFactors),  // Array of reasons
-                confidence: fraudAnalysis.riskScore === 100 ? 0.997 : 0.95,  // 3σ = 99.7%, 2σ = 95%
+                userId: senderCard.userId, // ID user yang melakukan transaksi mencurigakan
+                // transactionId null: BLOCK mencegah transaksi dibuat
+                deviceId, // ID device NFC reader yang digunakan
+                deviceName: 'NFC Card Reader', // Nama perangkat
+                // Sentinel -1 jika Z null (σ=0, X≠μ). Jangan simpan 0 karena bisa diartikan normal.
+                riskScore: fraudAnalysis.zScore !== null ? fraudAnalysis.zScore : -1, // Z-Score aktual, -1 jika undefined
+                riskLevel: 'ANOMALY', // Level tertinggi karena BLOCK
+                decision: 'BLOCK', // Keputusan: blokir transaksi
+                reasons: JSON.stringify(fraudAnalysis.reasons), // Alasan deteksi anomali
+                confidence: 0.997, // 99.7% confidence (3-sigma rule)
                 riskFactors: JSON.stringify({
-                  cardId: cardId.slice(0, 8) + '...',
-                  amount: amountNum,
-                  zScore: fraudAnalysis.zScore,
-                  avgAmount: fraudAnalysis.avgAmount,
-                  stdDev: fraudAnalysis.stdDev,
-                  historicalTransactions: 20  // Based on last 20 transactions
+                  cardId: cardId.slice(0, 8) + '...', // UID disamarkan (keamanan)
+                  amount: amountNum, // Jumlah transaksi
+                  zScore: fraudAnalysis.zScore, // Nilai Z
+                  mean: fraudAnalysis.mean, // Rata-rata historis
+                  stdDev: fraudAnalysis.stdDev, // Standar deviasi
+                  n: fraudAnalysis.n, // Jumlah data historis
+                  algorithm: 'Z-Score Based Anomaly Detection', // Algoritma yang digunakan
+                  thresholds: { allow: 2, review: 3 } // Threshold Z-Score
                 }),
-                ipAddress: req.ip  // Track IP untuk investigation
+                ipAddress: req.ip // IP address pengirim
               }
             });
-            console.log(`🚨 Fraud Alert Created: Risk ${fraudAnalysis.riskScore} → ${fraudAnalysis.decision}`);
+            console.log(`🚨 BLOCK Fraud Alert Created (sebelum transaction): Z=${fraudAnalysis.zScore ?? 'null(σ=0)'} → BLOCK`);
           } catch (alertError) {
-            // Log error tapi jangan stop transaction process (fail-safe)
-            // Alert creation failure tidak boleh mengganggu payment flow
-            console.error('⚠️ Failed to create fraud alert (non-critical):', alertError.message);
+            console.error('⚠️ Failed to create BLOCK fraud alert (non-critical):', alertError.message); // Log error tapi jangan stop flow
           }
         }
 
-        // STEP 6b: If BLOCK decision → Reject transaction immediately
-        if (fraudAnalysis.decision === 'BLOCK') {
-          // Return 403 Forbidden dengan user-friendly error message
-          return res.status(403).json({
-            error: 'ACCOUNT_BANNED',
-            message: 'Maaf, akun Anda telah diblokir karena terdeteksi aktivitas mencurigakan. Silakan hubungi Customer Service untuk informasi lebih lanjut.',
-            riskScore: fraudAnalysis.riskScore,
-            riskLevel: fraudAnalysis.riskLevel,
-            reasons: fraudAnalysis.riskFactors,  // Detailed reasons untuk CS investigation
+        // STEP 6d: Jika BLOCK → tolak transaksi, jangan ubah saldo
+        if (fraudAnalysis.decision === 'BLOCK') { // BLOCK: transaksi dihentikan, saldo tidak berubah
+          return res.status(403).json({ // Return 403 Forbidden: transaksi ditolak sistem
+            error: 'TRANSACTION_BLOCKED',
+            message: 'Transaksi diblokir – anomali terdeteksi oleh Z-Score. Silakan hubungi Customer Service.',
+            zScore: fraudAnalysis.zScore, // Nilai Z-Score untuk referensi user
+            riskLevel: riskLevelMapped, // 'ANOMALY'
+            reasons: fraudAnalysis.reasons, // Alasan pemblokiran
             contactInfo: 'Hubungi CS: +62-XXX-XXX-XXXX atau email: cs@nfcpayment.com'
-          });
-          // Transaction STOPPED here. User harus contact CS untuk verify identity.
+          }); // Client akan tampilkan pesan ini ke user
         }
 
-        // STEP 6c: If REVIEW decision → Log warning, tapi tetap process payment
-        // Admin akan manually review alert di dashboard
-        if (fraudAnalysis.decision === 'REVIEW') {
-          console.log(`⚠️ Review Required: Card ${cardId.slice(0, 8)}... | Z-Score: ${fraudAnalysis.zScore}σ`);
-          // Transaction tetap diproses, tapi admin harus review manual
+        // STEP 6e: Jika REVIEW → transaksi tetap diproses, admin akan review di dashboard
+        if (fraudAnalysis.decision === 'REVIEW') { // REVIEW: transaksi lanjut tapi ditandai suspicious
+          console.log(`⚠️ Review Required: Card ${cardId.slice(0, 8)}... | Z-Score: ${fraudAnalysis.zScore}σ`); // Log untuk monitoring
         }
+
       } catch (fraudError) {
-        // Fraud detection error → fail-safe: allow transaction
-        // Lebih baik false negative (miss fraud) daripada false positive (block legitimate user)
+        // Fail-safe: biarkan transaksi lanjut jika analisis fraud error (tidak menghentikan pembayaran)
         console.error('Fraud detection error:', fraudError);
       }
     }
@@ -925,41 +783,41 @@ router.post('/payment', async (req, res) => {
 
     // STEP 7: Validate receiver - support 2 modes: card-to-card atau user-to-user
     // =========================================================================
-    let receiverCard = null;
-    let receiverUser = null;
+    let receiverCard = null; // Mode 1: penerima menggunakan NFC card
+    let receiverUser = null; // Mode 2: penerima adalah user langsung (tanpa card)
 
-    if (receiverCardId) {
+    if (receiverCardId) { // Jika receiverCardId ada: gunakan Mode 1 (card-to-card)
       // MODE 1: Card-to-Card Transfer
       // Use case: User tap 2 kartu NFC (sender & receiver) pada device reader
       // Example: Tap kartu pengirim, masukkan amount, tap kartu penerima
-      receiverCard = await prisma.nFCCard.findUnique({
-        where: { cardId: receiverCardId },
+      receiverCard = await prisma.nFCCard.findUnique({ // Cari kartu penerima di database
+        where: { cardId: receiverCardId }, // Filter berdasarkan UID kartu penerima
         include: { user: true }  // Include user untuk update balance
       });
 
-      if (!receiverCard) {
-        return res.status(404).json({ error: 'Receiver card not found' });
+      if (!receiverCard) { // Kartu penerima tidak ditemukan
+        return res.status(404).json({ error: 'Receiver card not found' }); // Return 404: kartu penerima tidak ada
       }
       // Receiver card valid → akan update card balance & user balance nantinya
       
-    } else if (receiverId) {
+    } else if (receiverId) { // MODE 2: Penerima adalah user tanpa kartu NFC
       // MODE 2: User-to-User Transfer (no receiver card involved)
       // Use case: Transfer saldo ke user lain via user ID (pilih dari contact list)
       // Example: Select "Transfer to John Doe (user ID 123)"
-      receiverUser = await prisma.user.findUnique({
-        where: { id: parseInt(receiverId) }
+      receiverUser = await prisma.user.findUnique({ // Cari user penerima berdasarkan ID
+        where: { id: parseInt(receiverId) } // Konversi receiverId string ke integer
       });
 
-      if (!receiverUser) {
-        return res.status(404).json({ error: 'Receiver not found' });
+      if (!receiverUser) { // User penerima tidak ditemukan di database
+        return res.status(404).json({ error: 'Receiver not found' }); // Return 404: user tidak ada
       }
       // Receiver user valid → akan update user balance saja (no card involved)
       
-    } else {
+    } else { // Tidak ada receiverCardId dan tidak ada receiverId
       // Error: harus provide salah satu (receiverCardId OR receiverId)
-      return res.status(400).json({ 
+      return res.status(400).json({ // Return 400: parameter penerima harus ada
         error: 'Receiver card ID or user ID required' 
-      });
+      }); // Client harus kirim salah satu: receiverCardId atau receiverId
     }
 
     // STEP 8: Execute ATOMIC TRANSACTION - All-or-Nothing Database Operations
@@ -986,13 +844,13 @@ router.post('/payment', async (req, res) => {
     // 6. Log receiver NFCTransaction (jika card-to-card)
     // 7. Create Transaction record (main transaction table)
     // =========================================================================
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => { // Mulai Prisma transaction — semua operasi dalam blok ini adalah atomic
       // Prisma transaction: 'tx' adalah isolated Prisma client
       // Semua operations menggunakan 'tx', bukan 'prisma'
       
       // STEP 8a: Deduct balance dari SENDER USER (not card!)
-      const updatedSenderUser = await tx.user.update({
-        where: { id: senderCard.userId },
+      const updatedSenderUser = await tx.user.update({ // Update record User di database
+        where: { id: senderCard.userId }, // Identifikasi user berdasarkan ID
         data: { 
           balance: { decrement: amountNum }  // Kurangi balance user
         }
@@ -1001,8 +859,8 @@ router.post('/payment', async (req, res) => {
       // Equivalent to: SET balance = balance - amountNum WHERE id = senderCard.userId
 
       // STEP 8b: Update sender CARD - sync balance dengan user + update lastUsed
-      const updatedSenderCard = await tx.nFCCard.update({
-        where: { cardId },
+      const updatedSenderCard = await tx.nFCCard.update({ // Update record NFCCard di database
+        where: { cardId }, // Identifikasi kartu berdasarkan UID
         data: { 
           lastUsed: new Date(),                      // Track last activity
           balance: updatedSenderUser.balance         // ✅ Sync: card balance = user balance
@@ -1011,37 +869,37 @@ router.post('/payment', async (req, res) => {
       // IMPORTANT: Card balance selalu sama dengan user balance (single source of truth)
 
       // STEP 8c & 8d: Add balance ke receiver (card atau user tergantung mode)
-      let updatedReceiverCard = null;
-      let updatedReceiverUser = null;
+      let updatedReceiverCard = null; // Akan diisi jika mode card-to-card
+      let updatedReceiverUser = null; // Akan selalu diisi (kedua mode update user balance)
 
-      if (receiverCard) {
+      if (receiverCard) { // MODE 1: Penerima menggunakan kartu NFC (card-to-card)
         // MODE 1: Card-to-Card Transfer
         
         // Validate: receiver card harus linked ke user
-        if (!receiverCard.userId) {
-          throw new Error('Receiver card not linked to any user');
+        if (!receiverCard.userId) { // Kartu penerima belum diassign ke user manapun
+          throw new Error('Receiver card not linked to any user'); // Throw error: trigger rollback
           // Error ini akan trigger rollback seluruh transaction
         }
         
         // Update receiver USER balance
-        updatedReceiverUser = await tx.user.update({
-          where: { id: receiverCard.userId },
+        updatedReceiverUser = await tx.user.update({ // Tambah balance user penerima
+          where: { id: receiverCard.userId }, // Identifikasi user berdasarkan ID
           data: { balance: { increment: amountNum } }  // Tambah balance user
         });
 
         // Update receiver CARD - sync balance dengan user + update lastUsed
-        updatedReceiverCard = await tx.nFCCard.update({
-          where: { cardId: receiverCardId },
+        updatedReceiverCard = await tx.nFCCard.update({ // Update kartu penerima
+          where: { cardId: receiverCardId }, // Identifikasi kartu berdasarkan UID penerima
           data: { 
             lastUsed: new Date(),                      // Track last activity
             balance: updatedReceiverUser.balance       // ✅ Sync: card balance = user balance
           }
         });
-      } else {
+      } else { // MODE 2: Penerima hanya user (tidak ada kartu)
         // MODE 2: User-to-User Transfer (no card involved)
         // Hanya update user balance, no card sync needed
-        updatedReceiverUser = await tx.user.update({
-          where: { id: parseInt(receiverId) },
+        updatedReceiverUser = await tx.user.update({ // Tambah balance user penerima langsung
+          where: { id: parseInt(receiverId) }, // Konversi receiverId string ke integer
           data: { balance: { increment: amountNum } }  // Tambah balance user
         });
       }
@@ -1096,30 +954,77 @@ router.post('/payment', async (req, res) => {
       }
       // Jika user-to-user transfer: no receiver card log (receiver tidak pakai card)
 
-      // STEP 8g: Create main Transaction record (master transaction table)
-      // Table Transaction: master record untuk all transaction types (NFC, transfer, topup, dll)
-      // NFCTransaction: detailed log per card (linked to specific card UID)
+      // STEP 8g: Create main Transaction record — sertakan hasil fraud Z-Score
+      // fraudRiskScore: nilai Z aktual, atau -1 jika Z tidak terdefinisi (σ=0, X≠μ)
+      // fraudRiskLevel: NORMAL/SUSPICIOUS/ANOMALY
+      // fraudReasons: JSON array alasan analisis
+      // txRecord: ditangkap untuk digunakan sebagai transactionId pada FraudAlert REVIEW di luar blok ini
+      let txRecord = null;
       if (senderCard.userId && (receiverCard?.userId || receiverId)) {
-        await tx.transaction.create({
+        const fraudRiskMapped = lastFraudAnalysis
+          ? (lastFraudAnalysis.decision === 'ALLOW' ? 'NORMAL' : lastFraudAnalysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY')
+          : null;
+        txRecord = await tx.transaction.create({
           data: {
-            senderId: senderCard.userId,    // FK ke User table (sender)
-            receiverId: receiverCard?.userId || parseInt(receiverId),  // FK ke User table (receiver)
-            amount: amountNum,              // Transfer amount
-            type: 'nfc_payment',            // Transaction type (enum: nfc_payment, transfer, topup, dll)
-            status: 'completed',            // Status: completed (success)
-            description: description || 'NFC Card Payment',  // User-provided description
-            deviceId,                       // Device identifier
-            ipAddress: req.ip               // IP address tracking
+            senderId: senderCard.userId,
+            receiverId: receiverCard?.userId || parseInt(receiverId),
+            amount: amountNum,
+            type: 'nfc_payment',
+            status: 'completed',
+            description: description || 'NFC Card Payment',
+            deviceId,
+            ipAddress: req.ip,
+            // Hasil Z-Score tersimpan di Transaction untuk audit & histori
+            fraudRiskScore: lastFraudAnalysis
+              ? (lastFraudAnalysis.zScore !== null ? lastFraudAnalysis.zScore : -1)
+              : null,
+            fraudRiskLevel: fraudRiskMapped,
+            fraudReasons: lastFraudAnalysis ? JSON.stringify(lastFraudAnalysis.reasons || []) : null
           }
         });
       }
       // Transaction record ini untuk: user transaction history, accounting, reports
 
-      // Return result dari atomic transaction
-      return { updatedSenderCard, updatedSenderUser, updatedReceiverCard, updatedReceiverUser };
+      // Return result dari atomic transaction, sertakan txRecord untuk FraudAlert REVIEW
+      return { updatedSenderCard, updatedSenderUser, updatedReceiverCard, updatedReceiverUser, txRecord };
     });
     // Prisma $transaction auto-commit jika semua operations sukses
     // Jika ada error: auto-rollback (semua changes di-revert)
+
+    // STEP 8h: Buat FraudAlert REVIEW SETELAH transaction dibuat (urutan sesuai skripsi)
+    // Transaction dibuat dulu (Step 8g) → transactionId diperoleh → FraudAlert REVIEW dibuat
+    // FraudAlert REVIEW wajib memiliki transactionId (transaksi tetap diproses untuk REVIEW)
+    if (lastFraudAnalysis?.decision === 'REVIEW' && senderCard.userId) {
+      try {
+        await prisma.fraudAlert.create({
+          data: {
+            userId: senderCard.userId,
+            transactionId: result.txRecord?.id || null, // transactionId dari transaction yang baru dibuat
+            deviceId,
+            deviceName: 'NFC Card Reader',
+            riskScore: lastFraudAnalysis.zScore !== null ? lastFraudAnalysis.zScore : -1,
+            riskLevel: 'SUSPICIOUS',
+            decision: 'REVIEW',
+            reasons: JSON.stringify(lastFraudAnalysis.reasons),
+            confidence: 0.95,
+            riskFactors: JSON.stringify({
+              cardId: cardId.slice(0, 8) + '...',
+              amount: amountNum,
+              zScore: lastFraudAnalysis.zScore,
+              mean: lastFraudAnalysis.mean,
+              stdDev: lastFraudAnalysis.stdDev,
+              n: lastFraudAnalysis.n,
+              algorithm: 'Z-Score Based Anomaly Detection',
+              thresholds: { allow: 2, review: 3 }
+            }),
+            ipAddress: req.ip
+          }
+        });
+        console.log(`🚨 REVIEW Fraud Alert Created dengan transactionId: ${result.txRecord?.id ?? 'null'}`);
+      } catch (alertError) {
+        console.error('⚠️ Failed to create REVIEW fraud alert (non-critical):', alertError.message);
+      }
+    }
 
     // STEP 9: Log transaction success dengan detail lengkap
     const senderUsername = senderCard.user?.username || 'Unknown';
@@ -1133,15 +1038,19 @@ router.post('/payment', async (req, res) => {
     console.log(`   💵 Saldo Penerima: ${formatCurrency(result.updatedReceiverUser?.balance || 0)}`);
     // Log format: Easy to read untuk real-time monitoring
 
-    // STEP 10: Return success response ke client
-    res.json({
+    // STEP 10: Return success response ke client (201 Created: transaksi baru berhasil dibuat)
+    res.status(201).json({
       success: true,
       message: 'Payment processed successfully',
       transaction: {
-        amount: amountNum,                          // Transfer amount
-        senderBalance: result.updatedSenderUser.balance,     // Sender balance setelah payment
-        receiverBalance: result.updatedReceiverUser?.balance, // Receiver balance setelah payment
-        timestamp: new Date()                       // Transaction timestamp
+        amount: amountNum,                                       // Transfer amount
+        senderBalance: result.updatedSenderUser.balance,        // Sender balance setelah payment
+        receiverBalance: result.updatedReceiverUser?.balance,   // Receiver balance setelah payment
+        timestamp: new Date(),                                   // Transaction timestamp
+        // Fraud detection results (untuk ditampilkan di mobile app)
+        fraudRiskLevel: lastFraudAnalysis ? (lastFraudAnalysis.decision === 'ALLOW' ? 'NORMAL' : lastFraudAnalysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY') : 'NORMAL',
+        fraudRiskScore: lastFraudAnalysis ? (lastFraudAnalysis.zScore !== null ? lastFraudAnalysis.zScore : null) : null, // Z-Score aktual; null jika σ=0
+        fraudDecision: lastFraudAnalysis?.decision || 'ALLOW'        // ALLOW/REVIEW/BLOCK
       }
     });
     // Client akan display success message dan updated balances ke user
@@ -1652,20 +1561,12 @@ router.delete(['/:cardId', '/delete/:cardId'], async (req, res) => {
     const { cardId } = req.params;         // URL param: /delete/:cardId
     const { adminPassword } = req.body;    // Request body (POST data in DELETE request)
 
-    // Debug logs untuk troubleshooting auth issues
-    console.log(`🔍 DELETE request for card: ${cardId}`);
-    console.log(`📦 Request body:`, req.body);
-    console.log(`🔐 Admin password received: "${adminPassword}"`);
-    console.log(`🔐 Expected password: "${process.env.ADMIN_PASSWORD || 'admin123'}"`);
-
     // STEP 2: Verify admin password (AUTHORIZATION CHECK)
-    // Support 2 passwords: env variable OR fallback 'admin123'
-    if (adminPassword !== process.env.ADMIN_PASSWORD && adminPassword !== 'admin123') {
-      console.log(`❌ Password validation failed`);
+    if (adminPassword !== process.env.ADMIN_PASSWORD) {
       return res.status(403).json({ error: 'Unauthorized: Invalid admin password' });
     }
     // Password match - authorization successful
-    console.log(`✅ Password validation passed`);
+    console.log(`✅ DELETE card auth passed for card: ${cardId}`);
 
     // STEP 3: Validate card exists
     const card = await prisma.nFCCard.findUnique({ 

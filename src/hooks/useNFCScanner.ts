@@ -234,13 +234,13 @@ export const useNFCScanner = (currentUserId: number) => {
       // 1. Create tap_logs entry untuk analytics
       // 2. Update last_tapped_at timestamp di nfc_cards table
       // 3. Update tap_count counter untuk fraud detection
-      // 4. Check for fraud patterns (velocity, frequency)
+      // 4. Data tap digunakan oleh Z-Score Based Anomaly Detection
       // 
       // Data yang dikirim:
       // - cardId: UID card yang di-tap
       // - deviceId: Identifier device (untuk detect multi-device fraud)
       // - signalStrength: Kekuatan sinyal NFC (untuk detect card cloning)
-      // - readTime: Timestamp tap (untuk detect velocity attacks)
+      // - readTime: Timestamp tap (untuk analisis pola transaksi)
       await apiService.post('/api/nfc-cards/tap', {
         cardId: cardInfo.id,
         deviceId: 'unknown', // TODO: Get real device ID

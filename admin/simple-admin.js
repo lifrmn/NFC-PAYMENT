@@ -1,4 +1,4 @@
-// =====================================================================
+﻿// =====================================================================
 // 📊 SIMPLE ADMIN SERVER - NFC PAYMENT SYSTEM
 // =====================================================================
 /**
@@ -28,7 +28,7 @@
  * 4. 🚨 FRAUD DETECTION MONITORING
  *    - Receive fraud alerts dari Backend AI
  *    - Visual fraud dashboard dengan statistics
- *    - Alert categorization: HIGH/CRITICAL/BLOCKED
+ *    - Alert categorization: NORMAL/SUSPICIOUS/ANOMALY
  *    - Transaction review workflow
  *    
  * 5. 💰 BALANCE MANAGEMENT
@@ -60,7 +60,7 @@
  *  │                     ADMIN SERVER (Port 3000)                      │
  *  ├──────────────────────────────────────────────────────────────────┤
  *  │ - Express.js REST API                                             │
- *  │ - Web Dashboard (simple-dashboard.html)                           │
+ *  │ - Web Dashboard (dashboard.html)                                   │
  *  │ - Device Cache (Map<deviceId, deviceData>)                        │
  *  │ - Pending Updates Queue (Map<updateKey, balanceUpdate>)           │
  *  │ - Fraud Alerts Store (Map<alertId, fraudAlert>)                   │
@@ -171,7 +171,7 @@
  *      riskScore: number,
  *      reasons: string[],
  *      timestamp: ISO string,
- *      status: 'HIGH' | 'CRITICAL' | 'BLOCKED'
+ *      status: 'ANOMALY' | 'SUSPICIOUS' | 'BLOCKED'
  *    }
  * 
  * PERFORMANCE:
@@ -209,7 +209,7 @@
  * 
  * RELATED FILES:
  * ═══════════════════════════════════════════════════════════════════════
- * - admin/simple-dashboard.html  → Web UI dashboard
+ * - admin/dashboard.html         → Web UI dashboard (unified: overview + fraud alerts)
  * - backend/server.js            → Main backend server
  * - src/utils/apiService.ts      → Mobile app API client
  * 
@@ -256,7 +256,7 @@ const https = require('https'); // HTTPS client untuk fetch backend
  */
 const PORT = 3000; // Port server (3000)
 const APP_SECRET = 'NFC2025SecureApp'; // Secret key aplikasi (untuk validasi)
-const ADMIN_PASSWORD = 'admin123'; // Password admin untuk top-up saldo
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Password admin untuk top-up saldo
 
 // ==================== BACKEND CONFIGURATION ====================
 /**
@@ -763,9 +763,9 @@ class SimpleNFCAdmin {
     this.app.use(express.static(__dirname));
     
     // ==================== ROUTES ====================
-    // Route utama: Tampilkan dashboard HTML
+    // Route utama: Tampilkan dashboard HTML (unified dashboard dengan tab navigation)
     this.app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, 'simple-dashboard.html'));
+      res.sendFile(path.join(__dirname, 'dashboard.html'));
     });
     
     // ==================== API ENDPOINTS ====================
@@ -1374,8 +1374,8 @@ class SimpleNFCAdmin {
    *   },
    *   fraudDetection: {
    *     isBlocked: boolean,       // Transaksi diblokir atau tidak
-   *     riskScore: number,        // 0-100 (risk level)
-   *     riskLevel: string,        // 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
+   *     riskScore: number,        // Nilai Z-Score aktual. Sentinel -1 = σ=0, X≠μ.
+   *     riskLevel: string,        // 'NORMAL', 'SUSPICIOUS', 'ANOMALY'
    *     reasons: string[],        // Array alasan fraud
    *     transaction: {
    *       userId: number,
@@ -1422,8 +1422,8 @@ class SimpleNFCAdmin {
         id: alertId, // ID alert
         deviceId: device.deviceId, // ID device yang kirim alert
         deviceName: device.deviceName, // Nama device
-        riskScore: fraudDetection.riskScore, // Score risiko (0-100)
-        riskLevel: fraudDetection.riskLevel, // Level risiko (LOW/MEDIUM/HIGH/CRITICAL)
+        riskScore: fraudDetection.riskScore, // Z-Score aktual (nilai float, misal: 2.6333)
+        riskLevel: fraudDetection.riskLevel, // Level risiko (NORMAL/SUSPICIOUS/ANOMALY)
         decision: fraudDetection.decision, // Keputusan AI (ALLOW/REVIEW/BLOCK)
         reasons: fraudDetection.reasons, // Alasan-alasan fraud (array)
         confidence: fraudDetection.confidence, // Confidence AI (0-1)
@@ -1448,7 +1448,7 @@ class SimpleNFCAdmin {
         this.fraudStats.reviewTransactions++; // Tambah review transactions
       }
 
-      console.log(`🚨 FRAUD ALERT: ${fraudDetection.riskLevel} risk (${fraudDetection.riskScore}%) from device ${device.deviceId.slice(-8)}`);
+      console.log(`🚨 FRAUD ALERT: ${fraudDetection.riskLevel} risk (Z=${fraudDetection.riskScore}) from device ${device.deviceId.slice(-8)}`);
       console.log(`   Decision: ${fraudDetection.decision}`);
       console.log(`   Reasons: ${fraudDetection.reasons.join(', ')}`);
       console.log(`   Confidence: ${Math.round(fraudDetection.confidence * 100)}%`);
@@ -1549,10 +1549,9 @@ class SimpleNFCAdmin {
       // Calculate statistics
       const stats = {
         total: allTransactions.length,
-        critical: allTransactions.filter(tx => tx.fraudRiskLevel === 'CRITICAL').length,
-        high: allTransactions.filter(tx => tx.fraudRiskLevel === 'HIGH').length,
-        medium: allTransactions.filter(tx => tx.fraudRiskLevel === 'MEDIUM').length,
-        low: allTransactions.filter(tx => tx.fraudRiskLevel === 'LOW').length,
+        anomaly: allTransactions.filter(tx => tx.fraudRiskLevel === 'ANOMALY').length,
+        suspicious: allTransactions.filter(tx => tx.fraudRiskLevel === 'SUSPICIOUS').length,
+        normal: allTransactions.filter(tx => tx.fraudRiskLevel === 'NORMAL').length,
         averageRiskScore: allTransactions.length > 0 
           ? allTransactions.reduce((sum, tx) => sum + (tx.fraudRiskScore || 0), 0) / allTransactions.length 
           : 0
@@ -1932,7 +1931,7 @@ class SimpleNFCAdmin {
             'Content-Type': 'application/json',
             'x-app-key': 'NFC2025SecureApp',
             'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': 'admin123',
+            'x-admin-password': ADMIN_PASSWORD,
             'Content-Length': Buffer.byteLength(postData)
           }
         };
@@ -2025,7 +2024,7 @@ class SimpleNFCAdmin {
             'Content-Type': 'application/json',
             'x-app-key': 'NFC2025SecureApp',
             'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': 'admin123',
+            'x-admin-password': ADMIN_PASSWORD,
             'Content-Length': Buffer.byteLength(postData)
           }
         };
@@ -2122,7 +2121,7 @@ class SimpleNFCAdmin {
               'Content-Type': 'application/json',
               'x-app-key': 'NFC2025SecureApp',
             'ngrok-skip-browser-warning': 'true',
-              'x-admin-password': 'admin123',
+              'x-admin-password': ADMIN_PASSWORD,
               'Content-Length': Buffer.byteLength(postData)
             }
           };
@@ -2241,7 +2240,7 @@ class SimpleNFCAdmin {
             'Content-Type': 'application/json',
             'x-app-key': 'NFC2025SecureApp',
             'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': 'admin123',
+            'x-admin-password': ADMIN_PASSWORD,
             'Content-Length': Buffer.byteLength(postData)
           }
         };
@@ -2341,7 +2340,7 @@ class SimpleNFCAdmin {
             'Content-Type': 'application/json',
             'x-app-key': 'NFC2025SecureApp',
             'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': 'admin123',
+            'x-admin-password': ADMIN_PASSWORD,
             'Content-Length': Buffer.byteLength(postData)
           }
         };
@@ -2738,7 +2737,7 @@ class SimpleNFCAdmin {
    *    - Admin: node simple-admin.js (port 3000)
    */
   start() {
-    this.app.listen(PORT, () => { // Listen di port 3001
+    this.app.listen(PORT, () => { // Listen di port 3000
       console.log('🚀 Simple NFC Payment Admin started!');
       console.log(`📊 Dashboard: http://localhost:${PORT}`);
       console.log('');
@@ -2753,7 +2752,7 @@ class SimpleNFCAdmin {
       console.log('🔧 Setup:');
       console.log('   - Backend: node server.js (port 4000)');
       console.log('   - Ngrok: ngrok http 4000');
-      console.log('   - Admin: node simple-admin.js (port 3001)');
+      console.log('   - Admin: node simple-admin.js (port 3000)');
     });
 
     // Start cleanup timer untuk hapus device offline

@@ -31,7 +31,7 @@ const prisma = new PrismaClient(); // Buat instance Prisma client
 // Endpoint ini return berbagai statistik sistem:
 // - Total users, devices, transaksi
 // - Total balance semua user
-// - Fraud alerts 24 jam terakhir
+// - Fraud alerts terakhir (window monitoring 1 hari)
 // - Recent transactions (10 terbaru)
 // - Recent fraud alerts (5 terbaru)
 //
@@ -47,7 +47,7 @@ router.get('/dashboard', async (req, res) => {
       onlineDevices, // Device online (lastSeen < 5 menit yang lalu)
       totalTransactions, // Total transaksi
       totalBalance, // Sum total balance semua user
-      fraudAlerts, // Fraud alerts 24 jam terakhir
+      fraudAlerts, // Fraud alerts terakhir (window monitoring)
       recentTransactions, // 10 transaksi terbaru
       recentAlerts // 5 fraud alert terbaru
     ] = await Promise.all([
@@ -75,7 +75,7 @@ router.get('/dashboard', async (req, res) => {
         where: { isActive: true } // WHERE isActive = true
       }),
       
-      // Query 6: Count fraud alerts dalam 24 jam terakhir
+      // Query 6: Count fraud alerts dalam window monitoring (1 hari terakhir)
       prisma.fraudAlert.count({
         where: {
           createdAt: {
@@ -113,7 +113,7 @@ router.get('/dashboard', async (req, res) => {
         offlineDevices: totalDevices - onlineDevices, // Device offline (total - online)
         totalTransactions, // Total transaksi
         totalBalance: totalBalance._sum.balance || 0, // Total balance (atau 0 jika null)
-        fraudAlerts24h: fraudAlerts // Fraud alerts 24 jam
+        fraudAlertsRecent: fraudAlerts // Fraud alerts (window monitoring 1 hari)
       },
       recentTransactions, // Array 10 transaksi terbaru
       recentFraudAlerts: recentAlerts, // Array 5 fraud alert terbaru
@@ -370,7 +370,7 @@ router.post('/cleanup-devices', async (req, res) => {
       return res.status(401).json({ error: 'Password admin tidak valid' });
     }
 
-    // Hapus perangkat tidak aktif lebih dari 24 jam
+    // Hapus perangkat tidak aktif lebih dari 1 hari (86400 detik)
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
     
     const deletedDevices = await prisma.device.deleteMany({

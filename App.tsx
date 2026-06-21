@@ -604,14 +604,6 @@ export default function App() {
   // Layar Loading dan Error
   // ========================================================
   if (authState === 'loading') {
-    // Fallback tambahan agar state loading tidak bertahan terus-menerus.
-    setTimeout(() => {
-      if (authState === 'loading') {
-        console.warn('⚠️ Loading timeout, forcing to login screen');
-        setAuthState('signedOut'); // Jika startup terlalu lama, tampilkan login agar user tetap bisa lanjut.
-      }
-    }, 10000);
-    
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2563eb" />

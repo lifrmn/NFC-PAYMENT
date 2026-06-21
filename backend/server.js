@@ -17,7 +17,7 @@ const cors = require('cors'); // Middleware untuk izinkan cross-origin requests 
 const helmet = require('helmet'); // Security middleware: set HTTP headers untuk proteksi
 const morgan = require('morgan'); // HTTP logger: catat semua request (method, URL, status, time)
 const rateLimit = require('express-rate-limit'); // Anti spam: batasi request per IP
-const { PrismaClient } = require('@prisma/client'); // ORM untuk database PostgreSQL
+const { PrismaClient } = require('@prisma/client'); // ORM untuk database SQLite
 const http = require('http'); // Node.js HTTP server (perlu untuk Socket.IO)
 const socketIo = require('socket.io'); // Real-time communication: push updates ke clients
 const path = require('path'); // Utility untuk manipulasi path file sistem
@@ -45,9 +45,15 @@ const HOST = process.env.HOST || '0.0.0.0'; // Host binding: 0.0.0.0 = listen al
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000); // Rate limit window: 15 menit (ms)
 const MAX_REQS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 100); // Max request: 100 per window
 
+// Daftar origin yang diizinkan (dari .env). Format: comma-separated URLs.
+// Contoh .env: ALLOWED_ORIGINS=http://localhost:3000,https://ngrok-url.app
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['*']; // Fallback ke semua origin jika .env tidak di-set
+
 const io = socketIo(server, { // Buat Socket.IO instance dari HTTP server
   cors: {
-    origin: '*', // Allow all origins (mobile app + admin dashboard)
+    origin: ALLOWED_ORIGINS, // Origin dari .env (ALLOWED_ORIGINS)
     methods: ['GET', 'POST'], // Allow method HTTP yang dibutuhkan
     credentials: true, // Allow credentials (cookies, auth headers)
   },
@@ -83,9 +89,13 @@ app.use(requestLogger);
 
 // 9.6: CORS setup (Cross-Origin Resource Sharing)
 // Mengizinkan mobile app dan admin dashboard untuk akses API dari domain berbeda
+// Origin dikonfigurasi via ALLOWED_ORIGINS di .env (comma-separated)
 app.use(
   cors({
-    origin:'*' // Izinkan semua origin (untuk development - production sebaiknya specify domain)
+    origin: ALLOWED_ORIGINS, // Dari .env: ALLOWED_ORIGINS (bukan wildcard *)
+    methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+    allowedHeaders: ['Content-Type','Authorization','x-app-key'],
+    credentials: true
   })
 );
 
@@ -495,7 +505,7 @@ app.post('/api/update-balance', async (req, res) => {
     const { deviceId, amount, adminPassword } = req.body;
     
     // STEP 19.2: Validasi admin password
-    const ADMIN_PASSWORD = 'admin123'; // Bisa dipindah ke .env untuk security
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' }); // 401 Unauthorized
     }
@@ -556,7 +566,7 @@ app.delete('/api/delete-device/:deviceId', async (req, res) => {
     const { adminPassword } = req.body;
     
     // STEP 20.3: Validasi admin password
-    const ADMIN_PASSWORD = 'admin123';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
@@ -636,9 +646,11 @@ function getLanIPs() {
   const list = []; // Array untuk menyimpan IP addresses
   
   // Loop semua interfaces (WiFi, Ethernet, dll)
-  for (const name of Object.keys(ifaces)) {
-    // Loop semua addresses di interface ini
-    for (const iface of ifaces[name]) {
+  const names = Object.keys(ifaces);
+  for (let i = 0; i < names.length; i++) {
+    const addrs = ifaces[names[i]];
+    for (let j = 0; j < addrs.length; j++) {
+      const iface = addrs[j];
       // Filter hanya IPv4 dan bukan internal (localhost)
       if (iface.family === 'IPv4' && !iface.internal) {
         list.push(iface.address); // Tambahkan IP ke list
@@ -660,7 +672,6 @@ function getLanIPs() {
     // STEP 24.2: Start HTTP server pada PORT dan HOST yang ditentukan
     server.listen(PORT, HOST, () => {
       // STEP 24.3: Ambil semua LAN IP addresses
-      const ips = getLanIPs(); // Call helper function untuk get IP
 
       // STEP 24.4: Display server info ke console
       console.log('\n🚀 NFC Payment Backend Server started!');
@@ -670,11 +681,12 @@ function getLanIPs() {
       console.log(`📡 Socket.IO   : Enabled`);
       
       // STEP 24.5: Display LAN IPs (untuk access dari Android di WiFi yang sama)
-      if (ips.length) {
+      const ips = getLanIPs(); // Call helper function untuk get IP
+      if (ips.length > 0) {
         console.log('\n🌐 Test from phone (same Wi-Fi / hotspot):');
-        ips.forEach((ip) =>
-          console.log(`   • http://${ip}:${PORT}/api/health`)
-        );
+        for (let i = 0; i < ips.length; i++) {
+          console.log(`   • http://${ips[i]}:${PORT}/api/health`);
+        }
       }
       
       // STEP 24.6: Display available APIs
@@ -697,7 +709,7 @@ function getLanIPs() {
 // STEP 25: Setup graceful shutdown handlers
 // Fungsi ini memastikan server shutdown dengan benar (disconnect database, dll)
 // Terjadi saat process menerima signal SIGINT (Ctrl+C) atau SIGTERM (kill)
-const gracefulExit = async (signal) => {
+const gracefulExit = async function(signal) {
   // STEP 25.1: Log signal yang diterima
   console.log(`\n🛑 ${signal} received... Shutting down gracefully.`);
   
