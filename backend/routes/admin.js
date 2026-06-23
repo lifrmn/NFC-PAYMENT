@@ -141,7 +141,7 @@ router.post('/balance-update', [
     const { deviceId, amount, adminPassword, reason } = req.body;
 
     // Verifikasi password admin
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Password admin tidak valid' });
     }
 
@@ -320,7 +320,7 @@ router.put('/settings/:key', [
     const { value, type = 'string', adminPassword } = req.body;
 
     // Verify admin password
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
 
@@ -366,7 +366,7 @@ router.post('/cleanup-devices', async (req, res) => {
     const { adminPassword } = req.body;
 
     // Verifikasi password admin
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Password admin tidak valid' });
     }
 
@@ -511,7 +511,7 @@ router.post('/reset-balance', async (req, res) => {
     const { userId, newBalance, password } = req.body;
     
     // STEP 2: Validasi admin password
-    if (password !== 'admin123') {
+    if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
     
@@ -550,7 +550,7 @@ router.post('/block-user', async (req, res) => {
     const { userId, password } = req.body;
     
     // STEP 2: Validasi admin password
-    if (password !== 'admin123') {
+    if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
     
@@ -589,7 +589,7 @@ router.post('/unblock-user', async (req, res) => {
     const { userId, password } = req.body;
     
     // STEP 2: Validasi admin password
-    if (password !== 'admin123') {
+    if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
     

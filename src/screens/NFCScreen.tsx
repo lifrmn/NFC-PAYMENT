@@ -124,7 +124,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NFCService } from '../utils/nfc';
-import { useNFCScanner } from '../hooks/useNFCScanner';
 import { usePayment } from '../hooks/usePayment';
 import { apiService } from '../utils/apiService';
 import styles from './NFCScreen.styles';

@@ -45,7 +45,6 @@ router.post(
   ],
   async (req, res) => { // Handler function (async karena ada database operations)
     try {
-      console.log("Helo") // Debug log saat endpoint dipanggil
       console.log('🔥 REGISTER REQUEST from mobile app'); // Log untuk tracking
       console.log('👤 Name:', req.body.name); // Log nama user
       console.log('📱 Username:', req.body.username); // Log username

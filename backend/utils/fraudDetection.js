@@ -1,44 +1,4 @@
-﻿// backend/utils/fraudDetection.js
-// ============================================================================
-// Z-SCORE BASED ANOMALY DETECTION - Fraud Detection Utility
-// ============================================================================
-//
-// DASAR AKADEMIS:
-//
-//   [1] Bolton, R. J., & Hand, D. J. (2002). Statistical fraud detection:
-//       A review. Statistical Science, 17(3), 235-255.
-//       https://doi.org/10.1214/ss/1042727940
-//       → Landasan teoritis Z-Score sebagai metode deteksi anomali statistik
-//         pada transaksi keuangan; Three-Sigma Rule (2σ/3σ) sebagai ambang
-//         klasifikasi outlier pada distribusi normal.
-//
-//   [2] Chandola, V., Banerjee, A., & Kumar, V. (2009). Anomaly detection:
-//       A survey. ACM Computing Surveys, 41(3), 1-58.
-//       https://doi.org/10.1145/1541880.1541882
-//       → Survey komprehensif pendekatan statistik anomaly detection;
-//         menegaskan Z-Score sebagai metode ringan yang cocok untuk sistem
-//         real-time; prinsip "skor mendekati nol untuk perilaku normal".
-//
-//   [3] Tagle, R. A. (2024). Machine Learning Integration for Real-time Fraud
-//       Detection in Near Field Communication (NFC) Card Transactions.
-//       Technologique: A Global Journal, 3(1), 69-76.
-//       https://doi.org/10.62718/vmca.tech-gjtdsi.3.1.sc-1124-009
-//       → Dasar Z-Score anomaly detection pada transaksi NFC;
-//         justifikasi keputusan ALLOW/REVIEW/BLOCK berdasarkan deviasi
-//         standar dari baseline perilaku pengguna.
-//
-//   [4] Vanini, P., Rossi, S., Zvizdic, E., & Domenig, T. (2023). Online
-//       payment fraud: from anomaly detection to risk management.
-//       Financial Innovation, 9(1).
-//       https://doi.org/10.1186/s40854-023-00470-w
-//       → Kerangka deteksi anomali berbasis statistik pada transaksi
-//         pembayaran digital; penggunaan histori transaksi sebagai baseline
-//         perilaku nominal pengguna.
-//
-//   [5] Zhukabayeva, T., et al. (2025). Anomaly detection via Z-Score.
-//       → Standar deviasi sampel (n-1) / Bessel's Correction sebagai
-//         estimator tidak bias pada data historis kecil (n < 100).
-//
+﻿
 // ============================================================================
 // FORMULA UTAMA:
 //

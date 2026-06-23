@@ -88,33 +88,44 @@ router.get('/', async (req, res) => {
 });
 
 // ============================================================
+// ENDPOINT 3: GET /username/:username - CARI PENGGUNA BERDASARKAN USERNAME
+// ============================================================
+// PENTING: Endpoint ini harus didefinisikan SEBELUM GET /:id agar tidak
+// terhalang oleh route dinamis /:id (Express mencocokkan route secara urutan).
+// Contoh: GET /username/john harus cocok di sini, bukan di /:id dengan id="username".
+// ============================================================
+router.get('/username/:username', async (req, res) => { // GET /username/:username → cari user berdasarkan username
+  try {
+    // STEP 1: Ambil username dari URL parameter
+    const { username } = req.params; // Destructure: ambil value username dari URL params
+    
+    const user = await prisma.user.findUnique({ // Query: cari user unik berdasarkan username
+      where: { username }, // Shorthand ES6: sama dengan { username: username }
+      select: {
+        id: true, // ID numerik user di database
+        name: true, // Nama lengkap user
+        username: true, // Username untuk login
+        balance: true, // Saldo e-wallet saat ini
+        isActive: true // Status aktif (true) atau diblokir (false)
+      }
+    });
+
+    if (!user) { // Jika user tidak ditemukan di database
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // Return 404 Not Found
+    }
+
+    res.json(user); // Kirim data user sebagai JSON response
+  } catch (error) {
+    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error);
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
+  }
+});
+
+// ============================================================
 // ENDPOINT 2: GET /:id - AMBIL DETAIL PENGGUNA BERDASARKAN ID
 // ============================================================
-// Endpoint ini untuk mendapatkan informasi detail satu pengguna
-//
 // URL PARAMETER:
 // - id: integer (contoh: /api/users/5)
-//
-// CARA KERJA:
-// 1. Ambil ID dari URL parameter
-// 2. Query database cari user dengan ID tersebut
-// 3. Jika tidak ada, return 404 Not Found
-// 4. Jika ada, return data user
-//
-// CONTOH PENGGUNAAN:
-// GET /api/users/5
-//
-// RESPONSE:
-// {
-//   "id": 5,
-//   "name": "Jane Doe",
-//   "username": "jane",
-//   "balance": 100000,
-//   "deviceId": "XYZ789",
-//   "isActive": true,
-//   "createdAt": "2025-01-15T08:30:00Z",
-//   "updatedAt": "2025-01-20T10:00:00Z"
-// }
 // ============================================================
 router.get('/:id', async (req, res) => {
   try {
@@ -152,54 +163,6 @@ router.get('/:id', async (req, res) => {
 });
 
 // ============================================================
-// ENDPOINT 3: GET /username/:username - CARI PENGGUNA BERDASARKAN USERNAME
-// ============================================================
-// Endpoint ini digunakan untuk mencari pengguna berdasarkan username
-// Berguna saat kirim uang (cari penerima by username)
-//
-// URL PARAMETER:
-// - username: string (contoh: /api/users/username/john)
-//
-// CONTOH PENGGUNAAN:
-// GET /api/users/username/john
-//
-// RESPONSE:
-// {
-//   "id": 5,
-//   "name": "John Doe",
-//   "username": "john",
-//   "balance": 75000,
-//   "isActive": true
-// }
-// ============================================================
-router.get('/username/:username', async (req, res) => {
-  try {
-    // STEP 1: Ambil username dari URL parameter
-    const { username } = req.params;
-    
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        balance: true,
-        isActive: true
-      }
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
-    }
-
-    res.json(user);
-  } catch (error) {
-    console.error('❌ Gagal mendapatkan pengguna berdasarkan username:', error);
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
-  }
-});
-
-// ============================================================
 // ENDPOINT 4: GET /:id/cards - AMBIL DAFTAR KARTU NFC PENGGUNA
 // ============================================================
 // Endpoint ini untuk mendapatkan semua kartu NFC yang dimiliki pengguna
@@ -226,43 +189,43 @@ router.get('/username/:username', async (req, res) => {
 //   ]
 // }
 // ============================================================
-router.get('/:id/cards', async (req, res) => {
+router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua kartu NFC milik user
   try {
-    const { id } = req.params;
+    const { id } = req.params; // Ambil ID user dari URL param
     
     // STEP 1: Cek apakah pengguna ada di database
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) }
+    const user = await prisma.user.findUnique({ // Query: cek keberadaan user
+      where: { id: parseInt(id) } // Filter by ID (konversi string → integer)
     });
 
-    if (!user) {
-      return res.status(404).json({ 
+    if (!user) { // Jika user tidak ditemukan
+      return res.status(404).json({ // Return 404 Not Found
         success: false,
         error: 'Pengguna tidak ditemukan' 
       });
     }
 
     // Ambil semua kartu untuk pengguna ini
-    const cards = await prisma.nFCCard.findMany({
-      where: { userId: parseInt(id) },
+    const cards = await prisma.nFCCard.findMany({ // Query: ambil semua kartu NFC milik user ini
+      where: { userId: parseInt(id) }, // Filter: hanya kartu yang dimiliki user ini
       select: {
-        cardId: true,
-        cardStatus: true,
-        balance: true,
-        registeredAt: true,
-        lastUsed: true
+        cardId: true, // UID kartu (hex string, misal "04A1B2C3D4E5F6")
+        cardStatus: true, // Status kartu: ACTIVE / BLOCKED / LOST / EXPIRED
+        balance: true, // Saldo kartu (dalam Rupiah)
+        registeredAt: true, // Tanggal kartu pertama kali didaftarkan
+        lastUsed: true // Tanggal terakhir kartu digunakan
       },
       orderBy: {
-        registeredAt: 'desc'
+        registeredAt: 'desc' // Urutkan: yang terbaru didaftarkan di atas
       }
     });
 
-    res.json({ 
-      success: true,
-      cards: cards 
+    res.json({ // Kirim response sukses
+      success: true, // Flag sukses
+      cards: cards  // Array kartu milik user
     });
   } catch (error) {
-    console.error('❌ Gagal mendapatkan kartu pengguna:', error);
+    console.error('\u274c Gagal mendapatkan kartu pengguna:', error);
     res.status(500).json({ 
       success: false,
       error: 'Gagal mendapatkan kartu pengguna' 
@@ -301,72 +264,72 @@ router.get('/:id/cards', async (req, res) => {
 //   "user": { ... }
 // }
 // ============================================================
-router.put('/:id/balance', [
+router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin only)
   // Validasi input menggunakan express-validator
-  body('amount').isNumeric().withMessage('Jumlah harus berupa angka'),
-  body('adminPassword').notEmpty().withMessage('Password admin diperlukan')
+  body('amount').isNumeric().withMessage('Jumlah harus berupa angka'), // amount harus berupa angka
+  body('adminPassword').notEmpty().withMessage('Password admin diperlukan') // adminPassword wajib ada
 ], async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const errors = validationResult(req); // Cek hasil validasi dari middleware di atas
+    if (!errors.isEmpty()) { // Jika ada error validasi
+      return res.status(400).json({ errors: errors.array() }); // Return 400 dengan detail error
     }
 
-    const { id } = req.params;
-    const { amount, adminPassword, reason } = req.body;
+    const { id } = req.params; // Ambil ID user dari URL
+    const { amount, adminPassword, reason } = req.body; // Ambil data dari request body
 
     // Verifikasi password admin
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Password admin tidak valid' });
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password dari .env
+      return res.status(401).json({ error: 'Password admin tidak valid' }); // Return 401 jika salah
     }
 
     // Validasi jumlah
-    if (amount < 0) {
-      return res.status(400).json({ error: 'Jumlah tidak boleh negatif' });
+    if (amount < 0) { // Saldo tidak boleh negatif
+      return res.status(400).json({ error: 'Jumlah tidak boleh negatif' }); // Return 400
     }
 
     // Perbarui saldo pengguna
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: { balance: amount },
+    const user = await prisma.user.update({ // Update record user di database
+      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
+      data: { balance: amount }, // Set saldo ke nilai baru (bukan increment)
       select: {
-        id: true,
-        name: true,
-        username: true,
-        balance: true
+        id: true, // Kembalikan ID
+        name: true, // Kembalikan nama
+        username: true, // Kembalikan username
+        balance: true // Kembalikan saldo baru
       }
     });
 
     // Catat aksi admin
-    await prisma.adminLog.create({
+    await prisma.adminLog.create({ // Simpan log ke tabel AdminLog
       data: {
-        action: 'BALANCE_UPDATE',
-        details: JSON.stringify({
-          userId: user.id,
-          username: user.username,
-          newBalance: amount,
-          reason: reason || 'Pembaruan saldo oleh admin'
+        action: 'BALANCE_UPDATE', // Jenis aksi
+        details: JSON.stringify({ // Detail aksi sebagai JSON string
+          userId: user.id, // ID user yang diubah saldonya
+          username: user.username, // Username untuk referensi
+          newBalance: amount, // Saldo baru yang diset
+          reason: reason || 'Pembaruan saldo oleh admin' // Alasan (default jika tidak diisi)
         }),
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        ipAddress: req.ip, // IP address admin
+        userAgent: req.headers['user-agent'] // Browser/device admin
       }
     });
 
     // Kirim notifikasi ke dashboard admin dan perangkat pengguna
-    if (req.io) {
-      req.io.to('admin-room').emit('balance-updated', { user });
-      req.io.to(`device-${user.deviceId}`).emit('balance-updated', { 
-        balance: user.balance 
+    if (req.io) { // Cek apakah Socket.IO tersedia
+      req.io.to('admin-room').emit('balance-updated', { user }); // Notifikasi admin dashboard
+      req.io.to(`device-${user.deviceId}`).emit('balance-updated', { // Notifikasi device user
+        balance: user.balance // Saldo terbaru
       });
     }
 
-    res.json({
+    res.json({ // Return response sukses
       message: 'Saldo berhasil diperbarui',
-      user
+      user // Data user dengan saldo baru
     });
 
   } catch (error) {
-    console.error('❌ Gagal memperbarui saldo:', error);
+    console.error('\u274c Gagal memperbarui saldo:', error);
     res.status(500).json({ error: 'Gagal memperbarui saldo' });
   }
 });
@@ -405,34 +368,34 @@ router.put('/:id/balance', [
 //   }
 // ]
 // ============================================================
-router.get('/:id/transactions', async (req, res) => {
+router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions → riwayat transaksi user
   try {
-    const { id } = req.params;
-    const { limit = 10, offset = 0 } = req.query;
+    const { id } = req.params; // Ambil ID user dari URL param
+    const { limit = 10, offset = 0 } = req.query; // Pagination: default 10 data, mulai dari awal
 
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({ // Query: ambil transaksi yang melibatkan user
       where: {
-        OR: [
-          { senderId: parseInt(id) },
-          { receiverId: parseInt(id) }
+        OR: [ // Kondisi OR: user bisa sebagai sender ATAU receiver
+          { senderId: parseInt(id) }, // Transaksi yang dikirim user (user = pengirim)
+          { receiverId: parseInt(id) } // Transaksi yang diterima user (user = penerima)
         ]
       },
       include: {
-        sender: {
-          select: { id: true, name: true, username: true }
+        sender: { // Sertakan data pengirim
+          select: { id: true, name: true, username: true } // Hanya field yang aman
         },
-        receiver: {
+        receiver: { // Sertakan data penerima
           select: { id: true, name: true, username: true }
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'desc' // Terbaru di atas
       },
-      take: parseInt(limit),
-      skip: parseInt(offset)
+      take: parseInt(limit), // LIMIT: maksimal N transaksi
+      skip: parseInt(offset) // OFFSET: skip N transaksi (untuk pagination)
     });
 
-    res.json(transactions);
+    res.json(transactions); // Kirim array transaksi sebagai JSON
   } catch (error) {
     console.error('Get user transactions error:', error);
     res.status(500).json({ error: 'Failed to get transactions' });
@@ -440,92 +403,92 @@ router.get('/:id/transactions', async (req, res) => {
 });
 
 // Perbarui profil pengguna
-router.put('/:id', [
-  body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter')
+router.put('/:id', [ // PUT /:id → update profil user (nama)
+  body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter') // Nama opsional, min 2 char
 ], async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const errors = validationResult(req); // Cek hasil validasi
+    if (!errors.isEmpty()) { // Jika ada error
+      return res.status(400).json({ errors: errors.array() }); // Return detail error
     }
 
-    const { id } = req.params;
-    const { name } = req.body;
+    const { id } = req.params; // Ambil ID user dari URL
+    const { name } = req.body; // Ambil nama baru dari request body
 
     // Cek apakah pengguna dapat memperbarui profil ini (hanya profil sendiri atau admin)
-    if (req.user && req.user.id !== parseInt(id)) {
-      return res.status(403).json({ error: 'Akses ditolak' });
+    if (req.user && req.user.id !== parseInt(id)) { // Jika ada token tapi bukan pemilik profil
+      return res.status(403).json({ error: 'Akses ditolak' }); // Return 403 Forbidden
     }
 
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: { name },
+    const user = await prisma.user.update({ // Update record user di database
+      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
+      data: { name }, // Update hanya field nama
       select: {
-        id: true,
-        name: true,
-        username: true,
-        balance: true
+        id: true, // Kembalikan ID
+        name: true, // Kembalikan nama baru
+        username: true, // Kembalikan username
+        balance: true // Kembalikan saldo
       }
     });
 
-    res.json({
+    res.json({ // Return response sukses
       message: 'Profil berhasil diperbarui',
-      user
+      user // Data user dengan nama baru
     });
 
   } catch (error) {
-    console.error('❌ Gagal memperbarui profil:', error);
+    console.error('\u274c Gagal memperbarui profil:', error);
     res.status(500).json({ error: 'Gagal memperbarui profil' });
   }
 });
 
 // Nonaktifkan pengguna (khusus admin)
-router.put('/:id/deactivate', async (req, res) => {
+router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → blokir akun user
   try {
-    const { id } = req.params;
-    const { adminPassword } = req.body;
+    const { id } = req.params; // Ambil ID user dari URL
+    const { adminPassword } = req.body; // Ambil admin password dari request body
 
     // Verify admin password
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ error: 'Invalid admin password' });
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password dari environment variable
+      return res.status(401).json({ error: 'Invalid admin password' }); // Return 401 jika salah
     }
 
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: { isActive: false },
+    const user = await prisma.user.update({ // Update record user di database
+      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
+      data: { isActive: false }, // Set isActive = false (menonaktifkan akun)
       select: {
-        id: true,
-        name: true,
-        username: true,
-        isActive: true
+        id: true, // Kembalikan ID
+        name: true, // Kembalikan nama
+        username: true, // Kembalikan username
+        isActive: true // Kembalikan status baru (false)
       }
     });
 
     // Catat aksi admin
-    await prisma.adminLog.create({
+    await prisma.adminLog.create({ // Simpan log ke tabel AdminLog untuk audit trail
       data: {
-        action: 'USER_DEACTIVATE',
-        details: JSON.stringify({
-          userId: user.id,
-          username: user.username
+        action: 'USER_DEACTIVATE', // Jenis aksi: nonaktifkan user
+        details: JSON.stringify({ // Detail sebagai JSON string
+          userId: user.id, // ID user yang dinonaktifkan
+          username: user.username // Username untuk referensi
         }),
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        ipAddress: req.ip, // IP address admin
+        userAgent: req.headers['user-agent'] // Browser/device admin
       }
     });
 
     // Kirim notifikasi ke dashboard admin
-    if (req.io) {
-      req.io.to('admin-room').emit('user-deactivated', { user });
+    if (req.io) { // Cek apakah Socket.IO tersedia
+      req.io.to('admin-room').emit('user-deactivated', { user }); // Notifikasi real-time ke admin
     }
 
-    res.json({
+    res.json({ // Return response sukses
       message: 'Pengguna berhasil dinonaktifkan',
-      user
+      user // Data user dengan isActive = false
     });
 
   } catch (error) {
-    console.error('❌ Gagal menonaktifkan pengguna:', error);
+    console.error('\u274c Gagal menonaktifkan pengguna:', error);
     res.status(500).json({ error: 'Gagal menonaktifkan pengguna' });
   }
 });
@@ -571,124 +534,124 @@ router.put('/:id/deactivate', async (req, res) => {
 //   "user": { ... }
 // }
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user permanen beserta semua data terkait
   try {
-    const { id } = req.params;
-    const userId = parseInt(id);
+    const { id } = req.params; // Ambil ID user dari URL
+    const userId = parseInt(id); // Konversi string → integer untuk query Prisma
 
-    console.log(`🗑️ [Backend] Delete user request for ID: ${userId}`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`);
 
     // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    const user = await prisma.user.findUnique({ // Cari user yang akan dihapus
+      where: { id: userId }, // Filter berdasarkan ID
       select: {
-        id: true,
-        name: true,
-        username: true
+        id: true, // ID untuk referensi di log
+        name: true, // Nama untuk log
+        username: true // Username untuk log
       }
     });
 
-    if (!user) {
-      console.log(`❌ [Backend] User ${userId} not found`);
-      return res.status(404).json({ error: 'User tidak ditemukan' });
+    if (!user) { // Jika user tidak ditemukan
+      console.log(`\u274c [Backend] User ${userId} not found`);
+      return res.status(404).json({ error: 'User tidak ditemukan' }); // Return 404
     }
 
-    console.log(`✅ [Backend] User found: ${user.username}`);
+    console.log(`\u2705 [Backend] User found: ${user.username}`);
 
     // CASCADE DELETE: Hapus semua record terkait terlebih dahulu
     // URUTAN PENTING: Hapus dari tabel anak ke tabel induk
     
     // 1. Hapus transaksi NFC (anak dari NFCCard)
-    console.log(`🗑️ [Backend] Deleting NFC transactions for user ${userId}...`);
-    const userCards = await prisma.nFCCard.findMany({
-      where: { userId: userId },
-      select: { cardId: true }
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`);
+    const userCards = await prisma.nFCCard.findMany({ // Ambil semua kartu NFC milik user
+      where: { userId: userId }, // Filter: hanya kartu user ini
+      select: { cardId: true } // Hanya perlu cardId untuk delete transaksinya
     });
     
-    if (userCards.length > 0) {
-      const cardIds = userCards.map(card => card.cardId);
-      await prisma.nFCTransaction.deleteMany({
-        where: { cardId: { in: cardIds } }
+    if (userCards.length > 0) { // Jika user punya kartu NFC
+      const cardIds = userCards.map(card => card.cardId); // Ekstrak array cardId
+      await prisma.nFCTransaction.deleteMany({ // Hapus semua transaksi dari semua kartu user
+        where: { cardId: { in: cardIds } } // Filter: cardId ada di array cardIds
       });
-      console.log(`✅ [Backend] Deleted ${cardIds.length} card transactions`);
+      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`);
     }
     
     // 2. Hapus kartu NFC pengguna
-    console.log(`🗑️ [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`);
-    await prisma.nFCCard.deleteMany({
-      where: { userId: userId }
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`);
+    await prisma.nFCCard.deleteMany({ // Hapus semua kartu NFC milik user
+      where: { userId: userId } // Filter: hanya kartu user ini
     });
 
     // 3. Hapus transaksi pengguna (yang dikirim dan diterima)
-    console.log(`🗑️ [Backend] Menghapus transaksi untuk pengguna ${userId}...`);
-    await prisma.transaction.deleteMany({
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`);
+    await prisma.transaction.deleteMany({ // Hapus semua transaksi yang melibatkan user
       where: {
-        OR: [
-          { senderId: userId },
-          { receiverId: userId }
+        OR: [ // User bisa sebagai sender ATAU receiver
+          { senderId: userId }, // Transaksi di mana user adalah pengirim
+          { receiverId: userId } // Transaksi di mana user adalah penerima
         ]
       }
     });
 
     // 4. Hapus peringatan fraud pengguna
-    console.log(`🗑️ [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`);
-    await prisma.fraudAlert.deleteMany({
-      where: { userId: userId }
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`);
+    await prisma.fraudAlert.deleteMany({ // Hapus semua fraud alert milik user
+      where: { userId: userId } // Filter: hanya fraud alert user ini
     });
 
     // 5. Hapus sesi pengguna
-    console.log(`🗑️ [Backend] Menghapus sesi untuk pengguna ${userId}...`);
-    await prisma.userSession.deleteMany({
-      where: { userId: userId }
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`);
+    await prisma.userSession.deleteMany({ // Hapus semua sesi login user
+      where: { userId: userId } // Filter: hanya sesi user ini
     });
 
     // 6. Hapus pengguna
-    console.log(`🗑️ [Backend] Menghapus pengguna ${userId}...`);
-    await prisma.user.delete({
-      where: { id: userId }
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`);
+    await prisma.user.delete({ // Hapus record user dari tabel User
+      where: { id: userId } // Identifikasi berdasarkan ID
     });
 
     // 7. Catat aksi admin
-    console.log(`📝 [Backend] Mencatat aksi admin...`);
-    await prisma.adminLog.create({
+    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`);
+    await prisma.adminLog.create({ // Simpan log aksi delete ke tabel AdminLog
       data: {
-        action: 'USER_DELETE',
-        details: JSON.stringify({
-          userId: user.id,
-          username: user.username,
-          name: user.name
+        action: 'USER_DELETE', // Jenis aksi: hapus user
+        details: JSON.stringify({ // Detail aksi sebagai JSON string
+          userId: user.id, // ID user yang dihapus
+          username: user.username, // Username
+          name: user.name // Nama lengkap
         }),
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        ipAddress: req.ip, // IP address admin
+        userAgent: req.headers['user-agent'] // Browser/device admin
       }
     });
 
     // Kirim notifikasi ke dashboard admin
-    if (req.io) {
-      req.io.to('admin-room').emit('user-deleted', { userId: user.id });
+    if (req.io) { // Cek apakah Socket.IO tersedia
+      req.io.to('admin-room').emit('user-deleted', { userId: user.id }); // Notifikasi ke admin dashboard
     }
 
-    console.log(`✅ [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`);
+    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`);
 
-    res.json({
-      success: true,
+    res.json({ // Return response sukses
+      success: true, // Flag sukses
       message: 'Pengguna berhasil dihapus',
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username
+      user: { // Data user yang dihapus (untuk konfirmasi)
+        id: user.id, // ID
+        name: user.name, // Nama
+        username: user.username // Username
       }
     });
 
   } catch (error) {
-    console.error('❌ [Backend] Kesalahan saat menghapus pengguna:', error);
-    console.error('❌ [Backend] Detail kesalahan:', error.message);
-    console.error('❌ [Backend] Stack trace:', error.stack);
-    res.status(500).json({ 
+    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error);
+    console.error('\u274c [Backend] Detail kesalahan:', error.message);
+    console.error('\u274c [Backend] Stack trace:', error.stack);
+    res.status(500).json({ // Return 500 dengan detail error untuk debugging
       error: 'Gagal menghapus pengguna',
       details: error.message 
     });
   }
 });
 
-module.exports = router;
+module.exports = router; // Export router agar bisa di-mount di server.js sebagai /api/users

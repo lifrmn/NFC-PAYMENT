@@ -197,15 +197,15 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
       try {
         const cardInfo = await apiService.getCardInfo(cardData.id);
         
-        if (cardInfo && cardInfo.userId === user.id) {
+        if (cardInfo && cardInfo.card?.userId === user.id) {
           // SKENARIO A: Kartu sudah terdaftar di akun INI → tampilkan info, jangan daftar ulang
           Alert.alert(
             'Kartu Sudah Terdaftar',
-            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.cardStatus}\nSaldo: Rp${cardInfo.balance?.toLocaleString('id-ID') || 0}`,
+            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`,
             [{ text: 'OK', onPress: () => setRegistrationStatus('success') }]
           );
           return; // Hentikan proses registrasi
-        } else if (cardInfo && cardInfo.userId !== user.id) {
+        } else if (cardInfo && cardInfo.card?.userId !== user.id) {
           // SKENARIO B: Kartu sudah terdaftar di akun ORANG LAIN → tolak registrasi
           Alert.alert(
             'Kartu Sudah Digunakan',

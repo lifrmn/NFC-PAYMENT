@@ -260,8 +260,8 @@ router.post('/alert', async (req, res) => {
       data: {
         userId: fraudDetection.userId || null,              // null jika tidak ada user login
         transactionId: fraudDetection.transactionId || null, // null jika belum ada ID transaksi
-        deviceId: device?.deviceId || 'unknown',
-        deviceName: device?.deviceName || 'Unknown Device',
+        deviceId: device?.deviceId || 'unknown',   // ID perangkat Android (default 'unknown' jika tidak ada)
+        deviceName: device?.deviceName || 'Unknown Device', // Nama perangkat (default jika tidak dikirim)
         riskScore: fraudDetection.riskScore,                // Nilai Z-Score (atau -1 untuk edge case)
         riskLevel: fraudDetection.riskLevel,                // NORMAL / SUSPICIOUS / ANOMALY
         decision: fraudDetection.decision,                  // ALLOW / REVIEW / BLOCK
@@ -353,7 +353,7 @@ router.put('/alerts/:id/status', async (req, res) => {
 
     // Verifikasi password admin sebelum izinkan perubahan
     // ADMIN_PASSWORD diambil dari environment variable (.env)
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Password admin tidak valid' });
     }
 
@@ -722,8 +722,8 @@ router.post('/check', async (req, res) => {
       stdDev: analysis.stdDev,       // σ: simpangan baku
       n: analysis.n,                 // Jumlah data historis
       reasons: analysis.reasons,     // Alasan keputusan
-      algorithm: analysis.algorithm,
-      thresholds: analysis.thresholds // Batas Z-Score { suspicious:2, anomaly:3 }
+      algorithm: analysis.algorithm,  // Nama algoritma: 'Z-Score Anomaly Detection'
+      thresholds: analysis.thresholds  // Batas Z-Score { suspicious:2, anomaly:3 }
     });
 
   } catch (error) {

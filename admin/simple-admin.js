@@ -1,5 +1,5 @@
-﻿// =====================================================================
-// 📊 SIMPLE ADMIN SERVER - NFC PAYMENT SYSTEM
+// =====================================================================
+// ?? SIMPLE ADMIN SERVER - NFC PAYMENT SYSTEM
 // =====================================================================
 /**
  * FILE: admin/simple-admin.js
@@ -7,76 +7,76 @@
  * TUJUAN: Web Admin Dashboard untuk monitoring dan kontrol NFC Payment System
  * 
  * FITUR UTAMA:
- * ═══════════════════════════════════════════════════════════════════════
- * 1. 🖥️  WEB DASHBOARD
+ * -----------------------------------------------------------------------
+ * 1. ???  WEB DASHBOARD
  *    - Real-time monitoring users dan devices
  *    - Visual stats: balance, transactions, fraud alerts
  *    - Admin controls: top-up, block/unblock users
  *    
- * 2. 💳 USER & NFC CARD MANAGEMENT
+ * 2. ?? USER & NFC CARD MANAGEMENT
  *    - CRUD operations untuk users
  *    - Link/unlink NFC cards ke users
  *    - Block/unblock cards dengan 1-card-per-user policy
  *    - Bulk top-up untuk multiple users
  *    
- * 3. 🔄 DEVICE SYNCHRONIZATION
+ * 3. ?? DEVICE SYNCHRONIZATION
  *    - Terima sync data dari Mobile App
  *    - Track device online/offline status (5 min timeout)
  *    - Queue balance updates untuk push ke devices
  *    - Cleanup offline devices otomatis
  *    
- * 4. 🚨 FRAUD DETECTION MONITORING
+ * 4. ?? FRAUD DETECTION MONITORING
  *    - Receive fraud alerts dari Backend AI
  *    - Visual fraud dashboard dengan statistics
  *    - Alert categorization: NORMAL/SUSPICIOUS/ANOMALY
  *    - Transaction review workflow
  *    
- * 5. 💰 BALANCE MANAGEMENT
+ * 5. ?? BALANCE MANAGEMENT
  *    - Admin top-up dengan password validation
  *    - Maximum limit: Rp 500,000 per transaction
  *    - Bulk top-up support (multiple users sekaligus)
  *    - Balance reset functionality
  *    
- * 6. 📡 BACKEND PROXY
+ * 6. ?? BACKEND PROXY
  *    - Forward requests ke Backend Server (port 4000)
  *    - Supports both localhost (local dev) dan ngrok (mobile)
  *    - HTTP/HTTPS auto-detection
  *    - Connection health monitoring
  * 
  * ARSITEKTUR & DEPLOYMENT:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * 
- *  ┌──────────────┐         ┌──────────────┐         ┌──────────────┐
- *  │ Mobile App   │◄────────┤ Ngrok Tunnel │◄────────┤ Backend      │
- *  │ (Port N/A)   │  HTTPS  │ (Public URL) │   HTTP  │ (Port 4000)  │
- *  └──────────────┘         └──────────────┘         └──────────────┘
- *         │                                                  ▲
- *         │                                                  │
- *         │                                                  │ HTTP
- *         │ Device Sync                                      │ (localhost)
- *         │ (POST /api/sync-device)                          │
- *         ▼                                                  │
- *  ┌──────────────────────────────────────────────────────────────────┐
- *  │                     ADMIN SERVER (Port 3000)                      │
- *  ├──────────────────────────────────────────────────────────────────┤
- *  │ - Express.js REST API                                             │
- *  │ - Web Dashboard (dashboard.html)                                   │
- *  │ - Device Cache (Map<deviceId, deviceData>)                        │
- *  │ - Pending Updates Queue (Map<updateKey, balanceUpdate>)           │
- *  │ - Fraud Alerts Store (Map<alertId, fraudAlert>)                   │
- *  └──────────────────────────────────────────────────────────────────┘
- *         ▲
- *         │ HTTP (localhost)
- *         │ Browse Dashboard
- *         │
- *  ┌──────────────┐
- *  │ Web Browser  │
- *  │ (localhost:  │
- *  │  3000)       │
- *  └──────────────┘
+ *  +--------------+         +--------------+         +--------------+
+ *  � Mobile App   �?--------� Ngrok Tunnel �?--------� Backend      �
+ *  � (Port N/A)   �  HTTPS  � (Public URL) �   HTTP  � (Port 4000)  �
+ *  +--------------+         +--------------+         +--------------+
+ *         �                                                  ?
+ *         �                                                  �
+ *         �                                                  � HTTP
+ *         � Device Sync                                      � (localhost)
+ *         � (POST /api/sync-device)                          �
+ *         ?                                                  �
+ *  +------------------------------------------------------------------+
+ *  �                     ADMIN SERVER (Port 3000)                      �
+ *  +------------------------------------------------------------------�
+ *  � - Express.js REST API                                             �
+ *  � - Web Dashboard (dashboard.html)                                   �
+ *  � - Device Cache (Map<deviceId, deviceData>)                        �
+ *  � - Pending Updates Queue (Map<updateKey, balanceUpdate>)           �
+ *  � - Fraud Alerts Store (Map<alertId, fraudAlert>)                   �
+ *  +------------------------------------------------------------------+
+ *         ?
+ *         � HTTP (localhost)
+ *         � Browse Dashboard
+ *         �
+ *  +--------------+
+ *  � Web Browser  �
+ *  � (localhost:  �
+ *  �  3000)       �
+ *  +--------------+
  * 
  * SECURITY:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * - Helmet.js security headers
  * - CORS enabled (allow mobile app access)
  * - API key validation (x-app-key header)
@@ -85,61 +85,61 @@
  * - Local network bypass (192.168.x.x, 10.x.x.x)
  * 
  * API ENDPOINTS:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * DEVICE ENDPOINTS:
- * - GET  /api/devices           → List all devices/users
- * - POST /api/sync-device       → Receive sync from mobile
- * - POST /api/update-balance    → Admin top-up balance
+ * - GET  /api/devices           ? List all devices/users
+ * - POST /api/sync-device       ? Receive sync from mobile
+ * - POST /api/update-balance    ? Admin top-up balance
  * 
  * FRAUD DETECTION:
- * - POST /api/fraud-alert       → Receive alert from AI
- * - GET  /api/fraud-alerts      → Get all fraud alerts
- * - GET  /api/transactions      → Get all transactions
- * - POST /api/clear-fraud-alerts → Clear all alerts
+ * - POST /api/fraud-alert       ? Receive alert from AI
+ * - GET  /api/fraud-alerts      ? Get all fraud alerts
+ * - GET  /api/transactions      ? Get all transactions
+ * - POST /api/clear-fraud-alerts ? Clear all alerts
  * 
  * USER MANAGEMENT:
- * - GET    /api/users           → List all users
- * - POST   /api/users           → Create new user
- * - PUT    /api/users/:id       → Update user data
- * - DELETE /api/users/:id       → Delete user
- * - POST   /api/block-user      → Block user
- * - POST   /api/unblock-user    → Unblock user
- * - POST   /api/bulk-topup      → Bulk top-up multiple users
- * - POST   /api/reset-balance   → Reset user balance to 0
+ * - GET    /api/users           ? List all users
+ * - POST   /api/users           ? Create new user
+ * - PUT    /api/users/:id       ? Update user data
+ * - DELETE /api/users/:id       ? Delete user
+ * - POST   /api/block-user      ? Block user
+ * - POST   /api/unblock-user    ? Unblock user
+ * - POST   /api/bulk-topup      ? Bulk top-up multiple users
+ * - POST   /api/reset-balance   ? Reset user balance to 0
  * 
  * NFC CARD MANAGEMENT:
- * - GET    /api/nfc-cards           → List all cards
- * - POST   /api/nfc-cards/register  → Register new card
- * - POST   /api/nfc-cards/link      → Link card to user
- * - POST   /api/nfc-cards/block     → Block card
- * - POST   /api/nfc-cards/topup     → Top-up card balance
- * - DELETE /api/nfc-cards/:cardId   → Delete card
+ * - GET    /api/nfc-cards           ? List all cards
+ * - POST   /api/nfc-cards/register  ? Register new card
+ * - POST   /api/nfc-cards/link      ? Link card to user
+ * - POST   /api/nfc-cards/block     ? Block card
+ * - POST   /api/nfc-cards/topup     ? Top-up card balance
+ * - DELETE /api/nfc-cards/:cardId   ? Delete card
  * 
  * SYSTEM:
- * - GET /api/ping               → Server status check
- * - GET /api/health             → Health check with stats
- * - GET /                       → Serve dashboard HTML
+ * - GET /api/ping               ? Server status check
+ * - GET /api/health             ? Health check with stats
+ * - GET /                       ? Serve dashboard HTML
  * 
  * STARTUP COMMAND:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * $ node admin/simple-admin.js
  * 
  * OUTPUT:
- * 🚀 Simple NFC Payment Admin started!
- * 📊 Dashboard: http://localhost:3000
+ * ?? Simple NFC Payment Admin started!
+ * ?? Dashboard: http://localhost:3000
  * 
- * 🌐 Backend Connection:
- *    📡 Ngrok URL: https://your-ngrok-url.ngrok-free.dev
+ * ?? Backend Connection:
+ *    ?? Ngrok URL: https://your-ngrok-url.ngrok-free.dev
  * 
  * DEPENDENCIES:
- * ═══════════════════════════════════════════════════════════════════════
- * - express@4.18.2         → Web server framework
- * - cors                   → Cross-Origin Resource Sharing
- * - helmet                 → Security headers
- * - http/https (built-in)  → Backend communication
+ * -----------------------------------------------------------------------
+ * - express@4.18.2         ? Web server framework
+ * - cors                   ? Cross-Origin Resource Sharing
+ * - helmet                 ? Security headers
+ * - http/https (built-in)  ? Backend communication
  * 
  * DATA STRUCTURES:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * 1. devices: Map<deviceId, DeviceData>
  *    {
  *      deviceId: string,
@@ -175,7 +175,7 @@
  *    }
  * 
  * PERFORMANCE:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * - In-memory cache (fast access)
  * - 5-minute cleanup interval untuk offline devices
  * - Request timeout: 10 detik
@@ -183,7 +183,7 @@
  * - Auto-cleanup old fraud alerts (optional)
  * 
  * TESTING:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * 1. Test ping endpoint:
  *    $ curl http://localhost:3000/api/ping
  *    
@@ -194,24 +194,24 @@
  *      -d '{"device": {"deviceId": "test123"}, "users": []}'
  * 
  * TROUBLESHOOTING:
- * ═══════════════════════════════════════════════════════════════════════
+ * -----------------------------------------------------------------------
  * - "Backend returned HTML instead of JSON"
- *   → Check ngrok tunnel is running: ngrok http 4000
- *   → Check ngrok URL di BACKEND_URL/NGROK_URL
+ *   ? Check ngrok tunnel is running: ngrok http 4000
+ *   ? Check ngrok URL di BACKEND_URL/NGROK_URL
  *   
  * - "Unauthorized access blocked"
- *   → Add header: x-app-key: NFC2025SecureApp
- *   → Check User-Agent contains "okhttp"
+ *   ? Add header: x-app-key: NFC2025SecureApp
+ *   ? Check User-Agent contains "okhttp"
  *   
  * - Device tidak muncul di dashboard
- *   → Check mobile app mengirim sync data
- *   → Check device sync dalam 5 menit terakhir
+ *   ? Check mobile app mengirim sync data
+ *   ? Check device sync dalam 5 menit terakhir
  * 
  * RELATED FILES:
- * ═══════════════════════════════════════════════════════════════════════
- * - admin/dashboard.html         → Web UI dashboard (unified: overview + fraud alerts)
- * - backend/server.js            → Main backend server
- * - src/utils/apiService.ts      → Mobile app API client
+ * -----------------------------------------------------------------------
+ * - admin/dashboard.html         ? Web UI dashboard (unified: overview + fraud alerts)
+ * - backend/server.js            ? Main backend server
+ * - src/utils/apiService.ts      ? Mobile app API client
  * 
  * @version 1.0.0
  * @author NFC Payment Team
@@ -246,7 +246,7 @@ const https = require('https'); // HTTPS client untuk fetch backend
  * 
  * BACKEND_URL: 'http://localhost:4000'
  * - URL backend server untuk local development
- * - Admin server dan backend di laptop yang sama → localhost
+ * - Admin server dan backend di laptop yang sama ? localhost
  * - Port 4000 = backend main server
  * 
  * NGROK_URL: 'https://xxx.ngrok-free.dev'
@@ -261,7 +261,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Password adm
 // ==================== BACKEND CONFIGURATION ====================
 /**
  * BACKEND_URL: Backend server untuk local development
- * - Admin server dan backend di laptop yang sama → localhost
+ * - Admin server dan backend di laptop yang sama ? localhost
  * - Port 4000 = backend main server
  * - Format: http://hostname:port
  * 
@@ -269,7 +269,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Password adm
  * - Mobile app connect ke backend via ngrok tunnel
  * - Admin server TIDAK pakai ngrok (localhost cukup)
  * - Update URL ini setiap kali restart ngrok
- * - Cara dapatkan: ngrok http 4000 → copy URL dari terminal
+ * - Cara dapatkan: ngrok http 4000 ? copy URL dari terminal
  */
 const BACKEND_URL = 'http://localhost:4000'; // Backend URL (localhost karena sama-sama di laptop)
 const NGROK_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // URL ngrok untuk mobile app
@@ -291,22 +291,22 @@ const NGROK_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // U
  * Output: { hostname: 'localhost', port: 4000, protocol: 'http' }
  * 
  * FALLBACK:
- * Jika URL tidak valid → return localhost:4000
+ * Jika URL tidak valid ? return localhost:4000
  */
 function parseBackendUrl() {
   try {
-    const url = new URL(BACKEND_URL);
+    const url = new URL(BACKEND_URL); // Parse string URL menjadi objek URL
     return {
-      hostname: url.hostname,
-      port: url.port || (url.protocol === 'https:' ? 443 : 80),
-      protocol: url.protocol.replace(':', '')
+      hostname: url.hostname, // Ambil hostname (misal: 'localhost')
+      port: url.port || (url.protocol === 'https:' ? 443 : 80), // Gunakan port dari URL, fallback ke 443/80
+      protocol: url.protocol.replace(':', '') // Hapus titik dua di akhir ('http:' ? 'http')
     };
   } catch (error) {
     // Fallback ke localhost jika URL tidak valid
     return {
-      hostname: 'localhost',
-      port: 4000,
-      protocol: 'http'
+      hostname: 'localhost', // Default hostname
+      port: 4000, // Default port backend
+      protocol: 'http' // Default protocol
     };
   }
 }
@@ -370,55 +370,55 @@ function makeHttpRequest(options) {
     delete requestOptions.body;
     
     const req = client.request(requestOptions, (response) => {
-      let data = '';
+      let data = ''; // Buffer untuk menampung potongan data response
       
-      response.on('data', (chunk) => {
-        data += chunk;
+      response.on('data', (chunk) => { // Event saat potongan data masuk
+        data += chunk; // Gabungkan potongan ke buffer
       });
       
-      response.on('end', () => {
+      response.on('end', () => { // Event saat seluruh response sudah diterima
         // Check if response is HTML (ngrok error page)
-        if (data.trim().startsWith('<') || data.includes('<!DOCTYPE')) {
-          console.error('❌ Received HTML instead of JSON (ngrok might be down or URL changed)');
+        if (data.trim().startsWith('<') || data.includes('<!DOCTYPE')) { // Deteksi halaman HTML (bukan JSON)
+          console.error('? Received HTML instead of JSON (ngrok might be down or URL changed)');
           reject(new Error('Backend returned HTML instead of JSON. Check if ngrok is running and URL is correct.'));
           return;
         }
 
         // Check if response is empty
-        if (!data || data.trim().length === 0) {
-          console.error('❌ Received empty response from backend');
+        if (!data || data.trim().length === 0) { // Response kosong tidak bisa di-parse
+          console.error('? Received empty response from backend');
           reject(new Error('Backend returned empty response'));
           return;
         }
 
         try {
-          const jsonData = JSON.parse(data);
-          resolve(jsonData);
+          const jsonData = JSON.parse(data); // Parse string JSON menjadi objek JavaScript
+          resolve(jsonData); // Selesaikan Promise dengan data hasil parse
         } catch (parseError) {
-          console.error('❌ JSON parse error:', parseError.message);
-          console.error('❌ Response data preview:', data.substring(0, 200));
+          console.error('? JSON parse error:', parseError.message);
+          console.error('? Response data preview:', data.substring(0, 200)); // Tampilkan 200 karakter awal untuk debug
           reject(new Error(`Invalid JSON response: ${parseError.message}`));
         }
       });
     });
 
-    req.on('error', (error) => {
-      console.error('❌ HTTP request error:', error.message);
-      reject(error);
+    req.on('error', (error) => { // Event saat terjadi error koneksi HTTP
+      console.error('? HTTP request error:', error.message);
+      reject(error); // Selesaikan Promise dengan error
     });
 
-    req.setTimeout(10000, () => {
-      req.destroy();
+    req.setTimeout(10000, () => { // Timeout 10 detik untuk menghindari request yang hang
+      req.destroy(); // Hancurkan request yang melewati batas waktu
       reject(new Error('Request timeout after 10 seconds'));
     });
 
-    if (options.body) {
-      const bodyData = JSON.stringify(options.body);
-      console.log(`📨 Writing body to request:`, bodyData);
-      req.setHeader('Content-Length', Buffer.byteLength(bodyData));
-      req.write(bodyData);
+    if (options.body) { // Jika ada body data (POST/PUT/DELETE request)
+      const bodyData = JSON.stringify(options.body); // Serialize body ke JSON string
+      console.log(`?? Writing body to request:`, bodyData);
+      req.setHeader('Content-Length', Buffer.byteLength(bodyData)); // Set header Content-Length
+      req.write(bodyData); // Tulis body ke stream request
     }
-    req.end();
+    req.end(); // Akhiri request dan kirim ke server
   });
 }
 
@@ -507,27 +507,27 @@ function isValidAppRequest(req) {
  * 
  * BYPASS RULES (tidak perlu validasi):
  * 1. Dashboard HTML (GET /)
- *    → Halaman utama bisa diakses bebas
+ *    ? Halaman utama bisa diakses bebas
  * 
  * 2. Static files (CSS, JS, images)
- *    → GET requests non-API
+ *    ? GET requests non-API
  * 
  * 3. Local Network Access (dari dashboard)
- *    → IP: 127.0.0.1, ::1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x
- *    → Admin dashboard di browser bisa call API tanpa app key
+ *    ? IP: 127.0.0.1, ::1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x
+ *    ? Admin dashboard di browser bisa call API tanpa app key
  * 
  * VALIDATION RULES (perlu validasi):
  * 1. API endpoints dari external sources
- *    → Path: /api/*
- *    → IP: Bukan local network
- *    → Check: isValidAppRequest()
+ *    ? Path: /api/*
+ *    ? IP: Bukan local network
+ *    ? Check: isValidAppRequest()
  * 
  * FLOW:
  * 1. Check path dan IP
- * 2. Jika local network → BYPASS (allow)
- * 3. Jika external + API path → VALIDATE
- * 4. Jika tidak valid → Response 401 Unauthorized
- * 5. Jika valid → next() (lanjut ke endpoint)
+ * 2. Jika local network ? BYPASS (allow)
+ * 3. Jika external + API path ? VALIDATE
+ * 4. Jika tidak valid ? Response 401 Unauthorized
+ * 5. Jika valid ? next() (lanjut ke endpoint)
  * 
  * SECURITY:
  * - Prevent unauthorized API access
@@ -572,24 +572,24 @@ function protectAPI(req, res, next) {
     ipStr.includes('169.254.'); // Link-local address
     
   if (req.path.startsWith('/api/') && isLocalNetwork) {
-    console.log(`✅ Admin dashboard access allowed from ${req.ip} to ${req.path}`);
+    console.log(`? Admin dashboard access allowed from ${req.ip} to ${req.path}`);
     return next(); // Lanjut tanpa validasi untuk admin dashboard
   }
   
   // Validasi untuk semua API endpoints dari external sources (/api/*)
   if (req.path.startsWith('/api/')) {
     if (!isValidAppRequest(req)) { // Cek apakah request valid
-      console.log(`🚫 Unauthorized access blocked from ${req.ip}`);
+      console.log(`?? Unauthorized access blocked from ${req.ip}`);
       return res.status(401).json({ error: 'Akses ditolak - Bukan aplikasi resmi' });
     }
   }
   
-  console.log(`✅ Valid app request from ${req.ip}`);
+  console.log(`? Valid app request from ${req.ip}`);
   next(); // Lanjut ke endpoint
 }
 
 // =====================================================================
-// 🏗️ CLASS: SimpleNFCAdmin
+// ??? CLASS: SimpleNFCAdmin
 // =====================================================================
 /**
  * Main class untuk Admin Server
@@ -604,52 +604,52 @@ function protectAPI(req, res, next) {
  * 
  * PROPERTIES:
  * - app: Express application instance
- * - devices: Map<deviceId, DeviceData> → Cache device data
- * - pendingUpdates: Map<updateKey, BalanceUpdate> → Queue updates
- * - deviceLastSeen: Map<deviceId, Date> → Track last sync time
- * - fraudAlerts: Map<alertId, FraudAlert> → Store fraud alerts
- * - fraudStats: Object → Statistics fraud detection
+ * - devices: Map<deviceId, DeviceData> ? Cache device data
+ * - pendingUpdates: Map<updateKey, BalanceUpdate> ? Queue updates
+ * - deviceLastSeen: Map<deviceId, Date> ? Track last sync time
+ * - fraudAlerts: Map<alertId, FraudAlert> ? Store fraud alerts
+ * - fraudStats: Object ? Statistics fraud detection
  * 
  * METHODS:
  * Setup:
- * - constructor()           → Initialize server
- * - setupExpress()          → Setup routes & middleware
- * - start()                 → Start listening on port
+ * - constructor()           ? Initialize server
+ * - setupExpress()          ? Setup routes & middleware
+ * - start()                 ? Start listening on port
  * 
  * Device Management:
- * - syncDevice()            → Receive sync from mobile (POST /api/sync-device)
- * - getDevices()            → List all devices/users (GET /api/devices)
- * - getPendingUpdates()     → Get queued updates for device
- * - clearPendingUpdates()   → Clear updates after sent
- * - startCleanupTimer()     → Auto-remove offline devices
+ * - syncDevice()            ? Receive sync from mobile (POST /api/sync-device)
+ * - getDevices()            ? List all devices/users (GET /api/devices)
+ * - getPendingUpdates()     ? Get queued updates for device
+ * - clearPendingUpdates()   ? Clear updates after sent
+ * - startCleanupTimer()     ? Auto-remove offline devices
  * 
  * Balance Management:
- * - updateBalanceSecure()   → Admin top-up with password (POST /api/update-balance)
- * - updateBalance()         → Legacy method (will be removed)
+ * - updateBalanceSecure()   ? Admin top-up with password (POST /api/update-balance)
+ * - updateBalance()         ? Legacy method (will be removed)
  * 
  * Fraud Detection:
- * - handleFraudAlert()      → Receive alert from AI (POST /api/fraud-alert)
- * - getFraudAlerts()        → List all alerts (GET /api/fraud-alerts)
- * - clearFraudAlertsEndpoint() → Clear all alerts (POST /api/clear-fraud-alerts)
- * - getAllTransactions()    → Get transactions (GET /api/transactions)
+ * - handleFraudAlert()      ? Receive alert from AI (POST /api/fraud-alert)
+ * - getFraudAlerts()        ? List all alerts (GET /api/fraud-alerts)
+ * - clearFraudAlertsEndpoint() ? Clear all alerts (POST /api/clear-fraud-alerts)
+ * - getAllTransactions()    ? Get transactions (GET /api/transactions)
  * 
  * User Management:
- * - getUsersEndpoint()      → List users (GET /api/users)
- * - createUserEndpoint()    → Create user (POST /api/users)
- * - updateUserEndpoint()    → Update user (PUT /api/users/:id)
- * - deleteUserEndpoint()    → Delete user (DELETE /api/users/:id)
- * - blockUserEndpoint()     → Block user (POST /api/block-user)
- * - unblockUserEndpoint()   → Unblock user (POST /api/unblock-user)
- * - bulkTopupEndpoint()     → Bulk top-up (POST /api/bulk-topup)
- * - resetBalanceEndpoint()  → Reset balance (POST /api/reset-balance)
+ * - getUsersEndpoint()      ? List users (GET /api/users)
+ * - createUserEndpoint()    ? Create user (POST /api/users)
+ * - updateUserEndpoint()    ? Update user (PUT /api/users/:id)
+ * - deleteUserEndpoint()    ? Delete user (DELETE /api/users/:id)
+ * - blockUserEndpoint()     ? Block user (POST /api/block-user)
+ * - unblockUserEndpoint()   ? Unblock user (POST /api/unblock-user)
+ * - bulkTopupEndpoint()     ? Bulk top-up (POST /api/bulk-topup)
+ * - resetBalanceEndpoint()  ? Reset balance (POST /api/reset-balance)
  * 
  * NFC Card Management:
- * - getNFCCards()           → List cards (GET /api/nfc-cards)
- * - registerNFCCard()       → Register card (POST /api/nfc-cards/register)
- * - linkNFCCard()           → Link to user (POST /api/nfc-cards/link)
- * - blockNFCCard()          → Block card (POST /api/nfc-cards/block)
- * - topupNFCCard()          → Top-up card (POST /api/nfc-cards/topup)
- * - deleteNFCCard()         → Delete card (DELETE /api/nfc-cards/:cardId)
+ * - getNFCCards()           ? List cards (GET /api/nfc-cards)
+ * - registerNFCCard()       ? Register card (POST /api/nfc-cards/register)
+ * - linkNFCCard()           ? Link to user (POST /api/nfc-cards/link)
+ * - blockNFCCard()          ? Block card (POST /api/nfc-cards/block)
+ * - topupNFCCard()          ? Top-up card (POST /api/nfc-cards/topup)
+ * - deleteNFCCard()         ? Delete card (DELETE /api/nfc-cards/:cardId)
  */
 class SimpleNFCAdmin {
   /**
@@ -703,13 +703,13 @@ class SimpleNFCAdmin {
    * Setup Express server dengan routes, middleware, dan security
    * 
    * MIDDLEWARE CHAIN (urutan penting):
-   * 1. Helmet → Security headers
-   * 2. CORS → Allow mobile app access
-   * 3. express.json() → Parse JSON body (max 1MB)
-   * 4. protectAPI → Validate app key untuk API endpoints
-   * 5. Logging middleware → Log semua requests
-   * 6. express.static() → Serve HTML/CSS/JS files
-   * 7. Routes → API endpoints
+   * 1. Helmet ? Security headers
+   * 2. CORS ? Allow mobile app access
+   * 3. express.json() ? Parse JSON body (max 1MB)
+   * 4. protectAPI ? Validate app key untuk API endpoints
+   * 5. Logging middleware ? Log semua requests
+   * 6. express.static() ? Serve HTML/CSS/JS files
+   * 7. Routes ? API endpoints
    * 
    * SECURITY SETUP:
    * - Helmet.js: HTTP security headers
@@ -732,7 +732,7 @@ class SimpleNFCAdmin {
    * - User Management: 9 endpoints
    * - NFC Card Management: 6 endpoints
    * - System: 2 endpoints (ping, health)
-   * - Dashboard: 1 endpoint (/) → HTML
+   * - Dashboard: 1 endpoint (/) ? HTML
    */
   setupExpress() {
     // Security headers dengan Helmet (proteksi dari serangan web)
@@ -744,7 +744,7 @@ class SimpleNFCAdmin {
     // CORS: Izinkan akses dari semua origin (HP bisa akses)
     this.app.use(cors({
       origin: '*', // Semua origin boleh (diperlukan untuk mobile app)
-      methods: ['GET', 'POST'], // Method yang diizinkan
+      methods: ['GET', 'POST', 'PUT', 'DELETE'], // Method yang diizinkan
       allowedHeaders: ['Content-Type', 'x-app-key', 'user-agent'] // Header yang diizinkan
     }));
     
@@ -755,7 +755,7 @@ class SimpleNFCAdmin {
     
     // Middleware logging: Catat semua request yang masuk
     this.app.use((req, res, next) => {
-      console.log(`📞 ${req.method} ${req.path} from ${req.ip}`);
+      console.log(`?? ${req.method} ${req.path} from ${req.ip}`);
       next(); // Lanjut ke route handler
     });
     
@@ -910,7 +910,7 @@ class SimpleNFCAdmin {
       // Update waktu terakhir device terlihat
       this.deviceLastSeen.set(device.deviceId, now);
 
-      console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`);
+      console.log(`?? Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`);
 
       // Cek apakah ada update balance yang menunggu (pending)
       const pendingUpdates = this.getPendingUpdates(device.deviceId);
@@ -928,7 +928,7 @@ class SimpleNFCAdmin {
       this.clearPendingUpdates(device.deviceId);
       
     } catch (error) {
-      console.error('❌ Sync error:', error); // Log error
+      console.error('? Sync error:', error); // Log error
       res.status(500).json({ error: error.message }); // Kirim error response
     }
   }
@@ -941,11 +941,11 @@ class SimpleNFCAdmin {
    * STRATEGY (2 SOURCES):
    * 1. PRIMARY SOURCE: Backend server
    *    - Call GET /api/debug/users
-   *    - Transform user data → device format
+   *    - Transform user data ? device format
    *    - Setiap user = 1 "device" (for dashboard display)
    *    
    * 2. FALLBACK SOURCE: Local cache
-   *    - Jika backend error → use this.devices Map
+   *    - Jika backend error ? use this.devices Map
    *    - Data dari mobile app sync (syncDevice)
    *    - Check online status (last sync < 5 min)
    * 
@@ -990,41 +990,40 @@ class SimpleNFCAdmin {
           headers: {
             'Content-Type': 'application/json',
             'x-app-key': 'NFC2025SecureApp',
-            'ngrok-skip-browser-warning': 'true',
             'ngrok-skip-browser-warning': 'true'
           }
         };
 
         const backendData = await new Promise((resolve, reject) => {
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih client http/https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk data
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data masuk
+              data += chunk; // Tambahkan chunk ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai diterima
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON string menjadi objek
+                resolve(jsonData); // Selesaikan Promise dengan data hasil parse
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event saat terjadi error koneksi
+            reject(error); // Reject Promise dengan error koneksi
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
-            reject(new Error('Timeout'));
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request yang melebihi batas waktu
+            reject(new Error('Timeout')); // Reject dengan error timeout
           });
           
-          req.end();
+          req.end(); // Kirim request ke backend
         });
         
         if (backendData && backendData.users) {
@@ -1049,13 +1048,13 @@ class SimpleNFCAdmin {
           });
           
           const devices = Array.from(uniqueUsers.values());
-          console.log(`🔍 API call: /api/devices - Returning ${devices.length} unique users from backend`);
+          console.log(`?? API call: /api/devices - Returning ${devices.length} unique users from backend`);
           res.json(devices);
           return;
         }
         
       } catch (backendError) {
-        console.error('❌ Backend users error:', backendError.message);
+        console.error('? Backend users error:', backendError.message);
       }
       
       // FALLBACK: Use local device cache
@@ -1081,10 +1080,10 @@ class SimpleNFCAdmin {
         };
       });
 
-      console.log(`🔍 API call: /api/devices (fallback) - Returning ${devices.length} devices from cache`);
+      console.log(`?? API call: /api/devices (fallback) - Returning ${devices.length} devices from cache`);
       res.json(devices); // Kirim array devices ke dashboard
     } catch (error) {
-      console.error('❌ Get devices error:', error);
+      console.error('? Get devices error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -1154,7 +1153,7 @@ class SimpleNFCAdmin {
    * 2. Input amount (e.g., 100000)
    * 3. Input admin password
    * 4. Submit top-up
-   * 5. Mobile app sync → receive update → apply balance
+   * 5. Mobile app sync ? receive update ? apply balance
    */
   async updateBalanceSecure(req, res) {
     try {
@@ -1163,7 +1162,7 @@ class SimpleNFCAdmin {
       
       // Validasi password admin (keamanan sederhana)
       if (adminPassword !== ADMIN_PASSWORD) {
-        console.log(`🚫 Wrong admin password from ${clientIP}`);
+        console.log(`?? Wrong admin password from ${clientIP}`);
         return res.status(401).json({ error: 'Password admin salah!' });
       }
       
@@ -1195,7 +1194,7 @@ class SimpleNFCAdmin {
         });
       });
 
-      console.log(`💰 Admin added Rp ${amount.toLocaleString('id-ID')} to device ${deviceId.substring(0, 8)}... for ${device.users.length} users`);
+      console.log(`?? Admin added Rp ${amount.toLocaleString('id-ID')} to device ${deviceId.substring(0, 8)}... for ${device.users.length} users`);
 
       res.json({
         success: true,
@@ -1204,7 +1203,7 @@ class SimpleNFCAdmin {
       });
 
     } catch (error) {
-      console.error('❌ Update balance error:', error);
+      console.error('? Update balance error:', error);
       res.status(500).json({ error: 'Terjadi kesalahan server' });
     }
   }
@@ -1212,47 +1211,47 @@ class SimpleNFCAdmin {
   // Update balance user dari admin - LEGACY (akan dihapus)
   async updateBalance(req, res) {
     try {
-      const { deviceId, amount } = req.body;
+      const { deviceId, amount } = req.body; // Ambil deviceId dan amount dari request body
       
-      if (!deviceId || !amount) {
+      if (!deviceId || !amount) { // Validasi field wajib
         return res.status(400).json({ error: 'Missing deviceId or amount' });
       }
 
       // Simpan update untuk semua user di device ini
-      const device = this.devices.get(deviceId);
-      if (!device || !device.users) {
+      const device = this.devices.get(deviceId); // Cari device di cache
+      if (!device || !device.users) { // Device tidak ditemukan
         return res.status(404).json({ error: 'Device not found or no users' });
       }
 
       // Queue balance update untuk setiap user di device
-      device.users.forEach(user => {
-        const updateKey = `${deviceId}_${user.id}`;
-        this.pendingUpdates.set(updateKey, {
-          deviceId,
-          userId: user.id,
+      device.users.forEach(user => { // Loop setiap user di device
+        const updateKey = `${deviceId}_${user.id}`; // Buat key unik per user per device
+        this.pendingUpdates.set(updateKey, { // Simpan update ke Map pending updates
+          deviceId, // ID device target
+          userId: user.id, // ID user yang di-update
           newBalance: user.balance + amount, // Tambahkan ke balance saat ini
-          reason: `Admin top-up: +${amount}`,
-          timestamp: new Date().toISOString()
+          reason: `Admin top-up: +${amount}`, // Alasan update
+          timestamp: new Date().toISOString() // Waktu update
         });
       });
 
-      console.log(`💰 Balance update queued for device ${deviceId.substring(0, 8)}... | Amount: +${amount} for ${device.users.length} users`);
+      console.log(`?? Balance update queued for device ${deviceId.substring(0, 8)}... | Amount: +${amount} for ${device.users.length} users`);
 
-      res.json({
+      res.json({ // Kirim response sukses ke client
         success: true,
         message: `Balance update queued for ${device.users.length} users`,
-        usersUpdated: device.users.length
+        usersUpdated: device.users.length // Jumlah user yang di-update
       });
 
     } catch (error) {
-      console.error('❌ Update balance error:', error);
+      console.error('? Update balance error:', error);
       res.status(500).json({ error: error.message });
     }
   }
 
   /**
    * HELPER FUNCTIONS
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    */
   
   /**
@@ -1260,7 +1259,7 @@ class SimpleNFCAdmin {
    * FUNGSI: Ambil semua pending balance updates untuk device tertentu
    * 
    * PARAMETER:
-   * - deviceId: string → Target device ID
+   * - deviceId: string ? Target device ID
    * 
    * RETURN: BalanceUpdate[]
    * Array of pending updates untuk device ini
@@ -1293,7 +1292,7 @@ class SimpleNFCAdmin {
    * FUNGSI: Hapus semua pending updates setelah sent ke device
    * 
    * PARAMETER:
-   * - deviceId: string → Target device ID
+   * - deviceId: string ? Target device ID
    * 
    * FLOW:
    * 1. Loop semua pendingUpdates Map entries
@@ -1349,16 +1348,16 @@ class SimpleNFCAdmin {
         // Hapus device yang offline lebih dari 10 menit
         if ((now - device.lastSyncAt) > 600000) { // 10 menit = 600000 ms
           this.devices.delete(deviceId); // Hapus dari Map
-          console.log(`🗑️ Removed inactive device: ${deviceId.substring(0, 8)}...`);
+          console.log(`??? Removed inactive device: ${deviceId.substring(0, 8)}...`);
         }
       }
     }, 300000); // Check tiap 5 menit = 300000 ms
   }
 
   /**
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    * FRAUD DETECTION ENDPOINTS
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    */
   
   /**
@@ -1374,7 +1373,7 @@ class SimpleNFCAdmin {
    *   },
    *   fraudDetection: {
    *     isBlocked: boolean,       // Transaksi diblokir atau tidak
-   *     riskScore: number,        // Nilai Z-Score aktual. Sentinel -1 = σ=0, X≠μ.
+   *     riskScore: number,        // Nilai Z-Score aktual. Sentinel -1 = s=0, X?�.
    *     riskLevel: string,        // 'NORMAL', 'SUSPICIOUS', 'ANOMALY'
    *     reasons: string[],        // Array alasan fraud
    *     transaction: {
@@ -1405,8 +1404,8 @@ class SimpleNFCAdmin {
    * }
    * 
    * USE CASE:
-   * Mobile app AI detect fraud → send alert ke admin server
-   * → Dashboard show alert → Admin review → Take action
+   * Mobile app AI detect fraud ? send alert ke admin server
+   * ? Dashboard show alert ? Admin review ? Take action
    */
   async handleFraudAlert(req, res) {
     try {
@@ -1415,6 +1414,10 @@ class SimpleNFCAdmin {
       // Validasi: fraud data wajib ada
       if (!fraudDetection) {
         return res.status(400).json({ error: 'Fraud detection data required' });
+      }
+
+      if (!device || !device.deviceId) {
+        return res.status(400).json({ error: 'Device data required' });
       }
 
       const alertId = `fraud_${Date.now()}_${device.deviceId}`; // Generate ID unik
@@ -1448,9 +1451,9 @@ class SimpleNFCAdmin {
         this.fraudStats.reviewTransactions++; // Tambah review transactions
       }
 
-      console.log(`🚨 FRAUD ALERT: ${fraudDetection.riskLevel} risk (Z=${fraudDetection.riskScore}) from device ${device.deviceId.slice(-8)}`);
+      console.log(`?? FRAUD ALERT: ${fraudDetection.riskLevel} risk (Z=${fraudDetection.riskScore}) from device ${device.deviceId.slice(-8)}`);
       console.log(`   Decision: ${fraudDetection.decision}`);
-      console.log(`   Reasons: ${fraudDetection.reasons.join(', ')}`);
+      console.log(`   Reasons: ${Array.isArray(fraudDetection.reasons) ? fraudDetection.reasons.join(', ') : fraudDetection.reasons}`);
       console.log(`   Confidence: ${Math.round(fraudDetection.confidence * 100)}%`);
 
       res.json({
@@ -1460,7 +1463,7 @@ class SimpleNFCAdmin {
       });
 
     } catch (error) {
-      console.error('❌ Fraud alert error:', error);
+      console.error('? Fraud alert error:', error);
       res.status(500).json({ error: 'Failed to process fraud alert' });
     }
   }
@@ -1503,7 +1506,7 @@ class SimpleNFCAdmin {
       });
 
     } catch (error) {
-      console.error('❌ Get fraud alerts error:', error);
+      console.error('? Get fraud alerts error:', error);
       res.status(500).json({ error: 'Failed to get fraud alerts' });
     }
   }
@@ -1557,7 +1560,7 @@ class SimpleNFCAdmin {
           : 0
       };
 
-      console.log(`📊 Transactions requested: ${limitedTransactions.length} of ${allTransactions.length} total`);
+      console.log(`?? Transactions requested: ${limitedTransactions.length} of ${allTransactions.length} total`);
 
       res.json({
         success: true,
@@ -1568,27 +1571,27 @@ class SimpleNFCAdmin {
       });
 
     } catch (error) {
-      console.error('❌ Get transactions error:', error);
+      console.error('? Get transactions error:', error);
       res.status(500).json({ error: 'Failed to get transactions' });
     }
   }
 
   /**
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    * USER MANAGEMENT ENDPOINTS
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    * Endpoints untuk CRUD operations user via backend proxy
    * All endpoints forward request ke backend server (port 4000)
    * 
    * USER ENDPOINTS LIST:
-   * - GET    /api/users         → List all users
-   * - POST   /api/users         → Create new user
-   * - PUT    /api/users/:id     → Update user data
-   * - DELETE /api/users/:id     → Delete user
-   * - POST   /api/block-user    → Block user account
-   * - POST   /api/unblock-user  → Unblock user account
-   * - POST   /api/bulk-topup    → Bulk top-up multiple users
-   * - POST   /api/reset-balance → Reset user balance to 0
+   * - GET    /api/users         ? List all users
+   * - POST   /api/users         ? Create new user
+   * - PUT    /api/users/:id     ? Update user data
+   * - DELETE /api/users/:id     ? Delete user
+   * - POST   /api/block-user    ? Block user account
+   * - POST   /api/unblock-user  ? Unblock user account
+   * - POST   /api/bulk-topup    ? Bulk top-up multiple users
+   * - POST   /api/reset-balance ? Reset user balance to 0
    * 
    * DATA SOURCE STRATEGY:
    * 1. PRIMARY: Backend database (via HTTP request)
@@ -1657,12 +1660,12 @@ class SimpleNFCAdmin {
           });
           
           request.setTimeout(5000, () => {
-            request.abort();
+            request.destroy();
             reject(new Error('Timeout'));
           });
         });
         
-        console.log(`✅ Loaded ${backendData.users?.length || 0} users from backend database`);
+        console.log(`? Loaded ${backendData.users?.length || 0} users from backend database`);
         
         // Format untuk dashboard display
         const formattedData = {
@@ -1679,7 +1682,7 @@ class SimpleNFCAdmin {
         return res.json(formattedData);
         
       } catch (backendError) {
-        console.log('⚠️ Backend tidak tersedia, gunakan cache device:', backendError.message);
+        console.log('?? Backend tidak tersedia, gunakan cache device:', backendError.message);
       }
       
       // FALLBACK: Ambil dari device cache jika backend error
@@ -1710,7 +1713,7 @@ class SimpleNFCAdmin {
       });
 
     } catch (error) {
-      console.error('❌ Get users error:', error);
+      console.error('? Get users error:', error);
       res.status(500).json({ error: 'Failed to get users' });
     }
   }
@@ -1718,25 +1721,25 @@ class SimpleNFCAdmin {
   // Create user baru (POST /api/users) - Belum diimplementasi
   async createUserEndpoint(req, res) {
     try {
-      const { username, name, password, balance = 1000000 } = req.body; // Ambil data user
+      const { username, name, password, balance = 1000000 } = req.body; // Ambil data user dari request body
       
       // Validasi input wajib
-      if (!username || !name || !password) {
+      if (!username || !name || !password) { // Semua field wajib diisi
         return res.status(400).json({ error: 'Username, name, and password required' });
       }
 
       // TODO: Implementasi logic create user
       // Ini harus terintegrasi dengan backend database (Prisma)
-      console.log('⚠️ Create user requested:', { username, name, balance });
+      console.log('?? Create user requested:', { username, name, balance });
       
-      res.json({
+      res.json({ // Kirim response sementara (belum terintegrasi)
         success: true,
         message: 'User creation endpoint ready - needs backend integration',
-        data: { username, name, balance }
+        data: { username, name, balance } // Echo data yang diterima
       });
 
     } catch (error) {
-      console.error('❌ Create user error:', error);
+      console.error('? Create user error:', error);
       res.status(500).json({ error: 'Failed to create user' });
     }
   }
@@ -1753,59 +1756,59 @@ class SimpleNFCAdmin {
       }
 
       // Kirim update ke backend
-      const backendUrl = `${BACKEND_URL}/api/users/${userId}`;
+      const backendUrl = `${BACKEND_URL}/api/users/${userId}`; // URL endpoint backend untuk update user
       
       try {
         const backendData = await new Promise((resolve, reject) => {
-          const postData = JSON.stringify({ balance, name });
+          const postData = JSON.stringify({ balance, name }); // Serialize body request ke JSON
           
-          const backendConfig = parseBackendUrl();
+          const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
           const options = {
-            hostname: backendConfig.hostname,
-            port: backendConfig.port,
-            path: `/api/users/${userId}`,
-            method: 'PUT',
+            hostname: backendConfig.hostname, // Hostname backend
+            port: backendConfig.port, // Port backend
+            path: `/api/users/${userId}`, // Path endpoint dengan user ID
+            method: 'PUT', // Method HTTP PUT untuk update
             headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(postData),
-              'ngrok-skip-browser-warning': 'true'
+              'Content-Type': 'application/json', // Format body JSON
+              'Content-Length': Buffer.byteLength(postData), // Panjang body dalam bytes
+              'ngrok-skip-browser-warning': 'true' // Header untuk melewati warning ngrok
             }
           };
           
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const request = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          request.on('error', (error) => {
-            reject(error);
+          request.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise dengan error
           });
           
-          request.setTimeout(5000, () => {
-            request.abort();
+          request.setTimeout(5000, () => { // Timeout 5 detik
+            request.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          request.write(postData);
-          request.end();
+          request.write(postData); // Tulis body JSON ke request
+          request.end(); // Kirim request ke backend
         });
         
-        console.log(`✅ Updated user ${userId} in backend`);
-        res.json(backendData);
+        console.log(`? Updated user ${userId} in backend`);
+        res.json(backendData); // Kirim response backend langsung ke client
         
       } catch (backendError) {
         console.error('Backend update error:', backendError.message);
@@ -1813,7 +1816,7 @@ class SimpleNFCAdmin {
       }
 
     } catch (error) {
-      console.error('❌ Update user error:', error);
+      console.error('? Update user error:', error);
       res.status(500).json({ error: 'Failed to update user' });
     }
   }
@@ -1823,82 +1826,82 @@ class SimpleNFCAdmin {
     try {
       const userId = parseInt(req.params.id); // Ambil user ID dari URL
       
-      console.log(`🗑️ DELETE request for user ID: ${userId}`);
+      console.log(`??? DELETE request for user ID: ${userId}`);
       
       // Validasi userId wajib ada
       if (!userId) {
-        console.log('❌ No user ID provided');
+        console.log('? No user ID provided');
         return res.status(400).json({ error: 'User ID required' });
       }
 
       // Parse backend URL
       const backendConfig = parseBackendUrl();
-      console.log(`📡 Connecting to backend: ${backendConfig.protocol}://${backendConfig.hostname}:${backendConfig.port}`);
+      console.log(`?? Connecting to backend: ${backendConfig.protocol}://${backendConfig.hostname}:${backendConfig.port}`);
 
       // Kirim delete ke backend
       try {
         const backendData = await new Promise((resolve, reject) => {
           const options = {
-            hostname: backendConfig.hostname,
-            port: backendConfig.port,
-            path: `/api/users/${userId}`,
-            method: 'DELETE',
+            hostname: backendConfig.hostname, // Hostname backend
+            port: backendConfig.port, // Port backend
+            path: `/api/users/${userId}`, // Path dengan user ID
+            method: 'DELETE', // Method HTTP DELETE
             headers: {
-              'Content-Type': 'application/json',
-              'x-app-key': APP_SECRET,
-              'user-agent': 'admin-dashboard/1.0'
+              'Content-Type': 'application/json', // Format JSON
+              'x-app-key': APP_SECRET, // Header autentikasi app key
+              'user-agent': 'admin-dashboard/1.0' // Identifikasi sebagai admin dashboard
             }
           };
           
-          console.log(`📤 Sending DELETE to: ${options.path}`);
+          console.log(`?? Sending DELETE to: ${options.path}`);
           
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const request = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            console.log(`📥 Response status: ${response.statusCode}`);
+            console.log(`?? Response status: ${response.statusCode}`);
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
-              console.log(`📦 Response data:`, data.substring(0, 200));
+            response.on('end', () => { // Event saat response selesai
+              console.log(`?? Response data:`, data.substring(0, 200));
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                console.error('❌ JSON parse error:', parseError.message);
-                reject(new Error(`Parse error: ${data.substring(0, 100)}`));
+                console.error('? JSON parse error:', parseError.message);
+                reject(new Error(`Parse error: ${data.substring(0, 100)}`)); // Reject dengan info awal data
               }
             });
           });
           
-          request.on('error', (error) => {
-            console.error('❌ Request error:', error.message);
-            reject(error);
+          request.on('error', (error) => { // Event error koneksi
+            console.error('? Request error:', error.message);
+            reject(error); // Reject Promise
           });
           
-          request.setTimeout(5000, () => {
-            console.error('❌ Request timeout');
-            request.abort();
+          request.setTimeout(5000, () => { // Timeout 5 detik
+            console.error('? Request timeout');
+            request.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          request.end();
+          request.end(); // Kirim request DELETE (tanpa body)
         });
         
-        console.log(`✅ Deleted user ${userId} from backend:`, backendData);
-        res.json(backendData);
+        console.log(`? Deleted user ${userId} from backend:`, backendData);
+        res.json(backendData); // Kirim response backend ke client
         
       } catch (backendError) {
-        console.error('❌ Backend delete error:', backendError.message);
+        console.error('? Backend delete error:', backendError.message);
         res.status(500).json({ error: 'Failed to delete user from backend', details: backendError.message });
       }
 
     } catch (error) {
-      console.error('❌ Delete user error:', error);
+      console.error('? Delete user error:', error);
       res.status(500).json({ error: 'Failed to delete user', details: error.message });
     }
   }
@@ -1920,6 +1923,7 @@ class SimpleNFCAdmin {
 
       // IMPLEMENTASI BLOCK USER LANGSUNG KE BACKEND
       try {
+        const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         const postData = JSON.stringify({ userId: parseInt(userId), password });
         
         const options = {
@@ -1938,60 +1942,60 @@ class SimpleNFCAdmin {
 
         const backendData = await new Promise((resolve, reject) => {
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise dengan data
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          req.write(postData);
-          req.end();
+          req.write(postData); // Tulis body ke request
+          req.end(); // Kirim request ke backend
         });
         
         if (backendData.success) {
-          console.log(`🚫 User blocked: ${userId} (${backendData.user.username})`);
+          console.log(`?? User blocked: ${userId} (${backendData.user.username})`);
           
           res.json({
             success: true,
             message: `User ${backendData.user.username} has been blocked`,
-            user: backendData.user
+            user: backendData.user // Data user yang diblokir
           });
         } else {
-          throw new Error(backendData.error || 'Backend block user failed');
+          throw new Error(backendData.error || 'Backend block user failed'); // Lempar error jika backend gagal
         }
         
       } catch (backendError) {
-        console.error('❌ Backend block user error:', backendError.message);
+        console.error('? Backend block user error:', backendError.message);
         
         res.json({
           success: false,
-          error: `Failed to block user: ${backendError.message}`
+          error: `Failed to block user: ${backendError.message}` // Pesan error ke client
         });
       }
 
     } catch (error) {
-      console.error('❌ Block user error:', error);
+      console.error('? Block user error:', error);
       res.status(500).json({ error: 'Failed to block user' });
     }
   }
@@ -2013,78 +2017,79 @@ class SimpleNFCAdmin {
 
       // IMPLEMENTASI UNBLOCK USER LANGSUNG KE BACKEND
       try {
-        const postData = JSON.stringify({ userId: parseInt(userId), password });
+        const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
+        const postData = JSON.stringify({ userId: parseInt(userId), password }); // Serialize body request ke JSON
         
         const options = {
-          hostname: backendConfig.hostname,
-          port: backendConfig.port,
-          path: '/api/admin/unblock-user',
-          method: 'POST',
+          hostname: backendConfig.hostname, // Hostname backend
+          port: backendConfig.port, // Port backend
+          path: '/api/admin/unblock-user', // Endpoint unblock user di backend
+          method: 'POST', // Method HTTP POST
           headers: {
-            'Content-Type': 'application/json',
-            'x-app-key': 'NFC2025SecureApp',
-            'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': ADMIN_PASSWORD,
-            'Content-Length': Buffer.byteLength(postData)
+            'Content-Type': 'application/json', // Format body JSON
+            'x-app-key': 'NFC2025SecureApp', // Header autentikasi app key
+            'ngrok-skip-browser-warning': 'true', // Lewati warning ngrok
+            'x-admin-password': ADMIN_PASSWORD, // Header password admin
+            'Content-Length': Buffer.byteLength(postData) // Panjang body dalam bytes
           }
         };
 
         const backendData = await new Promise((resolve, reject) => {
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          req.write(postData);
-          req.end();
+          req.write(postData); // Tulis body ke request
+          req.end(); // Kirim request ke backend
         });
         
-        if (backendData.success) {
-          console.log(`✅ User unblocked: ${userId} (${backendData.user.username})`);
+        if (backendData.success) { // Jika backend berhasil membuka blokir
+          console.log(`? User unblocked: ${userId} (${backendData.user.username})`);
           
           res.json({
             success: true,
             message: `User ${backendData.user.username} has been unblocked`,
-            user: backendData.user
+            user: backendData.user // Data user yang sudah dibuka blokirnya
           });
         } else {
-          throw new Error(backendData.error || 'Backend unblock user failed');
+          throw new Error(backendData.error || 'Backend unblock user failed'); // Lempar error jika gagal
         }
         
       } catch (backendError) {
-        console.error('❌ Backend unblock user error:', backendError.message);
+        console.error('? Backend unblock user error:', backendError.message);
         
         res.json({
           success: false,
-          error: `Failed to unblock user: ${backendError.message}`
+          error: `Failed to unblock user: ${backendError.message}` // Pesan error ke client
         });
       }
 
     } catch (error) {
-      console.error('❌ Unblock user error:', error);
+      console.error('? Unblock user error:', error);
       res.status(500).json({ error: 'Failed to unblock user' });
     }
   }
@@ -2106,104 +2111,105 @@ class SimpleNFCAdmin {
 
       // IMPLEMENTASI BULK TOPUP LANGSUNG KE BACKEND
       try {
-        const backendUrl = `${BACKEND_URL}/api/admin/bulk-topup`;
+        const backendUrl = `${BACKEND_URL}/api/admin/bulk-topup`; // URL endpoint bulk topup backend
+        const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         
         // HTTP request ke backend untuk bulk topup
         const backendData = await new Promise((resolve, reject) => {
-          const postData = JSON.stringify({ amount: parseInt(amount) });
+          const postData = JSON.stringify({ amount: parseInt(amount) }); // Serialize body request
           
           const options = {
-            hostname: backendConfig.hostname,
-            port: backendConfig.port,
-            path: '/api/admin/bulk-topup',
-            method: 'POST',
+            hostname: backendConfig.hostname, // Hostname backend
+            port: backendConfig.port, // Port backend
+            path: '/api/admin/bulk-topup', // Endpoint bulk topup
+            method: 'POST', // Method HTTP POST
             headers: {
-              'Content-Type': 'application/json',
-              'x-app-key': 'NFC2025SecureApp',
-            'ngrok-skip-browser-warning': 'true',
-              'x-admin-password': ADMIN_PASSWORD,
-              'Content-Length': Buffer.byteLength(postData)
+              'Content-Type': 'application/json', // Format body JSON
+              'x-app-key': 'NFC2025SecureApp', // Header autentikasi app key
+            'ngrok-skip-browser-warning': 'true', // Lewati warning ngrok
+              'x-admin-password': ADMIN_PASSWORD, // Header password admin
+              'Content-Length': Buffer.byteLength(postData) // Panjang body dalam bytes
             }
           };
 
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          req.write(postData);
-          req.end();
+          req.write(postData); // Tulis body ke request
+          req.end(); // Kirim request ke backend
         });
         
-        if (backendData.success) {
-          console.log(`✅ Bulk topup berhasil: ${backendData.updatedUsers} users, amount: ${amount}`);
+        if (backendData.success) { // Jika backend berhasil bulk topup
+          console.log(`? Bulk topup berhasil: ${backendData.updatedUsers} users, amount: ${amount}`);
           
           res.json({
             success: true,
             message: `Bulk topup berhasil untuk ${backendData.updatedUsers} users`,
             data: {
-              amount: amount,
-              updatedUsers: backendData.updatedUsers,
-              totalAmount: backendData.totalAmount
+              amount: amount, // Jumlah top-up per user
+              updatedUsers: backendData.updatedUsers, // Jumlah user yang di-update
+              totalAmount: backendData.totalAmount // Total saldo yang ditambahkan
             }
           });
         } else {
-          throw new Error(backendData.error || 'Backend bulk topup failed');
+          throw new Error(backendData.error || 'Backend bulk topup failed'); // Lempar error jika gagal
         }
         
       } catch (backendError) {
-        console.error('❌ Backend bulk topup error:', backendError.message);
+        console.error('? Backend bulk topup error:', backendError.message);
         
         // FALLBACK: Update di device cache (temporary)
-        let updatedCount = 0;
-        this.devices.forEach((deviceData, deviceId) => {
-          if (deviceData.users) {
-            deviceData.users.forEach(user => {
-              user.balance = (parseInt(user.balance) || 0) + parseInt(amount);
-              updatedCount++;
+        let updatedCount = 0; // Counter user yang di-update
+        this.devices.forEach((deviceData, deviceId) => { // Loop semua device
+          if (deviceData.users) { // Jika device punya user
+            deviceData.users.forEach(user => { // Loop setiap user di device
+              user.balance = (parseInt(user.balance) || 0) + parseInt(amount); // Tambahkan amount ke balance
+              updatedCount++; // Increment counter
             });
-            deviceData.totalBalance = deviceData.users.reduce((sum, user) => sum + (parseInt(user.balance) || 0), 0);
+            deviceData.totalBalance = deviceData.users.reduce((sum, user) => sum + (parseInt(user.balance) || 0), 0); // Hitung ulang total balance device
           }
         });
         
-        console.log(`⚠️ Fallback bulk topup: ${updatedCount} users in cache, amount: ${amount}`);
+        console.log(`?? Fallback bulk topup: ${updatedCount} users in cache, amount: ${amount}`);
         
         res.json({
           success: true,
           message: `Bulk topup applied to ${updatedCount} users (cache only - backend unavailable)`,
           data: {
-            amount: amount,
-            updatedUsers: updatedCount,
-            warning: 'Applied to local cache only, may not persist'
+            amount: amount, // Jumlah top-up
+            updatedUsers: updatedCount, // Jumlah user yang di-update di cache
+            warning: 'Applied to local cache only, may not persist' // Peringatan data hanya di cache
           }
         });
       }
 
     } catch (error) {
-      console.error('❌ Bulk topup error:', error);
+      console.error('? Bulk topup error:', error);
       res.status(500).json({ error: 'Failed to perform bulk topup' });
     }
   }
@@ -2211,115 +2217,116 @@ class SimpleNFCAdmin {
   // Reset balance user tertentu (POST /api/reset-balance)
   async resetBalanceEndpoint(req, res) {
     try {
-      const { userId, newBalance, password } = req.body;
+      const { userId, newBalance, password } = req.body; // Ambil userId, newBalance, dan password dari request
       
       // Validasi password admin
-      if (password !== ADMIN_PASSWORD) {
+      if (password !== ADMIN_PASSWORD) { // Password admin wajib cocok
         return res.status(401).json({ error: 'Invalid admin password' });
       }
 
       // Validasi userId dan newBalance
-      if (!userId) {
+      if (!userId) { // userId wajib ada
         return res.status(400).json({ error: 'User ID required' });
       }
       
-      if (newBalance === undefined || newBalance === null) {
+      if (newBalance === undefined || newBalance === null) { // newBalance wajib ada
         return res.status(400).json({ error: 'New balance required' });
       }
 
       // IMPLEMENTASI RESET BALANCE LANGSUNG KE BACKEND
       try {
-        const postData = JSON.stringify({ userId: parseInt(userId), newBalance: parseInt(newBalance), password });
+        const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
+        const postData = JSON.stringify({ userId: parseInt(userId), newBalance: parseInt(newBalance), password }); // Serialize body request
         
         const options = {
-          hostname: backendConfig.hostname,
-          port: backendConfig.port,
-          path: '/api/admin/reset-balance',
-          method: 'POST',
+          hostname: backendConfig.hostname, // Hostname backend
+          port: backendConfig.port, // Port backend
+          path: '/api/admin/reset-balance', // Endpoint reset balance di backend
+          method: 'POST', // Method HTTP POST
           headers: {
-            'Content-Type': 'application/json',
-            'x-app-key': 'NFC2025SecureApp',
-            'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': ADMIN_PASSWORD,
-            'Content-Length': Buffer.byteLength(postData)
+            'Content-Type': 'application/json', // Format body JSON
+            'x-app-key': 'NFC2025SecureApp', // Header autentikasi app key
+            'ngrok-skip-browser-warning': 'true', // Lewati warning ngrok
+            'x-admin-password': ADMIN_PASSWORD, // Header password admin
+            'Content-Length': Buffer.byteLength(postData) // Panjang body dalam bytes
           }
         };
 
         const backendData = await new Promise((resolve, reject) => {
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          req.write(postData);
-          req.end();
+          req.write(postData); // Tulis body ke request
+          req.end(); // Kirim request ke backend
         });
 
-        if (backendData.success || backendData.user) {
-          console.log(`✅ Reset balance success for user ${userId}`);
+        if (backendData.success || backendData.user) { // Jika backend berhasil reset balance
+          console.log(`? Reset balance success for user ${userId}`);
           
           res.json({
             success: true,
             message: `Balance reset untuk user ${userId}`,
-            user: backendData.user
+            user: backendData.user // Data user setelah reset balance
           });
         } else {
-          throw new Error(backendData.error || 'Backend reset balance failed');
+          throw new Error(backendData.error || 'Backend reset balance failed'); // Lempar error jika gagal
         }
 
       } catch (backendError) {
-        console.error('❌ Backend reset balance error:', backendError.message);
+        console.error('? Backend reset balance error:', backendError.message);
         
         // FALLBACK: Update di device cache (temporary)
-        let userFound = false;
-        this.devices.forEach((deviceData, deviceId) => {
-          if (deviceData.users) {
-            const user = deviceData.users.find(u => u.id === parseInt(userId));
-            if (user) {
-              user.balance = 0;
-              userFound = true;
-              deviceData.totalBalance = deviceData.users.reduce((sum, u) => sum + (parseInt(u.balance) || 0), 0);
+        let userFound = false; // Flag untuk menandai apakah user ditemukan
+        this.devices.forEach((deviceData, deviceId) => { // Loop semua device
+          if (deviceData.users) { // Jika device punya user
+            const user = deviceData.users.find(u => u.id === parseInt(userId)); // Cari user berdasarkan ID
+            if (user) { // Jika user ditemukan
+              user.balance = 0; // Reset balance ke 0
+              userFound = true; // Tandai user ditemukan
+              deviceData.totalBalance = deviceData.users.reduce((sum, u) => sum + (parseInt(u.balance) || 0), 0); // Hitung ulang total balance
             }
           }
         });
         
-        if (userFound) {
-          console.log(`⚠️ Fallback reset balance for user ${userId} (cache only)`);
+        if (userFound) { // Jika user ditemukan di cache
+          console.log(`?? Fallback reset balance for user ${userId} (cache only)`);
           res.json({
             success: true,
             message: `Reset balance untuk user ${userId} (cache only - backend unavailable)`,
-            warning: 'Applied to local cache only, may not persist'
+            warning: 'Applied to local cache only, may not persist' // Peringatan data hanya di cache
           });
         } else {
-          res.status(500).json({ error: 'User tidak ditemukan dan backend tidak tersedia' });
+          res.status(500).json({ error: 'User tidak ditemukan dan backend tidak tersedia' }); // User tidak ada
         }
       }
 
     } catch (error) {
-      console.error('❌ Reset balance error:', error);
+      console.error('? Reset balance error:', error);
       res.status(500).json({ error: 'Failed to reset balance' });
     }
   }
@@ -2329,110 +2336,111 @@ class SimpleNFCAdmin {
     try {
       // IMPLEMENTASI CLEAR FRAUD ALERTS LANGSUNG KE BACKEND
       try {
-        const postData = JSON.stringify({});
+        const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
+        const postData = JSON.stringify({}); // Body kosong untuk request clear
         
         const options = {
-          hostname: backendConfig.hostname,
-          port: backendConfig.port,
-          path: '/api/admin/clear-fraud-alerts',
-          method: 'POST',
+          hostname: backendConfig.hostname, // Hostname backend
+          port: backendConfig.port, // Port backend
+          path: '/api/admin/clear-fraud-alerts', // Endpoint clear fraud alerts
+          method: 'POST', // Method HTTP POST
           headers: {
-            'Content-Type': 'application/json',
-            'x-app-key': 'NFC2025SecureApp',
-            'ngrok-skip-browser-warning': 'true',
-            'x-admin-password': ADMIN_PASSWORD,
-            'Content-Length': Buffer.byteLength(postData)
+            'Content-Type': 'application/json', // Format body JSON
+            'x-app-key': 'NFC2025SecureApp', // Header autentikasi app key
+            'ngrok-skip-browser-warning': 'true', // Lewati warning ngrok
+            'x-admin-password': ADMIN_PASSWORD, // Header password admin
+            'Content-Length': Buffer.byteLength(postData) // Panjang body dalam bytes
           }
         };
 
         const backendData = await new Promise((resolve, reject) => {
           // Select correct client based on protocol
-          const client = backendConfig.protocol === 'https' ? https : http;
+          const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           const req = client.request(options, (response) => {
-            let data = '';
+            let data = ''; // Buffer untuk menampung chunk response
             
-            response.on('data', (chunk) => {
-              data += chunk;
+            response.on('data', (chunk) => { // Event tiap ada potongan data
+              data += chunk; // Gabungkan ke buffer
             });
             
-            response.on('end', () => {
+            response.on('end', () => { // Event saat response selesai
               try {
-                const jsonData = JSON.parse(data);
-                resolve(jsonData);
+                const jsonData = JSON.parse(data); // Parse JSON response
+                resolve(jsonData); // Selesaikan Promise
               } catch (parseError) {
-                reject(parseError);
+                reject(parseError); // Gagal parse, reject Promise
               }
             });
           });
           
-          req.on('error', (error) => {
-            reject(error);
+          req.on('error', (error) => { // Event error koneksi
+            reject(error); // Reject Promise
           });
           
-          req.setTimeout(10000, () => {
-            req.abort();
+          req.setTimeout(10000, () => { // Timeout 10 detik
+            req.destroy(); // Batalkan request timeout
             reject(new Error('Timeout'));
           });
           
-          req.write(postData);
-          req.end();
+          req.write(postData); // Tulis body kosong ke request
+          req.end(); // Kirim request ke backend
         });
         
-        if (backendData.success) {
-          console.log(`✅ Backend cleared ${backendData.clearedCount} fraud alerts`);
+        if (backendData.success) { // Jika backend berhasil menghapus fraud alerts
+          console.log(`? Backend cleared ${backendData.clearedCount} fraud alerts`);
           
           // Also clear local cache
-          const localClearedCount = this.fraudAlerts.size;
-          this.fraudAlerts.clear();
-          this.fraudStats = {
-            totalAlerts: 0,
-            blockedTransactions: 0,
-            reviewTransactions: 0,
-            lastAlert: null
+          const localClearedCount = this.fraudAlerts.size; // Hitung fraud alerts di cache lokal
+          this.fraudAlerts.clear(); // Hapus semua fraud alerts dari Map lokal
+          this.fraudStats = { // Reset statistik fraud ke nilai awal
+            totalAlerts: 0, // Reset total alerts
+            blockedTransactions: 0, // Reset counter transaksi diblokir
+            reviewTransactions: 0, // Reset counter transaksi direview
+            lastAlert: null // Reset timestamp alert terakhir
           };
           
           res.json({
             success: true,
             message: `Cleared ${backendData.clearedCount} fraud alerts from backend, ${localClearedCount} from local cache`,
-            clearedCount: backendData.clearedCount
+            clearedCount: backendData.clearedCount // Jumlah alert yang dihapus di backend
           });
         } else {
-          throw new Error(backendData.error || 'Backend clear fraud alerts failed');
+          throw new Error(backendData.error || 'Backend clear fraud alerts failed'); // Lempar error jika gagal
         }
         
       } catch (backendError) {
-        console.error('❌ Backend clear fraud alerts error:', backendError.message);
+        console.error('? Backend clear fraud alerts error:', backendError.message);
         
         // FALLBACK: Clear local cache only
-        const clearedCount = this.fraudAlerts.size;
-        this.fraudAlerts.clear();
-        this.fraudStats = {
-          totalAlerts: 0,
-          blockedTransactions: 0,
-          reviewTransactions: 0,
-          lastAlert: null
+        const clearedCount = this.fraudAlerts.size; // Hitung alert yang akan dihapus
+        this.fraudAlerts.clear(); // Hapus semua fraud alerts dari Map lokal
+        this.fraudStats = { // Reset statistik fraud ke nilai awal
+          totalAlerts: 0, // Reset total alerts
+          blockedTransactions: 0, // Reset counter transaksi diblokir
+          reviewTransactions: 0, // Reset counter transaksi direview
+          lastAlert: null // Reset timestamp alert terakhir
         };
 
-        console.log(`⚠️ Fallback clear fraud alerts: ${clearedCount} alerts from local cache`);
+        console.log(`?? Fallback clear fraud alerts: ${clearedCount} alerts from local cache`);
         
         res.json({
           success: true,
           message: `Cleared ${clearedCount} fraud alerts (local cache only - backend unavailable)`,
-          clearedCount: clearedCount,
-          warning: 'Cleared from local cache only, may not persist'
+          clearedCount: clearedCount, // Jumlah alert yang dihapus dari cache
+          warning: 'Cleared from local cache only, may not persist' // Peringatan data hanya di cache
         });
       }
 
     } catch (error) {
-      console.error('❌ Clear fraud alerts error:', error);
+      console.error('? Clear fraud alerts error:', error);
       res.status(500).json({ error: 'Failed to clear fraud alerts' });
     }
   }
 
   /**
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    * NFC CARD MANAGEMENT ENDPOINTS
-   * ═════════════════════════════════════════════════════════════════════
+   * ---------------------------------------------------------------------
    * Endpoints untuk manage NFC cards via backend proxy
    * 
    * CARD POLICY: 1-card-per-user
@@ -2440,12 +2448,12 @@ class SimpleNFCAdmin {
    * - Card bisa: ACTIVE, BLOCKED, LOST, EXPIRED
    * 
    * NFC CARD ENDPOINTS:
-   * - GET    /api/nfc-cards           → List all cards
-   * - POST   /api/nfc-cards/register  → Register new card
-   * - POST   /api/nfc-cards/link      → Link card to user
-   * - POST   /api/nfc-cards/block     → Block card
-   * - POST   /api/nfc-cards/topup     → Top-up card balance
-   * - DELETE /api/nfc-cards/:cardId   → Delete card (admin only)
+   * - GET    /api/nfc-cards           ? List all cards
+   * - POST   /api/nfc-cards/register  ? Register new card
+   * - POST   /api/nfc-cards/link      ? Link card to user
+   * - POST   /api/nfc-cards/block     ? Block card
+   * - POST   /api/nfc-cards/topup     ? Top-up card balance
+   * - DELETE /api/nfc-cards/:cardId   ? Delete card (admin only)
    * 
    * CARD DATA FLOW:
    * 1. Physical NFC card scanned di mobile app
@@ -2468,51 +2476,51 @@ class SimpleNFCAdmin {
    */
   async getNFCCards(req, res) {
     try {
-      const backendConfig = parseBackendUrl();
-      const backendUrl = `${BACKEND_URL}/api/nfc-cards/list`;
+      const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
+      const backendUrl = `${BACKEND_URL}/api/nfc-cards/list`; // URL lengkap endpoint list kartu
       
       try {
         const options = {
-          hostname: backendConfig.hostname,
-          port: backendConfig.port,
-          path: '/api/nfc-cards/list?limit=1000', // Get ALL cards
-          method: 'GET',
-          protocol: backendConfig.protocol,
+          hostname: backendConfig.hostname, // Hostname backend
+          port: backendConfig.port, // Port backend
+          path: '/api/nfc-cards/list?limit=1000', // Get ALL cards - ambil semua kartu dengan limit besar
+          method: 'GET', // Method HTTP GET
+          protocol: backendConfig.protocol, // Protocol http/https
           headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
+            'Content-Type': 'application/json', // Format JSON
+            'ngrok-skip-browser-warning': 'true' // Lewati warning ngrok
           }
         };
 
-        console.log(`📡 Fetching ALL NFC cards from: ${BACKEND_URL}/api/nfc-cards/list`);
-        const backendData = await makeHttpRequest(options);
+        console.log(`?? Fetching ALL NFC cards from: ${BACKEND_URL}/api/nfc-cards/list`);
+        const backendData = await makeHttpRequest(options); // Kirim request ke backend
         
-        if (backendData.success) {
-          console.log(`✅ Loaded ${backendData.cards?.length || 0} NFC cards from backend (Total in DB: ${backendData.total})`);
+        if (backendData.success) { // Jika backend berhasil
+          console.log(`? Loaded ${backendData.cards?.length || 0} NFC cards from backend (Total in DB: ${backendData.total})`);
           res.json({
             success: true,
-            cards: backendData.cards || [],
-            total: backendData.total || (backendData.cards?.length || 0)
+            cards: backendData.cards || [], // Array kartu NFC
+            total: backendData.total || (backendData.cards?.length || 0) // Total kartu
           });
         } else {
-          throw new Error(backendData.error || 'Failed to load cards');
+          throw new Error(backendData.error || 'Failed to load cards'); // Error jika gagal
         }
       } catch (backendError) {
-        console.error('❌ Backend get NFC cards error:', backendError.message);
+        console.error('? Backend get NFC cards error:', backendError.message);
         res.json({
           success: false,
-          cards: [],
-          error: `Backend error: ${backendError.message}`,
-          total: 0
+          cards: [], // Kembalikan array kosong jika error
+          error: `Backend error: ${backendError.message}`, // Pesan error
+          total: 0 // Total 0 jika error
         });
       }
     } catch (error) {
-      console.error('❌ Get NFC cards error:', error);
+      console.error('? Get NFC cards error:', error);
       res.status(500).json({ 
         success: false,
-        error: `Server error: ${error.message}`,
-        cards: [],
-        total: 0
+        error: `Server error: ${error.message}`, // Pesan error server
+        cards: [], // Array kosong
+        total: 0 // Total 0
       });
     }
   }
@@ -2520,37 +2528,37 @@ class SimpleNFCAdmin {
   // Register new NFC card (POST /api/nfc-cards/register)
   async registerNFCCard(req, res) {
     try {
-      const { cardId, userId, cardType } = req.body;
+      const { cardId, userId, cardType } = req.body; // Ambil data kartu dari request body
       
-      if (!cardId || !userId) {
+      if (!cardId || !userId) { // Validasi field wajib
         return res.status(400).json({ error: 'cardId and userId are required' });
       }
 
-      const backendConfig = parseBackendUrl();
-      const postData = JSON.stringify({ cardId, userId, cardType: cardType || 'NTag215' });
+      const backendConfig = parseBackendUrl(); // Parse URL backend
+      const postData = JSON.stringify({ cardId, userId, cardType: cardType || 'NTag215' }); // Serialize body request
       
       const options = {
-        hostname: backendConfig.hostname,
-        port: backendConfig.port,
-        path: '/api/nfc-cards/register',
-        method: 'POST',
+        hostname: backendConfig.hostname, // Hostname backend
+        port: backendConfig.port, // Port backend
+        path: '/api/nfc-cards/register', // Endpoint register kartu
+        method: 'POST', // Method HTTP POST
         headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-          'Content-Length': Buffer.byteLength(postData)
+          'Content-Type': 'application/json', // Format JSON
+          'ngrok-skip-browser-warning': 'true', // Lewati warning ngrok
+          'Content-Length': Buffer.byteLength(postData) // Panjang body dalam bytes
         }
       };
 
-      const backendData = await makeHttpRequest({ ...options, body: { cardId, userId, cardType: cardType || 'NTag215' } });
+      const backendData = await makeHttpRequest({ ...options, body: { cardId, userId, cardType: cardType || 'NTag215' } }); // Kirim request ke backend
       
-      if (backendData.success) {
-        console.log(`✅ Registered NFC card: ${cardId} for user ${userId}`);
-        res.json(backendData);
+      if (backendData.success) { // Jika pendaftaran berhasil
+        console.log(`? Registered NFC card: ${cardId} for user ${userId}`);
+        res.json(backendData); // Teruskan response backend ke client
       } else {
-        res.status(400).json(backendData);
+        res.status(400).json(backendData); // Teruskan error dari backend
       }
     } catch (error) {
-      console.error('❌ Register NFC card error:', error);
+      console.error('? Register NFC card error:', error);
       res.status(500).json({ error: 'Failed to register NFC card' });
     }
   }
@@ -2558,31 +2566,32 @@ class SimpleNFCAdmin {
   // Link NFC card to user (POST /api/nfc-cards/link)
   async linkNFCCard(req, res) {
     try {
-      const { cardId, userId } = req.body;
+      const { cardId, userId } = req.body; // Ambil cardId dan userId dari request body
       
-      if (!cardId || !userId) {
+      if (!cardId || !userId) { // Validasi field wajib
         return res.status(400).json({ error: 'cardId and userId are required' });
       }
 
-      const backendConfig = parseBackendUrl();
+      const backendConfig = parseBackendUrl(); // Parse URL backend
       const options = {
-        hostname: backendConfig.hostname,
-        port: backendConfig.port,
-        path: '/api/nfc-cards/link',
-        method: 'POST',
-        body: { cardId, userId }
+        hostname: backendConfig.hostname, // Hostname backend
+        port: backendConfig.port, // Port backend
+        path: '/api/nfc-cards/link', // Endpoint link kartu ke user
+        method: 'POST', // Method HTTP POST
+        protocol: backendConfig.protocol, // Protocol http/https
+        body: { cardId, userId } // Body request dengan cardId dan userId
       };
 
-      const backendData = await makeHttpRequest(options);
+      const backendData = await makeHttpRequest(options); // Kirim request ke backend
       
-      if (backendData.success) {
-        console.log(`✅ Linked NFC card: ${cardId} to user ${userId}`);
-        res.json(backendData);
+      if (backendData.success) { // Jika linking berhasil
+        console.log(`? Linked NFC card: ${cardId} to user ${userId}`);
+        res.json(backendData); // Teruskan response backend
       } else {
-        res.status(400).json(backendData);
+        res.status(400).json(backendData); // Teruskan error dari backend
       }
     } catch (error) {
-      console.error('❌ Link NFC card error:', error);
+      console.error('? Link NFC card error:', error);
       res.status(500).json({ error: 'Failed to link NFC card' });
     }
   }
@@ -2590,31 +2599,32 @@ class SimpleNFCAdmin {
   // Block NFC card (POST /api/nfc-cards/block)
   async blockNFCCard(req, res) {
     try {
-      const { cardId, reason } = req.body;
+      const { cardId, reason } = req.body; // Ambil cardId dan alasan blokir dari request body
       
-      if (!cardId) {
+      if (!cardId) { // Validasi cardId wajib ada
         return res.status(400).json({ error: 'cardId is required' });
       }
 
-      const backendConfig = parseBackendUrl();
+      const backendConfig = parseBackendUrl(); // Parse URL backend
       const options = {
-        hostname: backendConfig.hostname,
-        port: backendConfig.port,
-        path: '/api/nfc-cards/status',
-        method: 'PUT',
-        body: { cardId, status: 'BLOCKED', reason: reason || 'Blocked by admin' }
+        hostname: backendConfig.hostname, // Hostname backend
+        port: backendConfig.port, // Port backend
+        path: '/api/nfc-cards/status', // Endpoint update status kartu
+        method: 'PUT', // Method HTTP PUT untuk update
+        protocol: backendConfig.protocol, // Protocol http/https
+        body: { cardId, status: 'BLOCKED', reason: reason || 'Blocked by admin' } // Body dengan status BLOCKED
       };
 
-      const backendData = await makeHttpRequest(options);
+      const backendData = await makeHttpRequest(options); // Kirim request ke backend
       
-      if (backendData.success) {
-        console.log(`✅ Blocked NFC card: ${cardId}`);
-        res.json(backendData);
+      if (backendData.success) { // Jika kartu berhasil diblokir
+        console.log(`? Blocked NFC card: ${cardId}`);
+        res.json(backendData); // Teruskan response backend
       } else {
-        res.status(400).json(backendData);
+        res.status(400).json(backendData); // Teruskan error dari backend
       }
     } catch (error) {
-      console.error('❌ Block NFC card error:', error);
+      console.error('? Block NFC card error:', error);
       res.status(500).json({ error: 'Failed to block NFC card' });
     }
   }
@@ -2622,35 +2632,35 @@ class SimpleNFCAdmin {
   // Top-up NFC card balance (POST /api/nfc-cards/topup)
   async topupNFCCard(req, res) {
     try {
-      const { cardId, amount, adminPassword } = req.body;
+      const { cardId, amount, adminPassword } = req.body; // Ambil cardId, amount, dan password dari request body
       
-      if (!cardId || !amount) {
+      if (!cardId || !amount) { // Validasi field wajib
         return res.status(400).json({ error: 'cardId and amount are required' });
       }
 
-      if (adminPassword !== ADMIN_PASSWORD) {
+      if (adminPassword !== ADMIN_PASSWORD) { // Validasi password admin
         return res.status(403).json({ error: 'Invalid admin password' });
       }
 
-      const backendConfig = parseBackendUrl();
+      const backendConfig = parseBackendUrl(); // Parse URL backend
       const options = {
-        hostname: backendConfig.hostname,
-        port: backendConfig.port,
-        path: '/api/nfc-cards/topup',
-        method: 'POST',
-        body: { cardId, amount, adminPassword }
+        hostname: backendConfig.hostname, // Hostname backend
+        port: backendConfig.port, // Port backend
+        path: '/api/nfc-cards/topup', // Endpoint top-up kartu
+        method: 'POST', // Method HTTP POST
+        body: { cardId, amount, adminPassword } // Body request dengan data top-up
       };
 
-      const backendData = await makeHttpRequest(options);
+      const backendData = await makeHttpRequest(options); // Kirim request ke backend
       
-      if (backendData.success) {
-        console.log(`✅ Topped up NFC card: ${cardId} with ${amount}`);
-        res.json(backendData);
+      if (backendData.success) { // Jika top-up berhasil
+        console.log(`? Topped up NFC card: ${cardId} with ${amount}`);
+        res.json(backendData); // Teruskan response backend ke client
       } else {
-        res.status(400).json(backendData);
+        res.status(400).json(backendData); // Teruskan error dari backend
       }
     } catch (error) {
-      console.error('❌ Top-up NFC card error:', error);
+      console.error('? Top-up NFC card error:', error);
       res.status(500).json({ error: 'Failed to top-up NFC card' });
     }
   }
@@ -2658,47 +2668,47 @@ class SimpleNFCAdmin {
   // Delete NFC card (DELETE /api/nfc-cards/:cardId)
   async deleteNFCCard(req, res) {
     try {
-      const { cardId } = req.params;
-      const { adminPassword } = req.body;
+      const { cardId } = req.params; // Ambil cardId dari URL parameter
+      const { adminPassword } = req.body; // Ambil password admin dari request body
       
-      if (!cardId) {
+      if (!cardId) { // Validasi cardId wajib ada
         return res.status(400).json({ error: 'cardId is required' });
       }
 
-      if (adminPassword !== ADMIN_PASSWORD) {
+      if (adminPassword !== ADMIN_PASSWORD) { // Validasi password admin
         return res.status(403).json({ error: 'Invalid admin password' });
       }
 
-      const backendConfig = parseBackendUrl();
-      const bodyData = JSON.stringify({ adminPassword });
+      const backendConfig = parseBackendUrl(); // Parse URL backend
+      const bodyData = JSON.stringify({ adminPassword }); // Serialize body request
       const options = {
-        hostname: backendConfig.hostname,
-        port: backendConfig.port,
-        path: `/api/nfc-cards/delete/${cardId}`,
-        method: 'DELETE',
-        protocol: backendConfig.protocol,
+        hostname: backendConfig.hostname, // Hostname backend
+        port: backendConfig.port, // Port backend
+        path: `/api/nfc-cards/delete/${cardId}`, // Path dengan card ID yang akan dihapus
+        method: 'DELETE', // Method HTTP DELETE
+        protocol: backendConfig.protocol, // Protocol http/https
         headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(bodyData),
-          'ngrok-skip-browser-warning': 'true'
+          'Content-Type': 'application/json', // Format JSON
+          'Content-Length': Buffer.byteLength(bodyData), // Panjang body dalam bytes
+          'ngrok-skip-browser-warning': 'true' // Lewati warning ngrok
         },
-        body: { adminPassword } // Include body for DELETE request
+        body: { adminPassword } // Include body for DELETE request - sertakan password di body
       };
 
-      console.log(`🗑️ Attempting to delete card ${cardId} from backend...`);
-      console.log(`🔐 Admin password check: ${adminPassword === ADMIN_PASSWORD ? 'VALID' : 'INVALID'}`);
-      console.log(`📤 Sending to: ${backendConfig.hostname}${options.path}`);
-      console.log(`📦 Body:`, options.body);
-      const backendData = await makeHttpRequest(options);
+      console.log(`??? Attempting to delete card ${cardId} from backend...`);
+      console.log(`?? Admin password check: ${adminPassword === ADMIN_PASSWORD ? 'VALID' : 'INVALID'}`);
+      console.log(`?? Sending to: ${backendConfig.hostname}${options.path}`);
+      console.log(`?? Body:`, options.body);
+      const backendData = await makeHttpRequest(options); // Kirim request DELETE ke backend
       
-      if (backendData.success) {
-        console.log(`🗑️ Deleted NFC card: ${cardId}`);
-        res.json(backendData);
+      if (backendData.success) { // Jika penghapusan berhasil
+        console.log(`??? Deleted NFC card: ${cardId}`);
+        res.json(backendData); // Teruskan response backend ke client
       } else {
-        res.status(400).json(backendData);
+        res.status(400).json(backendData); // Teruskan error dari backend
       }
     } catch (error) {
-      console.error('❌ Delete NFC card error:', error);
+      console.error('? Delete NFC card error:', error);
       res.status(500).json({ error: 'Failed to delete NFC card' });
     }
   }
@@ -2715,48 +2725,47 @@ class SimpleNFCAdmin {
    * - Display usage instructions
    * 
    * STARTUP SEQUENCE:
-   * 1. app.listen(PORT) → Start HTTP server
+   * 1. app.listen(PORT) ? Start HTTP server
    * 2. Start cleanup timer (already called in constructor)
    * 3. Display startup info ke console
    * 
    * CONSOLE OUTPUT:
-   * 🚀 Simple NFC Payment Admin started!
-   * 📊 Dashboard: http://localhost:3000
+   * ?? Simple NFC Payment Admin started!
+   * ?? Dashboard: http://localhost:3000
    * 
-   * 🌐 Backend Connection:
-   *    📡 Ngrok URL: https://xxx.ngrok-free.dev
+   * ?? Backend Connection:
+   *    ?? Ngrok URL: https://xxx.ngrok-free.dev
    * 
-   * 📋 Cara menggunakan:
+   * ?? Cara menggunakan:
    *    1. Pastikan ngrok tunnel aktif
    *    2. Aplikasi Android connect ke ngrok URL
    *    3. Monitor dari dashboard
    * 
-   * 🔧 Setup:
+   * ?? Setup:
    *    - Backend: node server.js (port 4000)
    *    - Ngrok: ngrok http 4000
    *    - Admin: node simple-admin.js (port 3000)
    */
   start() {
-    this.app.listen(PORT, () => { // Listen di port 3000
-      console.log('🚀 Simple NFC Payment Admin started!');
-      console.log(`📊 Dashboard: http://localhost:${PORT}`);
+    this.app.listen(PORT, () => { // Listen di port 3000 dan mulai menerima koneksi
+      console.log('?? Simple NFC Payment Admin started!');
+      console.log(`?? Dashboard: http://localhost:${PORT}`); // URL dashboard admin
       console.log('');
-      console.log('🌐 Backend Connection:');
-      console.log(`   📡 Ngrok URL: ${NGROK_URL}`);
+      console.log('?? Backend Connection:');
+      console.log(`   ?? Ngrok URL: ${NGROK_URL}`); // URL ngrok yang digunakan
       console.log('');
-      console.log('📋 Cara menggunakan:');
-      console.log('   1. Pastikan ngrok tunnel aktif di terminal lain');
-      console.log('   2. Aplikasi Android connect ke ngrok URL');
-      console.log('   3. Monitor pengguna dan transaksi dari dashboard ini');
+      console.log('?? Cara menggunakan:');
+      console.log('   1. Pastikan ngrok tunnel aktif di terminal lain'); // Langkah 1
+      console.log('   2. Aplikasi Android connect ke ngrok URL'); // Langkah 2
+      console.log('   3. Monitor pengguna dan transaksi dari dashboard ini'); // Langkah 3
       console.log('');
-      console.log('🔧 Setup:');
-      console.log('   - Backend: node server.js (port 4000)');
-      console.log('   - Ngrok: ngrok http 4000');
-      console.log('   - Admin: node simple-admin.js (port 3000)');
+      console.log('?? Setup:');
+      console.log('   - Backend: node server.js (port 4000)'); // Perintah menjalankan backend
+      console.log('   - Ngrok: ngrok http 4000'); // Perintah menjalankan ngrok
+      console.log('   - Admin: node simple-admin.js (port 3000)'); // Perintah menjalankan admin
     });
 
-    // Start cleanup timer untuk hapus device offline
-    this.startCleanupTimer();
+    // Cleanup timer sudah distart di constructor � tidak perlu dipanggil lagi di sini
   }
 }
 

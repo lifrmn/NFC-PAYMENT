@@ -108,21 +108,21 @@
  * ==================================================================================
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { registerRootComponent } from 'expo';
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // React inti + hooks yang dipakai di App
+import { StatusBar } from 'expo-status-bar'; // Komponen status bar yang bisa dikustomisasi warna dan stylenya
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // Wrapper utama navigasi + ref untuk kontrol programatik
+import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // Stack navigator + tipe prop navigasi
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Penyimpanan key-value persisten di device untuk sesi login
+import { registerRootComponent } from 'expo'; // Mendaftarkan App sebagai entry point utama Expo
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  AppState,
-  AppStateStatus,
-  Platform,
+  ActivityIndicator, // Spinner loading yang tampil saat startup
+  StyleSheet, // Utility untuk membuat stylesheet yang dioptimalkan
+  Text, // Komponen teks dasar React Native
+  AppState, // API untuk memantau status aplikasi (active/background/inactive)
+  AppStateStatus, // Tipe union untuk nilai AppState
+  Platform, // Utilitas untuk membedakan Android vs iOS
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'; // Provider + View yang menghindari area notch/status bar
 
 /* ==================================================================================
  * IMPORT: Kumpulan Screen
@@ -130,12 +130,12 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
  * Seluruh komponen layar yang dipakai di navigation stack utama.
  * ==================================================================================
  */
-import LoginScreen from './src/screens/LoginScreen';
-import RegisterScreen from './src/screens/RegisterScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
-import NFCScreen from './src/screens/NFCScreen';
-import RegisterCardScreen from './src/screens/RegisterCardScreen';
-import MyCardsScreen from './src/screens/MyCardsScreen';
+import LoginScreen from './src/screens/LoginScreen'; // Layar form login dengan username dan password
+import RegisterScreen from './src/screens/RegisterScreen'; // Layar form pendaftaran akun baru
+import DashboardScreen from './src/screens/DashboardScreen'; // Layar pusat menu setelah login berhasil
+import NFCScreen from './src/screens/NFCScreen'; // Layar proses pembayaran via NFC
+import RegisterCardScreen from './src/screens/RegisterCardScreen'; // Layar pendaftaran kartu NFC baru
+import MyCardsScreen from './src/screens/MyCardsScreen'; // Layar daftar dan manajemen kartu NFC milik user
 
 /* ==================================================================================
  * IMPORT: Kumpulan Utilitas
@@ -143,9 +143,9 @@ import MyCardsScreen from './src/screens/MyCardsScreen';
  * Fungsi dan service pendukung untuk database, NFC, dan komunikasi API.
  * ==================================================================================
  */
-import { getUserById, initDatabase } from './src/utils/database';
-import { NFCService } from './src/utils/nfc';
-import { apiService } from './src/utils/apiService';
+import { getUserById, initDatabase } from './src/utils/database'; // Fungsi baca user dan inisialisasi database SQLite lokal
+import { NFCService } from './src/utils/nfc'; // Service NFC untuk scan dan cleanup resource hardware NFC
+import { apiService } from './src/utils/apiService'; // Service HTTP untuk komunikasi dengan backend Express
 
 /* ==================================================================================
  * DEFINISI TIPE: Navigasi
@@ -161,17 +161,17 @@ import { apiService } from './src/utils/apiService';
  * - Membantu memastikan pemanggilan navigasi tetap type-safe
  * ==================================================================================
  */
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Dashboard: undefined;
-  NFC: undefined;
-  RegisterCard: undefined;
-  MyCards: undefined;
+export type RootStackParamList = { // Definisi semua route yang ada di navigation stack
+  Login: undefined; // Screen login — tidak butuh parameter tambahan
+  Register: undefined; // Screen daftar — tidak butuh parameter tambahan
+  Dashboard: undefined; // Screen dashboard — tidak butuh parameter tambahan
+  NFC: undefined; // Screen pembayaran NFC — tidak butuh parameter tambahan
+  RegisterCard: undefined; // Screen daftarkan kartu — tidak butuh parameter tambahan
+  MyCards: undefined; // Screen daftar kartu — tidak butuh parameter tambahan
 };
 
-export type NavigationProp = StackNavigationProp<RootStackParamList>;
-const Stack = createStackNavigator<RootStackParamList>();
+export type NavigationProp = StackNavigationProp<RootStackParamList>; // Tipe prop navigasi yang type-safe untuk semua screen
+const Stack = createStackNavigator<RootStackParamList>(); // Buat instance stack navigator dengan tipe route yang sudah didefinisikan
 
 /* ==================================================================================
  * DEFINISI TIPE: Aplikasi
@@ -191,15 +191,15 @@ const Stack = createStackNavigator<RootStackParamList>();
  * - email: Email opsional hasil turunan dari username
  * ==================================================================================
  */
-type AuthState = 'loading' | 'signedIn' | 'signedOut';
-type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards';
+type AuthState = 'loading' | 'signedIn' | 'signedOut'; // Tiga kondisi: sedang memuat, sudah login, belum login
+type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards'; // Enum nama screen internal (huruf kecil, beda dari nama route)
 
-interface AppUser {
-  id: number;
-  name: string;
-  username: string;
-  balance: number;
-  email?: string;
+interface AppUser { // Struktur data user yang beredar di level komponen App
+  id: number; // Primary key user dari database backend
+  name: string; // Nama lengkap untuk ditampilkan di UI
+  username: string; // Username unik untuk login dan referensi API
+  balance: number; // Saldo aktif dalam satuan Rupiah
+  email?: string; // Email opsional — dibentuk otomatis dari username
 }
 
 /* ==================================================================================
@@ -229,6 +229,10 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null); // Menyimpan data user aktif setelah login berhasil.
   const [error, setError] = useState<string | null>(null); // Dipakai untuk menampilkan pesan error ke layar fallback.
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null); // Ref ini memungkinkan navigasi dari luar screen.
+  const authStateRef = useRef<AuthState>('loading'); // Ref untuk melacak nilai authState terkini di dalam closure.
+
+  // Sync authStateRef setiap kali authState berubah, agar timeout tidak terjebak stale closure
+  useEffect(() => { authStateRef.current = authState; }, [authState]);
 
   console.log('🚀 App.tsx rendered, authState:', authState); // Log ini membantu melihat perubahan state saat debugging.
 
@@ -249,7 +253,7 @@ export default function App() {
   useEffect(() => {
     // Timeout pengaman agar user tidak tertahan di layar loading terlalu lama.
     const forceLoginTimeout = setTimeout(() => {
-      if (authState === 'loading') {
+      if (authStateRef.current === 'loading') { // Gunakan ref agar tidak terjebak stale closure
         console.warn('⚠️ Loading timeout, paksa ke login screen');
         setAuthState('signedOut');
       }
@@ -294,14 +298,6 @@ export default function App() {
           platform: Platform.OS, // Memberi tahu backend apakah device Android atau iOS.
           appVersion: '1.0.0', // Versi aplikasi berguna untuk troubleshooting di backend.
         };
-
-        const userData = currentUser
-          ? {
-              userId: currentUser.id,
-              username: currentUser.username || currentUser.email?.split('@')[0] || `user_${currentUser.id}`, // Fallback username disiapkan agar field ini selalu terisi.
-              balance: currentUser.balance,
-            }
-          : undefined; // Jika belum ada user login, sinkronisasi device tetap bisa berjalan tanpa info user.
 
         await apiService.registerDevice(deviceInfo); // Mengirim data device terbaru ke backend.
         console.log('✅ Device status tersinkron ke backend');
@@ -393,10 +389,10 @@ export default function App() {
         await AsyncStorage.setItem('deviceId', deviceId); // Simpan lagi agar startup berikutnya memakai ID yang sama.
 
         const deviceInfo = {
-          deviceId,
-          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`,
-          platform: Platform.OS,
-          appVersion: '1.0.0',
+          deviceId, // ID unik device yang sudah diambil atau dibuat di atas
+          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`, // Nama yang mudah dikenali: platform + 6 karakter terakhir ID
+          platform: Platform.OS, // 'android' atau 'ios' — dipakai backend untuk klasifikasi device
+          appVersion: '1.0.0', // Versi aplikasi untuk kebutuhan monitoring dan debugging jarak jauh
         };
 
         await Promise.race([
@@ -491,11 +487,11 @@ export default function App() {
   }) => {
     try {
       const appUser: AppUser = {
-        id: userData.id,
-        name: userData.name,
-        username: userData.username,
+        id: userData.id, // ID user dari response backend setelah login
+        name: userData.name, // Nama lengkap user untuk ditampilkan di UI
+        username: userData.username, // Username untuk referensi API dan tampilan
         email: `${userData.username}@nfcpay.com`, // Format email diseragamkan di level App.
-        balance: userData.balance || 0,
+        balance: userData.balance || 0, // Saldo awal; default 0 jika tidak dikirim dari backend
       };
       await AsyncStorage.setItem('userId', appUser.id.toString()); // Menyimpan session sederhana berbasis userId.
       setCurrentUser(appUser); // Data user dipakai ulang oleh screen-screen setelah login.
@@ -538,7 +534,7 @@ export default function App() {
       NFCService.cleanup(); // Penting agar proses NFC yang sedang aktif tidak tertinggal.
 
       navigationRef.current?.reset({
-        index: 0,
+        index: 0, // Stack navigasi dimulai ulang dari posisi pertama
         routes: [{ name: 'Login' }], // Setelah logout, user dipaksa mulai lagi dari layar login.
       });
       console.log('✅ Logout success');
@@ -603,21 +599,21 @@ export default function App() {
   // ========================================================
   // Layar Loading dan Error
   // ========================================================
-  if (authState === 'loading') {
+  if (authState === 'loading') { // Tampilkan spinner selama proses startup berlangsung
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Memuat aplikasi NFC Payment...</Text>
-        <Text style={styles.loadingSubtext}>Mohon tunggu...</Text>
+      <SafeAreaView style={styles.loadingContainer}> {/* SafeAreaView agar spinner tidak tertutup notch */}
+        <ActivityIndicator size="large" color="#2563eb" /> {/* Spinner biru besar sebagai indikator loading */}
+        <Text style={styles.loadingText}>Memuat aplikasi NFC Payment...</Text> {/* Teks utama loading */}
+        <Text style={styles.loadingSubtext}>Mohon tunggu...</Text> {/* Teks sekunder agar user tidak bingung */}
       </SafeAreaView>
     );
   }
 
-  if (error && authState === 'signedOut') {
+  if (error && authState === 'signedOut') { // Tampilkan layar error hanya jika ada pesan error dan user belum login
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Terjadi Kesalahan</Text>
-        <Text style={styles.errorText}>{error}</Text>
+      <SafeAreaView style={styles.errorContainer}> {/* Latar merah muda menandakan kondisi error */}
+        <Text style={styles.errorTitle}>Terjadi Kesalahan</Text> {/* Judul error yang mencolok */}
+        <Text style={styles.errorText}>{error}</Text> {/* Pesan error spesifik dari state error */}
         <Text
           style={styles.retryText}
           onPress={() => {
@@ -635,9 +631,9 @@ export default function App() {
   // Navigasi Utama Aplikasi
   // ========================================================
   return (
-    <SafeAreaProvider>
-      <StatusBar style="auto" />
-      <NavigationContainer ref={navigationRef}>
+    <SafeAreaProvider> {/* Provider ini wajib ada agar SafeAreaView dan insets bekerja di seluruh app */}
+      <StatusBar style="auto" /> {/* Status bar menyesuaikan tema terang/gelap secara otomatis */}
+      <NavigationContainer ref={navigationRef}> {/* Wrapper utama navigasi; ref untuk kontrol programatik */}
         <Stack.Navigator
           screenOptions={{
             headerShown: false, // Header default dimatikan karena tiap screen memakai layout sendiri.
@@ -722,40 +718,40 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 20, // Memberi jarak dari indikator loading.
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center',
+    fontSize: 16, // Ukuran teks yang nyaman dibaca
+    color: '#6b7280', // Abu-abu sedang — kontras cukup tanpa terlalu mencolok
+    textAlign: 'center', // Rata tengah agar sejajar dengan spinner
   },
   loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#9ca3af',
-    textAlign: 'center',
+    marginTop: 8, // Jarak kecil dari teks utama loading
+    fontSize: 14, // Sedikit lebih kecil dari teks utama
+    color: '#9ca3af', // Abu-abu lebih terang untuk memberi kesan teks sekunder
+    textAlign: 'center', // Rata tengah
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1, // Mengisi seluruh layar
+    justifyContent: 'center', // Konten di tengah secara vertikal
+    alignItems: 'center', // Konten di tengah secara horizontal
     backgroundColor: '#fef2f2', // Warna merah muda muda memberi kesan ada error tapi tetap lembut.
-    padding: 20,
+    padding: 20, // Padding agar teks tidak mepet ke tepi layar
   },
   errorTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 22, // Besar agar langsung terbaca sebagai judul halaman error
+    fontWeight: 'bold', // Tebal untuk memperkuat kesan penting
     color: '#b91c1c', // Merah pekat untuk judul error agar segera terlihat.
-    marginBottom: 10,
+    marginBottom: 10, // Jarak antara judul dan deskripsi error
   },
   errorText: {
-    fontSize: 15,
-    color: '#374151',
-    textAlign: 'center',
-    marginBottom: 12,
+    fontSize: 15, // Ukuran badan teks yang nyaman
+    color: '#374151', // Abu tua agar mudah dibaca di atas latar merah muda
+    textAlign: 'center', // Rata tengah untuk keterbacaan lebih baik
+    marginBottom: 12, // Jarak dari teks ke tombol coba lagi
   },
   retryText: {
-    fontSize: 16,
+    fontSize: 16, // Ukuran yang cukup besar agar mudah ditekan
     color: '#1d4ed8', // Biru dipakai agar teks ini terasa seperti aksi yang bisa ditekan.
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: '600', // Semi-bold untuk membedakan dari teks biasa
+    textDecorationLine: 'underline', // Garis bawah memperkuat kesan tautan/tombol
   },
 });
 

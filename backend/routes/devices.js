@@ -24,12 +24,12 @@
 // Server save device info -> Return success -> App siap digunakan
 // ============================================================
 
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { authenticateDevice } = require('../middleware/auth');
+const express = require('express'); // Import framework Express
+const { PrismaClient } = require('@prisma/client'); // Import Prisma ORM untuk akses database
+const { authenticateDevice } = require('../middleware/auth'); // Import middleware autentikasi perangkat
 
-const router = express.Router();
-const prisma = new PrismaClient();
+const router = express.Router(); // Buat router Express baru
+const prisma = new PrismaClient(); // Buat instance Prisma untuk query database
 
 // ============================================================
 // ENDPOINT 1: POST /register - DAFTARKAN PERANGKAT BARU
@@ -61,34 +61,34 @@ const prisma = new PrismaClient();
 // ============================================================
 router.post('/register', async (req, res) => {
   try {
-    const { deviceId, deviceName, platform, appVersion } = req.body;
+    const { deviceId, deviceName, platform, appVersion } = req.body; // Destructuring data perangkat dari request body
     
-    if (!deviceId) {
+    if (!deviceId) { // Validasi: deviceId wajib ada
       return res.status(400).json({ error: 'ID Perangkat diperlukan' });
     }
 
-    const now = new Date();
+    const now = new Date(); // Catat waktu sekarang untuk lastSeen
     
     // Daftarkan atau perbarui catatan perangkat
-    const deviceRecord = await prisma.device.upsert({
-      where: { deviceId: deviceId },
+    const deviceRecord = await prisma.device.upsert({ // UPSERT: update jika ada, create jika belum ada
+      where: { deviceId: deviceId }, // Cari berdasarkan deviceId unik
       update: {
-        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`,
-        platform: platform || 'unknown',
-        ipAddress: req.ip,
-        isOnline: true,
-        lastSeen: now,
+        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`, // Nama perangkat, ambil 6 karakter terakhir jika tidak ada nama
+        platform: platform || 'unknown', // Platform android/ios
+        ipAddress: req.ip, // IP address perangkat saat ini
+        isOnline: true, // Tandai perangkat online
+        lastSeen: now, // Update waktu terakhir aktif
         // Simpan data pengguna/saldo yang ada saat update
       },
       create: {
-        deviceId: deviceId,
-        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`,
-        platform: platform || 'unknown',
-        ipAddress: req.ip,
-        isOnline: true,
-        lastSeen: now,
-        totalUsers: 0,
-        totalBalance: 0
+        deviceId: deviceId, // ID unik perangkat
+        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`, // Nama perangkat dengan fallback
+        platform: platform || 'unknown', // Platform dengan fallback
+        ipAddress: req.ip, // IP address perangkat
+        isOnline: true, // Status online saat pertama daftar
+        lastSeen: now, // Waktu pertama kali daftar
+        totalUsers: 0, // Inisialisasi total user = 0
+        totalBalance: 0 // Inisialisasi total saldo = 0
       }
     });
 
@@ -97,14 +97,14 @@ router.post('/register', async (req, res) => {
     res.json({
       success: true,
       message: 'Perangkat berhasil didaftarkan',
-      device: deviceRecord
+      device: deviceRecord // Kembalikan data perangkat yang baru didaftarkan
     });
 
   } catch (error) {
     console.error('❌ Kesalahan pendaftaran perangkat:', error);
     res.status(500).json({ 
       error: 'Gagal mendaftarkan perangkat',
-      details: error.message 
+      details: error.message // Detail error untuk debugging
     });
   }
 });
@@ -112,78 +112,78 @@ router.post('/register', async (req, res) => {
 // Sinkronkan data perangkat (kompatibel dengan aplikasi mobile yang ada)
 router.post('/sync-device', authenticateDevice, async (req, res) => {
   try {
-    const { device, users, recentTransactions, stats } = req.body;
+    const { device, users, recentTransactions, stats } = req.body; // Destructuring data sync dari request body
     
-    if (!device || !device.deviceId) {
+    if (!device || !device.deviceId) { // Validasi: data device dan deviceId wajib ada
       return res.status(400).json({ error: 'ID Perangkat diperlukan' });
     }
 
-    const now = new Date();
+    const now = new Date(); // Catat waktu sekarang untuk lastSeen
     
     // Perbarui atau buat catatan perangkat
-    const deviceRecord = await prisma.device.upsert({
-      where: { deviceId: device.deviceId },
+    const deviceRecord = await prisma.device.upsert({ // UPSERT device: update atau buat baru
+      where: { deviceId: device.deviceId }, // Cari berdasarkan deviceId
       update: {
-        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`,
-        platform: device.platform || 'android',
-        ipAddress: req.ip,
-        isOnline: true,
-        lastSeen: now,
-        totalUsers: stats?.totalUsers || 0,
-        totalBalance: stats?.totalBalance || 0
+        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`, // Nama perangkat dengan fallback
+        platform: device.platform || 'android', // Platform dengan default android
+        ipAddress: req.ip, // IP address saat ini
+        isOnline: true, // Tandai perangkat online
+        lastSeen: now, // Update waktu terakhir sync
+        totalUsers: stats?.totalUsers || 0, // Total user dari stats (optional chaining)
+        totalBalance: stats?.totalBalance || 0 // Total saldo dari stats
       },
       create: {
-        deviceId: device.deviceId,
-        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`,
-        platform: device.platform || 'android',
-        ipAddress: req.ip,
-        isOnline: true,
-        lastSeen: now,
-        totalUsers: stats?.totalUsers || 0,
-        totalBalance: stats?.totalBalance || 0
+        deviceId: device.deviceId, // ID unik perangkat
+        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`, // Nama perangkat
+        platform: device.platform || 'android', // Platform
+        ipAddress: req.ip, // IP address
+        isOnline: true, // Status online
+        lastSeen: now, // Waktu pertama sync
+        totalUsers: stats?.totalUsers || 0, // Total user
+        totalBalance: stats?.totalBalance || 0 // Total saldo
       }
     });
 
     // Sinkronkan pengguna jika disediakan
-    if (users && Array.isArray(users)) {
-      for (const userData of users) {
-        await prisma.user.upsert({
-          where: { id: userData.id },
+    if (users && Array.isArray(users)) { // Proses hanya jika users dikirim dan berupa array
+      for (const userData of users) { // Loop setiap data user
+        await prisma.user.upsert({ // UPSERT user: update atau buat baru
+          where: { id: userData.id }, // Cari berdasarkan id user
           update: {
-            name: userData.name,
-            balance: userData.balance,
-            deviceId: device.deviceId
+            name: userData.name, // Update nama user
+            balance: userData.balance, // Update saldo
+            deviceId: device.deviceId // Update deviceId
           },
           create: {
-            id: userData.id,
-            name: userData.name,
-            username: userData.username,
-            password: userData.password || 'synced-user',
-            balance: userData.balance,
-            deviceId: device.deviceId
+            id: userData.id, // ID user dari mobile
+            name: userData.name, // Nama user
+            username: userData.username, // Username untuk login
+            password: userData.password || 'synced-user', // Password (fallback untuk user hasil sync)
+            balance: userData.balance, // Saldo awal
+            deviceId: device.deviceId // Kaitkan ke deviceId
           }
         });
       }
     }
 
     // Sinkronkan transaksi jika disediakan
-    if (recentTransactions && Array.isArray(recentTransactions)) {
-      for (const txData of recentTransactions) {
-        await prisma.transaction.upsert({
-          where: { id: txData.id },
+    if (recentTransactions && Array.isArray(recentTransactions)) { // Proses hanya jika transaksi dikirim
+      for (const txData of recentTransactions) { // Loop setiap data transaksi
+        await prisma.transaction.upsert({ // UPSERT transaksi
+          where: { id: txData.id }, // Cari berdasarkan id transaksi
           update: {
-            amount: txData.amount,
-            type: txData.type,
-            deviceId: device.deviceId
+            amount: txData.amount, // Update jumlah transaksi
+            type: txData.type, // Update tipe transaksi
+            deviceId: device.deviceId // Update deviceId
           },
           create: {
-            id: txData.id,
-            senderId: txData.senderId,
-            receiverId: txData.receiverId,
-            amount: txData.amount,
-            type: txData.type || 'transfer',
-            deviceId: device.deviceId,
-            createdAt: new Date(txData.createdAt)
+            id: txData.id, // ID transaksi dari mobile
+            senderId: txData.senderId, // ID pengirim
+            receiverId: txData.receiverId, // ID penerima
+            amount: txData.amount, // Jumlah transaksi
+            type: txData.type || 'transfer', // Tipe transaksi dengan default 'transfer'
+            deviceId: device.deviceId, // Kaitkan ke deviceId
+            createdAt: new Date(txData.createdAt) // Waktu transaksi (convert dari string)
           }
         });
       }
@@ -192,31 +192,31 @@ router.post('/sync-device', authenticateDevice, async (req, res) => {
     console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`);
 
     // Periksa pembaruan saldo yang tertunda
-    const pendingUpdates = await prisma.adminLog.findMany({
+    const pendingUpdates = await prisma.adminLog.findMany({ // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
       where: {
-        action: 'BALANCE_UPDATE_PENDING',
+        action: 'BALANCE_UPDATE_PENDING', // Filter berdasarkan tipe aksi
         details: {
-          contains: device.deviceId
+          contains: device.deviceId // Filter yang berkaitan dengan deviceId ini
         }
       },
-      orderBy: { createdAt: 'desc' },
-      take: 10
+      orderBy: { createdAt: 'desc' }, // Urutkan dari terbaru
+      take: 10 // Ambil maksimal 10 pending updates
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
-      req.io.to('admin-room').emit('device-sync', {
-        device: deviceRecord,
-        stats: stats || {}
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
+      req.io.to('admin-room').emit('device-sync', { // Broadcast ke semua admin di admin-room
+        device: deviceRecord, // Data perangkat yang baru sync
+        stats: stats || {} // Statistik perangkat
       });
     }
 
     res.json({
       success: true,
       message: 'Perangkat berhasil disinkronkan',
-      balanceUpdates: pendingUpdates.map(update => JSON.parse(update.details)),
-      deviceId: device.deviceId,
-      timestamp: now.toISOString()
+      balanceUpdates: pendingUpdates.map(update => JSON.parse(update.details)), // Parse details dari JSON string
+      deviceId: device.deviceId, // Echo kembali deviceId
+      timestamp: now.toISOString() // Waktu sync dalam format ISO
     });
 
   } catch (error) {
@@ -228,20 +228,20 @@ router.post('/sync-device', authenticateDevice, async (req, res) => {
 // Dapatkan semua perangkat
 router.get('/', async (req, res) => {
   try {
-    const devices = await prisma.device.findMany({
+    const devices = await prisma.device.findMany({ // Ambil semua record Device dari database
       orderBy: {
-        lastSeen: 'desc'
+        lastSeen: 'desc' // Urutkan dari yang paling baru sync
       }
     });
 
     // Perbarui status online berdasarkan terakhir terlihat
-    const now = new Date();
-    const devicesWithStatus = devices.map(device => ({
-      ...device,
-      isOnline: (now - new Date(device.lastSeen)) < 300000 // 5 menit
+    const now = new Date(); // Waktu sekarang untuk menghitung status online
+    const devicesWithStatus = devices.map(device => ({ // Map setiap device dan tambahkan field isOnline
+      ...device, // Spread semua field device yang ada
+      isOnline: (now - new Date(device.lastSeen)) < 300000 // Device online jika sync dalam 5 menit terakhir
     }));
 
-    res.json(devicesWithStatus);
+    res.json(devicesWithStatus); // Kirim array devices dengan status online
   } catch (error) {
     console.error('❌ Kesalahan mendapatkan perangkat:', error);
     res.status(500).json({ error: 'Gagal mendapatkan perangkat' });
@@ -251,52 +251,52 @@ router.get('/', async (req, res) => {
 // Dapatkan perangkat berdasarkan ID
 router.get('/:deviceId', async (req, res) => {
   try {
-    const { deviceId } = req.params;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     
-    const device = await prisma.device.findUnique({
-      where: { deviceId }
+    const device = await prisma.device.findUnique({ // Cari satu device berdasarkan deviceId
+      where: { deviceId } // Kondisi pencarian
     });
 
-    if (!device) {
+    if (!device) { // Jika device tidak ditemukan
       return res.status(404).json({ error: 'Perangkat tidak ditemukan' });
     }
 
     // Dapatkan pengguna untuk perangkat ini
-    const users = await prisma.user.findMany({
-      where: { deviceId },
+    const users = await prisma.user.findMany({ // Ambil semua user yang terhubung ke device ini
+      where: { deviceId }, // Filter berdasarkan deviceId
       select: {
-        id: true,
-        name: true,
-        username: true,
-        balance: true,
-        isActive: true,
-        createdAt: true
+        id: true, // Hanya ambil field yang diperlukan (tidak include password)
+        name: true, // Nama user
+        username: true, // Username
+        balance: true, // Saldo
+        isActive: true, // Status aktif
+        createdAt: true // Waktu dibuat
       }
     });
 
     // Dapatkan transaksi terbaru untuk perangkat ini
-    const transactions = await prisma.transaction.findMany({
-      where: { deviceId },
+    const transactions = await prisma.transaction.findMany({ // Ambil transaksi yang dilakukan dari device ini
+      where: { deviceId }, // Filter berdasarkan deviceId
       include: {
-        sender: {
-          select: { id: true, name: true, username: true }
+        sender: { // Join data pengirim
+          select: { id: true, name: true, username: true } // Hanya ambil field yang diperlukan
         },
-        receiver: {
-          select: { id: true, name: true, username: true }
+        receiver: { // Join data penerima
+          select: { id: true, name: true, username: true } // Hanya ambil field yang diperlukan
         }
       },
-      orderBy: { createdAt: 'desc' },
-      take: 10
+      orderBy: { createdAt: 'desc' }, // Urutkan dari transaksi terbaru
+      take: 10 // Ambil maksimal 10 transaksi terakhir
     });
 
-    const now = new Date();
-    const isOnline = (now - new Date(device.lastSeen)) < 300000; // 5 minutes
+    const now = new Date(); // Waktu sekarang
+    const isOnline = (now - new Date(device.lastSeen)) < 300000; // Device online jika sync dalam 5 menit terakhir
 
     res.json({
-      ...device,
-      isOnline,
-      users,
-      recentTransactions: transactions
+      ...device, // Spread semua field device
+      isOnline, // Tambahkan status online yang sudah dihitung
+      users, // Array user yang terhubung ke device ini
+      recentTransactions: transactions // 10 transaksi terbaru
     });
 
   } catch (error) {
@@ -308,25 +308,25 @@ router.get('/:deviceId', async (req, res) => {
 // Perbarui status perangkat
 router.put('/:deviceId/status', async (req, res) => {
   try {
-    const { deviceId } = req.params;
-    const { isOnline } = req.body;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
+    const { isOnline } = req.body; // Ambil status online/offline dari request body
 
-    const device = await prisma.device.update({
-      where: { deviceId },
+    const device = await prisma.device.update({ // Update record device di database
+      where: { deviceId }, // Cari berdasarkan deviceId
       data: { 
-        isOnline: Boolean(isOnline),
-        lastSeen: new Date()
+        isOnline: Boolean(isOnline), // Konversi ke boolean (true/false)
+        lastSeen: new Date() // Update waktu terakhir terlihat
       }
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
-      req.io.to('admin-room').emit('device-status-updated', { device });
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
+      req.io.to('admin-room').emit('device-status-updated', { device }); // Broadcast perubahan status ke admin
     }
 
     res.json({
       message: 'Status perangkat berhasil diperbarui',
-      device
+      device // Kembalikan data device yang sudah diupdate
     });
 
   } catch (error) {
@@ -338,35 +338,35 @@ router.put('/:deviceId/status', async (req, res) => {
 // Hapus perangkat (khusus admin)
 router.delete('/:deviceId', async (req, res) => {
   try {
-    const { deviceId } = req.params;
-    const { adminPassword } = req.body;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
+    const { adminPassword } = req.body; // Ambil password admin dari request body
 
     // Verifikasi password admin
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password admin dari env atau default
       return res.status(401).json({ error: 'Password admin tidak valid' });
     }
 
-    await prisma.device.delete({
-      where: { deviceId }
+    await prisma.device.delete({ // Hapus record device dari database
+      where: { deviceId } // Hapus berdasarkan deviceId
     });
 
     // Catat aksi admin
-    await prisma.adminLog.create({
+    await prisma.adminLog.create({ // Simpan log bahwa admin menghapus device
       data: {
-        action: 'DEVICE_DELETE',
-        details: JSON.stringify({ deviceId }),
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent']
+        action: 'DEVICE_DELETE', // Tipe aksi
+        details: JSON.stringify({ deviceId }), // Simpan deviceId yang dihapus sebagai JSON
+        ipAddress: req.ip, // IP admin yang menghapus
+        userAgent: req.headers['user-agent'] // Browser/client admin
       }
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
-      req.io.to('admin-room').emit('device-deleted', { deviceId });
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
+      req.io.to('admin-room').emit('device-deleted', { deviceId }); // Broadcast penghapusan ke semua admin
     }
 
     res.json({
-      message: 'Perangkat berhasil dihapus'
+      message: 'Perangkat berhasil dihapus' // Konfirmasi penghapusan
     });
 
   } catch (error) {
@@ -378,30 +378,30 @@ router.delete('/:deviceId', async (req, res) => {
 // Dapatkan statistik perangkat
 router.get('/stats/summary', async (req, res) => {
   try {
-    const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([
-      prisma.device.count(),
-      prisma.device.count({
+    const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([ // Jalankan 4 query secara paralel
+      prisma.device.count(), // Hitung total semua device
+      prisma.device.count({ // Hitung device yang sedang online (sync dalam 5 menit terakhir)
         where: {
           lastSeen: {
-            gte: new Date(Date.now() - 300000) // 5 menit terakhir
+            gte: new Date(Date.now() - 300000) // 5 menit terakhir dalam milliseconds
           }
         }
       }),
-      prisma.user.count({
-        where: { isActive: true }
+      prisma.user.count({ // Hitung total user yang aktif
+        where: { isActive: true } // Filter hanya user yang isActive = true
       }),
-      prisma.user.aggregate({
-        _sum: { balance: true },
-        where: { isActive: true }
+      prisma.user.aggregate({ // Hitung total saldo semua user aktif
+        _sum: { balance: true }, // Agregasi: jumlahkan field balance
+        where: { isActive: true } // Filter hanya user aktif
       })
     ]);
 
     res.json({
-      totalDevices,
-      onlineDevices,
-      offlineDevices: totalDevices - onlineDevices,
-      totalUsers,
-      totalBalance: totalBalance._sum.balance || 0
+      totalDevices, // Total semua device yang pernah terdaftar
+      onlineDevices, // Device yang online (sync dalam 5 menit)
+      offlineDevices: totalDevices - onlineDevices, // Device yang offline = total - online
+      totalUsers, // Total user aktif di sistem
+      totalBalance: totalBalance._sum.balance || 0 // Total saldo (fallback 0 jika null)
     });
 
   } catch (error) {
@@ -410,4 +410,4 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router; // Export router agar bisa di-mount di server.js

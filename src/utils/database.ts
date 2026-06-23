@@ -346,16 +346,18 @@ export const getUserById = async (id: number): Promise<User | null> => {
     }
     
     // STEP 3: Jika tidak ada di cache, fetch dari backend
-    // apiService.getUserById() akan send GET request ke /api/users/{id}/public
+    // apiService.getUserById() returns the user object directly (not wrapped in {user: ...})
     const res = await apiService.getUserById(id);
     
     // STEP 4: Jika backend response valid, save ke cache untuk next time
-    if (res && res.user) {
+    // Handle both {user: {...}} (legacy) and direct user object formats
+    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null);
+    if (userObj) {
       // Save user object ke AsyncStorage sebagai JSON string
       // JSON.stringify() convert JavaScript object → JSON string
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(res.user));
-      console.log(`✅ Loaded user from backend: ${res.user.username}`);
-      return res.user;
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(userObj));
+      console.log(`✅ Loaded user from backend: ${userObj.username}`);
+      return userObj;
     }
     
     // STEP 5: Jika backend return invalid response, return null

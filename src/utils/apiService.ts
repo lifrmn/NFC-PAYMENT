@@ -493,15 +493,12 @@ export class APIService {
    * ================================================================================
    */
   async getUserById(id: number) {
-    // STEP 1: Call public endpoint (no authentication required)
-    // Endpoint: GET /api/users/{id}/public
-    // Public endpoint allows mobile app to get user info without token
-    // Kenapa perlu public endpoint? Karena saat belum login, user bisa lihat data penerima
-    const response = await this.makeRequest(`/api/users/${id}/public`);
+    // Endpoint: GET /api/users/{id}
+    // Backend response format: { id, name, username, balance, ... } (raw user object)
+    const response = await this.makeRequest(`/api/users/${id}`);
     
-    // STEP 2: Extract user object dari response
-    // Backend response format: { success: true, user: {...} }
-    // Jika response.user tidak ada, fallback ke response langsung
+    // Backend GET /:id returns raw user object (not wrapped in { user: {...} })
+    // Fallback ke response.user jika format berbeda
     return response?.user || response;
   }
 

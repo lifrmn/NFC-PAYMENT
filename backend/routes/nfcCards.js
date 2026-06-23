@@ -849,14 +849,20 @@ router.post('/payment', authenticateToken, async (req, res) => { // Endpoint pay
       // Semua operations menggunakan 'tx', bukan 'prisma'
       
       // STEP 8a: Deduct balance dari SENDER USER (not card!)
-      const updatedSenderUser = await tx.user.update({ // Update record User di database
-        where: { id: senderCard.userId }, // Identifikasi user berdasarkan ID
-        data: { 
-          balance: { decrement: amountNum }  // Kurangi balance user
-        }
+      // Atomic conditional update: only decrement if balance is still sufficient
+      // Prevents TOCTOU race condition where concurrent requests could deplete balance below 0
+      const senderUpdateResult = await tx.user.updateMany({
+        where: { id: senderCard.userId, balance: { gte: amountNum } }, // Atomic balance check
+        data: { balance: { decrement: amountNum } }
       });
-      // Prisma decrement: atomic operation, prevent race condition
-      // Equivalent to: SET balance = balance - amountNum WHERE id = senderCard.userId
+      if (senderUpdateResult.count === 0) {
+        // Another concurrent transaction depleted the balance between our pre-check and now
+        const err = new Error('Insufficient balance (concurrent transaction)');
+        err.code = 'INSUFFICIENT_BALANCE';
+        throw err;
+      }
+      // Fetch updated sender user to get the new balance for card sync
+      const updatedSenderUser = await tx.user.findUnique({ where: { id: senderCard.userId } });
 
       // STEP 8b: Update sender CARD - sync balance dengan user + update lastUsed
       const updatedSenderCard = await tx.nFCCard.update({ // Update record NFCCard di database
@@ -1058,6 +1064,9 @@ router.post('/payment', authenticateToken, async (req, res) => { // Endpoint pay
   } catch (error) {
     // Error handling - tangkap semua error (Prisma, validation, network, dll)
     console.error('❌ Payment error:', error);
+    if (error.code === 'INSUFFICIENT_BALANCE') {
+      return res.status(400).json({ error: 'Insufficient balance', message: 'Saldo tidak mencukupi (transaksi bersamaan)' });
+    }
     res.status(500).json({ 
       error: 'Payment failed',
       details: error.message  // Error details untuk debugging
@@ -1102,7 +1111,7 @@ router.post('/topup', async (req, res) => {
     if (!cardId || !amount) return res.status(400).json({ error: 'Card ID and amount required' });
     
     // STEP 2: Verify admin password (AUTHORIZATION CHECK)
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
     // Only admin dapat melakukan top-up (prevent unauthorized balance manipulation)
@@ -1216,7 +1225,7 @@ router.put('/status', async (req, res) => {
     if (!cardId || !status) return res.status(400).json({ error: 'Card ID and status required' });
     
     // STEP 2: Verify admin password (AUTHORIZATION CHECK)
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
 
@@ -1562,7 +1571,7 @@ router.delete(['/:cardId', '/delete/:cardId'], async (req, res) => {
     const { adminPassword } = req.body;    // Request body (POST data in DELETE request)
 
     // STEP 2: Verify admin password (AUTHORIZATION CHECK)
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
       return res.status(403).json({ error: 'Unauthorized: Invalid admin password' });
     }
     // Password match - authorization successful

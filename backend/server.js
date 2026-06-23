@@ -505,7 +505,7 @@ app.post('/api/update-balance', async (req, res) => {
     const { deviceId, amount, adminPassword } = req.body;
     
     // STEP 19.2: Validasi admin password
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' }); // 401 Unauthorized
     }
@@ -566,7 +566,7 @@ app.delete('/api/delete-device/:deviceId', async (req, res) => {
     const { adminPassword } = req.body;
     
     // STEP 20.3: Validasi admin password
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' });
     }
