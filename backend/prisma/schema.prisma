@@ -1,194 +1,232 @@
+// Konfigurasi generator Prisma Client (library untuk akses database dari Node.js)
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js" // Gunakan Prisma Client untuk JavaScript/TypeScript
 }
 
+// Konfigurasi sumber data (database yang digunakan)
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"          // Gunakan SQLite sebagai database (file lokal, ringan)
+  url      = env("DATABASE_URL") // URL database diambil dari environment variable .env
 }
 
+// ============================================================
+// MODEL: User - Tabel pengguna aplikasi
+// ============================================================
+// Menyimpan data akun pengguna: nama, username, password, saldo, dan status akun.
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  username  String   @unique
-  password  String
-  balance   Float    @default(0)
-  deviceId  String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement()) // Primary key, auto-increment
+  name      String                                  // Nama lengkap pengguna
+  username  String   @unique                        // Username unik untuk login
+  password  String                                  // Password yang sudah di-hash dengan bcrypt
+  balance   Float    @default(0)                    // Saldo dompet digital (dalam Rupiah), default 0
+  deviceId  String?                                 // ID perangkat Android (opsional, untuk device tracking)
+  isActive  Boolean  @default(true)                 // Status akun: true=aktif, false=diblokir
+  createdAt DateTime @default(now())                // Waktu akun dibuat (otomatis diisi)
+  updatedAt DateTime @updatedAt                     // Waktu terakhir data diperbarui (otomatis diperbarui)
 
-  // Relations
-  sentTransactions     Transaction[] @relation("SenderTransactions")
-  receivedTransactions Transaction[] @relation("ReceiverTransactions")
-  fraudAlerts          FraudAlert[]
-  userSessions         UserSession[]
+  // Relasi ke model lain
+  sentTransactions     Transaction[] @relation("SenderTransactions")  // Transaksi sebagai pengirim
+  receivedTransactions Transaction[] @relation("ReceiverTransactions") // Transaksi sebagai penerima
+  fraudAlerts          FraudAlert[]                                    // Alert fraud yang terkait user ini
+  userSessions         UserSession[]                                   // Sesi login user
   // Policy: 1 user hanya boleh memiliki 1 kartu NFC aktif (enforced di application layer /register).
   // Relasi dideklarasikan one-to-many di schema Prisma, namun kode aplikasi membatasi
   // setiap user untuk satu kartu NFC aktif saja. Lihat endpoint POST /nfc-cards/register.
-  nfcCards             NFCCard[]
+  nfcCards             NFCCard[]                                       // Kartu NFC milik user (max 1 aktif)
 
-  @@map("users")
+  @@map("users") // Nama tabel di database SQLite: "users"
 }
 
+// ============================================================
+// MODEL: Transaction - Tabel transaksi keuangan
+// ============================================================
+// Menyimpan riwayat semua transaksi transfer antar pengguna beserta hasil deteksi fraud.
 model Transaction {
-  id          Int      @id @default(autoincrement())
-  senderId    Int
-  receiverId  Int
-  amount      Float
-  type        String   @default("transfer")
-  status      String   @default("completed") // completed, pending, failed
-  description String?
-  deviceId    String?
-  ipAddress   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement()) // Primary key, auto-increment
+  senderId    Int                                     // FK ke tabel users (pengirim)
+  receiverId  Int                                     // FK ke tabel users (penerima)
+  amount      Float                                   // Jumlah uang yang ditransfer (dalam Rupiah)
+  type        String   @default("transfer")           // Tipe transaksi: transfer, topup, payment
+  status      String   @default("completed")          // Status transaksi: completed, pending, failed
+  description String?                                 // Deskripsi opsional transaksi
+  deviceId    String?                                 // ID perangkat yang melakukan transaksi (opsional)
+  ipAddress   String?                                 // IP address pengirim (opsional, untuk audit)
+  createdAt   DateTime @default(now())                // Waktu transaksi dibuat
+  updatedAt   DateTime @updatedAt                     // Waktu data terakhir diperbarui
 
-  // Relations
-  sender   User @relation("SenderTransactions", fields: [senderId], references: [id])
-  receiver User @relation("ReceiverTransactions", fields: [receiverId], references: [id])
+  // Relasi ke model User
+  sender   User @relation("SenderTransactions", fields: [senderId], references: [id])   // Pengirim
+  receiver User @relation("ReceiverTransactions", fields: [receiverId], references: [id]) // Penerima
 
-  // Fraud Detection (Z-Score Based Anomaly Detection)
-  fraudRiskScore Float?  // Menyimpan nilai Z-Score aktual
-  fraudRiskLevel String? // NORMAL, SUSPICIOUS, ANOMALY (sesuai implementasi Z-Score)
-  fraudReasons   String? // JSON array of reasons
+  // Hasil Deteksi Fraud (Z-Score Based Anomaly Detection)
+  fraudRiskScore Float?       // Menyimpan nilai Z-Score aktual
+  fraudRiskLevel String?      // NORMAL, SUSPICIOUS, ANOMALY (sesuai implementasi Z-Score)
+  fraudReasons   String?      // JSON array of reasons
   fraudAlerts    FraudAlert[] // FraudAlert untuk REVIEW dibuat SETELAH Transaction tersimpan
 
-  @@map("transactions")
-  @@index([senderId])
-  @@index([receiverId])
-  @@index([createdAt])
+  @@map("transactions")    // Nama tabel di database: "transactions"
+  @@index([senderId])      // Index untuk query cepat berdasarkan pengirim
+  @@index([receiverId])    // Index untuk query cepat berdasarkan penerima
+  @@index([createdAt])     // Index untuk query cepat berdasarkan waktu (sorting)
 }
 
+// ============================================================
+// MODEL: FraudAlert - Tabel peringatan fraud
+// ============================================================
+// Menyimpan hasil deteksi anomali Z-Score yang memerlukan tindak lanjut (REVIEW atau BLOCK).
 model FraudAlert {
-  id             Int      @id @default(autoincrement())
-  userId         Int?
+  id             Int      @id @default(autoincrement()) // Primary key, auto-increment
+  userId         Int?                                    // FK ke users (opsional, bisa null)
   transactionId  Int?     // ID transaksi terkait. Null jika BLOCK (tidak ada transaksi). Harus terisi untuk REVIEW.
-  deviceId       String
-  deviceName     String?
-  riskScore      Float  // Nilai Z-Score aktual (float). Sentinel -1 = Z tidak terdefinisi (σ=0, X≠μ).
-  riskLevel      String // NORMAL, SUSPICIOUS, ANOMALY (sesuai Z-Score: ≤2, 2<Z≤3, >3)
-  decision       String // ALLOW, REVIEW, BLOCK (hanya REVIEW/BLOCK yang membuat FraudAlert)
-  reasons        String // JSON array
-  confidence     Float
-  riskFactors    String // JSON object
-  status         String   @default("NEW") // NEW, REVIEWED, RESOLVED
-  ipAddress      String?
-  userAgent      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  deviceId       String                                  // ID perangkat yang memicu alert
+  deviceName     String?                                 // Nama perangkat (opsional, untuk display)
+  riskScore      Float    // Nilai Z-Score aktual (float). Sentinel -1 = Z tidak terdefinisi (σ=0, X≠μ).
+  riskLevel      String   // NORMAL, SUSPICIOUS, ANOMALY (sesuai Z-Score: ≤2, 2<Z≤3, >3)
+  decision       String   // ALLOW, REVIEW, BLOCK (hanya REVIEW/BLOCK yang membuat FraudAlert)
+  reasons        String   // JSON array berisi daftar alasan fraud terdeteksi
+  confidence     Float                                   // Tingkat kepercayaan deteksi (0.0 - 1.0)
+  riskFactors    String   // JSON object berisi faktor-faktor risiko yang dinilai
+  status         String   @default("NEW")                // Status penanganan: NEW, REVIEWED, RESOLVED
+  ipAddress      String?                                 // IP address request (opsional, untuk audit)
+  userAgent      String?                                 // User-agent browser/app (opsional)
+  createdAt      DateTime @default(now())                // Waktu alert dibuat
+  updatedAt      DateTime @updatedAt                     // Waktu data terakhir diperbarui
 
-  // Relations
-  user        User?        @relation(fields: [userId], references: [id])
-  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  // Relasi ke model lain
+  user        User?        @relation(fields: [userId], references: [id])           // Pemilik akun terkait
+  transaction Transaction? @relation(fields: [transactionId], references: [id])    // Transaksi yang memicu alert
 
-  @@map("fraud_alerts")
+  @@map("fraud_alerts") // Nama tabel di database: "fraud_alerts"
 }
 
+// ============================================================
+// MODEL: Device - Tabel perangkat Android
+// ============================================================
+// Menyimpan data perangkat Android yang pernah menggunakan aplikasi.
 model Device {
-  id           Int      @id @default(autoincrement())
-  deviceId     String   @unique
-  deviceName   String
-  platform     String   @default("android")
-  appVersion   String?
-  osVersion    String?
-  ipAddress    String?
-  isOnline     Boolean  @default(false)
-  lastSeen     DateTime @default(now())
-  totalUsers   Int      @default(0)
-  totalBalance Float    @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           Int      @id @default(autoincrement()) // Primary key, auto-increment
+  deviceId     String   @unique                        // ID unik perangkat (dari Android device ID)
+  deviceName   String                                  // Nama perangkat (contoh: "Samsung Galaxy A52")
+  platform     String   @default("android")            // Platform OS: android atau ios
+  appVersion   String?                                 // Versi aplikasi yang terpasang (opsional)
+  osVersion    String?                                 // Versi sistem operasi (opsional)
+  ipAddress    String?                                 // IP address terakhir perangkat (opsional)
+  isOnline     Boolean  @default(false)                // Status online: true=sedang online, false=offline
+  lastSeen     DateTime @default(now())                // Waktu terakhir perangkat aktif
+  totalUsers   Int      @default(0)                    // Jumlah user yang pernah login di perangkat ini
+  totalBalance Float    @default(0)                    // Total saldo semua user di perangkat ini
+  createdAt    DateTime @default(now())                // Waktu perangkat pertama kali terdaftar
+  updatedAt    DateTime @updatedAt                     // Waktu data terakhir diperbarui
 
-  @@map("devices")
+  @@map("devices") // Nama tabel di database: "devices"
 }
 
+// ============================================================
+// MODEL: UserSession - Tabel sesi login pengguna
+// ============================================================
+// Menyimpan token JWT aktif dan informasi sesi login pengguna.
 model UserSession {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  deviceId  String
-  token     String   @unique
-  expiresAt DateTime
-  isActive  Boolean  @default(true)
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement()) // Primary key, auto-increment
+  userId    Int                                     // FK ke tabel users (pemilik sesi)
+  deviceId  String                                  // ID perangkat tempat sesi aktif
+  token     String   @unique                        // JWT token (unik per sesi)
+  expiresAt DateTime                                // Waktu kadaluarsa token
+  isActive  Boolean  @default(true)                 // Status sesi: true=aktif, false=sudah logout
+  ipAddress String?                                 // IP address saat login (opsional)
+  userAgent String?                                 // User-agent saat login (opsional)
+  createdAt DateTime @default(now())                // Waktu sesi dibuat (login)
+  updatedAt DateTime @updatedAt                     // Waktu data sesi terakhir diperbarui
 
-  // Relations
-  user User @relation(fields: [userId], references: [id])
+  // Relasi ke model User
+  user User @relation(fields: [userId], references: [id]) // Pemilik sesi
 
-  @@map("user_sessions")
+  @@map("user_sessions") // Nama tabel di database: "user_sessions"
 }
 
+// ============================================================
+// MODEL: AdminLog - Tabel log aktivitas admin
+// ============================================================
+// Mencatat semua aktivitas yang dilakukan oleh admin untuk keperluan audit.
 model AdminLog {
-  id        Int      @id @default(autoincrement())
-  action    String // LOGIN, BALANCE_UPDATE, USER_CREATE, etc
-  details   String? // JSON details
-  ipAddress String?
-  userAgent String?
-  success   Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement()) // Primary key, auto-increment
+  action    String   // Jenis aksi admin: LOGIN, BALANCE_UPDATE, USER_CREATE, dll
+  details   String?  // Detail aksi dalam format JSON (opsional)
+  ipAddress String?                                // IP address admin saat melakukan aksi (opsional)
+  userAgent String?                                // Browser/app admin (opsional)
+  success   Boolean  @default(true)                // Hasil aksi: true=berhasil, false=gagal
+  createdAt DateTime @default(now())               // Waktu log dibuat
 
-  @@map("admin_logs")
+  @@map("admin_logs") // Nama tabel di database: "admin_logs"
 }
 
+// ============================================================
+// MODEL: SystemSettings - Tabel pengaturan sistem
+// ============================================================
+// Menyimpan konfigurasi sistem dalam format key-value (seperti environment variables di database).
 model SystemSettings {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  value String
-  type  String @default("string") // string, number, boolean, json
+  id    Int    @id @default(autoincrement()) // Primary key, auto-increment
+  key   String @unique                        // Nama pengaturan (unik), contoh: "max_transfer_limit"
+  value String                                // Nilai pengaturan (disimpan sebagai string)
+  type  String @default("string")             // Tipe data nilai: string, number, boolean, json
 
-  @@map("system_settings")
+  @@map("system_settings") // Nama tabel di database: "system_settings"
 }
 
+// ============================================================
+// MODEL: NFCCard - Tabel kartu NFC fisik
+// ============================================================
+// Menyimpan data kartu NFC fisik (NTag215) yang terdaftar dalam sistem pembayaran.
 model NFCCard {
-  id           Int      @id @default(autoincrement())
-  cardId       String   @unique // UID dari NTag215
-  cardType     String   @default("NTag215") // NTag215, Mifare, etc
-  frequency    String   @default("13.56MHz")
-  userId       Int?     // Link ke user (null jika belum teregistrasi)
-  cardStatus   String   @default("ACTIVE") // ACTIVE, BLOCKED, LOST, EXPIRED
-  balance      Float    @default(0)
-  lastUsed     DateTime?
-  registeredAt DateTime @default(now())
-  expiresAt    DateTime?
-  isPhysical   Boolean  @default(true) // Physical card vs virtual
-  cardData     String? // Encrypted data dari chip
-  metadata     String? // JSON: manufacturer, batch, etc
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           Int      @id @default(autoincrement()) // Primary key, auto-increment
+  cardId       String   @unique                        // UID kartu NFC dari chip NTag215 (7 byte = 14 hex char)
+  cardType     String   @default("NTag215")            // Tipe chip kartu: NTag215, Mifare, dll
+  frequency    String   @default("13.56MHz")           // Frekuensi RF kartu: 13.56 MHz (standar ISO 14443A)
+  userId       Int?                                    // FK ke users (null jika belum teregistrasi ke akun)
+  cardStatus   String   @default("ACTIVE")             // Status kartu: ACTIVE, BLOCKED, LOST, EXPIRED
+  balance      Float    @default(0)                    // Saldo kartu (dalam Rupiah), default 0
+  lastUsed     DateTime?                               // Waktu terakhir kartu digunakan (null jika belum pernah)
+  registeredAt DateTime @default(now())                // Waktu kartu didaftarkan ke sistem
+  expiresAt    DateTime?                               // Waktu kadaluarsa kartu (null = tidak ada batas waktu)
+  isPhysical   Boolean  @default(true)                 // true=kartu fisik NFC, false=kartu virtual
+  cardData     String?                                 // Data terenkripsi dari chip kartu (AES-256-CBC)
+  metadata     String?                                 // JSON: info tambahan (manufacturer, batch number, dll)
+  createdAt    DateTime @default(now())                // Waktu data kartu dibuat di database
+  updatedAt    DateTime @updatedAt                     // Waktu data kartu terakhir diperbarui
 
-  // Relations
-  user         User?    @relation(fields: [userId], references: [id])
-  transactions NFCTransaction[]
+  // Relasi ke model lain
+  user         User?          @relation(fields: [userId], references: [id]) // Pemilik kartu
+  transactions NFCTransaction[]                                               // Riwayat transaksi NFC kartu ini
 
-  @@map("nfc_cards")
-  @@index([cardId])
-  @@index([userId])
-  @@index([cardStatus])
+  @@map("nfc_cards")       // Nama tabel di database: "nfc_cards"
+  @@index([cardId])        // Index untuk lookup cepat berdasarkan UID kartu
+  @@index([userId])        // Index untuk query kartu berdasarkan pemilik
+  @@index([cardStatus])    // Index untuk filter kartu berdasarkan status
 }
 
+// ============================================================
+// MODEL: NFCTransaction - Tabel transaksi tap kartu NFC
+// ============================================================
+// Menyimpan log setiap operasi tap kartu NFC (tap in/out, pembayaran, top-up).
 model NFCTransaction {
-  id              Int      @id @default(autoincrement())
-  cardId          String
-  transactionType String   // TAP_IN, TAP_OUT, PAYMENT, TOP_UP
-  amount          Float?
-  balanceBefore   Float
-  balanceAfter    Float
-  deviceId        String
-  location        String?
-  ipAddress       String?
-  status          String   @default("SUCCESS") // SUCCESS, FAILED, PENDING
-  errorMessage    String?
-  fraudScore      Float?
-  metadata        String? // JSON: signal strength, read time, etc
-  createdAt       DateTime @default(now())
+  id              Int      @id @default(autoincrement()) // Primary key, auto-increment
+  cardId          String                                  // UID kartu NFC yang digunakan (FK ke NFCCard.cardId)
+  transactionType String                                  // Tipe tap: TAP_IN, TAP_OUT, PAYMENT, TOP_UP
+  amount          Float?                                  // Jumlah transaksi (null untuk tap tanpa nominal)
+  balanceBefore   Float                                   // Saldo kartu sebelum transaksi
+  balanceAfter    Float                                   // Saldo kartu setelah transaksi
+  deviceId        String                                  // ID perangkat yang membaca kartu
+  location        String?                                 // Lokasi tap (opsional, misal nama toko)
+  ipAddress       String?                                 // IP address server/perangkat saat tap (opsional)
+  status          String   @default("SUCCESS")            // Status tap: SUCCESS, FAILED, PENDING
+  errorMessage    String?                                 // Pesan error jika status FAILED (opsional)
+  fraudScore      Float?                                  // Skor fraud deteksi (opsional)
+  metadata        String?                                 // JSON: data teknis (signal strength, read time, dll)
+  createdAt       DateTime @default(now())                // Waktu tap terjadi
 
-  // Relations
-  card            NFCCard  @relation(fields: [cardId], references: [cardId])
+  // Relasi ke model NFCCard
+  card            NFCCard  @relation(fields: [cardId], references: [cardId]) // Kartu yang digunakan
 
-  @@map("nfc_transactions")
-  @@index([cardId])
-  @@index([createdAt])
+  @@map("nfc_transactions")  // Nama tabel di database: "nfc_transactions"
+  @@index([cardId])           // Index untuk query riwayat tap berdasarkan kartu
+  @@index([createdAt])        // Index untuk query berdasarkan waktu (sorting)
 }
