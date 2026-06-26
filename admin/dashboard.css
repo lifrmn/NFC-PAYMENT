@@ -1,783 +1,789 @@
 /* ========================================
    GLOBAL RESET & BASE STYLES
+   Menghapus margin/padding default browser agar tampilan konsisten di semua browser
    ======================================== */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    margin: 0;              /* Hapus margin default semua elemen */
+    padding: 0;             /* Hapus padding default semua elemen */
+    box-sizing: border-box; /* Padding & border masuk dalam ukuran elemen, bukan menambah ukuran */
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f8fafc;
-    color: #1e293b;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font utama UI - modern dan mudah dibaca */
+    background: #f8fafc;   /* Warna latar abu-abu sangat muda untuk seluruh halaman */
+    color: #1e293b;         /* Warna teks default abu-biru tua agar mudah dibaca */
 }
 
 .container {
-    display: flex;
-    min-height: 100vh;
+    display: flex;          /* Menggunakan flexbox agar sidebar dan konten berdampingan horizontal */
+    min-height: 100vh;      /* Tinggi minimum penuh layar agar sidebar selalu penuh */
 }
 
 /* ========================================
    SIDEBAR NAVIGATION
+   Area navigasi kiri yang berisi menu utama admin
    ======================================== */
 .sidebar {
-    width: 280px;
-    background: #fff;
-    border-right: 1px solid #e2e8f0;
-    padding: 24px;
-    position: fixed;
-    height: 100vh;
-    overflow-y: auto;
+    width: 280px;                       /* Lebar sidebar tetap 280 piksel */
+    background: #fff;                   /* Latar putih agar kontras dengan konten abu-abu */
+    border-right: 1px solid #e2e8f0;   /* Garis tipis kanan sebagai pemisah visual */
+    padding: 24px;                      /* Jarak dalam dari tepi ke konten sidebar */
+    position: fixed;                    /* Sidebar tetap di posisi saat scroll */
+    height: 100vh;                      /* Tinggi penuh layar */
+    overflow-y: auto;                   /* Scroll vertikal jika menu terlalu panjang */
 }
 
 .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 32px;
+    display: flex;          /* Ikon dan teks logo berdampingan */
+    align-items: center;    /* Sejajarkan ikon dan teks secara vertikal */
+    gap: 12px;              /* Jarak antara ikon dan teks */
+    margin-bottom: 32px;    /* Jarak di bawah logo sebelum menu navigasi */
 }
 
 .logo-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
+    width: 48px;                                                /* Lebar kotak ikon logo */
+    height: 48px;                                               /* Tinggi kotak ikon logo */
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); /* Gradien biru dari kiri-atas ke kanan-bawah */
+    border-radius: 12px;                                        /* Sudut membulat agar tampak modern */
+    display: flex;                                              /* Flexbox untuk pusatkan emoji di dalam kotak */
+    align-items: center;                                        /* Pusatkan secara vertikal */
+    justify-content: center;                                    /* Pusatkan secara horizontal */
+    font-size: 24px;                                            /* Ukuran emoji kartu NFC */
 }
 
 .logo-text h3 {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1e293b;
+    font-size: 16px;        /* Ukuran font nama aplikasi */
+    font-weight: 700;       /* Tebal/bold untuk kesan brand yang kuat */
+    color: #1e293b;         /* Warna gelap agar terbaca di atas latar putih */
 }
 
 .logo-text p {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12px;        /* Ukuran kecil untuk subtitle logo */
+    color: #64748b;         /* Abu-abu sedang untuk teks sekunder */
 }
 
 .nav-menu {
-    list-style: none;
+    list-style: none;       /* Hapus bullet point dari daftar menu */
 }
 
 .nav-item {
-    margin-bottom: 8px;
+    margin-bottom: 8px;     /* Jarak antar item menu */
 }
 
 .nav-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    color: #64748b;
-    text-decoration: none;
-    transition: all 0.2s;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
+    display: flex;              /* Icon dan teks menu berdampingan */
+    align-items: center;        /* Sejajarkan icon dan teks */
+    gap: 12px;                  /* Jarak antara ikon dan teks menu */
+    padding: 12px 16px;         /* Ruang dalam agar mudah ditekan */
+    border-radius: 12px;        /* Sudut membulat untuk tampilan modern */
+    color: #64748b;             /* Warna teks abu-abu untuk menu tidak aktif */
+    text-decoration: none;      /* Hapus garis bawah dari anchor tag */
+    transition: all 0.2s;       /* Animasi halus saat hover */
+    font-size: 14px;            /* Ukuran teks menu */
+    font-weight: 500;           /* Semi-bold agar mudah dibaca */
+    cursor: pointer;            /* Kursor tangan saat hover */
 }
 
 .nav-link:hover {
-    background: #f1f5f9;
-    color: #3B82F6;
+    background: #f1f5f9;        /* Latar abu muda saat hover */
+    color: #3B82F6;             /* Teks berubah biru saat hover */
 }
 
 .nav-link.active {
-    background: #EFF6FF;
-    color: #3B82F6;
+    background: #EFF6FF;        /* Latar biru sangat muda untuk menu aktif */
+    color: #3B82F6;             /* Teks biru untuk menu yang sedang aktif */
 }
 
 .nav-icon {
-    font-size: 18px;
+    font-size: 18px;            /* Ukuran ikon emoji di sebelah teks menu */
 }
 
 /* ========================================
    MAIN CONTENT AREA
+   Area konten utama di sebelah kanan sidebar
    ======================================== */
 .main-content {
-    flex: 1;
-    margin-left: 280px;
-    padding: 32px;
+    flex: 1;                /* Konten utama mengisi sisa ruang setelah sidebar */
+    margin-left: 280px;     /* Geser kanan sejauh lebar sidebar agar tidak tertimpa */
+    padding: 32px;          /* Jarak dalam konten dari tepi area */
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
+    display: flex;                  /* Header menggunakan flexbox */
+    justify-content: space-between; /* Judul di kiri, tombol di kanan */
+    align-items: center;            /* Sejajarkan secara vertikal */
+    margin-bottom: 32px;            /* Jarak bawah sebelum konten statistik */
 }
 
 .header-title h1 {
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 8px;
+    font-size: 32px;        /* Ukuran judul halaman yang besar dan mencolok */
+    font-weight: 700;       /* Tebal/bold untuk judul utama */
+    margin-bottom: 8px;     /* Jarak antara judul dan subjudul */
 }
 
 .header-title p {
-    font-size: 14px;
-    color: #64748b;
+    font-size: 14px;        /* Ukuran kecil untuk subjudul/deskripsi halaman */
+    color: #64748b;         /* Abu-abu sedang untuk teks sekunder */
 }
 
 .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    display: flex;          /* Tombol-tombol header berdampingan */
+    align-items: center;    /* Sejajarkan tombol secara vertikal */
+    gap: 12px;              /* Jarak antar tombol header */
 }
 
 .btn-export {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #3B82F6;
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
+    display: flex;          /* Ikon dan teks tombol berdampingan */
+    align-items: center;    /* Sejajarkan ikon dan teks */
+    gap: 8px;               /* Jarak antara ikon dan teks tombol */
+    background: #3B82F6;    /* Warna latar biru untuk tombol utama */
+    color: #fff;            /* Teks putih agar kontras dengan latar biru */
+    padding: 10px 20px;     /* Ruang dalam tombol */
+    border-radius: 10px;    /* Sudut membulat */
+    border: none;           /* Hapus border default browser */
+    font-size: 14px;        /* Ukuran teks tombol */
+    font-weight: 500;       /* Semi-bold untuk keterbacaan */
+    cursor: pointer;        /* Kursor tangan saat hover */
+    transition: all 0.2s;   /* Animasi halus saat hover */
 }
 
 .btn-export:hover {
-    background: #2563EB;
+    background: #2563EB;    /* Biru lebih gelap saat di-hover untuk feedback visual */
 }
 
 .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #fff;
-    padding: 8px 16px;
-    border-radius: 12px;
-    cursor: pointer;
+    display: flex;          /* Avatar dan info user berdampingan */
+    align-items: center;    /* Sejajarkan secara vertikal */
+    gap: 12px;              /* Jarak antara avatar dan info */
+    background: #fff;       /* Latar putih untuk area profil */
+    padding: 8px 16px;      /* Ruang dalam area profil */
+    border-radius: 12px;    /* Sudut membulat */
+    cursor: pointer;        /* Kursor tangan saat ditekan */
 }
 
 .user-avatar {
-    width: 40px;
-    height: 40px;
-    background: #3B82F6;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 600;
+    width: 40px;            /* Ukuran lingkaran avatar */
+    height: 40px;           /* Tinggi sama dengan lebar untuk lingkaran sempurna */
+    background: #3B82F6;    /* Warna latar avatar biru */
+    border-radius: 50%;     /* Membuat bentuk lingkaran penuh */
+    display: flex;          /* Flexbox untuk pusatkan inisial di tengah */
+    align-items: center;    /* Pusatkan secara vertikal */
+    justify-content: center;/* Pusatkan secara horizontal */
+    color: #fff;            /* Teks inisial putih agar kontras */
+    font-weight: 600;       /* Semi-bold untuk inisial */
 }
 
 .user-info h4 {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 14px;        /* Ukuran nama pengguna */
+    font-weight: 600;       /* Semi-bold untuk nama */
 }
 
 .user-info p {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12px;        /* Ukuran role/jabatan user */
+    color: #64748b;         /* Abu-abu untuk teks sekunder */
 }
 
 /* ========================================
    TAB CONTENT VISIBILITY
+   Mengontrol visibilitas konten berdasarkan tab yang aktif
    ======================================== */
 .tab-content {
-    display: none;
+    display: none;          /* Semua konten tab tersembunyi secara default */
 }
 
 .tab-content.active {
-    display: block;
+    display: block;         /* Hanya tab aktif yang ditampilkan */
 }
 
 /* ========================================
    STATISTICS CARDS
+   Kartu ringkasan statistik di bagian atas dashboard
    ======================================== */
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
+    display: grid;                                      /* CSS Grid untuk kartu statistik */
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Kolom menyesuaikan lebar layar */
+    gap: 20px;                                          /* Jarak antar kartu */
+    margin-bottom: 32px;                                /* Jarak bawah sebelum konten lain */
 }
 
 .stat-card {
-    background: #fff;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: #fff;                           /* Latar putih untuk kartu */
+    padding: 24px;                              /* Ruang dalam kartu */
+    border-radius: 16px;                        /* Sudut sangat membulat */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* Bayangan tipis untuk kedalaman */
 }
 
 .stat-card h3 {
-    font-size: 12px;
-    font-weight: 500;
-    color: #64748b;
-    margin-bottom: 12px;
+    font-size: 12px;        /* Label statistik berukuran kecil */
+    font-weight: 500;       /* Medium weight untuk label */
+    color: #64748b;         /* Abu-abu untuk label sekunder */
+    margin-bottom: 12px;    /* Jarak dari label ke nilai */
 }
 
 .stat-value {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    display: flex;          /* Ikon dan angka berdampingan */
+    align-items: center;    /* Sejajarkan secara vertikal */
+    gap: 12px;              /* Jarak antara ikon dan angka */
+    margin-bottom: 12px;    /* Jarak bawah sebelum info perubahan */
 }
 
 .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
+    width: 48px;                    /* Ukuran kotak ikon statistik */
+    height: 48px;                   /* Tinggi sama dengan lebar */
+    border-radius: 12px;            /* Sudut membulat */
+    display: flex;                  /* Pusatkan emoji ikon */
+    align-items: center;            /* Pusatkan vertikal */
+    justify-content: center;        /* Pusatkan horizontal */
+    font-size: 24px;                /* Ukuran emoji ikon */
 }
 
-.stat-icon.blue { background: #EFF6FF; }
-.stat-icon.green { background: #F0FDF4; }
-.stat-icon.purple { background: #FAF5FF; }
-.stat-icon.red { background: #FEF2F2; }
-.stat-icon.yellow { background: #FEF9C3; }
+.stat-icon.blue   { background: #EFF6FF; } /* Ikon biru - statistik pengguna */
+.stat-icon.green  { background: #F0FDF4; } /* Ikon hijau - transaksi sukses */
+.stat-icon.purple { background: #FAF5FF; } /* Ikon ungu - kartu NFC */
+.stat-icon.red    { background: #FEF2F2; } /* Ikon merah - fraud alert */
+.stat-icon.yellow { background: #FEF9C3; } /* Ikon kuning - peringatan */
 
 .stat-number {
-    font-size: 32px;
-    font-weight: 700;
+    font-size: 32px;        /* Angka statistik besar dan mencolok */
+    font-weight: 700;       /* Tebal/bold untuk angka utama */
 }
 
 .stat-info h2 {
-    font-size: 32px;
-    font-weight: 700;
-    margin-bottom: 8px;
+    font-size: 32px;        /* Angka utama statistik besar */
+    font-weight: 700;       /* Tebal untuk angka */
+    margin-bottom: 8px;     /* Jarak ke info perubahan di bawahnya */
 }
 
 .stat-change {
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    font-size: 12px;        /* Kecil untuk teks perubahan persentase */
+    display: flex;          /* Panah dan teks berdampingan */
+    align-items: center;    /* Sejajarkan secara vertikal */
+    gap: 4px;               /* Jarak antara ikon panah dan teks persen */
 }
 
-.stat-change.positive { color: #10B981; }
-.stat-change.negative { color: #EF4444; }
+.stat-change.positive { color: #10B981; } /* Hijau untuk perubahan positif/naik */
+.stat-change.negative { color: #EF4444; } /* Merah untuk perubahan negatif/turun */
 
 /* ========================================
    CARD CONTAINER
+   Kartu umum sebagai wadah konten dengan bayangan
    ======================================== */
 .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 24px;
+    background: #fff;                           /* Latar putih untuk kartu */
+    border-radius: 16px;                        /* Sudut membulat modern */
+    padding: 24px;                              /* Ruang dalam kartu */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* Bayangan tipis untuk kedalaman */
+    margin-bottom: 24px;                        /* Jarak bawah antar kartu */
 }
 
 .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    display: flex;                  /* Judul dan aksi berdampingan */
+    justify-content: space-between; /* Judul di kiri, aksi di kanan */
+    align-items: center;            /* Sejajarkan secara vertikal */
+    margin-bottom: 20px;            /* Jarak dari header ke konten kartu */
 }
 
 .card-title {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 18px;        /* Ukuran judul kartu */
+    font-weight: 700;       /* Tebal untuk judul */
 }
 
 .card-action {
-    font-size: 14px;
-    color: #3B82F6;
-    text-decoration: none;
-    font-weight: 500;
-    cursor: pointer;
+    font-size: 14px;        /* Ukuran teks tautan aksi */
+    color: #3B82F6;         /* Biru untuk tautan/aksi */
+    text-decoration: none;  /* Hapus garis bawah tautan */
+    font-weight: 500;       /* Semi-bold untuk keterbacaan */
+    cursor: pointer;        /* Kursor tangan saat ditekan */
 }
 
 /* ========================================
    CONTENT GRID (Dashboard Tab)
+   Tata letak dua kolom untuk konten utama dashboard
    ======================================== */
 .content-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 24px;
-    margin-bottom: 32px;
+    display: grid;                      /* CSS Grid untuk dua kolom konten */
+    grid-template-columns: 2fr 1fr;     /* Kolom kiri 2x lebih lebar dari kanan */
+    gap: 24px;                          /* Jarak antar kolom */
+    margin-bottom: 32px;                /* Jarak bawah sebelum konten lain */
 }
 
 /* ========================================
    TABLE STYLES
+   Gaya untuk tabel data transaksi, pengguna, dan fraud alert
    ======================================== */
 .table-container {
-    overflow-x: auto;
+    overflow-x: auto;   /* Scroll horizontal jika tabel terlalu lebar untuk layar */
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
+    width: 100%;                /* Tabel mengisi seluruh lebar container */
+    border-collapse: collapse;  /* Hapus celah ganda antar border sel */
 }
 
 th {
-    text-align: left;
-    padding: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
-    border-bottom: 1px solid #f1f5f9;
+    text-align: left;                   /* Teks header rata kiri */
+    padding: 12px;                      /* Ruang dalam header kolom */
+    font-size: 12px;                    /* Ukuran kecil untuk header tabel */
+    font-weight: 600;                   /* Semi-bold untuk header */
+    color: #64748b;                     /* Abu-abu untuk teks header */
+    border-bottom: 1px solid #f1f5f9;   /* Garis bawah tipis pemisah header */
 }
 
 td {
-    padding: 16px 12px;
-    font-size: 14px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 16px 12px;                 /* Ruang dalam sel data (atas-bawah lebih dari kiri-kanan) */
+    font-size: 14px;                    /* Ukuran teks data tabel */
+    border-bottom: 1px solid #f1f5f9;   /* Garis tipis pemisah antar baris */
 }
 
 .user-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex;          /* Avatar dan nama berdampingan */
+    align-items: center;    /* Sejajarkan secara vertikal */
+    gap: 8px;               /* Jarak antara avatar dan nama */
 }
 
 .user-icon {
-    width: 32px;
-    height: 32px;
-    background: #EFF6FF;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
+    width: 32px;                    /* Ukuran kotak avatar kecil di tabel */
+    height: 32px;                   /* Tinggi sama dengan lebar */
+    background: #EFF6FF;            /* Latar biru muda untuk avatar */
+    border-radius: 8px;             /* Sudut membulat */
+    display: flex;                  /* Pusatkan ikon di dalam kotak */
+    align-items: center;            /* Pusatkan vertikal */
+    justify-content: center;        /* Pusatkan horizontal */
+    font-size: 16px;                /* Ukuran emoji ikon user */
 }
 
 .user-info-cell h4 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 2px;
+    font-size: 14px;        /* Ukuran nama di sel tabel */
+    font-weight: 600;       /* Semi-bold untuk nama */
+    margin-bottom: 2px;     /* Jarak kecil antara nama dan info sekunder */
 }
 
 .user-info-cell p {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12px;        /* Ukuran kecil untuk info sekunder (username/email) */
+    color: #64748b;         /* Abu-abu untuk teks sekunder */
 }
 
 /* ========================================
    BADGES (Status, Type, Risk, Decision)
+   Label berwarna untuk menampilkan status, tipe, dan level risiko
    ======================================== */
 .status-badge, .type-badge, .risk-badge, .decision-badge {
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    padding: 4px 12px;      /* Ruang dalam badge agar teks tidak terlalu rapat */
+    border-radius: 12px;    /* Sudut sangat membulat untuk tampilan pill/label */
+    font-size: 12px;        /* Ukuran kecil agar badge tidak mendominasi */
+    font-weight: 600;       /* Semi-bold agar teks badge mudah dibaca */
+    display: inline-flex;   /* Flexbox inline agar badge menyesuaikan konten */
+    align-items: center;    /* Sejajarkan ikon dan teks secara vertikal */
+    gap: 6px;               /* Jarak antara ikon titik dan teks */
 }
 
 .status-badge.success, .decision-badge.allow {
-    background: #D1FAE5;
-    color: #065F46;
+    background: #D1FAE5;    /* Hijau muda - transaksi sukses / keputusan ALLOW */
+    color: #065F46;         /* Hijau gelap untuk teks badge sukses */
 }
 
 .status-badge.pending, .decision-badge.review {
-    background: #FEF3C7;
-    color: #92400E;
+    background: #FEF3C7;    /* Kuning muda - transaksi pending / keputusan REVIEW */
+    color: #92400E;         /* Oranye/cokelat untuk teks badge warning */
 }
 
 .status-badge.failed, .decision-badge.block {
-    background: #FEE2E2;
-    color: #991B1B;
+    background: #FEE2E2;    /* Merah muda - transaksi gagal / keputusan BLOCK */
+    color: #991B1B;         /* Merah gelap untuk teks badge gagal */
 }
 
 .type-badge {
-    background: #EFF6FF;
-    color: #1E40AF;
+    background: #EFF6FF;    /* Biru muda untuk badge tipe transaksi */
+    color: #1E40AF;         /* Biru gelap untuk teks tipe */
 }
 
 .risk-badge.normal, .risk-score.normal {
-    background: #D1FAE5;
-    color: #065F46;
+    background: #D1FAE5;    /* Hijau muda untuk level risiko NORMAL (Z-Score ≤ 2) */
+    color: #065F46;         /* Hijau gelap untuk teks NORMAL */
 }
 
 .risk-badge.suspicious, .risk-score.suspicious {
-    background: #FEF3C7;
-    color: #92400E;
+    background: #FEF3C7;    /* Kuning muda untuk level SUSPICIOUS (2 < Z-Score ≤ 3) */
+    color: #92400E;         /* Oranye untuk teks SUSPICIOUS */
 }
 
 .risk-badge.anomaly, .risk-score.anomaly {
-    background: #FEE2E2;
-    color: #991B1B;
+    background: #FEE2E2;    /* Merah muda untuk level ANOMALY (Z-Score > 3) */
+    color: #991B1B;         /* Merah gelap untuk teks ANOMALY */
 }
 
 .risk-score {
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 16px;        /* Angka Z-Score sedikit lebih besar dari badge biasa */
+    font-weight: 700;       /* Tebal agar angka Z-Score mencolok */
 }
 
 /* ========================================
    FRAUD DONUT CHART (SVG)
+   Grafik donat SVG untuk visualisasi distribusi level risiko fraud
    ======================================== */
 .chart-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 32px 0;
-    position: relative;
+    display: flex;              /* Flexbox untuk posisikan chart */
+    align-items: center;        /* Pusatkan chart secara vertikal */
+    justify-content: center;    /* Pusatkan chart secara horizontal */
+    margin: 32px 0;             /* Jarak atas dan bawah chart */
+    position: relative;         /* Relatif agar .chart-center bisa absolute di dalamnya */
 }
 
 .chart-donut {
-    width: 200px;
-    height: 200px;
-    position: relative;
+    width: 200px;       /* Lebar area chart donat */
+    height: 200px;      /* Tinggi area chart donat */
+    position: relative; /* Relatif untuk posisi teks tengah */
 }
 
 .chart-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
+    position: absolute;                 /* Posisi absolut di atas SVG chart */
+    top: 50%;                           /* Mulai dari tengah vertikal */
+    left: 50%;                          /* Mulai dari tengah horizontal */
+    transform: translate(-50%, -50%);   /* Koreksi posisi agar benar-benar di tengah */
+    text-align: center;                 /* Teks rata tengah */
 }
 
 .chart-center h3 {
-    font-size: 32px;
-    font-weight: 700;
+    font-size: 32px;    /* Angka total besar di tengah chart donat */
+    font-weight: 700;   /* Tebal untuk angka total */
 }
 
 .chart-center p {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12px;    /* Label kecil di bawah angka ("Total Alert") */
+    color: #64748b;     /* Abu-abu untuk label sekunder */
 }
 
 .chart-legend {
-    margin-top: 24px;
+    margin-top: 24px;   /* Jarak dari chart ke legenda warna */
 }
 
 .legend-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #f1f5f9;
+    display: flex;                      /* Label dan nilai berdampingan */
+    justify-content: space-between;     /* Label di kiri, nilai di kanan */
+    align-items: center;                /* Sejajarkan secara vertikal */
+    padding: 12px 0;                    /* Ruang atas-bawah per item legenda */
+    border-bottom: 1px solid #f1f5f9;   /* Garis pemisah antar item legenda */
 }
 
 .legend-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    display: flex;      /* Titik warna dan teks berdampingan */
+    align-items: center;/* Sejajarkan secara vertikal */
+    gap: 8px;           /* Jarak antara titik warna dan teks */
+    font-size: 14px;    /* Ukuran teks label legenda */
 }
 
 .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
+    width: 12px;        /* Ukuran titik warna legenda */
+    height: 12px;       /* Tinggi sama agar berbentuk lingkaran */
+    border-radius: 50%; /* Bentuk lingkaran sempurna */
 }
 
-.legend-dot-normal {
-    background: #3B82F6;
-}
-
-.legend-dot-suspicious {
-    background: #F59E0B;
-}
-
-.legend-dot-anomaly {
-    background: #EF4444;
-}
+.legend-dot-normal     { background: #3B82F6; } /* Biru untuk titik NORMAL */
+.legend-dot-suspicious { background: #F59E0B; } /* Kuning untuk titik SUSPICIOUS */
+.legend-dot-anomaly    { background: #EF4444; } /* Merah untuk titik ANOMALY */
 
 .legend-value {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 14px;    /* Ukuran nilai persentase di sisi kanan legenda */
+    font-weight: 600;   /* Semi-bold agar angka persentase mencolok */
 }
 
 /* ========================================
    FILTERS (Fraud Alert Tab)
+   Area filter pencarian dan penyaringan data fraud alert
    ======================================== */
 .filters {
-    background: #fff;
-    padding: 24px;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
+    background: #fff;                           /* Latar putih untuk area filter */
+    padding: 24px;                              /* Ruang dalam area filter */
+    border-radius: 16px;                        /* Sudut membulat */
+    margin-bottom: 24px;                        /* Jarak bawah sebelum tabel */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* Bayangan tipis */
+    display: flex;                              /* Grup filter berdampingan */
+    gap: 16px;                                  /* Jarak antar grup filter */
+    flex-wrap: wrap;                            /* Pindah baris jika layar sempit */
 }
 
 .filter-group {
-    flex: 1;
-    min-width: 200px;
+    flex: 1;            /* Setiap grup filter mengambil ruang yang sama */
+    min-width: 200px;   /* Lebar minimum agar tidak terlalu sempit */
 }
 
 .filter-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
-    margin-bottom: 8px;
+    display: block;         /* Label di baris terpisah dari input */
+    font-size: 13px;        /* Ukuran kecil untuk label filter */
+    font-weight: 500;       /* Medium weight untuk label */
+    color: #64748b;         /* Abu-abu untuk label */
+    margin-bottom: 8px;     /* Jarak dari label ke input */
 }
 
 .filter-group input,
 .filter-group select {
-    width: 100%;
-    padding: 10px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 14px;
-    background: #fff;
+    width: 100%;                    /* Input/select mengisi lebar grup filter */
+    padding: 10px 16px;             /* Ruang dalam input */
+    border: 1px solid #e2e8f0;      /* Border abu-abu muda */
+    border-radius: 10px;            /* Sudut membulat */
+    font-size: 14px;                /* Ukuran teks input */
+    background: #fff;               /* Latar putih */
 }
 
 .btn-filter {
-    align-self: flex-end;
-    background: #3B82F6;
-    color: #fff;
-    padding: 10px 24px;
-    border-radius: 10px;
-    border: none;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    align-self: flex-end;   /* Tombol filter sejajar ke bawah dengan input */
+    background: #3B82F6;    /* Latar biru untuk tombol filter */
+    color: #fff;            /* Teks putih pada tombol filter */
+    padding: 10px 24px;     /* Ruang dalam tombol filter */
+    border-radius: 10px;    /* Sudut membulat */
+    border: none;           /* Hapus border default browser */
+    font-size: 14px;        /* Ukuran teks tombol */
+    font-weight: 500;       /* Medium weight */
+    cursor: pointer;        /* Kursor tangan saat di-hover */
+    display: flex;          /* Ikon dan teks berdampingan */
+    align-items: center;    /* Sejajarkan vertikal */
+    gap: 8px;               /* Jarak antara ikon dan teks */
 }
 
 .btn-details {
-    color: #3B82F6;
-    font-size: 18px;
-    cursor: pointer;
+    color: #3B82F6;     /* Biru untuk tombol detail (ikon kaca pembesar) */
+    font-size: 18px;    /* Sedikit lebih besar agar mudah diklik */
+    cursor: pointer;    /* Kursor tangan saat di-hover */
 }
 
 /* ========================================
    PAGINATION
+   Kontrol navigasi halaman untuk tabel data
    ======================================== */
 .pagination {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid #f1f5f9;
+    display: flex;                      /* Info dan kontrol berdampingan */
+    justify-content: space-between;     /* Info di kiri, tombol di kanan */
+    align-items: center;                /* Sejajarkan secara vertikal */
+    margin-top: 24px;                   /* Jarak dari tabel ke paginasi */
+    padding-top: 24px;                  /* Ruang dalam bagian atas paginasi */
+    border-top: 1px solid #f1f5f9;      /* Garis pemisah tipis antara tabel dan paginasi */
 }
 
 .pagination-info {
-    font-size: 14px;
-    color: #64748b;
+    font-size: 14px;    /* Ukuran teks info halaman ("Menampilkan 1-10 dari 100") */
+    color: #64748b;     /* Abu-abu untuk teks info sekunder */
 }
 
 .pagination-controls {
-    display: flex;
-    gap: 8px;
+    display: flex;  /* Tombol halaman berdampingan */
+    gap: 8px;       /* Jarak antar tombol halaman */
 }
 
 .page-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
+    width: 36px;                    /* Lebar tombol halaman */
+    height: 36px;                   /* Tinggi tombol halaman (persegi) */
+    border-radius: 8px;             /* Sudut membulat */
+    border: 1px solid #e2e8f0;      /* Border abu-abu muda */
+    background: #fff;               /* Latar putih */
+    display: flex;                  /* Angka di tengah tombol */
+    align-items: center;            /* Pusatkan vertikal */
+    justify-content: center;        /* Pusatkan horizontal */
+    cursor: pointer;                /* Kursor tangan saat di-hover */
+    font-size: 14px;                /* Ukuran angka halaman */
+    transition: all 0.2s;           /* Animasi halus saat hover */
 }
 
 .page-btn:hover {
-    border-color: #3B82F6;
-    color: #3B82F6;
+    border-color: #3B82F6;  /* Border biru saat di-hover */
+    color: #3B82F6;         /* Teks biru saat di-hover */
 }
 
 .page-btn.active {
-    background: #3B82F6;
-    color: #fff;
-    border-color: #3B82F6;
+    background: #3B82F6;    /* Latar biru untuk halaman aktif */
+    color: #fff;            /* Teks putih pada tombol aktif */
+    border-color: #3B82F6;  /* Border biru untuk tombol aktif */
 }
 
 .page-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    opacity: 0.5;       /* Tampak transparan/lemah untuk tombol yang tidak aktif */
+    cursor: not-allowed;/* Kursor dilarang untuk tombol disabled */
 }
 
 /* ========================================
    ACTIVITY FEED
+   Daftar aktivitas terbaru di sidebar kanan dashboard
    ======================================== */
 .activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: flex;          /* Daftar aktivitas tersusun vertikal */
+    flex-direction: column; /* Arah susunan dari atas ke bawah */
+    gap: 16px;              /* Jarak antar item aktivitas */
 }
 
 .activity-item {
-    display: flex;
-    gap: 12px;
-    padding: 16px;
-    background: #f8fafc;
-    border-radius: 12px;
+    display: flex;              /* Ikon dan konten berdampingan */
+    gap: 12px;                  /* Jarak antara ikon dan konten teks */
+    padding: 16px;              /* Ruang dalam item aktivitas */
+    background: #f8fafc;        /* Latar abu-abu sangat muda untuk item */
+    border-radius: 12px;        /* Sudut membulat */
 }
 
 .activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
+    width: 40px;                /* Ukuran kotak ikon aktivitas */
+    height: 40px;               /* Tinggi sama untuk bentuk persegi */
+    border-radius: 12px;        /* Sudut membulat untuk ikon */
+    display: flex;              /* Pusatkan emoji ikon */
+    align-items: center;        /* Pusatkan vertikal */
+    justify-content: center;    /* Pusatkan horizontal */
+    font-size: 18px;            /* Ukuran emoji ikon aktivitas */
+    flex-shrink: 0;             /* Ikon tidak menyusut jika konten panjang */
 }
 
 .activity-content {
-    flex: 1;
+    flex: 1;    /* Konten teks mengisi sisa ruang setelah ikon */
 }
 
 .activity-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-size: 14px;    /* Ukuran judul aktivitas */
+    font-weight: 600;   /* Semi-bold untuk judul aktivitas */
+    margin-bottom: 4px; /* Jarak ke deskripsi di bawahnya */
 }
 
 .activity-desc {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 4px;
+    font-size: 13px;    /* Kecil untuk deskripsi detail aktivitas */
+    color: #64748b;     /* Abu-abu untuk deskripsi sekunder */
+    margin-bottom: 4px; /* Jarak ke waktu aktivitas */
 }
 
 .activity-time {
-    font-size: 12px;
-    color: #94a3b8;
+    font-size: 12px;    /* Paling kecil untuk timestamp aktivitas */
+    color: #94a3b8;     /* Abu-abu lebih pucat untuk waktu */
 }
 
 /* ========================================
    INLINE STYLE REPLACEMENTS
+   Kelas utilitas yang menggantikan inline style agar CSS tetap terpisah dari HTML
    ======================================== */
 .connection-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    display: inline-flex;   /* Status koneksi ditampilkan sebaris */
+    align-items: center;    /* Titik dan teks sejajar vertikal */
+    gap: 6px;               /* Jarak antara titik hijau dan teks */
 }
 
 .connection-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #10B981;
-    display: inline-block;
+    width: 8px;             /* Ukuran titik indikator koneksi */
+    height: 8px;            /* Tinggi sama agar membentuk lingkaran */
+    border-radius: 50%;     /* Bentuk lingkaran sempurna */
+    background: #10B981;    /* Hijau menandakan koneksi aktif/online */
+    display: inline-block;  /* Ditampilkan sebaris */
 }
 
 .connection-text {
-    color: #10B981;
-    font-weight: 500;
+    color: #10B981;     /* Teks hijau sesuai warna indikator koneksi */
+    font-weight: 500;   /* Medium weight agar status mudah terbaca */
 }
 
 .btn-refresh {
-    background: #10B981;
+    background: #10B981;    /* Tombol refresh berwarna hijau */
 }
 
 .btn-refresh:hover {
-    background: #059669;
+    background: #059669;    /* Hijau lebih gelap saat tombol refresh di-hover */
 }
 
 .btn-gap-right {
-    margin-right: 12px;
+    margin-right: 12px;     /* Jarak kanan untuk tombol yang berdampingan */
 }
 
 .stat-row {
-    display: flex;
-    justify-content: space-between;
+    display: flex;                  /* Dua item statistik dalam satu baris */
+    justify-content: space-between; /* Satu di kiri, satu di kanan */
 }
 
 .table-loading {
-    text-align: center;
-    color: #64748b;
-    padding: 20px;
+    text-align: center; /* Teks loading di tengah area tabel */
+    color: #64748b;     /* Abu-abu untuk teks loading */
+    padding: 20px;      /* Ruang saat data sedang dimuat */
 }
 
 .table-loading-muted {
-    text-align: center;
-    color: #94a3b8;
-    padding: 32px;
+    text-align: center; /* Teks loading di tengah dengan warna lebih pucat */
+    color: #94a3b8;     /* Abu-abu pucat untuk loading state sekunder */
+    padding: 32px;      /* Ruang lebih besar untuk loading state */
 }
 
 .table-empty {
-    text-align: center;
-    color: #64748b;
-    padding: 40px;
+    text-align: center; /* Konten "tabel kosong" di tengah */
+    color: #64748b;     /* Abu-abu untuk teks kosong */
+    padding: 40px;      /* Ruang besar saat tabel tidak ada data */
 }
 
 .table-empty-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 48px;    /* Emoji ikon besar saat tabel kosong */
+    margin-bottom: 16px;/* Jarak antara ikon dan teks pesan kosong */
 }
 
 .table-empty-title {
-    margin-bottom: 8px;
-    color: #1e293b;
+    margin-bottom: 8px;     /* Jarak antara judul dan deskripsi tabel kosong */
+    color: #1e293b;         /* Warna gelap untuk judul tabel kosong */
 }
 
 .count-muted {
-    font-size: 13px;
-    color: #64748b;
+    font-size: 13px;    /* Ukuran kecil untuk angka sekunder */
+    color: #64748b;     /* Abu-abu untuk info jumlah sekunder */
 }
 
 .laporan-fraud-summary {
-    padding: 8px 0;
+    padding: 8px 0;     /* Ruang atas-bawah untuk ringkasan laporan fraud */
 }
 
 .settings-key {
-    font-weight: 600;
+    font-weight: 600;   /* Semi-bold untuk nama kunci pengaturan */
 }
 
 .settings-key-wide {
-    width: 220px;
+    width: 220px;       /* Lebar tetap untuk kolom kunci pengaturan yang panjang */
 }
 
 .td-id-muted {
-    font-size: 12px;
-    color: #94a3b8;
+    font-size: 12px;    /* Kecil untuk ID yang tidak perlu mencolok */
+    color: #94a3b8;     /* Abu-abu pucat untuk teks ID sekunder */
 }
 
 .td-date-muted {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12px;    /* Kecil untuk tanggal di tabel */
+    color: #64748b;     /* Abu-abu untuk tanggal sekunder */
 }
 
 .td-small {
-    font-size: 13px;
+    font-size: 13px;    /* Ukuran sedikit lebih kecil untuk sel tabel tertentu */
 }
 
 .td-strong {
-    font-weight: 600;
+    font-weight: 600;   /* Semi-bold untuk nilai yang perlu ditonjolkan di sel tabel */
 }
 
 .td-center {
-    text-align: center;
+    text-align: center; /* Rata tengah untuk isi sel tabel tertentu */
 }
 
 .td-mono {
-    font-family: monospace;
-    font-size: 12px;
+    font-family: monospace; /* Font monospace untuk kode/ID di tabel */
+    font-size: 12px;        /* Ukuran kecil untuk kode monospace */
 }
 
 .reason-cell {
-    max-width: 260px;
-    font-size: 12px;
-    color: #64748b;
+    max-width: 260px;   /* Batasi lebar sel alasan agar tidak terlalu lebar */
+    font-size: 12px;    /* Kecil untuk teks alasan */
+    color: #64748b;     /* Abu-abu untuk teks alasan sekunder */
 }
 
 .total-volume-value {
-    font-size: 22px;
-    font-weight: 700;
-    margin-top: 4px;
+    font-size: 22px;    /* Besar untuk angka total volume transaksi */
+    font-weight: 700;   /* Tebal untuk angka total volume */
+    margin-top: 4px;    /* Jarak kecil dari label ke angka */
 }
 
 .summary-key {
-    padding: 10px 12px;
-    font-weight: 600;
+    padding: 10px 12px;     /* Ruang dalam untuk sel kunci ringkasan */
+    font-weight: 600;       /* Semi-bold untuk nama kunci ringkasan */
 }
 
 .risk-badge.critical {
-    background: #FEE2E2;
-    color: #991B1B;
+    background: #FEE2E2;    /* Merah muda untuk badge CRITICAL (risiko sangat tinggi) */
+    color: #991B1B;         /* Merah gelap untuk teks CRITICAL */
 }
 
 .risk-badge.high {
-    background: #FEF3C7;
-    color: #92400E;
+    background: #FEF3C7;    /* Kuning muda untuk badge HIGH (risiko tinggi) */
+    color: #92400E;         /* Oranye/cokelat untuk teks HIGH */
 }

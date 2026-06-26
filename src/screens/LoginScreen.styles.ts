@@ -1,4 +1,4 @@
-// src/screens/LoginScreen.styles.ts
+﻿// src/screens/LoginScreen.styles.ts
 // ============================================================
 // FILE INI: Semua gaya tampilan untuk LoginScreen
 // Berisi style untuk logo, form login, tombol, dan link daftar
@@ -79,12 +79,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',                 // Latar putih agar emoji terlihat
     borderRadius: 22,                        // Bulat sempurna (radius = setengah width)
     justifyContent: 'center',               // Konten di tengah
-    alignItems: 'center',
+    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
     shadowColor: '#000',                     // Bayangan hitam tipis
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 }, // Arah dan jarak bayangan
+    shadowOpacity: 0.1, // Transparansi bayangan
+    shadowRadius: 4, // Blur radius bayangan
+    elevation: 4, // Ketinggian bayangan (Android)
   },
 
   // ── Emoji perisai / gembok di dalam badge ──
@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   // ── Judul di dalam card ("Masuk") ──
   cardTitle: {
     fontSize: 24,        // Ukuran heading dalam card
-    fontWeight: 'bold',
-    color: '#1e293b',
+    fontWeight: 'bold', // Ketebalan font
+    color: '#1e293b', // Warna teks
     marginBottom: 24,    // Jarak ke input pertama
   },
 
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
   // ── Teks link lupa password ──
   forgotPasswordText: {
     color: '#3B82F6',    // Biru agar terlihat sebagai link
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14, // Ukuran font
+    fontWeight: '500', // Ketebalan font
   },
 
   // ── Tombol "Masuk" ──
@@ -175,10 +175,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',               // Teks di tengah vertikal
     alignItems: 'center',                   // Teks di tengah horizontal
     shadowColor: '#3B82F6',                 // Glow biru di bawah tombol
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 }, // Arah dan jarak bayangan
+    shadowOpacity: 0.3, // Transparansi bayangan
+    shadowRadius: 8, // Blur radius bayangan
+    elevation: 4, // Ketinggian bayangan (Android)
   },
 
   // ── Tombol "Masuk" saat disabled (loading) ──
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#fff',      // Putih kontras dengan biru
     fontSize: 18,       // Font besar agar mudah dibaca
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Ketebalan font
   },
 
   // ── Baris loading (spinner + teks) ──
@@ -210,13 +210,13 @@ const styles = StyleSheet.create({
   // ── Teks "Belum punya akun?" ──
   registerText: {
     color: '#64748b', // Abu-abu agar tidak terlalu mencolok
-    fontSize: 14,
+    fontSize: 14, // Ukuran font
   },
 
   // ── Teks link "Daftar" ──
   registerLink: {
     color: '#3B82F6',   // Biru agar terlihat sebagai link
-    fontSize: 14,
+    fontSize: 14, // Ukuran font
     fontWeight: '600',  // Sedikit tebal
   },
 

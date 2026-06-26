@@ -1,4 +1,4 @@
-// src/screens/NFCScreen.styles.ts
+﻿// src/screens/NFCScreen.styles.ts
 // ============================================================
 // FILE INI: Semua gaya tampilan untuk NFCScreen (Merchant/Penerima)
 // Screen ini digunakan oleh merchant untuk menerima pembayaran dari customer
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   // ── Judul teks error ──
   errorTitle: {
     fontSize: 24,            // Heading besar
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Ketebalan font
     color: '#1e293b',        // Navy gelap
     marginBottom: 12,        // Jarak ke teks detail
     textAlign: 'center',     // Rata tengah
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,          // Ukuran normal
     color: '#64748b',      // Abu-abu medium
-    textAlign: 'center',
+    textAlign: 'center', // Perataan teks
     marginBottom: 24,      // Jarak ke tombol aksi
     lineHeight: 24,        // Spasi baris agar nyaman dibaca
   },
@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,          // Kecil sebagai teks penjelasan
     color: '#7f8c8d',      // Abu-abu redup
-    textAlign: 'center',
-    marginBottom: 20,
+    textAlign: 'center', // Perataan teks
+    marginBottom: 20, // Jarak luar bawah
   },
 
   // ── Kotak instruksi dengan garis biru di kiri ──
@@ -122,8 +122,8 @@ const styles = StyleSheet.create({
   // ── Teks di dalam tombol kembali ──
   backButtonText: {
     color: 'white',       // Putih kontras dengan latar biru
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 16, // Ukuran font
+    fontWeight: 'bold', // Ketebalan font
   },
 
   // ── Card informasi user merchant ──
@@ -142,14 +142,14 @@ const styles = StyleSheet.create({
   // ── Nama user merchant ──
   userName: {
     fontSize: 18,        // Agak besar untuk nama
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Ketebalan font
     color: '#2c3e50',    // Navy gelap
     marginBottom: 8,     // Jarak ke teks saldo
   },
 
   // ── Saldo user merchant ──
   userBalance: {
-    fontSize: 16,
+    fontSize: 16, // Ukuran font
     color: '#27ae60',    // Hijau agar terlihat sebagai angka positif/saldo
     fontWeight: '600',   // Semi-bold
   },
@@ -157,63 +157,63 @@ const styles = StyleSheet.create({
   // ── Card peringatan (latar kuning) ──
   warningCard: {
     backgroundColor: '#fff3cd',    // Kuning pucat untuk peringatan ringan
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    padding: 15, // Jarak dalam semua sisi
+    borderRadius: 8, // Kelengkungan sudut elemen
+    marginBottom: 15, // Jarak luar bawah
     borderLeftWidth: 4,             // Aksen garis kiri
     borderLeftColor: '#f39c12',     // Kuning keemasan untuk warning
   },
 
   // ── Teks di dalam card peringatan ──
   warningText: {
-    fontSize: 14,
+    fontSize: 14, // Ukuran font
     color: '#856404',        // Cokelat tua untuk kontras di latar kuning
-    textAlign: 'center',
+    textAlign: 'center', // Perataan teks
   },
 
   // ── Card instruksi cara penggunaan (biru muda) ──
   instructionCard: {
     backgroundColor: '#e3f2fd',    // Biru sangat muda
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: 20, // Jarak dalam semua sisi
+    borderRadius: 12, // Kelengkungan sudut elemen
+    marginBottom: 20, // Jarak luar bawah
     borderLeftWidth: 4,            // Aksen biru di kiri
     borderLeftColor: '#2196f3',
   },
 
   // ── Judul instruksi di dalam card biru ──
   instructionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 16, // Ukuran font
+    fontWeight: 'bold', // Ketebalan font
     color: '#1565c0',      // Biru tua agar kontras di latar biru muda
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 12, // Jarak luar bawah
+    textAlign: 'center', // Perataan teks
   },
 
   // ── Card status kartu NFC yang berhasil dibaca ──
   cardStatusCard: {
     backgroundColor: '#d4edda',   // Hijau muda untuk status sukses
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    padding: 15, // Jarak dalam semua sisi
+    borderRadius: 8, // Kelengkungan sudut elemen
+    marginBottom: 15, // Jarak luar bawah
     borderLeftWidth: 4,           // Aksen hijau di kiri
     borderLeftColor: '#27ae60',
   },
 
   // ── Judul di dalam card status kartu ──
   cardStatusTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 16, // Ukuran font
+    fontWeight: 'bold', // Ketebalan font
     color: '#155724',      // Hijau gelap agar kontras di latar hijau muda
-    marginBottom: 5,
+    marginBottom: 5, // Jarak luar bawah
   },
 
   // ── UID kartu NFC (format monospace) ──
   cardStatusUid: {
-    fontSize: 13,
-    color: '#155724',
+    fontSize: 13, // Ukuran font
+    color: '#155724', // Warna teks
     fontFamily: 'monospace',  // Monospace agar UID terlihat seperti kode teknis
-    marginBottom: 3,
+    marginBottom: 3, // Jarak luar bawah
   },
 
   // ── Teks keterangan di bawah UID ──
@@ -229,21 +229,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,                        // Sudut membulat
     alignItems: 'center',                   // Teks di tengah
     marginBottom: 15,                        // Jarak antar tombol
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: '#000', // Warna bayangan elemen
+    shadowOffset: { width: 0, height: 2 }, // Arah dan jarak bayangan
+    shadowOpacity: 0.1, // Transparansi bayangan
+    shadowRadius: 4, // Blur radius bayangan
+    elevation: 3, // Ketinggian bayangan (Android)
   },
 
   // ── Varian tombol warna ungu (untuk "Scan Kartu") ──
-  scanCardButton: { backgroundColor: '#9b59b6' },
+  scanCardButton: { backgroundColor: '#9b59b6' }, // Tombol scan kartu berwarna ungu
 
   // ── Varian tombol warna hijau (untuk "Kirim/Bayar") ──
-  sendButton: { backgroundColor: '#27ae60' },
+  sendButton: { backgroundColor: '#27ae60' }, // Tombol kirim berwarna hijau
 
   // ── Varian tombol warna biru langit (untuk "Terima") ──
-  receiveButton: { backgroundColor: '#2196f3' },
+  receiveButton: { backgroundColor: '#2196f3' }, // Tombol terima berwarna biru
 
   // ── Varian tombol abu-abu (disabled) ──
   disabledButton: {
@@ -255,27 +255,27 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: 'white',        // Putih kontras
     fontSize: 18,          // Besar agar mudah dibaca
-    fontWeight: 'bold',
+    fontWeight: 'bold', // Ketebalan font
     marginBottom: 4,       // Jarak ke subteks di bawahnya
   },
 
   // ── Subteks kecil di bawah teks tombol ──
   actionButtonSubtext: {
     color: 'rgba(255, 255, 255, 0.9)', // Putih sedikit transparan
-    fontSize: 14,
+    fontSize: 14, // Ukuran font
   },
 
   // ── Card input nominal (kotak putih dengan TextInput) ──
   inputCard: {
     backgroundColor: 'white',  // Latar putih
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
+    padding: 20, // Jarak dalam semua sisi
+    borderRadius: 12, // Kelengkungan sudut elemen
+    marginBottom: 15, // Jarak luar bawah
   },
 
   // ── Label di atas TextInput ──
   inputLabel: {
-    fontSize: 16,
+    fontSize: 16, // Ukuran font
     fontWeight: '600',   // Semi-bold untuk label
     color: '#2c3e50',    // Navy gelap
     marginBottom: 10,    // Jarak ke TextInput di bawah
