@@ -171,9 +171,9 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
 
     try { // try memulai blok percobaan utama
       Alert.alert( // Alert.alert menampilkan dialog instruksi ke user
-        'Scan Kartu NFC',
-        'Tempelkan kartu NFC Anda ke perangkat',
-        [{ text: 'OK' }]
+        'Scan Kartu NFC', // judul Alert yang memberitahu user tindakan yang perlu dilakukan
+        'Tempelkan kartu NFC Anda ke perangkat', // pesan instruksi detail kepada user cara melakukan scan kartu
+        [{ text: 'OK' }] // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
       );
 
       const cardData = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; mengembalikan objek { id, type, manufacturer }
@@ -189,16 +189,16 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
         
         if (cardInfo && cardInfo.card?.userId === user.id) { // optional chaining (?.) aman; === operator kesamaan strict
           Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-            'Kartu Sudah Terdaftar',
+            'Kartu Sudah Terdaftar', // judul Alert ketika kartu yang discan sudah terdaftar di akun user ini
             `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`, // template literal ${} menyisipkan nilai dinamis; toLocaleString('id-ID') memformat angka ke format Indonesia
             [{ text: 'OK', onPress: () => setRegistrationStatus('success') }] // onPress callback mengubah status ke 'success'
           );
           return; // return menghentikan proses registrasi lebih awal
         } else if (cardInfo && cardInfo.card?.userId !== user.id) { // !== berarti tidak sama persis
           Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-            'Kartu Sudah Digunakan',
-            'Kartu ini sudah terdaftar di akun pengguna lain',
-            [{ text: 'OK', onPress: () => setRegistrationStatus('error') }]
+            'Kartu Sudah Digunakan', // judul Alert ketika kartu sudah terdaftar di akun user lain; kartu tidak bisa dibagi
+            'Kartu ini sudah terdaftar di akun pengguna lain', // pesan penjelasan bahwa kartu ini sudah dimiliki akun lain; kartu NFC tidak bisa dipakai bersama
+            [{ text: 'OK', onPress: () => setRegistrationStatus('error') }] // array tombol Alert; onPress mengeset status ke 'error' agar UI menampilkan state gagal
           );
           return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
         }
@@ -220,11 +220,11 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
       if (registerResponse && registerResponse.success) { // && berarti AND; kedua kondisi harus benar
         setRegistrationStatus('success'); // mengubah status ke 'success' untuk memperbarui tampilan UI
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-          'Berhasil!',
-          `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`,
+          'Berhasil!', // judul Alert sukses; tanda seru menekankan keberhasilan registrasi kartu
+          `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`, // pesan sukses dengan UID kartu; UID adalah identitas unik kartu NFC yang tidak bisa diubah
           [
             {
-              text: 'OK',
+              text: 'OK', // teks tombol konfirmasi; menekan OK akan memanggil onPress callback di bawah
               onPress: () => { // arrow function sebagai callback saat user tekan OK
                 if (onSuccess) onSuccess(); // if memeriksa apakah prop onSuccess ada sebelum dipanggil
                 else onBack(); // else dipanggil jika onSuccess tidak ada — fallback ke onBack
@@ -288,8 +288,6 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
           <Text style={styles.errorText}>
             Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda:
           </Text>
-
-          {/* Panduan langkah-langkah mengaktifkan NFC */}
           <View style={styles.instructionCard}>
             <Text style={styles.instructionTitle}>Cara Mengaktifkan NFC:</Text>
             <Text style={styles.instructionItem}>1. Buka Pengaturan HP</Text>
@@ -297,8 +295,6 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
             <Text style={styles.instructionItem}>3. Aktifkan toggle NFC</Text>
             <Text style={styles.instructionItem}>4. Kembali ke aplikasi ini</Text>
           </View>
-
-          {/* Tombol coba lagi: re-init NFC setelah user aktifkan di Settings */}
           <TouchableOpacity style={styles.retryButton} onPress={initializeNFC}>
             <Text style={styles.retryButtonText}>Coba Lagi</Text>
           </TouchableOpacity>
@@ -311,26 +307,22 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
   // Ditampilkan jika NFC didukung dan aktif
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
-      {/* Header navigasi */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text>
-        <View style={styles.headerSpacer} />{/* Spacer */}
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.content}>
-        {/* ── Hero Section: Logo & Judul ── */}
-        {/* Visual branding & identitas halaman */}
-        <View style={styles.heroSection}>
+      <View style={styles.content}>\n<View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logo}>
               <Text style={styles.logoIcon}>💳</Text>
-              <Text style={styles.logoWave}>)))</Text>{/* Animasi gelombang NFC */}
+              <Text style={styles.logoWave}>)))</Text>
             </View>
             <View style={styles.logoShield}>
-              <Text style={styles.shieldIcon}>✓</Text>{/* Badge keamanan */}
+              <Text style={styles.shieldIcon}>✓</Text>
             </View>
           </View>
           <Text style={styles.title}>Registrasi Kartu NFC</Text>
@@ -339,11 +331,11 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
           </Text>
         </View>
 
-        {registrationStatus === 'success' ? (
+        {registrationStatus === 'success' ? ( // ternary rendering: tampilan berbeda berdasarkan status registrasi (success atau proses)
           <View style={styles.successCard}>
             <Text style={styles.successIcon}>✅</Text>
             <Text style={styles.successTitle}>Kartu terdeteksi</Text>
-            {scannedCardId && (
+            {scannedCardId && ( // conditional rendering: menampilkan detail kartu hanya jika sudah ada UID yang terscan
               <View style={styles.cardIdContainer}>
                 <Text style={styles.cardIdLabel}>UID Kartu</Text>
                 <View style={styles.cardIdBox}>
@@ -365,7 +357,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
               <Text style={styles.registerButtonText}>Daftarkan Kartu</Text>
             </TouchableOpacity>
           </View>
-        ) : (
+        ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
           <View style={styles.scanCard}>
             <View style={styles.nfcAnimation}>
               <View style={styles.nfcCircle}>
@@ -376,7 +368,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
               <View style={[styles.nfcWave, styles.nfcWave3]} />
             </View>
 
-            {scannedCardId ? (
+            {scannedCardId ? ( // ternary: jika sudah ada scannedCardId tampilkan UID kartu, jika belum tampilkan instruksi scan
               <View style={styles.cardIdContainer}>
                 <Text style={styles.cardIdLabel}>UID Kartu</Text>
                 <View style={styles.cardIdBox}>
@@ -387,7 +379,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : null}
+            ) : null} // jika tidak ada case yang cocok return null; tidak menampilkan apapun untuk status selain ACTIVE dan BLOCKED
 
             <View style={styles.infoBox}>
               <Text style={styles.infoIcon}>ℹ️</Text>
@@ -401,9 +393,9 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
               onPress={handleScanCard} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               disabled={scanning || loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
             >
-              {scanning || loading ? (
+              {scanning || loading ? ( // ternary JSX: jika sedang scanning atau loading tampilkan spinner aktivitas
                 <ActivityIndicator color="#fff" />
-              ) : (
+              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
                 <Text style={styles.scanButtonText}>Scan Kartu NFC</Text>
               )}
             </TouchableOpacity>

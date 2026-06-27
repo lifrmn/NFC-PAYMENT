@@ -64,19 +64,19 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
       console.error('❌ JWT verification failed:', jwtError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       
       if (jwtError.name === 'TokenExpiredError') { // if mengecek tipe error; .name adalah property dari Error object; TokenExpiredError terjadi ketika token melewati waktu exp
-        return res.status(401).json({ 
-          error: 'Token expired',
-          message: 'Your session has expired. Please login again.' 
+        return res.status(401).json({ // return menghentikan eksekusi dan mengirim 401 Unauthorized karena token sudah kadaluarsa
+          error: 'Token expired', // field error: kode error singkat yang bisa dibaca oleh frontend untuk menampilkan pesan sesuai
+          message: 'Your session has expired. Please login again.' // field message: pesan human-readable yang ditampilkan ke user
         });
       } else if (jwtError.name === 'JsonWebTokenError') { // else if kondisi lanjutan; JsonWebTokenError terjadi ketika format token salah atau signature tidak cocok
         return res.status(403).json({ // 403 Forbidden — beda dari 401, ini berarti terautentikasi tapi tidak diizinkan
-          error: 'Invalid token',
-          message: 'Authentication token is invalid. Please login again.' 
+          error: 'Invalid token', // field error: memberitahu frontend bahwa token tidak valid (bukan kadaluarsa)
+          message: 'Authentication token is invalid. Please login again.' // pesan untuk user agar login ulang karena token tidak valid
         });
       } else { // else dijalankan jika semua kondisi sebelumnya tidak terpenuhi
-        return res.status(403).json({ 
-          error: 'Token verification failed',
-          message: 'Unable to verify authentication token.' 
+        return res.status(403).json({ // return + 403: error JWT lain yang tidak dikenali; tetap ditolak demi keamanan
+          error: 'Token verification failed', // field error: verifikasi token gagal karena alasan lain yang tidak spesifik
+          message: 'Unable to verify authentication token.' // pesan untuk user bahwa token tidak bisa diverifikasi
         });
       }
     }
@@ -102,17 +102,17 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
     // STEP 6: Validasi user dan session
     if (!user) { // if mengecek apakah user null — user tidak ditemukan di database (mungkin sudah dihapus)
       console.log('❌ User not found for ID:', decoded.userId); // Log untuk debug
-      return res.status(401).json({ // return menghentikan; 401 Unauthorized
-        error: 'User not found',
-        message: 'User account no longer exists.' 
+      return res.status(401).json({ // return menghentikan eksekusi dan mengirim 401 Unauthorized karena user tidak ditemukan
+        error: 'User not found', // field error: memberitahu frontend user tidak ada di database
+        message: 'User account no longer exists.' // pesan deskriptif; user mungkin sudah dihapus admin
       });
     }
     
     if (user.userSessions.length === 0) { // if mengecek apakah array userSessions kosong; .length mengambil panjang array; === 0 berarti tidak ada session valid yang ditemukan
       console.log('❌ No valid session found for user:', decoded.userId); // Log untuk debug
       return res.status(401).json({ // 401 Unauthorized — session tidak valid
-        error: 'Session expired',
-        message: 'Your session has expired or been logged out. Please login again.' 
+        error: 'Session expired', // field error: memberitahu frontend session sudah tidak aktif
+        message: 'Your session has expired or been logged out. Please login again.' // pesan untuk user agar login ulang
       });
     }
 
@@ -125,9 +125,9 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // STEP 8: Handle error (unexpected errors)
     console.error('❌ Auth middleware error:', error); // Log error untuk debug
-    return res.status(500).json({ 
-      error: 'Authentication error',
-      message: 'An error occurred during authentication.' 
+    return res.status(500).json({ // return + 500 Internal Server Error: error tidak terduga saat proses autentikasi
+      error: 'Authentication error', // field error: kode error generik untuk error autentikasi yang tidak dikenali
+      message: 'An error occurred during authentication.' // pesan untuk user; tidak mengekspos detail error internal demi keamanan
     });
   }
 };
@@ -143,12 +143,12 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
 // 4. Jika tidak valid, return error 401
 //
 // Usage: app.post('/api/admin/action', authenticateAdmin, handler)
-const authenticateAdmin = (req, res, next) => {
+const authenticateAdmin = (req, res, next) => { // middleware authenticateAdmin: memverifikasi request berasal dari admin yang sah via app-key dan password
   // STEP 1: Ambil admin password dari header atau request body
   // Admin bisa kirim password via:
   // - Header: x-admin-password: admin123
   // - Body: { "adminPassword": "admin123" }
-  const adminPassword = req.headers['x-admin-password'] || req.body.adminPassword;
+  const adminPassword = req.headers['x-admin-password'] || req.body.adminPassword; // req.headers membaca header HTTP; || membaca dari body jika header tidak ada; mendukung dua cara pengiriman password
   
   // STEP 2: Ambil app key dari header
   const appKey = req.headers['x-app-key']; // x-app-key: NFC2025SecureApp
@@ -158,17 +158,17 @@ const authenticateAdmin = (req, res, next) => {
   const adminPass = process.env.ADMIN_PASSWORD || 'admin123'; // Default admin password
   
   // STEP 4: Validasi app key (first layer authentication)
-  if (appKey !== appSecret) {
+  if (appKey !== appSecret) { // memeriksa apakah x-app-key yang dikirim cocok dengan APP_SECRET; tidak cocok berarti bukan dari app resmi
     return res.status(401).json({ error: 'Invalid app key' }); // 401 Unauthorized
   }
   
   // STEP 5: Validasi admin password (second layer authentication)
-  if (adminPassword !== adminPass) {
+  if (adminPassword !== adminPass) { // memeriksa apakah password admin cocok; tidak cocok berarti bukan admin yang sah
     return res.status(401).json({ error: 'Invalid admin password' }); // 401 Unauthorized
   }
   
   // STEP 6: Autentikasi berhasil! Lanjut ke endpoint
-  next();
+  next(); // next() memanggil middleware berikutnya dalam chain; tanpa next() request akan berhenti di middleware ini
 };
 
 // ===============================================================
@@ -182,7 +182,7 @@ const authenticateAdmin = (req, res, next) => {
 // 4. Jika tidak valid, return error 401
 //
 // Usage: app.post('/api/devices/sync', authenticateDevice, handler)
-const authenticateDevice = (req, res, next) => {
+const authenticateDevice = (req, res, next) => { // middleware authenticateDevice: memverifikasi request sinkronisasi perangkat berasal dari aplikasi Android resmi
   // STEP 1: Ambil app key dari header
   const appKey = req.headers['x-app-key']; // x-app-key: NFC2025SecureApp
   
@@ -190,10 +190,10 @@ const authenticateDevice = (req, res, next) => {
   const userAgent = req.headers['user-agent']; // user-agent: okhttp/4.9.0
   
   // STEP 3: Ambil app secret dari environment variables
-  const appSecret = process.env.APP_SECRET || 'NFC2025SecureApp';
+  const appSecret = process.env.APP_SECRET || 'NFC2025SecureApp'; // ambil APP_SECRET dari environment variable; || menggunakan default jika tidak ada
   
   // STEP 4: Validasi app key
-  if (appKey !== appSecret) {
+  if (appKey !== appSecret) { // memeriksa apakah x-app-key cocok dengan secret; memastikan request dari app Android resmi
     return res.status(401).json({ error: 'Invalid app key' }); // 401 Unauthorized
   }
   
@@ -204,7 +204,7 @@ const authenticateDevice = (req, res, next) => {
   }
   
   // STEP 6: Autentikasi berhasil! Lanjut ke endpoint
-  next();
+  next(); // next() memanggil middleware berikutnya dalam chain; tanpa next() request akan berhenti di middleware ini
 };
 
 // STEP 7: Export semua fungsi middleware agar bisa diimport di file lain

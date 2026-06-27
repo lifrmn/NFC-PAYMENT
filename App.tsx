@@ -587,19 +587,19 @@ export default function App() {
   // ========================================================
   if (authState === 'loading') { // Tampilkan spinner selama proses startup berlangsung
     return (
-      <SafeAreaView style={styles.loadingContainer}> {/* SafeAreaView agar spinner tidak tertutup notch */}
-        <ActivityIndicator size="large" color="#2563eb" /> {/* Spinner biru besar sebagai indikator loading */}
-        <Text style={styles.loadingText}>Memuat aplikasi NFC Payment...</Text> {/* Teks utama loading */}
-        <Text style={styles.loadingSubtext}>Mohon tunggu...</Text> {/* Teks sekunder agar user tidak bingung */}
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={styles.loadingText}>Memuat aplikasi NFC Payment...</Text>
+        <Text style={styles.loadingSubtext}>Mohon tunggu...</Text>
       </SafeAreaView>
     );
   }
 
   if (error && authState === 'signedOut') { // Tampilkan layar error hanya jika ada pesan error dan user belum login
     return (
-      <SafeAreaView style={styles.errorContainer}> {/* Latar merah muda menandakan kondisi error */}
-        <Text style={styles.errorTitle}>Terjadi Kesalahan</Text> {/* Judul error yang mencolok */}
-        <Text style={styles.errorText}>{error}</Text> {/* Pesan error spesifik dari state error */}
+      <SafeAreaView style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Terjadi Kesalahan</Text>
+        <Text style={styles.errorText}>{error}</Text>
         <Text
           style={styles.retryText}
           onPress={() => {
@@ -617,9 +617,9 @@ export default function App() {
   // Navigasi Utama Aplikasi
   // ========================================================
   return (
-    <SafeAreaProvider> {/* Provider ini wajib ada agar SafeAreaView dan insets bekerja di seluruh app */}
-      <StatusBar style="auto" /> {/* Status bar menyesuaikan tema terang/gelap secara otomatis */}
-      <NavigationContainer ref={navigationRef}> {/* Wrapper utama navigasi; ref untuk kontrol programatik */}
+    <SafeAreaProvider>
+      <StatusBar style="auto" />
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{
             headerShown: false, // Header default dimatikan karena tiap screen memakai layout sendiri.

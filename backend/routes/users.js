@@ -68,13 +68,13 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
         isActive: true,              // Status aktif/diblokir
         createdAt: true,             // Tanggal registrasi
         _count: {                    // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
-          select: {
+          select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
             sentTransactions: true,    // Hitung jumlah transaksi yang dikirim user
             receivedTransactions: true // Hitung jumlah transaksi yang diterima user
           }
         }
       },
-      orderBy: {
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         createdAt: 'desc'            // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
       }
     });
@@ -101,7 +101,7 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
     
     const user = await prisma.user.findUnique({ // Query: cari user unik berdasarkan username
       where: { username }, // Shorthand ES6: sama dengan { username: username }
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // ID numerik user di database
         name: true, // Nama lengkap user
         username: true, // Username untuk login
@@ -117,7 +117,7 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
     res.json(user); // Kirim data user sebagai JSON response
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
@@ -131,7 +131,7 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
   try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil parameter 'id' dari URL
     // Contoh: jika URL = /api/users/5, maka id = "5"
-    const { id } = req.params;
+    const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis; id berasal dari route pattern seperti /users/:id
     
     // STEP 2: Query database untuk cari user berdasarkan ID
     // parseInt(id) mengubah string "5" menjadi number 5
@@ -151,14 +151,14 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
 
     // STEP 3: Validasi - jika user tidak ditemukan
     if (!user) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
     }
 
     // STEP 4: Return data user ke client
-    res.json(user);
+    res.json(user); // res.json(user) mengirim data user sebagai JSON response dengan status 200 OK; objek user dikirim langsung ke frontend
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('❌ Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
@@ -200,22 +200,22 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
 
     if (!user) { // Jika user tidak ditemukan
       return res.status(404).json({ // Return 404 Not Found
-        success: false,
-        error: 'Pengguna tidak ditemukan' 
+        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
+        error: 'Pengguna tidak ditemukan'  // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       });
     }
 
     // Ambil semua kartu untuk pengguna ini
     const cards = await prisma.nFCCard.findMany({ // Query: ambil semua kartu NFC milik user ini
       where: { userId: parseInt(id) }, // Filter: hanya kartu yang dimiliki user ini
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         cardId: true, // UID kartu (hex string, misal "04A1B2C3D4E5F6")
         cardStatus: true, // Status kartu: ACTIVE / BLOCKED / LOST / EXPIRED
         balance: true, // Saldo kartu (dalam Rupiah)
         registeredAt: true, // Tanggal kartu pertama kali didaftarkan
         lastUsed: true // Tanggal terakhir kartu digunakan
       },
-      orderBy: {
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         registeredAt: 'desc' // Urutkan: yang terbaru didaftarkan di atas
       }
     });
@@ -226,9 +226,9 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
     });
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('\u274c Gagal mendapatkan kartu pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ 
-      success: false,
-      error: 'Gagal mendapatkan kartu pengguna' 
+    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
+      success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
+      error: 'Gagal mendapatkan kartu pengguna'  // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
     });
   }
 });
@@ -268,7 +268,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
   // Validasi input menggunakan express-validator
   body('amount').isNumeric().withMessage('Jumlah harus berupa angka'), // amount harus berupa angka
   body('adminPassword').notEmpty().withMessage('Password admin diperlukan') // adminPassword wajib ada
-], async (req, res) => {
+], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
   try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi dari middleware di atas
     if (!errors.isEmpty()) { // Jika ada error validasi
@@ -292,7 +292,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
     const user = await prisma.user.update({ // Update record user di database
       where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
       data: { balance: amount }, // Set saldo ke nilai baru (bukan increment)
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         name: true, // Kembalikan nama
         username: true, // Kembalikan username
@@ -302,7 +302,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 
     // Catat aksi admin
     await prisma.adminLog.create({ // Simpan log ke tabel AdminLog
-      data: {
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'BALANCE_UPDATE', // Jenis aksi
         details: JSON.stringify({ // Detail aksi sebagai JSON string
           userId: user.id, // ID user yang diubah saldonya
@@ -324,13 +324,13 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
     }
 
     res.json({ // Return response sukses
-      message: 'Saldo berhasil diperbarui',
+      message: 'Saldo berhasil diperbarui', // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperbarui di database
       user // Data user dengan saldo baru
     });
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('\u274c Gagal memperbarui saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui saldo' });
+    res.status(500).json({ error: 'Gagal memperbarui saldo' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
@@ -374,21 +374,21 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
     const { limit = 10, offset = 0 } = req.query; // Pagination: default 10 data, mulai dari awal
 
     const transactions = await prisma.transaction.findMany({ // Query: ambil transaksi yang melibatkan user
-      where: {
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         OR: [ // Kondisi OR: user bisa sebagai sender ATAU receiver
           { senderId: parseInt(id) }, // Transaksi yang dikirim user (user = pengirim)
           { receiverId: parseInt(id) } // Transaksi yang diterima user (user = penerima)
         ]
       },
-      include: {
+      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         sender: { // Sertakan data pengirim
           select: { id: true, name: true, username: true } // Hanya field yang aman
         },
         receiver: { // Sertakan data penerima
-          select: { id: true, name: true, username: true }
+          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
         }
       },
-      orderBy: {
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         createdAt: 'desc' // Terbaru di atas
       },
       take: parseInt(limit), // LIMIT: maksimal N transaksi
@@ -398,14 +398,14 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
     res.json(transactions); // Kirim array transaksi sebagai JSON
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('Get user transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Failed to get transactions' });
+    res.status(500).json({ error: 'Failed to get transactions' }); // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 menandakan error server
   }
 });
 
 // Perbarui profil pengguna
 router.put('/:id', [ // PUT /:id → update profil user (nama)
   body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter') // Nama opsional, min 2 char
-], async (req, res) => {
+], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
   try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi
     if (!errors.isEmpty()) { // Jika ada error
@@ -423,7 +423,7 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
     const user = await prisma.user.update({ // Update record user di database
       where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
       data: { name }, // Update hanya field nama
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         name: true, // Kembalikan nama baru
         username: true, // Kembalikan username
@@ -432,13 +432,13 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
     });
 
     res.json({ // Return response sukses
-      message: 'Profil berhasil diperbarui',
+      message: 'Profil berhasil diperbarui', // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbarui di database
       user // Data user dengan nama baru
     });
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('\u274c Gagal memperbarui profil:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui profil' });
+    res.status(500).json({ error: 'Gagal memperbarui profil' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
@@ -456,7 +456,7 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
     const user = await prisma.user.update({ // Update record user di database
       where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
       data: { isActive: false }, // Set isActive = false (menonaktifkan akun)
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         name: true, // Kembalikan nama
         username: true, // Kembalikan username
@@ -466,7 +466,7 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 
     // Catat aksi admin
     await prisma.adminLog.create({ // Simpan log ke tabel AdminLog untuk audit trail
-      data: {
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'USER_DEACTIVATE', // Jenis aksi: nonaktifkan user
         details: JSON.stringify({ // Detail sebagai JSON string
           userId: user.id, // ID user yang dinonaktifkan
@@ -483,13 +483,13 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
     }
 
     res.json({ // Return response sukses
-      message: 'Pengguna berhasil dinonaktifkan',
+      message: 'Pengguna berhasil dinonaktifkan', // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi INACTIVE di database
       user // Data user dengan isActive = false
     });
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('\u274c Gagal menonaktifkan pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' });
+    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
@@ -544,7 +544,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     // Check if user exists
     const user = await prisma.user.findUnique({ // Cari user yang akan dihapus
       where: { id: userId }, // Filter berdasarkan ID
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // ID untuk referensi di log
         name: true, // Nama untuk log
         username: true // Username untuk log
@@ -585,7 +585,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     // 3. Hapus transaksi pengguna (yang dikirim dan diterima)
     console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.transaction.deleteMany({ // Hapus semua transaksi yang melibatkan user
-      where: {
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         OR: [ // User bisa sebagai sender ATAU receiver
           { senderId: userId }, // Transaksi di mana user adalah pengirim
           { receiverId: userId } // Transaksi di mana user adalah penerima
@@ -614,7 +614,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     // 7. Catat aksi admin
     console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.adminLog.create({ // Simpan log aksi delete ke tabel AdminLog
-      data: {
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'USER_DELETE', // Jenis aksi: hapus user
         details: JSON.stringify({ // Detail aksi sebagai JSON string
           userId: user.id, // ID user yang dihapus
@@ -635,7 +635,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
 
     res.json({ // Return response sukses
       success: true, // Flag sukses
-      message: 'Pengguna berhasil dihapus',
+      message: 'Pengguna berhasil dihapus', // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dari database
       user: { // Data user yang dihapus (untuk konfirmasi)
         id: user.id, // ID
         name: user.name, // Nama
@@ -648,8 +648,8 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     console.error('\u274c [Backend] Detail kesalahan:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     console.error('\u274c [Backend] Stack trace:', error.stack); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ // Return 500 dengan detail error untuk debugging
-      error: 'Gagal menghapus pengguna',
-      details: error.message 
+      error: 'Gagal menghapus pengguna', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
+      details: error.message // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungkap penyebab teknis error
     });
   }
 });

@@ -143,7 +143,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // Fungsi: Ambil daftar kartu user dari backend API
   // Kebijakan: max 1 kartu per user (.slice(0, 1))
-  const loadCards = async () => {
+  const loadCards = async () => { // loadCards: fungsi async untuk memuat data kartu NFC user dari backend; async karena melakukan HTTP request
     // Guard: pastikan user valid sebelum request API
     if (!user || !user.id) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       console.log('⚠️ No valid user'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
@@ -156,18 +156,18 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
       const response = await apiService.getUserCards(user.id); // const response: menyimpan response dari HTTP request; await menunggu response diterima
       
       // Handle berbagai format response dari backend
-      if (response && Array.isArray(response.cards)) {
+      if (response && Array.isArray(response.cards)) { // memeriksa response valid dan berisi array cards; Array.isArray memastikan data bertipe array
         // Format: { cards: [...] } - ambil hanya 1 kartu (kebijakan 1 user = 1 card)
-        setCards(response.cards.slice(0, 1));
+        setCards(response.cards.slice(0, 1)); // slice(0,1) mengambil hanya elemen pertama array; sistem menerapkan kebijakan 1 user = 1 kartu
       } else if (Array.isArray(response)) { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
         // Format: [...] - array langsung, ambil hanya 1 kartu
-        setCards(response.slice(0, 1));
+        setCards(response.slice(0, 1)); // slice(0,1) pada response langsung; fallback jika format response berupa array langsung bukan objek
       } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         setCards([]); // Format tidak dikenal, set kosong
       }
     } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       console.error('Error loading cards:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      if (error.message?.includes('404')) {
+      if (error.message?.includes('404')) { // memeriksa apakah error adalah 404 Not Found; menangani kasus khusus kartu belum terdaftar
         setCards([]); // 404 = user belum punya kartu, bukan error sebenarnya
       } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         Alert.alert('Error', 'Gagal memuat data kartu'); // Error lain: tampilkan pesan
@@ -192,12 +192,12 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     const newStatus = action === 'BLOCK' ? 'BLOCKED' : 'ACTIVE'; // ternary menentukan nilai status baru yang akan dikirim ke backend
 
     Alert.alert( // Alert.alert menampilkan dialog konfirmasi sebelum eksekusi perubahan status
-      'Konfirmasi',
+      'Konfirmasi', // judul dialog konfirmasi sebelum melakukan aksi penting; mencegah aksi tidak disengaja
       `Apakah Anda yakin ingin ${actionText} kartu ini?`, // template literal ${} menyisipkan variabel ke string
       [
         { text: 'Batal', style: 'cancel' }, // tombol batal — tidak melakukan apa-apa
         {
-          text: 'Ya',
+          text: 'Ya', // teks tombol konfirmasi; user harus menekan 'Ya' untuk melanjutkan perubahan status kartu
           onPress: async () => { // async arrow function sebagai callback tombol 'Ya'
             try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
               await apiService.updateCardStatus(card.cardId, newStatus); // await menunggu HTTP PUT /api/nfc-cards/:cardId/status mengubah status kartu di backend
@@ -225,22 +225,24 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   };
 
   const getStatusText = (status: string) => { // arrow function mengubah status kode ke teks Bahasa Indonesia
-    switch (status) {
-      case 'ACTIVE':   return 'Aktif';
+    switch (status) { // switch statement memeriksa nilai variabel status dan menjalankan blok case yang cocok
+      case 'ACTIVE':   return 'Aktif'; // case ACTIVE: kartu dalam status aktif; bisa digunakan untuk transaksi
       case 'ACTIVE':   return 'Aktif'; // case cocok dengan 'ACTIVE', return langsung keluar dari switch
-      case 'BLOCKED':  return 'Diblokir';
-      case 'LOST':     return 'Hilang';
-      case 'EXPIRED':  return 'Kadaluarsa';
+      case 'BLOCKED':  return 'Diblokir'; // case BLOCKED: kartu dalam status diblokir; tidak bisa digunakan untuk transaksi sampai diaktifkan kembali
+      case 'LOST':     return 'Hilang'; // case LOST: kartu dilaporkan hilang; status ini menonaktifkan kartu demi keamanan
+      case 'EXPIRED':  return 'Kadaluarsa'; // case EXPIRED: kartu sudah kadaluarsa; tidak bisa digunakan lagi
       default:         return status; // default: jika tidak ada case yang cocok, kembalikan nilai asli string
     }
   };
 
-  const formatDate = (dateString: string) => { // arrow function menerima string ISO date dan mengembalikan string tanggal terformat
-    const date = new Date(dateString); // new Date(string) mem-parse string ISO 8601 menjadi objek Date JavaScript
-    return date.toLocaleDateString('id-ID', { // toLocaleDateString('id-ID') memformat tanggal sesuai locale Indonesia
-      day: '2-digit',   // '2-digit' menampilkan hari dengan dua angka: "01", "20"
-      month: 'short',   // 'short' menampilkan nama bulan disingkat: "Jan", "Des"
-      year: 'numeric',  // 'numeric' menampilkan tahun penuh: "2025"
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
   };
 
@@ -251,14 +253,14 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     return ( // early return menampilkan UI loading alternatif
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* TouchableOpacity tombol kembali */}
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Daftar Kartu</Text>
-          <View style={styles.headerSpacer} /> {/* View kosong sebagai spacer */}
+          <View style={styles.headerSpacer} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />{/* Spinner biru besar */}
+          <ActivityIndicator size="large" color="#3B82F6" />
           <Text style={styles.loadingText}>Memuat kartu...</Text>
         </View>
       </SafeAreaView>
@@ -268,19 +270,16 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   // ── RENDER UTAMA: Daftar Kartu ──
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
-      {/* Header dengan tombol kembali dan judul halaman */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Daftar Kartu</Text>
-        <View style={styles.headerSpacer} />{/* Spacer agar judul tetap di tengah */}
+        <View style={styles.headerSpacer} />
       </View>
-
-      {/* ScrollView dengan pull-to-refresh */}
       <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
         style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-        refreshControl={
+        refreshControl={ // refreshControl prop untuk menambahkan fitur pull-to-refresh; menerima komponen RefreshControl sebagai nilainya
           // RefreshControl: mengontrol pull-to-refresh behavior
           // refreshing: apakah sedang refresh, onRefresh: handler saat ditarik
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -291,9 +290,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
           <Text style={styles.pageSubtitle}>
             Kelola kartu NFC yang terdaftar di akun Anda.
           </Text>
-
-          {/* ── KONDISIONAL: Empty State vs Daftar Kartu ── */}
-          {cards.length === 0 ? (
+          {cards.length === 0 ? ( // ternary JSX: jika array cards kosong tampilkan empty state, jika ada kartu tampilkan daftar kartu
             // Tampilkan pesan kosong jika user belum punya kartu
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🎫</Text>
@@ -309,9 +306,9 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                 <Text style={styles.addButtonText}>Tambah Kartu</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             <>
-              {cards.map((card, index) => (
+              {cards.map((card, index) => ( // .map() iterasi array cards untuk merender kartu NFC; index digunakan untuk label 'Kartu 1', 'Kartu 2', dll
                 <View key={card.id || index} style={styles.cardItem}>
                   <View style={styles.cardHeader}>
                     <View style={styles.cardBadge}>
@@ -321,18 +318,18 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                     </View>
                     <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
                       style={[ // style={} prop untuk menerapkan styling ke elemen React Native
-                        styles.statusBadge,
-                        { backgroundColor: `${getStatusColor(card.cardStatus)}20` },
+                        styles.statusBadge, // statusBadge memberikan style dasar badge; warna ditentukan secara dinamis via prop style
+                        { backgroundColor: `${getStatusColor(card.cardStatus)}20` }, // backgroundColor dinamis: menggunakan warna dari getStatusColor + '20' untuk opacity 12% (format hex RGBA)
                       ]}
                     >
                       <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
                         style={[ // style={} prop untuk menerapkan styling ke elemen React Native
-                          styles.statusDot,
-                          { backgroundColor: getStatusColor(card.cardStatus) },
+                          styles.statusDot, // statusDot memberikan style untuk titik indikator status di dalam badge
+                          { backgroundColor: getStatusColor(card.cardStatus) }, // backgroundColor titik indikator menggunakan warna penuh dari getStatusColor (tanpa transparansi)
                         ]}
                       />
-                      <Text // Text: komponen untuk menampilkan teks di layar; setara dengan p/span di HTML
-                        style={[ // style={} prop untuk menerapkan styling ke elemen React Native
+                      <Text
+                        style={[
                           styles.statusText,
                           { color: getStatusColor(card.cardStatus) },
                         ]}
@@ -375,11 +372,11 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                       <View style={styles.cardRow}>
                         <Text style={styles.cardLabel}>Saldo</Text>
                         <Text style={styles.cardBalance}>
-                          Rp{card.balance?.toLocaleString('id-ID') || 0} // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
+                          Rp{(card.balance ?? 0).toLocaleString('id-ID')}
                         </Text>
                       </View>
 
-                      {card.lastUsed && (
+                      {card.lastUsed && ( // conditional rendering: menampilkan info terakhir digunakan hanya jika card.lastUsed tidak null/undefined
                         <View style={styles.cardRow}>
                           <Text style={styles.cardLabel}>Terakhir Digunakan</Text>
                           <Text style={styles.cardValue}>{formatDate(card.lastUsed)}</Text>
@@ -393,7 +390,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                     </View>
 
                     <View style={styles.cardActions}>
-                      {card.cardStatus === 'ACTIVE' ? (
+                      {card.cardStatus === 'ACTIVE' ? ( // ternary rendering: tombol berbeda ditampilkan berdasarkan status kartu (ACTIVE/BLOCKED/lainnya)
                         <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                           style={styles.blockButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                           onPress={() => handleCardAction(card, 'BLOCK')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
@@ -401,7 +398,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                           <Text style={styles.blockButtonIcon}>🚫</Text>
                           <Text style={styles.blockButtonText}>Blokir Kartu</Text>
                         </TouchableOpacity>
-                      ) : card.cardStatus === 'BLOCKED' ? (
+                      ) : card.cardStatus === 'BLOCKED' ? ( // nested ternary: jika status BLOCKED tampilkan tombol unblock; selain itu tampilkan null
                         <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                           style={styles.activateButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                           onPress={() => handleCardAction(card, 'ACTIVATE')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
@@ -409,7 +406,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                           <Text style={styles.activateButtonIcon}>✅</Text>
                           <Text style={styles.activateButtonText}>Aktifkan Kartu</Text>
                         </TouchableOpacity>
-                      ) : null}
+                      ) : null} // jika tidak ada case yang cocok return null; tidak menampilkan apapun untuk status selain ACTIVE dan BLOCKED
                     </View>
                   </View>
                 </View>

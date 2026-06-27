@@ -101,12 +101,12 @@ import { // import beberapa komponen atau fungsi sekaligus dari satu modul mengg
   KeyboardAvoidingView, // KeyboardAvoidingView: wrapper yang menggeser konten ke atas saat keyboard muncul agar form tidak tertutup
   Platform // Platform: objek utilitas untuk deteksi OS (Android/iOS); Platform.OS mengembalikan string "android" atau "ios"
 } from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library react-native-safe-area-context; memberikan padding aman di area notch/status bar
 import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage: penyimpanan key-value lokal persisten di perangkat Android/iOS
-import CustomButton from '../components/CustomButton';
-import { loginUser } from '../utils/database';
+import CustomButton from '../components/CustomButton'; // import komponen CustomButton dari folder components; tombol yang sudah dikustomisasi dengan style aplikasi
+import { loginUser } from '../utils/database'; // import fungsi loginUser dari database.ts; fungsi untuk autentikasi user ke SQLite lokal
 import { apiService } from '../utils/apiService'; // import apiService: singleton HTTP client untuk komunikasi dengan backend Express
-import styles from './LoginScreen.styles';
+import styles from './LoginScreen.styles'; // import objek styles dari file styles terpisah; memisahkan logika dan tampilan agar kode lebih terorganisasi
 
 // ==================================================================================
 // TYPE DEFINITIONS
@@ -307,7 +307,6 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
         style={styles.container} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
         <View style={styles.content}>
-          {/* Header dengan Logo dan Judul */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
@@ -321,12 +320,8 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
             <Text style={styles.title}>Dompet Digital NFC</Text>
             <Text style={styles.subtitle}>Pembayaran NFC aman dengan deteksi fraud</Text>
           </View>
-
-          {/* Card Form */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Masuk</Text>
-            
-            {/* Input Username */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputIcon}>👤</Text>
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
@@ -339,8 +334,6 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
                 autoComplete="username" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
-
-            {/* Input Password */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputIcon}>🔒</Text>
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
@@ -349,33 +342,27 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
                 placeholderTextColor="#94a3b8" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
                 value={password} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
                 onChangeText={setPassword} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
-                secureTextEntry
+                secureTextEntry // secureTextEntry: prop boolean true menyembunyikan karakter menjadi titik-titik; digunakan untuk field password
                 autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
-
-            {/* Link Lupa Password */}
             <TouchableOpacity style={styles.forgotPassword}>
               <Text style={styles.forgotPasswordText}>Lupa kata sandi?</Text>
             </TouchableOpacity>
-
-            {/* Tombol Login */}
             <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
               style={[styles.loginButton, loading && styles.loginButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
               onPress={handleLogin} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               disabled={loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
             >
-              {loading ? (
+              {loading ? ( // ternary JSX: jika state loading=true tampilkan spinner ActivityIndicator, jika false tampilkan elemen normal
                 <View style={styles.processingRow}>
                   <Text style={styles.loginButtonText}>Memproses </Text>
                 </View>
-              ) : (
+              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
                 <Text style={styles.loginButtonText}>Login</Text>
               )}
             </TouchableOpacity>
           </View>
-
-          {/* Link Daftar Akun */}
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Belum punya akun?</Text>
             <TouchableOpacity onPress={handleNavigateToRegister}>

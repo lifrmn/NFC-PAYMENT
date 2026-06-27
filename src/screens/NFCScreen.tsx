@@ -254,17 +254,17 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
       
       // Backend bisa return 2 format berbeda, kita handle keduanya
       // FORMAT 1: { user: { balance: 100000 } } - nested object
-      if (response && response.user && typeof response.user.balance === 'number') {
+      if (response && response.user && typeof response.user.balance === 'number') { // memeriksa response, objek user, dan saldo bertipe number sebelum menggunakannya
         setCurrentBalance(response.user.balance); // Update state dengan balance baru
         console.log('✅ Balance refreshed:', response.user.balance); // Log untuk debugging
       } 
       // FORMAT 2: { balance: 100000 } - direct object
-      else if (typeof response === 'object' && typeof response.balance === 'number') {
+      else if (typeof response === 'object' && typeof response.balance === 'number') { // fallback: jika response langsung berupa objek dengan balance (format response alternatif dari API)
         setCurrentBalance(response.balance); // Update state
         console.log('✅ Balance refreshed (fallback):', response.balance); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       } 
       // FORMAT TIDAK DIKENALI: log warning tapi tidak throw error
-      else {
+      else { // else: blok fallback ketika format response tidak sesuai kedua kondisi sebelumnya; sistem tetap berjalan meskipun format tidak dikenali
         console.warn('⚠️ Balance refresh: unexpected response structure', response); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
       }
     } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
@@ -353,27 +353,25 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ================================================================================
   if (!nfcEnabled) { // if memeriksa kondisi; !nfcEnabled berarti NFC tidak aktif atau tidak didukung; early return menampilkan layar instruksi sebagai pengganti form pembayaran
     return ( // return mengembalikan UI alternatif — early return pattern
-      <SafeAreaView style={styles.container}> {/* SafeAreaView memastikan konten tidak tertutup notch atau status bar */}
-        <View style={styles.centerContent}> {/* View dengan style centerContent menengahkan semua elemen */}
-          <Text style={styles.errorIcon}>📲</Text> {/* Text menampilkan emoji ikon sebagai ilustrasi */}
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={styles.errorIcon}>📲</Text>
           
-          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text> {/* judul pesan error */}
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
           
           <Text style={styles.infoText}>
-            Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda: {/* teks instruksi panduan */}
+            Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda:
           </Text>
-          
-          {/* Kotak instruksi langkah demi langkah */}
-          <View style={styles.instructionBox}> {/* View container dengan border kiri sebagai visual accent */}
+          <View style={styles.instructionBox}>
             <Text style={styles.instructionText}>
-              1. Buka Pengaturan HP{'\n'} {/* {'\n'} adalah escape sequence newline di dalam JSX string */}
+              1. Buka Pengaturan HP{'\n'}
               2. Cari menu "Koneksi Perangkat" atau "NFC"{'\n'}
               3. Aktifkan toggle NFC{'\n'}
               4. Kembali ke aplikasi ini
             </Text>
           </View>
           
-          <TouchableOpacity style={styles.backButton} onPress={onBack}> {/* TouchableOpacity adalah tombol dengan efek transparan saat ditekan; onPress={onBack} memanggil callback kembali ke Dashboard */}
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Text style={styles.backButtonText}>Kembali</Text>
           </TouchableOpacity>
         </View>
@@ -430,72 +428,60 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ================================================================================
   return ( // return JSX utama — form pembayaran yang tampil saat NFC aktif
     <SafeAreaView style={styles.container}>
-      {/* Header: tombol kembali dan judul screen */}
-      <View style={styles.header}> {/* View flexbox row mengelompokkan elemen header secara horizontal */}
-        <TouchableOpacity onPress={onBack}> {/* onPress={onBack} memanggil callback untuk kembali ke DashboardScreen */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack}>
           <Text style={styles.backText}>← Kembali</Text>
         </TouchableOpacity>
         
-        <Text style={styles.title}>💳 NFC Payment</Text> {/* judul screen di tengah */}
-        
-        {/* Spacer kosong untuk menyeimbangkan posisi judul di tengah */}
+        <Text style={styles.title}>💳 NFC Payment</Text>
         <View style={styles.headerSpacerLarge} />
       </View>
-
-      {/* ScrollView: konten bisa di-scroll jika melebihi tinggi layar */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}> {/* contentContainerStyle mengatur padding dalam area scroll */}
-        {/* Kartu info merchant: nama dan saldo */}
-        <View style={styles.userCard}> {/* View kartu putih dengan shadow */}
-          <Text style={styles.userName}>👤 {user?.name}</Text> {/* optional chaining (?.) aman jika user null; menampilkan nama merchant */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.userCard}>
+          <Text style={styles.userName}>👤 {user?.name}</Text>
           <Text style={styles.userBalance}>
-            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'} {/* toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia; || '0' fallback jika null */} // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
+            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'}
           </Text>
         </View>
-
-        {/* Kartu instruksi cara terima pembayaran */}
-        <View style={styles.instructionCard}> {/* View kartu biru dengan panduan langkah demi langkah */}
+        <View style={styles.instructionCard}>
           <Text style={styles.instructionTitle}>📖 Cara Terima Pembayaran:</Text>
           <Text style={styles.instructionText}>
-            1. Masukkan jumlah pembayaran{'\n'} {/* {'\n'} newline di dalam JSX string */}
+            1. Masukkan jumlah pembayaran{'\n'}
             2. Tekan tombol "Terima Pembayaran"{'\n'}
             3. Pembeli tempelkan kartu NFC ke HP Anda{'\n'}
             4. Saldo Anda otomatis bertambah! ✅{'\n'}
             5. Saldo pembeli otomatis berkurang! ✅
           </Text>
         </View>
-
-        {/* Kartu input jumlah pembayaran */}
         <View style={styles.inputCard}>
           <Text style={styles.inputLabel}>💰 Jumlah Pembayaran:</Text>
           
           <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
             style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-            placeholder="Contoh: 50000" {/* placeholder teks abu-abu saat input kosong */} // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
-            keyboardType="numeric" {/* keyboardType="numeric" menampilkan keyboard angka saja */} // keyboardType: menentukan jenis keyboard yang muncul; email-address, numeric, dll
-            value={amount} {/* value={amount} controlled component — nilai input sinkron dengan state */} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
-            onChangeText={setAmount} {/* onChangeText={setAmount} memperbarui state setiap user mengetik */} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
-            editable={!isProcessing} {/* editable={!isProcessing} menonaktifkan input saat proses pembayaran berlangsung */} // editable: jika false TextInput tidak bisa diedit oleh user; untuk tampilan read-only
+            placeholder="Contoh: 50000" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+            keyboardType="numeric" // keyboardType: menentukan jenis keyboard yang muncul; email-address, numeric, dll
+            value={amount} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
+            onChangeText={setAmount} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
+            editable={!isProcessing} // editable: jika false TextInput tidak bisa diedit oleh user; untuk tampilan read-only
           />
           
-          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text> {/* teks petunjuk di bawah input */}
+          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text>
         </View>
-
-        {/* Tombol Terima Pembayaran */}
         <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
           style={[ // style={} prop untuk menerapkan styling ke elemen React Native
             styles.actionButton,
-            styles.sendButton, {/* sendButton memberikan warna hijau pada tombol */}
-            (!amount || isProcessing) && styles.disabledButton {/* conditional style: && menambahkan style disabled jika kondisi benar */}
+            styles.sendButton, // sendButton memberikan warna hijau pada tombol
+            (!amount || isProcessing) && styles.disabledButton // conditional style: && menambahkan style disabled jika kondisi benar
           ]}
-          onPress={handleSendMoney} {/* onPress memanggil handleSendMoney saat tombol ditekan */} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
-          disabled={!amount || isProcessing} {/* disabled menonaktifkan tombol jika amount kosong atau sedang processing */} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
+          onPress={handleSendMoney} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+          disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
-          {isProcessing ? ( {/* ternary operator: jika isProcessing=true tampilkan spinner, jika false tampilkan teks normal */}
-            <> {/* Fragment <> mengelompokkan beberapa elemen tanpa div tambahan */}
-              <ActivityIndicator color="white" /> {/* ActivityIndicator adalah spinner animasi loading bawaan React Native */}
+          {isProcessing ? ( // ternary operator: jika isProcessing=true tampilkan spinner, jika false tampilkan teks normal
+            <>
+              <ActivityIndicator color="white" />
               <Text style={styles.actionButtonText}>  Processing...</Text>
             </>
-          ) : (
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             <>
               <Text style={styles.actionButtonText}>💵 Terima Pembayaran</Text>
               <Text style={styles.actionButtonSubtext}>

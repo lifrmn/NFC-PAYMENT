@@ -169,17 +169,17 @@ export default function DashboardScreen({ // export default mengekspor komponen 
 
   const handleSeeAllTransactions = () => { // arrow function tanpa parameter; dipanggil saat user menekan link "Lihat Semua" di section transaksi
     Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      '📋 Semua Transaksi',
+      '📋 Semua Transaksi', // judul Alert untuk menampilkan daftar semua transaksi; menggunakan emoji 📋 sebagai indikator visual
       `Total ${transactions.length} transaksi\n\nFitur detail transaksi akan segera hadir!`, // template literal ${} menyisipkan nilai dinamis; transactions.length adalah jumlah elemen dalam array transactions
-      [{ text: 'OK' }]
+      [{ text: 'OK' }] // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
     );
   };
 
   const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up
     Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      '💰 Top Up Saldo',
-      'Fitur top-up akan segera hadir!\n\nMetode top-up yang tersedia:\n• Transfer Bank\n• Virtual Account\n• E-Wallet',
-      [{ text: 'OK' }]
+      '💰 Top Up Saldo', // judul Alert informasi fitur top-up; 💰 emoji sebagai indikator topik keuangan
+      'Fitur top-up akan segera hadir!\n\nMetode top-up yang tersedia:\n• Transfer Bank\n• Virtual Account\n• E-Wallet', // pesan informasi kepada user bahwa fitur top-up masih dalam pengembangan
+      [{ text: 'OK' }] // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
     );
   };
 
@@ -187,96 +187,87 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     return ( // return di luar JSX utama — mengembalikan UI alternatif (early return pattern)
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading user data...</Text> {/* Teks sementara yang ditampilkan sambil data user diambil dari database */}
+          <Text style={styles.loadingText}>Loading user data...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return ( // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() adalah yang akan dirender ke layar
-    <SafeAreaView style={styles.container}> {/* SafeAreaView adalah komponen dari react-native-safe-area-context yang otomatis memberi padding sesuai safe area perangkat */}
+    <SafeAreaView style={styles.container}>
       <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
         style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />}
-        showsVerticalScrollIndicator={false} // showsVerticalScrollIndicator: jika false menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
+        showsVerticalScrollIndicator={false}
       >
-        {/* refreshControl: RefreshControl adalah komponen animasi pull-to-refresh; refreshing={loading} mengontrol spinner; onRefresh={refreshData} dipanggil saat user menarik layar ke bawah */}
-        {/* showsVerticalScrollIndicator={false} menyembunyikan scrollbar vertikal untuk tampilan lebih bersih */}
-        {/* Header */}
-        <View style={styles.header}> {/* Baris atas berisi sapaan dan tombol notifikasi */}
+        <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Halo, {currentUser?.name || 'User'}</Text> {/* Sapaan personal dengan nama user */}
-            <Text style={styles.greetingSubtext}>Selamat datang kembali!</Text> {/* Sub-teks sapaan */}
+            <Text style={styles.greeting}>Halo, {currentUser?.name || 'User'}</Text>
+            <Text style={styles.greetingSubtext}>Selamat datang kembali!</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}> {/* Tombol buka notifikasi */}
-            <View style={styles.notificationDot} /> {/* Titik merah indikator ada notifikasi */}
-            <Text style={styles.notificationIcon}>🔔</Text> {/* Ikon lonceng notifikasi */}
+          <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
+            <View style={styles.notificationDot} />
+            <Text style={styles.notificationIcon}>🔔</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Balance Card */}
-        <View style={styles.balanceCard}> {/* Kartu utama yang menampilkan saldo */}
-          <View style={styles.balanceHeader}> {/* Baris atas kartu saldo */}
-            <Text style={styles.saldoLabel}>Saldo</Text> {/* Label teks Saldo */}
-            <View style={styles.walletIcon}> {/* Container ikon dompet NFC */}
-              <Text style={styles.walletIconText}>💳)))</Text> {/* Ikon kartu dengan sinyal NFC */}
-              <View style={styles.walletShield}> {/* Badge shield keamanan */}
-                <Text style={styles.walletShieldIcon}>✓</Text> {/* Centang tanda aman */}
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <Text style={styles.saldoLabel}>Saldo</Text>
+            <View style={styles.walletIcon}>
+              <Text style={styles.walletIconText}>💳)))</Text>
+              <View style={styles.walletShield}>
+                <Text style={styles.walletShieldIcon}>✓</Text>
               </View>
             </View>
           </View>
-          <Text style={styles.balanceAmount}>{formatCurrency(currentUser?.balance || 0)}</Text> {/* Nominal saldo diformat ke Rupiah */}
-          <View style={styles.balanceActions}> {/* Baris tombol aksi di bawah saldo */}
-            <TouchableOpacity style={styles.topUpButton} onPress={handleTopUp}> {/* Tombol top up saldo */}
-              <Text style={styles.topUpIcon}>➕</Text> {/* Ikon plus */}
-              <Text style={styles.topUpText}> Top Up</Text> {/* Label tombol */}
+          <Text style={styles.balanceAmount}>{formatCurrency(currentUser?.balance || 0)}</Text>
+          <View style={styles.balanceActions}>
+            <TouchableOpacity style={styles.topUpButton} onPress={handleTopUp}>
+              <Text style={styles.topUpIcon}>➕</Text>
+              <Text style={styles.topUpText}> Top Up</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.historyButton} onPress={handleBalanceHistory}> {/* Tombol riwayat saldo */}
-              <Text style={styles.historyText}>Riwayat Saldo  →</Text> {/* Label dengan panah */}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Menu Cepat */}
-        <View style={styles.menuSection}> {/* Section menu navigasi cepat */}
-          <Text style={styles.menuTitle}>Menu Cepat</Text> {/* Judul section */}
-          <View style={styles.menuGrid}> {/* Grid 3 kolom untuk tombol menu */}
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToNFC}> {/* Tombol bayar NFC */}
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>💸</Text> {/* Ikon uang terbang */}
-              </View>
-              <Text style={styles.menuLabel}>Bayar NFC</Text> {/* Label menu pembayaran */}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToRegisterCard || (() => {})}> {/* Tombol daftar kartu baru */}
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>🎫</Text> {/* Ikon tiket/kartu */}
-              </View>
-              <Text style={styles.menuLabel}>Registrasi Kartu</Text> {/* Label menu daftar kartu */}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToMyCards || (() => {})}> {/* Tombol lihat daftar kartu */}
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>💳</Text> {/* Ikon kartu kredit */}
-              </View>
-              <Text style={styles.menuLabel}>Daftar Kartu</Text> {/* Label menu kartu saya */}
+            <TouchableOpacity style={styles.historyButton} onPress={handleBalanceHistory}>
+              <Text style={styles.historyText}>Riwayat Saldo  →</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Transaksi Terbaru */}
-        <View style={styles.transactionSection}> {/* Section daftar transaksi terakhir */}
-          <View style={styles.transactionHeader}> {/* Baris judul dan tombol lihat semua */}
-            <Text style={styles.transactionTitle}>Transaksi Terbaru</Text> {/* Judul section transaksi */}
-            <TouchableOpacity onPress={handleSeeAllTransactions}> {/* Tombol lihat semua transaksi */}
-              <Text style={styles.seeAllText}>Lihat Semua  →</Text> {/* Teks link dengan panah */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuTitle}>Menu Cepat</Text>
+          <View style={styles.menuGrid}>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToNFC}>
+              <View style={styles.menuIconContainer}>
+                <Text style={styles.menuIcon}>💸</Text>
+              </View>
+              <Text style={styles.menuLabel}>Bayar NFC</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToRegisterCard || (() => {})}>
+              <View style={styles.menuIconContainer}>
+                <Text style={styles.menuIcon}>🎫</Text>
+              </View>
+              <Text style={styles.menuLabel}>Registrasi Kartu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToMyCards || (() => {})}>
+              <View style={styles.menuIconContainer}>
+                <Text style={styles.menuIcon}>💳</Text>
+              </View>
+              <Text style={styles.menuLabel}>Daftar Kartu</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.transactionSection}>
+          <View style={styles.transactionHeader}>
+            <Text style={styles.transactionTitle}>Transaksi Terbaru</Text>
+            <TouchableOpacity onPress={handleSeeAllTransactions}>
+              <Text style={styles.seeAllText}>Lihat Semua  →</Text>
             </TouchableOpacity>
           </View>
 
           {transactions.length === 0 ? ( // Tampilkan empty state jika tidak ada transaksi
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text> {/* Ikon kotak kosong */}
-              <Text style={styles.emptyText}>Belum ada transaksi</Text> {/* Teks placeholder kosong */}
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={styles.emptyText}>Belum ada transaksi</Text>
             </View>
-          ) : (
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             transactions.slice(0, 4).map((transaction) => { // Tampilkan maksimal 4 transaksi terakhir
               if (!currentUser?.id) return null; // Abaikan jika user tidak valid
               const isReceiver = transaction.receiverId === currentUser.id; // Cek apakah user adalah penerima dana
@@ -284,57 +275,55 @@ export default function DashboardScreen({ // export default mengekspor komponen 
               if (!otherUser) return null; // Abaikan jika data pihak lain tidak tersedia
               
               return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-                <TouchableOpacity key={transaction.id} style={styles.transactionItem}> {/* key pakai ID unik, bukan index */}
+                <TouchableOpacity key={transaction.id} style={styles.transactionItem}>
                   <View style={styles.transactionIconContainer}>
                     <Text style={styles.transactionIcon}>
-                      {isReceiver ? '💵' : '💸'} {/* Ikon berbeda untuk terima vs kirim */}
+                      {isReceiver ? '💵' : '💸'}
                     </Text>
                   </View>
-                  <View style={styles.transactionInfo}> {/* Kolom tengah: nama, tipe, tanggal */}
+                  <View style={styles.transactionInfo}>
                     <Text style={styles.transactionName}>
-                      {otherUser?.name || 'Unknown'} {/* Nama pihak lain atau Unknown jika tidak ada */}
+                      {otherUser?.name || 'Unknown'}
                     </Text>
                     <Text style={styles.transactionType}>
-                      {'Pembayaran NFC'} {/* Label tipe transaksi */}
+                      {'Pembayaran NFC'}
                     </Text>
                     <Text style={styles.transactionDate}>
-                      {formatDate(transaction.createdAt || new Date().toISOString())} {/* Tanggal diformat ke teks ramah */} // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
+                      {formatDate(transaction.createdAt || new Date().toISOString())}
                     </Text>
                   </View>
                   <Text style={[styles.transactionAmount, isReceiver ? styles.positiveAmount : styles.negativeAmount]}>
-                    {isReceiver ? '+' : '-'}{formatCurrency(transaction.amount || 0)} {/* Tanda +/- di depan nominal */}
+                    {isReceiver ? '+' : '-'}{formatCurrency(transaction.amount || 0)}
                   </Text>
-                  <Text style={styles.transactionArrow}>→</Text> {/* Panah sebagai indikator navigasi detail */}
+                  <Text style={styles.transactionArrow}>→</Text>
                 </TouchableOpacity>
               );
             })
           )}
         </View>
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}> {/* Bar navigasi bawah tetap (sticky) */}
-        <TouchableOpacity style={styles.navItem}> {/* Tab Beranda — aktif */}
-          <Text style={styles.navIconActive}>🏠</Text> {/* Ikon rumah aktif (lebih terang) */}
-          <Text style={styles.navLabelActive}>Beranda</Text> {/* Label aktif */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={styles.navIconActive}>🏠</Text>
+          <Text style={styles.navLabelActive}>Beranda</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={onNavigateToMyCards || (() => {})}> {/* Tab Kartu */}
-          <Text style={styles.navIcon}>💳</Text> {/* Ikon kartu */}
-          <Text style={styles.navLabel}>Kartu</Text> {/* Label kartu */}
+        <TouchableOpacity style={styles.navItem} onPress={onNavigateToMyCards || (() => {})}>
+          <Text style={styles.navIcon}>💳</Text>
+          <Text style={styles.navLabel}>Kartu</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItemCenter} onPress={onNavigateToNFC}> {/* Tab Bayar — tombol tengah yang lebih besar */}
-          <View style={styles.centerButton}> {/* Lingkaran biru menonjol di tengah navbar */}
-            <Text style={styles.centerButtonIcon}>💸</Text> {/* Ikon bayar */}
+        <TouchableOpacity style={styles.navItemCenter} onPress={onNavigateToNFC}>
+          <View style={styles.centerButton}>
+            <Text style={styles.centerButtonIcon}>💸</Text>
           </View>
-          <Text style={styles.navLabel}>Bayar</Text> {/* Label bayar */}
+          <Text style={styles.navLabel}>Bayar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}> {/* Tab Riwayat (belum aktif) */}
-          <Text style={styles.navIcon}>📊</Text> {/* Ikon grafik riwayat */}
-          <Text style={styles.navLabel}>Riwayat</Text> {/* Label riwayat */}
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={styles.navIcon}>📊</Text>
+          <Text style={styles.navLabel}>Riwayat</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={handleLogout}> {/* Tab Akun — membuka konfirmasi logout */}
-          <Text style={styles.navIcon}>👤</Text> {/* Ikon profil */}
-          <Text style={styles.navLabel}>Akun</Text> {/* Label akun */}
+        <TouchableOpacity style={styles.navItem} onPress={handleLogout}>
+          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navLabel}>Akun</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

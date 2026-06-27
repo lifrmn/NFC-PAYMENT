@@ -218,7 +218,6 @@ export default function CustomButton({ // export default: komponen diekspor seba
       accessibilityRole="button"
       accessibilityLabel={title}
     >
-      {/* STEP 7: Conditional rendering - loading spinner OR text */}
       {loading ? (
         // Show loading spinner jika loading = true
         <ActivityIndicator 

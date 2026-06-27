@@ -16,13 +16,13 @@
 // FUNGSI: requestLogger - Middleware untuk log semua HTTP request
 // ===============================================================
 // Usage: app.use(requestLogger) <- ditaruh setelah express.json()
-const requestLogger = (req, res, next) => {
+const requestLogger = (req, res, next) => { // requestLogger: middleware Express; menerima (req, res, next) — req=request, res=response, next=lanjut ke middleware berikutnya
   // STEP 1: Catat waktu mulai request (timestamp dalam milliseconds)
   const start = Date.now(); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
   
   // STEP 2: Listen event 'finish' dari response object
   // Event 'finish' dipanggil saat response selesai dikirim ke client
-  res.on('finish', () => {
+  res.on('finish', () => { // res.on('finish') mendaftarkan event listener; dipanggil otomatis setelah response selesai dikirim ke client
     // STEP 2.1: Hitung durasi request (waktu sekarang - waktu mulai)
     const duration = Date.now() - start; // Durasi dalam milliseconds
     
@@ -37,7 +37,7 @@ const requestLogger = (req, res, next) => {
   });
   
   // STEP 3: Lanjut ke middleware/route handler berikutnya
-  next();
+  next(); // next() memanggil middleware berikutnya dalam chain; tanpa next() request akan berhenti di middleware ini
 };
 
 // Export requestLogger agar bisa diimport di server.js

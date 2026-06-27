@@ -107,28 +107,28 @@ router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ad
       if (req.io) { // if mengecek apakah req.io tersedia (Socket.IO di-attach ke req di server.js); mencegah error jika Socket.IO belum tersetup
         req.io.to('admin-room').emit('user-registered', { // req.io.to('admin-room') mengirim event ke semua socket yang bergabung di room 'admin-room'; .emit(eventName, data) mengirim event real-time beserta datanya
           user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            balance: user.balance,
+            id: user.id, // id: user.id menyertakan ID unik user dalam response; digunakan frontend untuk identifikasi user
+            name: user.name, // name: user.name menyertakan nama lengkap user dalam response; ditampilkan di UI
+            username: user.username, // username: user.username menyertakan username dalam response; digunakan untuk login berikutnya
+            balance: user.balance, // balance: user.balance menyertakan saldo user dalam response; ditampilkan di dashboard
           },
         });
       }
 
       // STEP 10: Return response sukses dengan user data & token
       return res.status(201).json({ // return menghentikan eksekusi dan mengirim response; res.status(201) mengatur HTTP status 201 Created (berbeda dari 200 OK — 201 khusus untuk resource yang baru dibuat); .json() mengubah objek JavaScript menjadi JSON string dan mengirimnya ke client
-        message: 'Pengguna berhasil didaftarkan',
+        message: 'Pengguna berhasil didaftarkan', // pesan sukses registrasi yang dikirim ke frontend setelah user berhasil dibuat
         user: { // kirim hanya field yang aman — jangan kirim password (meski sudah hash)
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          balance: user.balance,
+          id: user.id, // id: user.id menyertakan ID unik user dalam response; digunakan frontend untuk identifikasi user
+          name: user.name, // name: user.name menyertakan nama lengkap user dalam response; ditampilkan di UI
+          username: user.username, // username: user.username menyertakan username dalam response; digunakan untuk login berikutnya
+          balance: user.balance, // balance: user.balance menyertakan saldo user dalam response; ditampilkan di dashboard
         },
         token, // JWT token (shorthand ES6: token: token) — client harus simpan ini di AsyncStorage untuk request berikutnya
       });
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       console.error('❌ Kesalahan registrasi:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      res.status(500).json({ error: 'Gagal mendaftarkan pengguna' });
+      res.status(500).json({ error: 'Gagal mendaftarkan pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     }
   }
 );
@@ -148,7 +148,7 @@ router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ad
 // - user: object (id, name, username, balance)
 // - token: string (JWT token untuk autentikasi)
 router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  '/login',
+  '/login', // path '/login' adalah URL endpoint login; POST ke /api/auth/login untuk autentikasi user
   [
     // STEP 1: Validasi input
     body('username').trim().notEmpty().withMessage('Username diperlukan'), // body('username') mengambil field username dari req.body; .trim() menghapus spasi; .notEmpty() memastikan tidak kosong; .withMessage() menetapkan pesan error custom jika validasi gagal
@@ -224,10 +224,10 @@ router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ad
       if (req.io) { // if mengecek apakah Socket.IO tersedia di req; diset di server.js via middleware app.use
         req.io.to('admin-room').emit('user-login', { // .to('admin-room') mengirim ke room admin saja; .emit(event, data) mengirim event real-time dengan data
           user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            balance: user.balance,
+            id: user.id, // id: user.id menyertakan ID unik user dalam response; digunakan frontend untuk identifikasi user
+            name: user.name, // name: user.name menyertakan nama lengkap user dalam response; ditampilkan di UI
+            username: user.username, // username: user.username menyertakan username dalam response; digunakan untuk login berikutnya
+            balance: user.balance, // balance: user.balance menyertakan saldo user dalam response; ditampilkan di dashboard
           },
         });
       }
@@ -236,16 +236,16 @@ router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ad
       return res.json({ // return menghentikan eksekusi; res.json() mengirim response 200 OK dengan body JSON (default status 200 jika tidak ditentukan)
         message: 'Login berhasil', // pesan konfirmasi untuk ditampilkan di mobile app
         user: { // kirim data user yang aman (tanpa password hash)
-          id: user.id,
-          name: user.name,
-          username: user.username,
+          id: user.id, // id: user.id menyertakan ID unik user dalam response; digunakan frontend untuk identifikasi user
+          name: user.name, // name: user.name menyertakan nama lengkap user dalam response; ditampilkan di UI
+          username: user.username, // username: user.username menyertakan username dalam response; digunakan untuk login berikutnya
           balance: user.balance, // saldo terkini dari database
         },
         token, // JWT token (shorthand ES6) — mobile app harus simpan ke AsyncStorage untuk request berikutnya
       });
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       console.error('❌ Kesalahan login:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      res.status(500).json({ error: 'Gagal melakukan login' });
+      res.status(500).json({ error: 'Gagal melakukan login' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     }
   }
 );

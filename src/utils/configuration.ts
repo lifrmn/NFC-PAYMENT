@@ -48,7 +48,7 @@
 // Format: base URL tanpa trailing slash, endpoint akan ditambahkan di apiService
 // Contoh full URL: API_URL + '/api/auth/login'
 // PENTING: Ganti URL ini dengan URL Ngrok terbaru setiap kali Ngrok di-restart
-export const API_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // export const mengekspor konstanta ini agar bisa diimport di file lain; const membuat nilai tetap (tidak bisa diubah); API_URL adalah base URL backend yang diakses melalui Ngrok tunnel — harus diperbarui setiap kali Ngrok di-restart
+export const API_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev';
 
 // App Secret untuk bypass JWT check (development only)
 // Ini matching dengan APP_SECRET di backend .env

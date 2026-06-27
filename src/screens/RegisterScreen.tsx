@@ -211,7 +211,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // VALIDATION 2: Username min 3 characters
     // Prevent username terlalu pendek
     // Example invalid: "ab", "x"
-    if (username.length < 3) {
+    if (username.length < 3) { // validasi panjang username minimum 3 karakter; mencegah username terlalu pendek yang tidak informatif
       Alert.alert('Error', 'Username minimal 3 karakter'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: username too short
     }
@@ -219,7 +219,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // VALIDATION 3: Password min 6 characters
     // Security requirement: prevent weak passwords
     // Example invalid: "12345", "abc"
-    if (password.length < 6) {
+    if (password.length < 6) { // validasi panjang password minimum 6 karakter; password pendek lebih rentan terhadap brute force attack
       Alert.alert('Error', 'Password minimal 6 karakter'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: password too short
     }
@@ -227,7 +227,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // VALIDATION 4: Password match dengan confirmPassword
     // Prevent typo errors saat input password
     // User harus ketik password yang sama 2x
-    if (password !== confirmPassword) {
+    if (password !== confirmPassword) { // validasi konfirmasi password: memastikan user tidak salah ketik password saat registrasi
       Alert.alert('Error', 'Password dan konfirmasi password tidak sama'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: password mismatch
     }
@@ -242,11 +242,11 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
       // Kirim data registrasi ke backend
       const response = await apiService.register({ name, username, password }); // const response: menyimpan response dari HTTP request; await menunggu response diterima
 
-      if (response?.user) {
+      if (response?.user) { // memeriksa apakah response dari backend berisi objek user; tanda ?. (optional chaining) mencegah error jika null
         if (response.token) await AsyncStorage.setItem('token', response.token); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
         if (response.user?.id) await AsyncStorage.setItem('userId', response.user.id.toString()); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
         Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [ // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-          { text: 'OK', onPress: onRegisterSuccess },
+          { text: 'OK', onPress: onRegisterSuccess }, // text 'OK' adalah label tombol; onPress memanggil callback onRegisterSuccess saat user menekan OK
         ]);
         return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
       } else if (response?.message) { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
@@ -308,20 +308,17 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
   // - autoCapitalize="words" untuk name input (capitalize each word)
   // ================================================================================
   return ( // return mengembalikan JSX yang akan dirender ke layar
-    <SafeAreaView style={styles.container}> {/* SafeAreaView memastikan konten tidak tertutup notch/status bar */}
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Platform.OS mengembalikan 'ios' atau 'android'; ternary operator memilih behavior yang tepat agar keyboard tidak menutupi input
         style={styles.keyboardView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
-        {/* ScrollView: memungkinkan form di-scroll saat keyboard muncul atau layar kecil */}
-        <ScrollView contentContainerStyle={styles.scrollContainer}> {/* contentContainerStyle={flexGrow:1} memastikan konten bisa mengisi ruang penuh */}
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.content}>
-            {/* Judul dan subtitle halaman registrasi */}
-            <Text style={styles.title}>Daftar Akun</Text> {/* Text menampilkan judul; style={styles.title} mengatur ukuran dan warna teks */}
+            <Text style={styles.title}>Daftar Akun</Text>
             <Text style={styles.subtitle}>Buat akun baru untuk menggunakan NFC Payment</Text>
 
-            <View style={styles.form}> {/* View adalah container yang mengelompokkan semua field form */}
-              {/* Input Nama: autoCapitalize="words" mengkapitalisasi setiap kata otomatis */}
+            <View style={styles.form}>
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Nama Lengkap" // placeholder teks abu-abu yang tampil saat field kosong
@@ -330,8 +327,6 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 onChangeText={setName} // onChangeText dipanggil setiap karakter berubah; setName memperbarui state name
                 autoCapitalize="words" // autoCapitalize="words" otomatis mengkapitalisasi huruf pertama tiap kata
               />
-              
-              {/* Input Username: autoCapitalize="none" agar username tidak dikapitalisasi otomatis */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Username" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
@@ -341,8 +336,6 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 autoCapitalize="none" // autoCapitalize="none" menonaktifkan kapitalisasi otomatis untuk username
                 autoComplete="username" // autoComplete="username" memberitahu OS agar menawarkan autofill username
               />
-              
-              {/* Input Password: secureTextEntry menyembunyikan teks menjadi titik-titik */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Password (min. 6 karakter)" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
@@ -352,8 +345,6 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 secureTextEntry // secureTextEntry (tanpa ={true}) secara default bernilai true — menyembunyikan karakter password
                 autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
-              
-              {/* Input Konfirmasi Password: harus sama dengan password */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Konfirmasi Password" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
@@ -363,8 +354,6 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 secureTextEntry // sama dengan field password — menyembunyikan karakter
                 autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
-
-              {/* Tombol Daftar: CustomButton dengan variant hijau; berubah menjadi disabled saat loading */}
               <CustomButton
                 title={loading ? 'Membuat Akun...' : 'Daftar'} // ternary operator: jika loading=true tampilkan 'Membuat Akun...', jika false tampilkan 'Daftar'
                 onPress={handleRegister} // onPress memanggil handleRegister saat tombol ditekan
@@ -374,16 +363,12 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 size="large" // size prop: menentukan ukuran komponen (large, small, atau angka)
                 style={styles.registerButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               />
-
-              {/* Link ke LoginScreen: untuk user yang sudah punya akun */}
-              <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                style={styles.loginLinkContainer} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                onPress={handleNavigateToLogin} // onPress memanggil handleNavigateToLogin yang memanggil callback onNavigateToLogin dari App.tsx
-                activeOpacity={0.7} // activeOpacity=0.7 membuat tombol menjadi 70% transparan saat ditekan — umpan balik visual
+              <TouchableOpacity
+                style={styles.loginLinkContainer}
+                onPress={handleNavigateToLogin}
+                activeOpacity={0.7}
               >
-                <Text style={styles.loginLinkText}>
-                  Sudah punya akun? Masuk di sini {/* teks link ke halaman login */}
-                </Text>
+                <Text style={styles.loginLinkText}>Sudah punya akun? Masuk di sini</Text>
               </TouchableOpacity>
             </View>
           </View>

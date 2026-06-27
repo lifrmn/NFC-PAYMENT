@@ -220,30 +220,23 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   if (!nfcEnabled) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
     return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
       <SafeAreaView style={styles.container}>
-        {/* Header navigasi dengan tombol kembali */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Pembayaran NFC</Text>
-          <View style={styles.headerSpacer} />{/* Spacer agar judul tetap di tengah */}
+          <View style={styles.headerSpacer} />
         </View>
-        
-        {/* Konten tengah: pesan error + instruksi + tombol retry */}
         <View style={styles.centerContent}>
           <Text style={styles.errorIcon}>📡</Text>
           <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
           <Text style={styles.errorText}>Aktifkan NFC untuk melakukan pembayaran</Text>
-          
-          {/* Panduan langkah-langkah aktifkan NFC */}
           <View style={styles.instructionCard}>
             <Text style={styles.instructionTitle}>Cara Mengaktifkan NFC:</Text>
             <Text style={styles.instructionItem}>1. Buka Pengaturan</Text>
             <Text style={styles.instructionItem}>2. Pilih Koneksi / Wireless & Networks</Text>
             <Text style={styles.instructionItem}>3. Aktifkan NFC</Text>
           </View>
-          
-          {/* Tombol coba lagi: re-check status NFC setelah user aktifkan */}
           <TouchableOpacity style={styles.retryButton} onPress={checkNFC}>
             <Text style={styles.retryButtonText}>Coba Lagi</Text>
           </TouchableOpacity>
@@ -257,19 +250,15 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ============================================================
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
-      {/* Header dengan tombol kembali dan judul halaman */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pembayaran NFC</Text>
-        <View style={styles.headerSpacer} />{/* Spacer agar judul tetap di tengah */}
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.content}>
-        {/* ── Section 1: Info Merchant Penerima ── */}
-        {/* Menampilkan nama dan tipe merchant yang akan menerima pembayaran */}
-        <View style={styles.section}>
+      <View style={styles.content}>\n<View style={styles.section}>
           <Text style={styles.sectionLabel}>Penerima</Text>
           <View style={styles.merchantCard}>
             <View style={styles.merchantIcon}>
@@ -283,14 +272,10 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               <Text style={styles.chevron}>→</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* ── Section 2: Input Nominal Pembayaran ── */}
-        {/* TextInput dikendalikan oleh keypad kustom di bawah */}
-        <View style={styles.section}>
+        </View>\n<View style={styles.section}>
           <Text style={styles.sectionLabel}>Nominal Pembayaran</Text>
           <View style={styles.amountContainer}>
-            <Text style={styles.currencySymbol}>Rp</Text>{/* Prefix mata uang */}
+            <Text style={styles.currencySymbol}>Rp</Text>
             <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
               style={styles.amountInput} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               value={amount}           // Nilai dari state (format: "50.000")
@@ -300,37 +285,32 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               keyboardType="numeric"  // Tampilkan keyboard numerik native
             />
           </View>
-        </View>
-
-        {/* ── Section 3: Keypad Kustom ── */}
-        {/* Keypad numerik kustom (seperti keypad telepon) untuk input nominal */}
-        {/* Tombol ⌫ untuk hapus 1 digit terakhir, '.' diabaikan (tidak support desimal) */}
+        </View>\n
         <View style={styles.keypad}>
           {[
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-            ['.', '0', '⌫']
-          ].map((row, rowIndex) => (
+            ['1', '2', '3'], // baris keypad atas: angka 1, 2, 3; membuat keypad numerik 4x3 seperti kalkulator atau PIN pad
+            ['4', '5', '6'], // baris keypad tengah atas: angka 4, 5, 6 pada keypad numerik custom
+            ['7', '8', '9'], // baris keypad tengah bawah: angka 7, 8, 9 pada keypad numerik custom
+            ['.', '0', '⌫'] // baris keypad bawah: titik desimal, angka 0, dan tombol hapus (⌫) untuk input nominal
+          ].map((row, rowIndex) => ( // .map() iterasi setiap baris keypad; rowIndex digunakan sebagai key prop untuk React
             <View key={rowIndex} style={styles.keypadRow}>
-              {row.map((key) => (
+              {row.map((key) => ( // .map() iterasi setiap tombol dalam satu baris keypad; key adalah karakter tombol (1-9, '.', '⌫')
                 <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                  key={key}
+                  key={key} // key={key} prop unik untuk setiap elemen dalam list; React membutuhkan key untuk optimasi rendering
                   style={styles.keypadButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                   onPress={() => { // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
-                    if (key === '⌫') {
+                    if (key === '⌫') { // memeriksa apakah tombol yang ditekan adalah tombol hapus (⌫/backspace)
                       // Hapus 1 karakter terakhir dari input
-                      setAmount(amount.slice(0, -1));
+                      setAmount(amount.slice(0, -1)); // slice(0,-1) menghapus karakter terakhir dari string amount; efek tombol backspace/hapus
                     } else if (key === '.') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
                       // Ignore decimal for now (tidak support pecahan)
                     } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
                       // Tambahkan digit ke input dan format ulang
-                      handleAmountChange(amount + key);
+                      handleAmountChange(amount + key); // menambahkan karakter yang ditekan ke string amount; membangun nominal satu karakter per tekan
                     }
                   }}
                 >
                   <Text style={styles.keypadButtonText}>{key}</Text>
-                  {/* Label huruf di bawah angka (seperti keypad telepon) */}
                   {key === '2' && <Text style={styles.keypadSubText}>ABC</Text>}
                   {key === '3' && <Text style={styles.keypadSubText}>DEF</Text>}
                   {key === '4' && <Text style={styles.keypadSubText}>GHI</Text>}
@@ -343,34 +323,22 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               ))}
             </View>
           ))}
-        </View>
-
-        {/* ── Tombol Aksi: Lanjutkan Scan ── */}
-        {/* Disabled jika: nominal kosong ATAU sedang memproses pembayaran */}
-        {/* Menampilkan spinner saat isProcessing = true */}
+        </View>\n
         <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
           style={[styles.scanButton, (!amount || isProcessing) && styles.scanButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
           onPress={handleStartScan} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
           disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
-          {isProcessing ? (
-            <ActivityIndicator color="#fff" /> // Spinner saat proses berlangsung
-          ) : (
+          {isProcessing ? ( // ternary JSX: jika isProcessing=true tampilkan spinner, jika false tampilkan teks tombol normal
+            <ActivityIndicator color="#fff" />
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             <Text style={styles.scanButtonText}>Lanjutkan Scan</Text>
           )}
-        </TouchableOpacity>
-
-        {/* ── Info Keamanan ── */}
-        {/* Memberikan kepercayaan user bahwa transaksi aman */}
-        <View style={styles.securityInfo}>
+        </TouchableOpacity>\n<View style={styles.securityInfo}>
           <Text style={styles.securityIcon}>🛡️</Text>
           <Text style={styles.securityText}>Transaksi aman dengan deteksi fraud</Text>
         </View>
-      </View>
-
-      {/* ── Modal Scanning NFC ── */}
-      {/* Muncul saat scanning = true (user sedang tap kartu ke HP merchant) */}
-      {/* transparent = latar belakang semi-transparan (overlay gelap) */}
+      </View>\n
       <Modal visible={scanning} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
