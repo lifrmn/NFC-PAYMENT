@@ -1,222 +1,221 @@
 // =====================================================================
 // ?? SIMPLE ADMIN SERVER - NFC PAYMENT SYSTEM
 // =====================================================================
-/**
- * FILE: admin/simple-admin.js
- * TIPE: Server-side (Node.js + Express)
- * TUJUAN: Web Admin Dashboard untuk monitoring dan kontrol NFC Payment System
- * 
- * FITUR UTAMA:
- * -----------------------------------------------------------------------
- * 1. ???  WEB DASHBOARD
- *    - Real-time monitoring users dan devices
- *    - Visual stats: balance, transactions, fraud alerts
- *    - Admin controls: top-up, block/unblock users
- *    
- * 2. ?? USER & NFC CARD MANAGEMENT
- *    - CRUD operations untuk users
- *    - Link/unlink NFC cards ke users
- *    - Block/unblock cards dengan 1-card-per-user policy
- *    - Bulk top-up untuk multiple users
- *    
- * 3. ?? DEVICE SYNCHRONIZATION
- *    - Terima sync data dari Mobile App
- *    - Track device online/offline status (5 min timeout)
- *    - Queue balance updates untuk push ke devices
- *    - Cleanup offline devices otomatis
- *    
- * 4. ?? FRAUD DETECTION MONITORING
- *    - Receive fraud alerts dari Backend AI
- *    - Visual fraud dashboard dengan statistics
- *    - Alert categorization: NORMAL/SUSPICIOUS/ANOMALY
- *    - Transaction review workflow
- *    
- * 5. ?? BALANCE MANAGEMENT
- *    - Admin top-up dengan password validation
- *    - Maximum limit: Rp 500,000 per transaction
- *    - Bulk top-up support (multiple users sekaligus)
- *    - Balance reset functionality
- *    
- * 6. ?? BACKEND PROXY
- *    - Forward requests ke Backend Server (port 4000)
- *    - Supports both localhost (local dev) dan ngrok (mobile)
- *    - HTTP/HTTPS auto-detection
- *    - Connection health monitoring
- * 
- * ARSITEKTUR & DEPLOYMENT:
- * -----------------------------------------------------------------------
- * 
- *  +--------------+         +--------------+         +--------------+
- *  ¦ Mobile App   ¦?--------¦ Ngrok Tunnel ¦?--------¦ Backend      ¦
- *  ¦ (Port N/A)   ¦  HTTPS  ¦ (Public URL) ¦   HTTP  ¦ (Port 4000)  ¦
- *  +--------------+         +--------------+         +--------------+
- *         ¦                                                  ?
- *         ¦                                                  ¦
- *         ¦                                                  ¦ HTTP
- *         ¦ Device Sync                                      ¦ (localhost)
- *         ¦ (POST /api/sync-device)                          ¦
- *         ?                                                  ¦
- *  +------------------------------------------------------------------+
- *  ¦                     ADMIN SERVER (Port 3000)                      ¦
- *  +------------------------------------------------------------------¦
- *  ¦ - Express.js REST API                                             ¦
- *  ¦ - Web Dashboard (dashboard.html)                                   ¦
- *  ¦ - Device Cache (Map<deviceId, deviceData>)                        ¦
- *  ¦ - Pending Updates Queue (Map<updateKey, balanceUpdate>)           ¦
- *  ¦ - Fraud Alerts Store (Map<alertId, fraudAlert>)                   ¦
- *  +------------------------------------------------------------------+
- *         ?
- *         ¦ HTTP (localhost)
- *         ¦ Browse Dashboard
- *         ¦
- *  +--------------+
- *  ¦ Web Browser  ¦
- *  ¦ (localhost:  ¦
- *  ¦  3000)       ¦
- *  +--------------+
- * 
- * SECURITY:
- * -----------------------------------------------------------------------
- * - Helmet.js security headers
- * - CORS enabled (allow mobile app access)
- * - API key validation (x-app-key header)
- * - User-Agent validation (okhttp = Android app only)
- * - Admin password for sensitive operations (top-up, delete)
- * - Local network bypass (192.168.x.x, 10.x.x.x)
- * 
- * API ENDPOINTS:
- * -----------------------------------------------------------------------
- * DEVICE ENDPOINTS:
- * - GET  /api/devices           ? List all devices/users
- * - POST /api/sync-device       ? Receive sync from mobile
- * - POST /api/update-balance    ? Admin top-up balance
- * 
- * FRAUD DETECTION:
- * - POST /api/fraud-alert       ? Receive alert from AI
- * - GET  /api/fraud-alerts      ? Get all fraud alerts
- * - GET  /api/transactions      ? Get all transactions
- * - POST /api/clear-fraud-alerts ? Clear all alerts
- * 
- * USER MANAGEMENT:
- * - GET    /api/users           ? List all users
- * - POST   /api/users           ? Create new user
- * - PUT    /api/users/:id       ? Update user data
- * - DELETE /api/users/:id       ? Delete user
- * - POST   /api/block-user      ? Block user
- * - POST   /api/unblock-user    ? Unblock user
- * - POST   /api/bulk-topup      ? Bulk top-up multiple users
- * - POST   /api/reset-balance   ? Reset user balance to 0
- * 
- * NFC CARD MANAGEMENT:
- * - GET    /api/nfc-cards           ? List all cards
- * - POST   /api/nfc-cards/register  ? Register new card
- * - POST   /api/nfc-cards/link      ? Link card to user
- * - POST   /api/nfc-cards/block     ? Block card
- * - POST   /api/nfc-cards/topup     ? Top-up card balance
- * - DELETE /api/nfc-cards/:cardId   ? Delete card
- * 
- * SYSTEM:
- * - GET /api/ping               ? Server status check
- * - GET /api/health             ? Health check with stats
- * - GET /                       ? Serve dashboard HTML
- * 
- * STARTUP COMMAND:
- * -----------------------------------------------------------------------
- * $ node admin/simple-admin.js
- * 
- * OUTPUT:
- * ?? Simple NFC Payment Admin started!
- * ?? Dashboard: http://localhost:3000
- * 
- * ?? Backend Connection:
- *    ?? Ngrok URL: https://your-ngrok-url.ngrok-free.dev
- * 
- * DEPENDENCIES:
- * -----------------------------------------------------------------------
- * - express@4.18.2         ? Web server framework
- * - cors                   ? Cross-Origin Resource Sharing
- * - helmet                 ? Security headers
- * - http/https (built-in)  ? Backend communication
- * 
- * DATA STRUCTURES:
- * -----------------------------------------------------------------------
- * 1. devices: Map<deviceId, DeviceData>
- *    {
- *      deviceId: string,
- *      deviceName: string,
- *      platform: 'android',
- *      users: User[],
- *      recentTransactions: Transaction[],
- *      totalUsers: number,
- *      totalBalance: number,
- *      lastSync: ISO string,
- *      isOnline: boolean,
- *      ipAddress: string
- *    }
- * 
- * 2. pendingUpdates: Map<updateKey, BalanceUpdate>
- *    {
- *      deviceId: string,
- *      userId: number,
- *      newBalance: number,
- *      reason: string,
- *      timestamp: ISO string
- *    }
- * 
- * 3. fraudAlerts: Map<alertId, FraudAlert>
- *    {
- *      alertId: string,
- *      userId: number,
- *      transactionId: number,
- *      riskScore: number,
- *      reasons: string[],
- *      timestamp: ISO string,
- *      status: 'ANOMALY' | 'SUSPICIOUS' | 'BLOCKED'
- *    }
- * 
- * PERFORMANCE:
- * -----------------------------------------------------------------------
- * - In-memory cache (fast access)
- * - 5-minute cleanup interval untuk offline devices
- * - Request timeout: 10 detik
- * - Max JSON body size: 1MB
- * - Auto-cleanup old fraud alerts (optional)
- * 
- * TESTING:
- * -----------------------------------------------------------------------
- * 1. Test ping endpoint:
- *    $ curl http://localhost:3000/api/ping
- *    
- * 2. Test device sync (dengan app key):
- *    $ curl -X POST http://localhost:3000/api/sync-device \
- *      -H "Content-Type: application/json" \
- *      -H "x-app-key: NFC2025SecureApp" \
- *      -d '{"device": {"deviceId": "test123"}, "users": []}'
- * 
- * TROUBLESHOOTING:
- * -----------------------------------------------------------------------
- * - "Backend returned HTML instead of JSON"
- *   ? Check ngrok tunnel is running: ngrok http 4000
- *   ? Check ngrok URL di BACKEND_URL/NGROK_URL
- *   
- * - "Unauthorized access blocked"
- *   ? Add header: x-app-key: NFC2025SecureApp
- *   ? Check User-Agent contains "okhttp"
- *   
- * - Device tidak muncul di dashboard
- *   ? Check mobile app mengirim sync data
- *   ? Check device sync dalam 5 menit terakhir
- * 
- * RELATED FILES:
- * -----------------------------------------------------------------------
- * - admin/dashboard.html         ? Web UI dashboard (unified: overview + fraud alerts)
- * - backend/server.js            ? Main backend server
- * - src/utils/apiService.ts      ? Mobile app API client
- * 
- * @version 1.0.0
- * @author NFC Payment Team
- * @created 2025
- */
+//
+// FILE: admin/simple-admin.js
+// TIPE: Server-side (Node.js + Express)
+// TUJUAN: Web Admin Dashboard untuk monitoring dan kontrol NFC Payment System
+//
+// FITUR UTAMA:
+// -----------------------------------------------------------------------
+// 1. ???  WEB DASHBOARD
+//    - Real-time monitoring users dan devices
+//    - Visual stats: balance, transactions, fraud alerts
+//    - Admin controls: top-up, block/unblock users
+//
+// 2. ?? USER & NFC CARD MANAGEMENT
+//    - CRUD operations untuk users
+//    - Link/unlink NFC cards ke users
+//    - Block/unblock cards dengan 1-card-per-user policy
+//    - Bulk top-up untuk multiple users
+//
+// 3. ?? DEVICE SYNCHRONIZATION
+//    - Terima sync data dari Mobile App
+//    - Track device online/offline status (5 min timeout)
+//    - Queue balance updates untuk push ke devices
+//    - Cleanup offline devices otomatis
+//
+// 4. ?? FRAUD DETECTION MONITORING
+//    - Receive fraud alerts dari Backend AI
+//    - Visual fraud dashboard dengan statistics
+//    - Alert categorization: NORMAL/SUSPICIOUS/ANOMALY
+//    - Transaction review workflow
+//
+// 5. ?? BALANCE MANAGEMENT
+//    - Admin top-up dengan password validation
+//    - Maximum limit: Rp 500,000 per transaction
+//    - Bulk top-up support (multiple users sekaligus)
+//    - Balance reset functionality
+//
+// 6. ?? BACKEND PROXY
+//    - Forward requests ke Backend Server (port 4000)
+//    - Supports both localhost (local dev) dan ngrok (mobile)
+//    - HTTP/HTTPS auto-detection
+//    - Connection health monitoring
+//
+// ARSITEKTUR & DEPLOYMENT:
+// -----------------------------------------------------------------------
+//
+//  +--------------+         +--------------+         +--------------+
+//  ï¿½ Mobile App   ï¿½?--------ï¿½ Ngrok Tunnel ï¿½?--------ï¿½ Backend      ï¿½
+//  ï¿½ (Port N/A)   ï¿½  HTTPS  ï¿½ (Public URL) ï¿½   HTTP  ï¿½ (Port 4000)  ï¿½
+//  +--------------+         +--------------+         +--------------+
+//         ï¿½                                                  ?
+//         ï¿½                                                  ï¿½
+//         ï¿½                                                  ï¿½ HTTP
+//         ï¿½ Device Sync                                      ï¿½ (localhost)
+//         ï¿½ (POST /api/sync-device)                          ï¿½
+//         ?                                                  ï¿½
+//  +------------------------------------------------------------------+
+//  ï¿½                     ADMIN SERVER (Port 3000)                      ï¿½
+//  +------------------------------------------------------------------ï¿½
+//  ï¿½ - Express.js REST API                                             ï¿½
+//  ï¿½ - Web Dashboard (dashboard.html)                                   ï¿½
+//  ï¿½ - Device Cache (Map<deviceId, deviceData>)                        ï¿½
+//  ï¿½ - Pending Updates Queue (Map<updateKey, balanceUpdate>)           ï¿½
+//  ï¿½ - Fraud Alerts Store (Map<alertId, fraudAlert>)                   ï¿½
+//  +------------------------------------------------------------------+
+//         ?
+//         ï¿½ HTTP (localhost)
+//         ï¿½ Browse Dashboard
+//         ï¿½
+//  +--------------+
+//  ï¿½ Web Browser  ï¿½
+//  ï¿½ (localhost:  ï¿½
+//  ï¿½  3000)       ï¿½
+//  +--------------+
+//
+// SECURITY:
+// -----------------------------------------------------------------------
+// - Helmet.js security headers
+// - CORS enabled (allow mobile app access)
+// - API key validation (x-app-key header)
+// - User-Agent validation (okhttp = Android app only)
+// - Admin password for sensitive operations (top-up, delete)
+// - Local network bypass (192.168.x.x, 10.x.x.x)
+//
+// API ENDPOINTS:
+// -----------------------------------------------------------------------
+// DEVICE ENDPOINTS:
+// - GET  /api/devices           ? List all devices/users
+// - POST /api/sync-device       ? Receive sync from mobile
+// - POST /api/update-balance    ? Admin top-up balance
+//
+// FRAUD DETECTION:
+// - POST /api/fraud-alert       ? Receive alert from AI
+// - GET  /api/fraud-alerts      ? Get all fraud alerts
+// - GET  /api/transactions      ? Get all transactions
+// - POST /api/clear-fraud-alerts ? Clear all alerts
+//
+// USER MANAGEMENT:
+// - GET    /api/users           ? List all users
+// - POST   /api/users           ? Create new user
+// - PUT    /api/users/:id       ? Update user data
+// - DELETE /api/users/:id       ? Delete user
+// - POST   /api/block-user      ? Block user
+// - POST   /api/unblock-user    ? Unblock user
+// - POST   /api/bulk-topup      ? Bulk top-up multiple users
+// - POST   /api/reset-balance   ? Reset user balance to 0
+//
+// NFC CARD MANAGEMENT:
+// - GET    /api/nfc-cards           ? List all cards
+// - POST   /api/nfc-cards/register  ? Register new card
+// - POST   /api/nfc-cards/link      ? Link card to user
+// - POST   /api/nfc-cards/block     ? Block card
+// - POST   /api/nfc-cards/topup     ? Top-up card balance
+// - DELETE /api/nfc-cards/:cardId   ? Delete card
+//
+// SYSTEM:
+// - GET /api/ping               ? Server status check
+// - GET /api/health             ? Health check with stats
+// - GET /                       ? Serve dashboard HTML
+//
+// STARTUP COMMAND:
+// -----------------------------------------------------------------------
+// $ node admin/simple-admin.js
+//
+// OUTPUT:
+// ?? Simple NFC Payment Admin started!
+// ?? Dashboard: http://localhost:3000
+//
+// ?? Backend Connection:
+//    ?? Ngrok URL: https://your-ngrok-url.ngrok-free.dev
+//
+// DEPENDENCIES:
+// -----------------------------------------------------------------------
+// - express@4.18.2         ? Web server framework
+// - cors                   ? Cross-Origin Resource Sharing
+// - helmet                 ? Security headers
+// - http/https (built-in)  ? Backend communication
+//
+// DATA STRUCTURES:
+// -----------------------------------------------------------------------
+// 1. devices: Map<deviceId, DeviceData>
+//    {
+//      deviceId: string,
+//      deviceName: string,
+//      platform: 'android',
+//      users: User[],
+//      recentTransactions: Transaction[],
+//      totalUsers: number,
+//      totalBalance: number,
+//      lastSync: ISO string,
+//      isOnline: boolean,
+//      ipAddress: string
+//    }
+//
+// 2. pendingUpdates: Map<updateKey, BalanceUpdate>
+//    {
+//      deviceId: string,
+//      userId: number,
+//      newBalance: number,
+//      reason: string,
+//      timestamp: ISO string
+//    }
+//
+// 3. fraudAlerts: Map<alertId, FraudAlert>
+//    {
+//      alertId: string,
+//      userId: number,
+//      transactionId: number,
+//      riskScore: number,
+//      reasons: string[],
+//      timestamp: ISO string,
+//      status: 'ANOMALY' | 'SUSPICIOUS' | 'BLOCKED'
+//    }
+//
+// PERFORMANCE:
+// -----------------------------------------------------------------------
+// - In-memory cache (fast access)
+// - 5-minute cleanup interval untuk offline devices
+// - Request timeout: 10 detik
+// - Max JSON body size: 1MB
+// - Auto-cleanup old fraud alerts (optional)
+//
+// TESTING:
+// -----------------------------------------------------------------------
+// 1. Test ping endpoint:
+//    $ curl http://localhost:3000/api/ping
+//
+// 2. Test device sync (dengan app key):
+//    $ curl -X POST http://localhost:3000/api/sync-device \
+//      -H "Content-Type: application/json" \
+//      -H "x-app-key: NFC2025SecureApp" \
+//      -d '{"device": {"deviceId": "test123"}, "users": []}'
+//
+// TROUBLESHOOTING:
+// -----------------------------------------------------------------------
+// - "Backend returned HTML instead of JSON"
+//   ? Check ngrok tunnel is running: ngrok http 4000
+//   ? Check ngrok URL di BACKEND_URL/NGROK_URL
+//
+// - "Unauthorized access blocked"
+//   ? Add header: x-app-key: NFC2025SecureApp
+//   ? Check User-Agent contains "okhttp"
+//
+// - Device tidak muncul di dashboard
+//   ? Check mobile app mengirim sync data
+//   ? Check device sync dalam 5 menit terakhir
+//
+// RELATED FILES:
+// -----------------------------------------------------------------------
+// - admin/dashboard.html         ? Web UI dashboard (unified: overview + fraud alerts)
+// - backend/server.js            ? Main backend server
+// - src/utils/apiService.ts      ? Mobile app API client
+//
+// @version 1.0.0
+// @author NFC Payment Team
+// @created 2025
 
 // ==================== DEPENDENCIES ====================
 const express = require('express'); // Framework web server
@@ -228,71 +227,68 @@ const http = require('http'); // HTTP client untuk fetch backend
 const https = require('https'); // HTTPS client untuk fetch backend
 
 // ==================== CONFIGURATION ====================
-/**
- * PORT: 3000
- * - Server admin jalan di localhost:3000
- * - Dashboard bisa diakses via browser: http://localhost:3000
- * - Mobile app tidak langsung connect ke admin server ini
- * 
- * APP_SECRET: 'NFC2025SecureApp'
- * - Shared secret key untuk validasi request
- * - Harus sama dengan key di mobile app
- * - Dikirim via header: x-app-key
- * 
- * ADMIN_PASSWORD: 'admin123'
- * - Password untuk operasi sensitive (top-up, delete)
- * - Harus dimasukkan di dashboard saat top-up balance
- * - Simple authentication (production harus pakai hash)
- * 
- * BACKEND_URL: 'http://localhost:4000'
- * - URL backend server untuk local development
- * - Admin server dan backend di laptop yang sama ? localhost
- * - Port 4000 = backend main server
- * 
- * NGROK_URL: 'https://xxx.ngrok-free.dev'
- * - Public URL untuk mobile app access backend
- * - Ngrok tunnel: ngrok http 4000
- * - Update URL ini sesuai ngrok output
- */
+//
+// PORT: 3000
+// - Server admin jalan di localhost:3000
+// - Dashboard bisa diakses via browser: http://localhost:3000
+// - Mobile app tidak langsung connect ke admin server ini
+//
+// APP_SECRET: 'NFC2025SecureApp'
+// - Shared secret key untuk validasi request
+// - Harus sama dengan key di mobile app
+// - Dikirim via header: x-app-key
+//
+// ADMIN_PASSWORD: 'admin123'
+// - Password untuk operasi sensitive (top-up, delete)
+// - Harus dimasukkan di dashboard saat top-up balance
+// - Simple authentication (production harus pakai hash)
+//
+// BACKEND_URL: 'http://localhost:4000'
+// - URL backend server untuk local development
+// - Admin server dan backend di laptop yang sama ? localhost
+// - Port 4000 = backend main server
+//
+// NGROK_URL: 'https://xxx.ngrok-free.dev'
+// - Public URL untuk mobile app access backend
+// - Ngrok tunnel: ngrok http 4000
+// - Update URL ini sesuai ngrok output
 const PORT = 3000; // Port server (3000)
 const APP_SECRET = 'NFC2025SecureApp'; // Secret key aplikasi (untuk validasi)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Password admin untuk top-up saldo
 
 // ==================== BACKEND CONFIGURATION ====================
-/**
- * BACKEND_URL: Backend server untuk local development
- * - Admin server dan backend di laptop yang sama ? localhost
- * - Port 4000 = backend main server
- * - Format: http://hostname:port
- * 
- * NGROK_URL: Public URL untuk mobile app
- * - Mobile app connect ke backend via ngrok tunnel
- * - Admin server TIDAK pakai ngrok (localhost cukup)
- * - Update URL ini setiap kali restart ngrok
- * - Cara dapatkan: ngrok http 4000 ? copy URL dari terminal
- */
+//
+// BACKEND_URL: Backend server untuk local development
+// - Admin server dan backend di laptop yang sama ? localhost
+// - Port 4000 = backend main server
+// - Format: http://hostname:port
+//
+// NGROK_URL: Public URL untuk mobile app
+// - Mobile app connect ke backend via ngrok tunnel
+// - Admin server TIDAK pakai ngrok (localhost cukup)
+// - Update URL ini setiap kali restart ngrok
+// - Cara dapatkan: ngrok http 4000 ? copy URL dari terminal
 const BACKEND_URL = 'http://localhost:4000'; // Backend URL (localhost karena sama-sama di laptop)
 const NGROK_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // URL ngrok untuk mobile app
 
 // ==================== HELPER FUNCTIONS ====================
-/**
- * parseBackendUrl()
- * FUNGSI: Parse BACKEND_URL menjadi object hostname, port, protocol
- * 
- * RETURN:
- * {
- *   hostname: string,  // e.g., 'localhost'
- *   port: number,      // e.g., 4000
- *   protocol: string   // 'http' or 'https'
- * }
- * 
- * CONTOH:
- * Input:  'http://localhost:4000'
- * Output: { hostname: 'localhost', port: 4000, protocol: 'http' }
- * 
- * FALLBACK:
- * Jika URL tidak valid ? return localhost:4000
- */
+//
+// parseBackendUrl()
+// FUNGSI: Parse BACKEND_URL menjadi object hostname, port, protocol
+//
+// RETURN:
+// {
+//   hostname: string,  // e.g., 'localhost'
+//   port: number,      // e.g., 4000
+//   protocol: string   // 'http' or 'https'
+// }
+//
+// CONTOH:
+// Input:  'http://localhost:4000'
+// Output: { hostname: 'localhost', port: 4000, protocol: 'http' }
+//
+// FALLBACK:
+// Jika URL tidak valid ? return localhost:4000
 function parseBackendUrl() {
   try {
     const url = new URL(BACKEND_URL); // Parse string URL menjadi objek URL
@@ -311,53 +307,52 @@ function parseBackendUrl() {
   }
 }
 
-/**
- * makeHttpRequest(options)
- * FUNGSI: Wrapper untuk http/https request ke backend dengan error handling
- * 
- * PARAMETER:
- * - options: {
- *     hostname: string,      // Backend hostname
- *     port: number,          // Backend port
- *     path: string,          // API path (e.g., '/api/users')
- *     method: string,        // HTTP method (GET, POST, PUT, DELETE)
- *     protocol: string,      // 'http' or 'https'
- *     headers: object,       // HTTP headers
- *     body: object           // Request body (akan di-JSON.stringify)
- *   }
- * 
- * RETURN: Promise<any>
- * - Resolves dengan parsed JSON response dari backend
- * - Rejects dengan Error jika terjadi kesalahan
- * 
- * ERROR HANDLING:
- * 1. HTML Response Detection:
- *    - Jika backend return HTML (ngrok error page)
- *    - Error: "Backend returned HTML instead of JSON"
- * 
- * 2. Empty Response:
- *    - Jika response kosong
- *    - Error: "Backend returned empty response"
- * 
- * 3. JSON Parse Error:
- *    - Jika JSON tidak valid
- *    - Error: "Invalid JSON response"
- * 
- * 4. Request Timeout:
- *    - Timeout: 10 detik
- *    - Error: "Request timeout after 10 seconds"
- * 
- * USAGE EXAMPLE:
- * const options = {
- *   hostname: 'localhost',
- *   port: 4000,
- *   path: '/api/users',
- *   method: 'GET',
- *   protocol: 'http',
- *   headers: { 'Content-Type': 'application/json' }
- * };
- * const data = await makeHttpRequest(options);
- */
+//
+// makeHttpRequest(options)
+// FUNGSI: Wrapper untuk http/https request ke backend dengan error handling
+//
+// PARAMETER:
+// - options: {
+//     hostname: string,      // Backend hostname
+//     port: number,          // Backend port
+//     path: string,          // API path (e.g., '/api/users')
+//     method: string,        // HTTP method (GET, POST, PUT, DELETE)
+//     protocol: string,      // 'http' or 'https'
+//     headers: object,       // HTTP headers
+//     body: object           // Request body (akan di-JSON.stringify)
+//   }
+//
+// RETURN: Promise<any>
+// - Resolves dengan parsed JSON response dari backend
+// - Rejects dengan Error jika terjadi kesalahan
+//
+// ERROR HANDLING:
+// 1. HTML Response Detection:
+//    - Jika backend return HTML (ngrok error page)
+//    - Error: "Backend returned HTML instead of JSON"
+//
+// 2. Empty Response:
+//    - Jika response kosong
+//    - Error: "Backend returned empty response"
+//
+// 3. JSON Parse Error:
+//    - Jika JSON tidak valid
+//    - Error: "Invalid JSON response"
+//
+// 4. Request Timeout:
+//    - Timeout: 10 detik
+//    - Error: "Request timeout after 10 seconds"
+//
+// USAGE EXAMPLE:
+// const options = {
+//   hostname: 'localhost',
+//   port: 4000,
+//   path: '/api/users',
+//   method: 'GET',
+//   protocol: 'http',
+//   headers: { 'Content-Type': 'application/json' }
+// };
+// const data = await makeHttpRequest(options);
 function makeHttpRequest(options) {
   return new Promise((resolve, reject) => {
     // Determine which client to use based on protocol
@@ -422,26 +417,25 @@ function makeHttpRequest(options) {
   });
 }
 
-/**
- * getLocalIPAddress()
- * FUNGSI: Ambil semua IP address laptop untuk koneksi dari mobile device
- * 
- * RETURN: string[]
- * Array IP addresses (IPv4 only, non-internal)
- * 
- * CONTOH OUTPUT:
- * ['192.168.137.103', '192.168.1.10']
- * 
- * USAGE:
- * - Display di console saat server start
- * - Mobile app bisa connect via IP ini (jika same local network)
- * - Berguna untuk development tanpa ngrok
- * 
- * FILTERING:
- * - Hanya IPv4 (skip IPv6)
- * - Skip localhost (127.0.0.1)
- * - Hanya external interfaces (Wi-Fi, Ethernet)
- */
+//
+// getLocalIPAddress()
+// FUNGSI: Ambil semua IP address laptop untuk koneksi dari mobile device
+//
+// RETURN: string[]
+// Array IP addresses (IPv4 only, non-internal)
+//
+// CONTOH OUTPUT:
+// ['192.168.137.103', '192.168.1.10']
+//
+// USAGE:
+// - Display di console saat server start
+// - Mobile app bisa connect via IP ini (jika same local network)
+// - Berguna untuk development tanpa ngrok
+//
+// FILTERING:
+// - Hanya IPv4 (skip IPv6)
+// - Skip localhost (127.0.0.1)
+// - Hanya external interfaces (Wi-Fi, Ethernet)
 function getLocalIPAddress() {
   const interfaces = os.networkInterfaces(); // Ambil semua network interface
   const ips = []; // Array untuk menyimpan IP
@@ -459,31 +453,30 @@ function getLocalIPAddress() {
   return ips; // Return array IP address
 }
 
-/**
- * isValidAppRequest(req)
- * FUNGSI: Validasi apakah request dari aplikasi mobile resmi
- * 
- * SECURITY CHECKS:
- * 1. App Key Validation:
- *    - Check header: x-app-key
- *    - Harus sama dengan APP_SECRET ('NFC2025SecureApp')
- *    - Mencegah akses dari aplikasi tidak resmi
- * 
- * 2. User Agent Validation:
- *    - Check header: user-agent
- *    - Harus mengandung 'okhttp' (Android HTTP client)
- *    - Mencegah akses dari browser atau tools lain
- * 
- * PARAMETER:
- * - req: Express Request object
- * 
- * RETURN: boolean
- * - true: Request valid dari aplikasi resmi
- * - false: Request tidak valid (akan ditolak dengan 401)
- * 
- * USAGE:
- * Di middleware protectAPI() untuk filter request
- */
+//
+// isValidAppRequest(req)
+// FUNGSI: Validasi apakah request dari aplikasi mobile resmi
+//
+// SECURITY CHECKS:
+// 1. App Key Validation:
+//    - Check header: x-app-key
+//    - Harus sama dengan APP_SECRET ('NFC2025SecureApp')
+//    - Mencegah akses dari aplikasi tidak resmi
+//
+// 2. User Agent Validation:
+//    - Check header: user-agent
+//    - Harus mengandung 'okhttp' (Android HTTP client)
+//    - Mencegah akses dari browser atau tools lain
+//
+// PARAMETER:
+// - req: Express Request object
+//
+// RETURN: boolean
+// - true: Request valid dari aplikasi resmi
+// - false: Request tidak valid (akan ditolak dengan 401)
+//
+// USAGE:
+// Di middleware protectAPI() untuk filter request
 function isValidAppRequest(req) {
   const appKey = req.headers['x-app-key']; // Ambil app key dari header
   const userAgent = req.headers['user-agent']; // Ambil user agent
@@ -501,39 +494,38 @@ function isValidAppRequest(req) {
   return true; // Lolos validasi
 }
 
-/**
- * protectAPI(req, res, next)
- * MIDDLEWARE: Proteksi API endpoints dari akses tidak resmi
- * 
- * BYPASS RULES (tidak perlu validasi):
- * 1. Dashboard HTML (GET /)
- *    ? Halaman utama bisa diakses bebas
- * 
- * 2. Static files (CSS, JS, images)
- *    ? GET requests non-API
- * 
- * 3. Local Network Access (dari dashboard)
- *    ? IP: 127.0.0.1, ::1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x
- *    ? Admin dashboard di browser bisa call API tanpa app key
- * 
- * VALIDATION RULES (perlu validasi):
- * 1. API endpoints dari external sources
- *    ? Path: /api/*
- *    ? IP: Bukan local network
- *    ? Check: isValidAppRequest()
- * 
- * FLOW:
- * 1. Check path dan IP
- * 2. Jika local network ? BYPASS (allow)
- * 3. Jika external + API path ? VALIDATE
- * 4. Jika tidak valid ? Response 401 Unauthorized
- * 5. Jika valid ? next() (lanjut ke endpoint)
- * 
- * SECURITY:
- * - Prevent unauthorized API access
- * - Allow dashboard dari browser local
- * - Allow mobile app dengan valid app key
- */
+//
+// protectAPI(req, res, next)
+// MIDDLEWARE: Proteksi API endpoints dari akses tidak resmi
+//
+// BYPASS RULES (tidak perlu validasi):
+// 1. Dashboard HTML (GET /)
+//    ? Halaman utama bisa diakses bebas
+//
+// 2. Static files (CSS, JS, images)
+//    ? GET requests non-API
+//
+// 3. Local Network Access (dari dashboard)
+//    ? IP: 127.0.0.1, ::1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x
+//    ? Admin dashboard di browser bisa call API tanpa app key
+//
+// VALIDATION RULES (perlu validasi):
+// 1. API endpoints dari external sources
+//    ? Path: /api/*
+//    ? IP: Bukan local network
+//    ? Check: isValidAppRequest()
+//
+// FLOW:
+// 1. Check path dan IP
+// 2. Jika local network ? BYPASS (allow)
+// 3. Jika external + API path ? VALIDATE
+// 4. Jika tidak valid ? Response 401 Unauthorized
+// 5. Jika valid ? next() (lanjut ke endpoint)
+//
+// SECURITY:
+// - Prevent unauthorized API access
+// - Allow dashboard dari browser local
+// - Allow mobile app dengan valid app key
 function protectAPI(req, res, next) {
   // Skip proteksi untuk dashboard HTML (halaman utama)
   if (req.method === 'GET' && req.path === '/') {
@@ -591,97 +583,95 @@ function protectAPI(req, res, next) {
 // =====================================================================
 // ??? CLASS: SimpleNFCAdmin
 // =====================================================================
-/**
- * Main class untuk Admin Server
- * 
- * RESPONSIBILITIES:
- * - Setup Express server (routes, middleware, security)
- * - Manage device cache dan sync data
- * - Queue balance updates untuk push ke devices
- * - Handle fraud alerts dari backend AI
- * - Proxy requests ke backend server
- * - Serve web dashboard HTML
- * 
- * PROPERTIES:
- * - app: Express application instance
- * - devices: Map<deviceId, DeviceData> ? Cache device data
- * - pendingUpdates: Map<updateKey, BalanceUpdate> ? Queue updates
- * - deviceLastSeen: Map<deviceId, Date> ? Track last sync time
- * - fraudAlerts: Map<alertId, FraudAlert> ? Store fraud alerts
- * - fraudStats: Object ? Statistics fraud detection
- * 
- * METHODS:
- * Setup:
- * - constructor()           ? Initialize server
- * - setupExpress()          ? Setup routes & middleware
- * - start()                 ? Start listening on port
- * 
- * Device Management:
- * - syncDevice()            ? Receive sync from mobile (POST /api/sync-device)
- * - getDevices()            ? List all devices/users (GET /api/devices)
- * - getPendingUpdates()     ? Get queued updates for device
- * - clearPendingUpdates()   ? Clear updates after sent
- * - startCleanupTimer()     ? Auto-remove offline devices
- * 
- * Balance Management:
- * - updateBalanceSecure()   ? Admin top-up with password (POST /api/update-balance)
- * - updateBalance()         ? Legacy method (will be removed)
- * 
- * Fraud Detection:
- * - handleFraudAlert()      ? Receive alert from AI (POST /api/fraud-alert)
- * - getFraudAlerts()        ? List all alerts (GET /api/fraud-alerts)
- * - clearFraudAlertsEndpoint() ? Clear all alerts (POST /api/clear-fraud-alerts)
- * - getAllTransactions()    ? Get transactions (GET /api/transactions)
- * 
- * User Management:
- * - getUsersEndpoint()      ? List users (GET /api/users)
- * - createUserEndpoint()    ? Create user (POST /api/users)
- * - updateUserEndpoint()    ? Update user (PUT /api/users/:id)
- * - deleteUserEndpoint()    ? Delete user (DELETE /api/users/:id)
- * - blockUserEndpoint()     ? Block user (POST /api/block-user)
- * - unblockUserEndpoint()   ? Unblock user (POST /api/unblock-user)
- * - bulkTopupEndpoint()     ? Bulk top-up (POST /api/bulk-topup)
- * - resetBalanceEndpoint()  ? Reset balance (POST /api/reset-balance)
- * 
- * NFC Card Management:
- * - getNFCCards()           ? List cards (GET /api/nfc-cards)
- * - registerNFCCard()       ? Register card (POST /api/nfc-cards/register)
- * - linkNFCCard()           ? Link to user (POST /api/nfc-cards/link)
- * - blockNFCCard()          ? Block card (POST /api/nfc-cards/block)
- * - topupNFCCard()          ? Top-up card (POST /api/nfc-cards/topup)
- * - deleteNFCCard()         ? Delete card (DELETE /api/nfc-cards/:cardId)
- */
+//
+// Main class untuk Admin Server
+//
+// RESPONSIBILITIES:
+// - Setup Express server (routes, middleware, security)
+// - Manage device cache dan sync data
+// - Queue balance updates untuk push ke devices
+// - Handle fraud alerts dari backend AI
+// - Proxy requests ke backend server
+// - Serve web dashboard HTML
+//
+// PROPERTIES:
+// - app: Express application instance
+// - devices: Map<deviceId, DeviceData> ? Cache device data
+// - pendingUpdates: Map<updateKey, BalanceUpdate> ? Queue updates
+// - deviceLastSeen: Map<deviceId, Date> ? Track last sync time
+// - fraudAlerts: Map<alertId, FraudAlert> ? Store fraud alerts
+// - fraudStats: Object ? Statistics fraud detection
+//
+// METHODS:
+// Setup:
+// - constructor()           ? Initialize server
+// - setupExpress()          ? Setup routes & middleware
+// - start()                 ? Start listening on port
+//
+// Device Management:
+// - syncDevice()            ? Receive sync from mobile (POST /api/sync-device)
+// - getDevices()            ? List all devices/users (GET /api/devices)
+// - getPendingUpdates()     ? Get queued updates for device
+// - clearPendingUpdates()   ? Clear updates after sent
+// - startCleanupTimer()     ? Auto-remove offline devices
+//
+// Balance Management:
+// - updateBalanceSecure()   ? Admin top-up with password (POST /api/update-balance)
+// - updateBalance()         ? Legacy method (will be removed)
+//
+// Fraud Detection:
+// - handleFraudAlert()      ? Receive alert from AI (POST /api/fraud-alert)
+// - getFraudAlerts()        ? List all alerts (GET /api/fraud-alerts)
+// - clearFraudAlertsEndpoint() ? Clear all alerts (POST /api/clear-fraud-alerts)
+// - getAllTransactions()    ? Get transactions (GET /api/transactions)
+//
+// User Management:
+// - getUsersEndpoint()      ? List users (GET /api/users)
+// - createUserEndpoint()    ? Create user (POST /api/users)
+// - updateUserEndpoint()    ? Update user (PUT /api/users/:id)
+// - deleteUserEndpoint()    ? Delete user (DELETE /api/users/:id)
+// - blockUserEndpoint()     ? Block user (POST /api/block-user)
+// - unblockUserEndpoint()   ? Unblock user (POST /api/unblock-user)
+// - bulkTopupEndpoint()     ? Bulk top-up (POST /api/bulk-topup)
+// - resetBalanceEndpoint()  ? Reset balance (POST /api/reset-balance)
+//
+// NFC Card Management:
+// - getNFCCards()           ? List cards (GET /api/nfc-cards)
+// - registerNFCCard()       ? Register card (POST /api/nfc-cards/register)
+// - linkNFCCard()           ? Link to user (POST /api/nfc-cards/link)
+// - blockNFCCard()          ? Block card (POST /api/nfc-cards/block)
+// - topupNFCCard()          ? Top-up card (POST /api/nfc-cards/topup)
+// - deleteNFCCard()         ? Delete card (DELETE /api/nfc-cards/:cardId)
 class SimpleNFCAdmin {
-  /**
-   * CONSTRUCTOR
-   * Initialize admin server dengan semua dependencies
-   * 
-   * SETUP SEQUENCE:
-   * 1. Create Express app instance
-   * 2. Initialize data stores (Maps)
-   * 3. Setup Express (routes, middleware, security)
-   * 4. Start cleanup timer (hapus offline devices)
-   * 
-   * DATA STORES:
-   * - devices: Map<deviceId, DeviceData>
-   *   Contoh deviceId: "android_1234567890"
-   *   
-   * - pendingUpdates: Map<updateKey, BalanceUpdate>
-   *   Contoh updateKey: "android_123_userId456"
-   *   
-   * - deviceLastSeen: Map<deviceId, Date>
-   *   Track last sync time untuk detect offline
-   *   
-   * - fraudAlerts: Map<alertId, FraudAlert>
-   *   Contoh alertId: "alert_1672531200000_userId123"
-   *   
-   * - fraudStats: {
-   *     totalAlerts: number,
-   *     blockedTransactions: number,
-   *     reviewTransactions: number,
-   *     lastAlert: Date | null
-   *   }
-   */
+  //
+  // CONSTRUCTOR
+  // Initialize admin server dengan semua dependencies
+  //
+  // SETUP SEQUENCE:
+  // 1. Create Express app instance
+  // 2. Initialize data stores (Maps)
+  // 3. Setup Express (routes, middleware, security)
+  // 4. Start cleanup timer (hapus offline devices)
+  //
+  // DATA STORES:
+  // - devices: Map<deviceId, DeviceData>
+  //   Contoh deviceId: "android_1234567890"
+  //
+  // - pendingUpdates: Map<updateKey, BalanceUpdate>
+  //   Contoh updateKey: "android_123_userId456"
+  //
+  // - deviceLastSeen: Map<deviceId, Date>
+  //   Track last sync time untuk detect offline
+  //
+  // - fraudAlerts: Map<alertId, FraudAlert>
+  //   Contoh alertId: "alert_1672531200000_userId123"
+  //
+  // - fraudStats: {
+  //     totalAlerts: number,
+  //     blockedTransactions: number,
+  //     reviewTransactions: number,
+  //     lastAlert: Date | null
+  //   }
   constructor() {
     this.app = express(); // Inisialisasi Express server
     this.devices = new Map(); // Menyimpan data semua device (key: deviceId)
@@ -698,42 +688,41 @@ class SimpleNFCAdmin {
     this.startCleanupTimer(); // Start timer untuk hapus device offline
   }
 
-  /**
-   * setupExpress()
-   * Setup Express server dengan routes, middleware, dan security
-   * 
-   * MIDDLEWARE CHAIN (urutan penting):
-   * 1. Helmet ? Security headers
-   * 2. CORS ? Allow mobile app access
-   * 3. express.json() ? Parse JSON body (max 1MB)
-   * 4. protectAPI ? Validate app key untuk API endpoints
-   * 5. Logging middleware ? Log semua requests
-   * 6. express.static() ? Serve HTML/CSS/JS files
-   * 7. Routes ? API endpoints
-   * 
-   * SECURITY SETUP:
-   * - Helmet.js: HTTP security headers
-   *   * XSS protection
-   *   * MIME type sniffing prevention
-   *   * CSP disabled untuk dashboard
-   * 
-   * - CORS:
-   *   * Allow all origins (mobile app)
-   *   * Methods: GET, POST
-   *   * Headers: Content-Type, x-app-key, user-agent
-   * 
-   * ROUTES SETUP:
-   * 19 API endpoints + 2 system endpoints + 1 dashboard route
-   * Total: 22 routes
-   * 
-   * ENDPOINT CATEGORIES:
-   * - Device Management: 3 endpoints
-   * - Fraud Detection: 4 endpoints
-   * - User Management: 9 endpoints
-   * - NFC Card Management: 6 endpoints
-   * - System: 2 endpoints (ping, health)
-   * - Dashboard: 1 endpoint (/) ? HTML
-   */
+  //
+  // setupExpress()
+  // Setup Express server dengan routes, middleware, dan security
+  //
+  // MIDDLEWARE CHAIN (urutan penting):
+  // 1. Helmet ? Security headers
+  // 2. CORS ? Allow mobile app access
+  // 3. express.json() ? Parse JSON body (max 1MB)
+  // 4. protectAPI ? Validate app key untuk API endpoints
+  // 5. Logging middleware ? Log semua requests
+  // 6. express.static() ? Serve HTML/CSS/JS files
+  // 7. Routes ? API endpoints
+  //
+  // SECURITY SETUP:
+  // - Helmet.js: HTTP security headers
+  //   * XSS protection
+  //   * MIME type sniffing prevention
+  //   * CSP disabled untuk dashboard
+  //
+  // - CORS:
+  //   * Allow all origins (mobile app)
+  //   * Methods: GET, POST
+  //   * Headers: Content-Type, x-app-key, user-agent
+  //
+  // ROUTES SETUP:
+  // 19 API endpoints + 2 system endpoints + 1 dashboard route
+  // Total: 22 routes
+  //
+  // ENDPOINT CATEGORIES:
+  // - Device Management: 3 endpoints
+  // - Fraud Detection: 4 endpoints
+  // - User Management: 9 endpoints
+  // - NFC Card Management: 6 endpoints
+  // - System: 2 endpoints (ping, health)
+  // - Dashboard: 1 endpoint (/) ? HTML
   setupExpress() {
     // Security headers dengan Helmet (proteksi dari serangan web)
     this.app.use(helmet({
@@ -826,59 +815,58 @@ class SimpleNFCAdmin {
     });
   }
 
-  /**
-   * syncDevice(req, res)
-   * ENDPOINT: POST /api/sync-device
-   * FUNGSI: Terima data sync dari Mobile App
-   * 
-   * REQUEST BODY:
-   * {
-   *   device: {
-   *     deviceId: string,      // Unique device ID
-   *     deviceName: string,    // Device name (optional)
-   *     platform: string       // 'android' or 'ios'
-   *   },
-   *   users: User[],           // Array semua users di device
-   *   recentTransactions: Transaction[],  // Transaksi terbaru
-   *   stats: {
-   *     totalUsers: number,
-   *     totalBalance: number
-   *   }
-   * }
-   * 
-   * FLOW:
-   * 1. Validasi deviceId ada
-   * 2. Simpan data device ke Map (update or create)
-   * 3. Update deviceLastSeen untuk tracking online status
-   * 4. Check pending updates (balance top-up dari admin)
-   * 5. Response dengan success + kirim pending updates
-   * 6. Clear pending updates setelah sent
-   * 
-   * RESPONSE:
-   * {
-   *   success: true,
-   *   message: 'Device synced successfully',
-   *   balanceUpdates: BalanceUpdate[],  // Updates to apply
-   *   deviceId: string,
-   *   timestamp: ISO string
-   * }
-   * 
-   * DEVICE DATA STORED:
-   * - deviceId, deviceName, platform
-   * - users array (full user data)
-   * - recentTransactions array
-   * - stats (totalUsers, totalBalance)
-   * - lastSync (ISO string), lastSyncAt (Date object)
-   * - isOnline (boolean)
-   * - ipAddress (untuk tracking)
-   * 
-   * USE CASE:
-   * Mobile app call endpoint ini setiap:
-   * - App startup
-   * - Manual refresh (pull-to-refresh)
-   * - After transaction completed
-   * - Periodic background sync (every 5 min)
-   */
+  //
+  // syncDevice(req, res)
+  // ENDPOINT: POST /api/sync-device
+  // FUNGSI: Terima data sync dari Mobile App
+  //
+  // REQUEST BODY:
+  // {
+  //   device: {
+  //     deviceId: string,      // Unique device ID
+  //     deviceName: string,    // Device name (optional)
+  //     platform: string       // 'android' or 'ios'
+  //   },
+  //   users: User[],           // Array semua users di device
+  //   recentTransactions: Transaction[],  // Transaksi terbaru
+  //   stats: {
+  //     totalUsers: number,
+  //     totalBalance: number
+  //   }
+  // }
+  //
+  // FLOW:
+  // 1. Validasi deviceId ada
+  // 2. Simpan data device ke Map (update or create)
+  // 3. Update deviceLastSeen untuk tracking online status
+  // 4. Check pending updates (balance top-up dari admin)
+  // 5. Response dengan success + kirim pending updates
+  // 6. Clear pending updates setelah sent
+  //
+  // RESPONSE:
+  // {
+  //   success: true,
+  //   message: 'Device synced successfully',
+  //   balanceUpdates: BalanceUpdate[],  // Updates to apply
+  //   deviceId: string,
+  //   timestamp: ISO string
+  // }
+  //
+  // DEVICE DATA STORED:
+  // - deviceId, deviceName, platform
+  // - users array (full user data)
+  // - recentTransactions array
+  // - stats (totalUsers, totalBalance)
+  // - lastSync (ISO string), lastSyncAt (Date object)
+  // - isOnline (boolean)
+  // - ipAddress (untuk tracking)
+  //
+  // USE CASE:
+  // Mobile app call endpoint ini setiap:
+  // - App startup
+  // - Manual refresh (pull-to-refresh)
+  // - After transaction completed
+  // - Periodic background sync (every 5 min)
   async syncDevice(req, res) {
     try {
       const { device, users, recentTransactions, stats } = req.body; // Ambil data dari request
@@ -933,50 +921,49 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * getDevices(req, res)
-   * ENDPOINT: GET /api/devices
-   * FUNGSI: List all devices/users untuk dashboard monitoring
-   * 
-   * STRATEGY (2 SOURCES):
-   * 1. PRIMARY SOURCE: Backend server
-   *    - Call GET /api/debug/users
-   *    - Transform user data ? device format
-   *    - Setiap user = 1 "device" (for dashboard display)
-   *    
-   * 2. FALLBACK SOURCE: Local cache
-   *    - Jika backend error ? use this.devices Map
-   *    - Data dari mobile app sync (syncDevice)
-   *    - Check online status (last sync < 5 min)
-   * 
-   * RESPONSE FORMAT:
-   * [
-   *   {
-   *     deviceId: string,
-   *     deviceName: string,        // username
-   *     platform: 'android',
-   *     totalUsers: 1,             // Always 1 (per user)
-   *     totalBalance: number,
-   *     totalTransactions: number,
-   *     lastSync: ISO string,
-   *     isOnline: boolean,
-   *     ipAddress: string,
-   *     users: User[]              // Full user data
-   *   },
-   *   ...
-   * ]
-   * 
-   * ONLINE STATUS:
-   * - Device online jika sync dalam 5 menit terakhir
-   * - Formula: (now - lastSyncAt) < 300000 ms
-   * 
-   * USE CASE:
-   * Dashboard call endpoint ini untuk:
-   * - Display list users
-   * - Monitor online/offline status
-   * - Show total balance per user
-   * - Admin select user for top-up
-   */
+  //
+  // getDevices(req, res)
+  // ENDPOINT: GET /api/devices
+  // FUNGSI: List all devices/users untuk dashboard monitoring
+  //
+  // STRATEGY (2 SOURCES):
+  // 1. PRIMARY SOURCE: Backend server
+  //    - Call GET /api/debug/users
+  //    - Transform user data ? device format
+  //    - Setiap user = 1 "device" (for dashboard display)
+  //
+  // 2. FALLBACK SOURCE: Local cache
+  //    - Jika backend error ? use this.devices Map
+  //    - Data dari mobile app sync (syncDevice)
+  //    - Check online status (last sync < 5 min)
+  //
+  // RESPONSE FORMAT:
+  // [
+  //   {
+  //     deviceId: string,
+  //     deviceName: string,        // username
+  //     platform: 'android',
+  //     totalUsers: 1,             // Always 1 (per user)
+  //     totalBalance: number,
+  //     totalTransactions: number,
+  //     lastSync: ISO string,
+  //     isOnline: boolean,
+  //     ipAddress: string,
+  //     users: User[]              // Full user data
+  //   },
+  //   ...
+  // ]
+  //
+  // ONLINE STATUS:
+  // - Device online jika sync dalam 5 menit terakhir
+  // - Formula: (now - lastSyncAt) < 300000 ms
+  //
+  // USE CASE:
+  // Dashboard call endpoint ini untuk:
+  // - Display list users
+  // - Monitor online/offline status
+  // - Show total balance per user
+  // - Admin select user for top-up
   async getDevices(req, res) {
     try {
       // AMBIL DATA USER DARI BACKEND (hitung user unik saja)
@@ -1088,73 +1075,72 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * updateBalanceSecure(req, res)
-   * ENDPOINT: POST /api/update-balance
-   * FUNGSI: Admin top-up balance user dengan password protection
-   * 
-   * REQUEST BODY:
-   * {
-   *   deviceId: string,        // Target device ID
-   *   amount: number,          // Jumlah top-up (Rupiah)
-   *   adminPassword: string    // Password admin ('admin123')
-   * }
-   * 
-   * VALIDATION CHECKS:
-   * 1. Admin Password:
-   *    - Must match ADMIN_PASSWORD constant
-   *    - Log unauthorized attempts dengan IP address
-   *    - Response: 401 jika password salah
-   * 
-   * 2. Required Fields:
-   *    - deviceId must exist
-   *    - amount must be > 0
-   *    - Response: 400 jika tidak valid
-   * 
-   * 3. Maximum Limit:
-   *    - Max Rp 500,000 per transaction
-   *    - Anti money laundering & fraud prevention
-   *    - Response: 400 jika melebihi limit
-   * 
-   * 4. Device Existence:
-   *    - Device must exist in cache (dari sync)
-   *    - Must have users array
-   *    - Response: 404 jika device tidak ditemukan
-   * 
-   * FLOW:
-   * 1. Validate password, fields, dan limits
-   * 2. Find device in cache
-   * 3. For each user in device:
-   *    a. Create update key: "{deviceId}_{userId}"
-   *    b. Add to pendingUpdates Map:
-   *       - userId, deviceId
-   *       - newBalance = currentBalance + amount
-   *       - reason = "Admin top-up: +{amount}"
-   *       - timestamp
-   * 4. Wait for next sync dari mobile app
-   * 5. Mobile app receive updates dan apply
-   * 
-   * RESPONSE:
-   * {
-   *   success: true,
-   *   message: 'Berhasil menambah saldo Rp 100,000 untuk 5 users',
-   *   usersUpdated: 5
-   * }
-   * 
-   * SECURITY:
-   * - Password validation (plain text - production harus bcrypt)
-   * - Log all attempts dengan IP
-   * - Maximum limit enforcement
-   * - Client IP tracking
-   * 
-   * USE CASE:
-   * Admin dashboard:
-   * 1. Select device/user
-   * 2. Input amount (e.g., 100000)
-   * 3. Input admin password
-   * 4. Submit top-up
-   * 5. Mobile app sync ? receive update ? apply balance
-   */
+  //
+  // updateBalanceSecure(req, res)
+  // ENDPOINT: POST /api/update-balance
+  // FUNGSI: Admin top-up balance user dengan password protection
+  //
+  // REQUEST BODY:
+  // {
+  //   deviceId: string,        // Target device ID
+  //   amount: number,          // Jumlah top-up (Rupiah)
+  //   adminPassword: string    // Password admin ('admin123')
+  // }
+  //
+  // VALIDATION CHECKS:
+  // 1. Admin Password:
+  //    - Must match ADMIN_PASSWORD constant
+  //    - Log unauthorized attempts dengan IP address
+  //    - Response: 401 jika password salah
+  //
+  // 2. Required Fields:
+  //    - deviceId must exist
+  //    - amount must be > 0
+  //    - Response: 400 jika tidak valid
+  //
+  // 3. Maximum Limit:
+  //    - Max Rp 500,000 per transaction
+  //    - Anti money laundering & fraud prevention
+  //    - Response: 400 jika melebihi limit
+  //
+  // 4. Device Existence:
+  //    - Device must exist in cache (dari sync)
+  //    - Must have users array
+  //    - Response: 404 jika device tidak ditemukan
+  //
+  // FLOW:
+  // 1. Validate password, fields, dan limits
+  // 2. Find device in cache
+  // 3. For each user in device:
+  //    a. Create update key: "{deviceId}_{userId}"
+  //    b. Add to pendingUpdates Map:
+  //       - userId, deviceId
+  //       - newBalance = currentBalance + amount
+  //       - reason = "Admin top-up: +{amount}"
+  //       - timestamp
+  // 4. Wait for next sync dari mobile app
+  // 5. Mobile app receive updates dan apply
+  //
+  // RESPONSE:
+  // {
+  //   success: true,
+  //   message: 'Berhasil menambah saldo Rp 100,000 untuk 5 users',
+  //   usersUpdated: 5
+  // }
+  //
+  // SECURITY:
+  // - Password validation (plain text - production harus bcrypt)
+  // - Log all attempts dengan IP
+  // - Maximum limit enforcement
+  // - Client IP tracking
+  //
+  // USE CASE:
+  // Admin dashboard:
+  // 1. Select device/user
+  // 2. Input amount (e.g., 100000)
+  // 3. Input admin password
+  // 4. Submit top-up
+  // 5. Mobile app sync ? receive update ? apply balance
   async updateBalanceSecure(req, res) {
     try {
       const { deviceId, amount, adminPassword } = req.body; // Ambil data dari request
@@ -1249,33 +1235,31 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * HELPER FUNCTIONS
-   * ---------------------------------------------------------------------
-   */
+  //
+  // HELPER FUNCTIONS
+  // ---------------------------------------------------------------------
   
-  /**
-   * getPendingUpdates(deviceId)
-   * FUNGSI: Ambil semua pending balance updates untuk device tertentu
-   * 
-   * PARAMETER:
-   * - deviceId: string ? Target device ID
-   * 
-   * RETURN: BalanceUpdate[]
-   * Array of pending updates untuk device ini
-   * 
-   * FORMAT UPDATE:
-   * {
-   *   deviceId: string,
-   *   userId: number,
-   *   newBalance: number,       // Balance baru (old + amount)
-   *   reason: string,           // e.g., "Admin top-up: +50000"
-   *   timestamp: ISO string
-   * }
-   * 
-   * USE CASE:
-   * Called di syncDevice() untuk kirim updates ke mobile app
-   */
+  //
+  // getPendingUpdates(deviceId)
+  // FUNGSI: Ambil semua pending balance updates untuk device tertentu
+  //
+  // PARAMETER:
+  // - deviceId: string ? Target device ID
+  //
+  // RETURN: BalanceUpdate[]
+  // Array of pending updates untuk device ini
+  //
+  // FORMAT UPDATE:
+  // {
+  //   deviceId: string,
+  //   userId: number,
+  //   newBalance: number,       // Balance baru (old + amount)
+  //   reason: string,           // e.g., "Admin top-up: +50000"
+  //   timestamp: ISO string
+  // }
+  //
+  // USE CASE:
+  // Called di syncDevice() untuk kirim updates ke mobile app
   getPendingUpdates(deviceId) {
     const updates = []; // Array untuk menyimpan updates
     // Loop semua pending updates
@@ -1287,26 +1271,25 @@ class SimpleNFCAdmin {
     return updates; // Return array updates
   }
 
-  /**
-   * clearPendingUpdates(deviceId)
-   * FUNGSI: Hapus semua pending updates setelah sent ke device
-   * 
-   * PARAMETER:
-   * - deviceId: string ? Target device ID
-   * 
-   * FLOW:
-   * 1. Loop semua pendingUpdates Map entries
-   * 2. Match deviceId
-   * 3. Delete matched entries
-   * 
-   * CALLED BY:
-   * syncDevice() setelah kirim updates ke mobile app
-   * 
-   * WHY DELETE:
-   * - Prevent duplicate updates
-   * - Keep memory clean
-   * - Updates sudah diterima mobile app
-   */
+  //
+  // clearPendingUpdates(deviceId)
+  // FUNGSI: Hapus semua pending updates setelah sent ke device
+  //
+  // PARAMETER:
+  // - deviceId: string ? Target device ID
+  //
+  // FLOW:
+  // 1. Loop semua pendingUpdates Map entries
+  // 2. Match deviceId
+  // 3. Delete matched entries
+  //
+  // CALLED BY:
+  // syncDevice() setelah kirim updates ke mobile app
+  //
+  // WHY DELETE:
+  // - Prevent duplicate updates
+  // - Keep memory clean
+  // - Updates sudah diterima mobile app
   clearPendingUpdates(deviceId) {
     // Loop semua pending updates
     for (const [key, update] of this.pendingUpdates.entries()) {
@@ -1316,31 +1299,30 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * startCleanupTimer()
-   * FUNGSI: Auto-cleanup devices yang sudah lama offline
-   * 
-   * INTERVAL: 5 minutes (300000 ms)
-   * 
-   * CLEANUP RULE:
-   * - Device dianggap inactive jika tidak sync lebih dari 10 menit
-   * - Formula: (now - device.lastSyncAt) > 600000 ms
-   * 
-   * FLOW:
-   * 1. Check semua devices in Map
-   * 2. Calculate last sync time difference
-   * 3. Delete device jika > 10 min offline
-   * 4. Log removal untuk monitoring
-   * 
-   * WHY CLEANUP:
-   * - Free memory dari old devices
-   * - Remove stale data
-   * - Dashboard show only active devices
-   * - Prevent Map from growing too large
-   * 
-   * CALLED BY:
-   * constructor() saat server start (1x setup)
-   */
+  //
+  // startCleanupTimer()
+  // FUNGSI: Auto-cleanup devices yang sudah lama offline
+  //
+  // INTERVAL: 5 minutes (300000 ms)
+  //
+  // CLEANUP RULE:
+  // - Device dianggap inactive jika tidak sync lebih dari 10 menit
+  // - Formula: (now - device.lastSyncAt) > 600000 ms
+  //
+  // FLOW:
+  // 1. Check semua devices in Map
+  // 2. Calculate last sync time difference
+  // 3. Delete device jika > 10 min offline
+  // 4. Log removal untuk monitoring
+  //
+  // WHY CLEANUP:
+  // - Free memory dari old devices
+  // - Remove stale data
+  // - Dashboard show only active devices
+  // - Prevent Map from growing too large
+  //
+  // CALLED BY:
+  // constructor() saat server start (1x setup)
   startCleanupTimer() {
     setInterval(() => { // Jalankan tiap 5 menit
       const now = new Date(); // Waktu sekarang
@@ -1354,59 +1336,57 @@ class SimpleNFCAdmin {
     }, 300000); // Check tiap 5 menit = 300000 ms
   }
 
-  /**
-   * ---------------------------------------------------------------------
-   * FRAUD DETECTION ENDPOINTS
-   * ---------------------------------------------------------------------
-   */
+  //
+  // ---------------------------------------------------------------------
+  // FRAUD DETECTION ENDPOINTS
+  // ---------------------------------------------------------------------
   
-  /**
-   * handleFraudAlert(req, res)
-   * ENDPOINT: POST /api/fraud-alert
-   * FUNGSI: Receive fraud alerts dari AI detection di mobile app
-   * 
-   * REQUEST BODY:
-   * {
-   *   device: {
-   *     deviceId: string,
-   *     deviceName: string
-   *   },
-   *   fraudDetection: {
-   *     isBlocked: boolean,       // Transaksi diblokir atau tidak
-   *     riskScore: number,        // Nilai Z-Score aktual. Sentinel -1 = s=0, X?µ.
-   *     riskLevel: string,        // 'NORMAL', 'SUSPICIOUS', 'ANOMALY'
-   *     reasons: string[],        // Array alasan fraud
-   *     transaction: {
-   *       userId: number,
-   *       amount: number,
-   *       timestamp: ISO string
-   *     }
-   *   }
-   * }
-   * 
-   * FLOW:
-   * 1. Validate fraud data ada
-   * 2. Extract fraud info (riskScore, reasons, etc.)
-   * 3. Create unique alertId: "alert_{timestamp}_{userId}"
-   * 4. Store alert in fraudAlerts Map
-   * 5. Update fraudStats:
-   *    - Increment totalAlerts
-   *    - Increment blockedTransactions or reviewTransactions
-   *    - Update lastAlert timestamp
-   * 6. Log alert untuk monitoring
-   * 7. Response success
-   * 
-   * ALERT STORAGE:
-   * Key: alertId (e.g., "alert_1672531200000_123")
-   * Value: {
-   *   alertId, deviceId, isBlocked, riskScore, 
-   *   riskLevel, reasons, userId, amount, timestamp
-   * }
-   * 
-   * USE CASE:
-   * Mobile app AI detect fraud ? send alert ke admin server
-   * ? Dashboard show alert ? Admin review ? Take action
-   */
+  //
+  // handleFraudAlert(req, res)
+  // ENDPOINT: POST /api/fraud-alert
+  // FUNGSI: Receive fraud alerts dari AI detection di mobile app
+  //
+  // REQUEST BODY:
+  // {
+  //   device: {
+  //     deviceId: string,
+  //     deviceName: string
+  //   },
+  //   fraudDetection: {
+  //     isBlocked: boolean,       // Transaksi diblokir atau tidak
+  //     riskScore: number,        // Nilai Z-Score aktual. Sentinel -1 = s=0, X?ï¿½.
+  //     riskLevel: string,        // 'NORMAL', 'SUSPICIOUS', 'ANOMALY'
+  //     reasons: string[],        // Array alasan fraud
+  //     transaction: {
+  //       userId: number,
+  //       amount: number,
+  //       timestamp: ISO string
+  //     }
+  //   }
+  // }
+  //
+  // FLOW:
+  // 1. Validate fraud data ada
+  // 2. Extract fraud info (riskScore, reasons, etc.)
+  // 3. Create unique alertId: "alert_{timestamp}_{userId}"
+  // 4. Store alert in fraudAlerts Map
+  // 5. Update fraudStats:
+  //    - Increment totalAlerts
+  //    - Increment blockedTransactions or reviewTransactions
+  //    - Update lastAlert timestamp
+  // 6. Log alert untuk monitoring
+  // 7. Response success
+  //
+  // ALERT STORAGE:
+  // Key: alertId (e.g., "alert_1672531200000_123")
+  // Value: {
+  //   alertId, deviceId, isBlocked, riskScore,
+  //   riskLevel, reasons, userId, amount, timestamp
+  // }
+  //
+  // USE CASE:
+  // Mobile app AI detect fraud ? send alert ke admin server
+  // ? Dashboard show alert ? Admin review ? Take action
   async handleFraudAlert(req, res) {
     try {
       const { device, fraudDetection } = req.body; // Ambil data fraud dari HP
@@ -1468,29 +1448,28 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * getFraudAlerts(req, res)
-   * ENDPOINT: GET /api/fraud-alerts
-   * FUNGSI: Ambil fraud alerts untuk dashboard monitoring
-   * 
-   * QUERY PARAMS: None
-   * 
-   * RESPONSE:
-   * {
-   *   success: true,
-   *   alerts: FraudAlert[],     // Max 50 alerts, sorted newest first
-   *   stats: {
-   *     totalAlerts: number,
-   *     blockedTransactions: number,
-   *     reviewTransactions: number,
-   *     lastAlert: Date | null
-   *   },
-   *   timestamp: ISO string
-   * }
-   * 
-   * SORTING: Terbaru di atas (descending by timestamp)
-   * LIMIT: 50 alerts (avoid overload)
-   */
+  //
+  // getFraudAlerts(req, res)
+  // ENDPOINT: GET /api/fraud-alerts
+  // FUNGSI: Ambil fraud alerts untuk dashboard monitoring
+  //
+  // QUERY PARAMS: None
+  //
+  // RESPONSE:
+  // {
+  //   success: true,
+  //   alerts: FraudAlert[],     // Max 50 alerts, sorted newest first
+  //   stats: {
+  //     totalAlerts: number,
+  //     blockedTransactions: number,
+  //     reviewTransactions: number,
+  //     lastAlert: Date | null
+  //   },
+  //   timestamp: ISO string
+  // }
+  //
+  // SORTING: Terbaru di atas (descending by timestamp)
+  // LIMIT: 50 alerts (avoid overload)
   async getFraudAlerts(req, res) {
     try {
       // Ambil semua alerts, sort terbaru di atas, ambil 50 teratas
@@ -1576,56 +1555,54 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * ---------------------------------------------------------------------
-   * USER MANAGEMENT ENDPOINTS
-   * ---------------------------------------------------------------------
-   * Endpoints untuk CRUD operations user via backend proxy
-   * All endpoints forward request ke backend server (port 4000)
-   * 
-   * USER ENDPOINTS LIST:
-   * - GET    /api/users         ? List all users
-   * - POST   /api/users         ? Create new user
-   * - PUT    /api/users/:id     ? Update user data
-   * - DELETE /api/users/:id     ? Delete user
-   * - POST   /api/block-user    ? Block user account
-   * - POST   /api/unblock-user  ? Unblock user account
-   * - POST   /api/bulk-topup    ? Bulk top-up multiple users
-   * - POST   /api/reset-balance ? Reset user balance to 0
-   * 
-   * DATA SOURCE STRATEGY:
-   * 1. PRIMARY: Backend database (via HTTP request)
-   * 2. FALLBACK: Device cache (jika backend offline)
-   */
+  //
+  // ---------------------------------------------------------------------
+  // USER MANAGEMENT ENDPOINTS
+  // ---------------------------------------------------------------------
+  // Endpoints untuk CRUD operations user via backend proxy
+  // All endpoints forward request ke backend server (port 4000)
+  //
+  // USER ENDPOINTS LIST:
+  // - GET    /api/users         ? List all users
+  // - POST   /api/users         ? Create new user
+  // - PUT    /api/users/:id     ? Update user data
+  // - DELETE /api/users/:id     ? Delete user
+  // - POST   /api/block-user    ? Block user account
+  // - POST   /api/unblock-user  ? Unblock user account
+  // - POST   /api/bulk-topup    ? Bulk top-up multiple users
+  // - POST   /api/reset-balance ? Reset user balance to 0
+  //
+  // DATA SOURCE STRATEGY:
+  // 1. PRIMARY: Backend database (via HTTP request)
+  // 2. FALLBACK: Device cache (jika backend offline)
 
-  /**
-   * getUsersEndpoint(req, res)
-   * ENDPOINT: GET /api/users
-   * FUNGSI: List all users untuk dashboard table
-   * 
-   * DATA SOURCE:
-   * 1. PRIMARY: Backend GET /api/debug/users
-   *    - Real data from database
-   *    - Include balance, isActive, timestamps
-   *    
-   * 2. FALLBACK: Device cache (this.devices Map)
-   *    - Data dari mobile app sync
-   *    - Deduplicate by user.id
-   *    
-   * RESPONSE:
-   * {
-   *   success: true,
-   *   users: User[],
-   *   total: number
-   * }
-   * 
-   * USER OBJECT:
-   * {
-   *   id, username, name, email, phone,
-   *   balance, isActive, status,
-   *   deviceId, lastSeen, createdAt, updatedAt
-   * }
-   */
+  //
+  // getUsersEndpoint(req, res)
+  // ENDPOINT: GET /api/users
+  // FUNGSI: List all users untuk dashboard table
+  //
+  // DATA SOURCE:
+  // 1. PRIMARY: Backend GET /api/debug/users
+  //    - Real data from database
+  //    - Include balance, isActive, timestamps
+  //
+  // 2. FALLBACK: Device cache (this.devices Map)
+  //    - Data dari mobile app sync
+  //    - Deduplicate by user.id
+  //
+  // RESPONSE:
+  // {
+  //   success: true,
+  //   users: User[],
+  //   total: number
+  // }
+  //
+  // USER OBJECT:
+  // {
+  //   id, username, name, email, phone,
+  //   balance, isActive, status,
+  //   deviceId, lastSeen, createdAt, updatedAt
+  // }
   async getUsersEndpoint(req, res) {
     try {
       // GUNAKAN HTTP MODULE BAWAAN NODE.JS (bukan fetch)
@@ -2437,43 +2414,41 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * ---------------------------------------------------------------------
-   * NFC CARD MANAGEMENT ENDPOINTS
-   * ---------------------------------------------------------------------
-   * Endpoints untuk manage NFC cards via backend proxy
-   * 
-   * CARD POLICY: 1-card-per-user
-   * - Setiap user hanya bisa punya 1 active card
-   * - Card bisa: ACTIVE, BLOCKED, LOST, EXPIRED
-   * 
-   * NFC CARD ENDPOINTS:
-   * - GET    /api/nfc-cards           ? List all cards
-   * - POST   /api/nfc-cards/register  ? Register new card
-   * - POST   /api/nfc-cards/link      ? Link card to user
-   * - POST   /api/nfc-cards/block     ? Block card
-   * - POST   /api/nfc-cards/topup     ? Top-up card balance
-   * - DELETE /api/nfc-cards/:cardId   ? Delete card (admin only)
-   * 
-   * CARD DATA FLOW:
-   * 1. Physical NFC card scanned di mobile app
-   * 2. Get card UID (7 bytes)
-   * 3. Register card via admin dashboard or mobile app
-   * 4. Link card to user account
-   * 5. Card ready untuk payment transactions
-   * 
-   * SECURITY:
-   * - Admin password required untuk delete
-   * - Card status validation (tidak bisa top-up BLOCKED card)
-   * - 1-card-per-user enforcement
-   */
+  //
+  // ---------------------------------------------------------------------
+  // NFC CARD MANAGEMENT ENDPOINTS
+  // ---------------------------------------------------------------------
+  // Endpoints untuk manage NFC cards via backend proxy
+  //
+  // CARD POLICY: 1-card-per-user
+  // - Setiap user hanya bisa punya 1 active card
+  // - Card bisa: ACTIVE, BLOCKED, LOST, EXPIRED
+  //
+  // NFC CARD ENDPOINTS:
+  // - GET    /api/nfc-cards           ? List all cards
+  // - POST   /api/nfc-cards/register  ? Register new card
+  // - POST   /api/nfc-cards/link      ? Link card to user
+  // - POST   /api/nfc-cards/block     ? Block card
+  // - POST   /api/nfc-cards/topup     ? Top-up card balance
+  // - DELETE /api/nfc-cards/:cardId   ? Delete card (admin only)
+  //
+  // CARD DATA FLOW:
+  // 1. Physical NFC card scanned di mobile app
+  // 2. Get card UID (7 bytes)
+  // 3. Register card via admin dashboard or mobile app
+  // 4. Link card to user account
+  // 5. Card ready untuk payment transactions
+  //
+  // SECURITY:
+  // - Admin password required untuk delete
+  // - Card status validation (tidak bisa top-up BLOCKED card)
+  // - 1-card-per-user enforcement
 
-  /**
-   * getNFCCards(req, res)
-   * ENDPOINT: GET /api/nfc-cards
-   * FUNGSI: List all NFC cards
-   * Proxy ke backend GET /api/nfc-cards/list
-   */
+  //
+  // getNFCCards(req, res)
+  // ENDPOINT: GET /api/nfc-cards
+  // FUNGSI: List all NFC cards
+  // Proxy ke backend GET /api/nfc-cards/list
   async getNFCCards(req, res) {
     try {
       const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
@@ -2713,39 +2688,38 @@ class SimpleNFCAdmin {
     }
   }
 
-  /**
-   * start()
-   * FUNGSI: Start Express server dan listen on PORT
-   * 
-   * STARTUP INFO:
-   * - Server listen di port 3000
-   * - Display dashboard URL
-   * - Display backend connection info
-   * - Display ngrok URL untuk mobile app
-   * - Display usage instructions
-   * 
-   * STARTUP SEQUENCE:
-   * 1. app.listen(PORT) ? Start HTTP server
-   * 2. Start cleanup timer (already called in constructor)
-   * 3. Display startup info ke console
-   * 
-   * CONSOLE OUTPUT:
-   * ?? Simple NFC Payment Admin started!
-   * ?? Dashboard: http://localhost:3000
-   * 
-   * ?? Backend Connection:
-   *    ?? Ngrok URL: https://xxx.ngrok-free.dev
-   * 
-   * ?? Cara menggunakan:
-   *    1. Pastikan ngrok tunnel aktif
-   *    2. Aplikasi Android connect ke ngrok URL
-   *    3. Monitor dari dashboard
-   * 
-   * ?? Setup:
-   *    - Backend: node server.js (port 4000)
-   *    - Ngrok: ngrok http 4000
-   *    - Admin: node simple-admin.js (port 3000)
-   */
+  //
+  // start()
+  // FUNGSI: Start Express server dan listen on PORT
+  //
+  // STARTUP INFO:
+  // - Server listen di port 3000
+  // - Display dashboard URL
+  // - Display backend connection info
+  // - Display ngrok URL untuk mobile app
+  // - Display usage instructions
+  //
+  // STARTUP SEQUENCE:
+  // 1. app.listen(PORT) ? Start HTTP server
+  // 2. Start cleanup timer (already called in constructor)
+  // 3. Display startup info ke console
+  //
+  // CONSOLE OUTPUT:
+  // ?? Simple NFC Payment Admin started!
+  // ?? Dashboard: http://localhost:3000
+  //
+  // ?? Backend Connection:
+  //    ?? Ngrok URL: https://xxx.ngrok-free.dev
+  //
+  // ?? Cara menggunakan:
+  //    1. Pastikan ngrok tunnel aktif
+  //    2. Aplikasi Android connect ke ngrok URL
+  //    3. Monitor dari dashboard
+  //
+  // ?? Setup:
+  //    - Backend: node server.js (port 4000)
+  //    - Ngrok: ngrok http 4000
+  //    - Admin: node simple-admin.js (port 3000)
   start() {
     this.app.listen(PORT, () => { // Listen di port 3000 dan mulai menerima koneksi
       console.log('?? Simple NFC Payment Admin started!');
@@ -2765,7 +2739,7 @@ class SimpleNFCAdmin {
       console.log('   - Admin: node simple-admin.js (port 3000)'); // Perintah menjalankan admin
     });
 
-    // Cleanup timer sudah distart di constructor — tidak perlu dipanggil lagi di sini
+    // Cleanup timer sudah distart di constructor ï¿½ tidak perlu dipanggil lagi di sini
   }
 }
 

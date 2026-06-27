@@ -39,7 +39,7 @@ const app = express(); // Buat Express app instance untuk routing
 const server = http.createServer(app); // Buat HTTP server yang wrap Express (untuk Socket.IO)
 const prisma = new PrismaClient(); // Buat Prisma client untuk akses database
 
-/* ------------------------- 🔧 CONFIGURATIONS ------------------------- */
+// ------------------------- 🔧 CONFIGURATIONS -------------------------
 const PORT = Number(process.env.PORT || 4000); // Port server dari .env, default 4000
 const HOST = process.env.HOST || '0.0.0.0'; // Host binding: 0.0.0.0 = listen all interfaces
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000); // Rate limit window: 15 menit (ms)
@@ -63,7 +63,7 @@ const io = socketIo(server, { // Buat Socket.IO instance dari HTTP server
 // Penting untuk rate limiting & logging yang akurat
 app.set('trust proxy', 1); // 1 = trust first proxy hop
 
-/* ------------------------- 🧱 MIDDLEWARES ------------------------- */
+// ------------------------- 🧱 MIDDLEWARES -------------------------
 // STEP 9: Apply middlewares (dieksekusi untuk setiap request yang masuk)
 // Middleware dijalankan secara berurutan dari atas ke bawah
 
@@ -124,7 +124,7 @@ app.use((req, res, next) => {
   next(); // Lanjut ke middleware/route handler berikutnya
 });
 
-/* ------------------------- 🩺 HEALTH CHECK ------------------------- */
+// ------------------------- 🩺 HEALTH CHECK -------------------------
 // STEP 10: Health check endpoint
 // Endpoint untuk cek apakah server dan database berjalan dengan baik
 // Diakses oleh: mobile app (untuk detect server), monitoring tools, admin dashboard
@@ -187,7 +187,7 @@ app.get(['/health', '/api/health'], async (req, res) => {
   }
 });
 
-/* ------------------------- 📋 API ROOT ENDPOINT ------------------------- */
+// ------------------------- 📋 API ROOT ENDPOINT -------------------------
 // STEP 11: API root endpoint - Dokumentasi API yang tersedia
 // GET /api -> Return list semua endpoint yang tersedia (API directory)
 app.get('/api', (req, res) => {
@@ -220,7 +220,7 @@ app.get('/api', (req, res) => {
   });
 });
 
-/* ------------------------- 👤 PUBLIC USER ENDPOINTS (NO AUTH) ------------------------- */
+// ------------------------- 👤 PUBLIC USER ENDPOINTS (NO AUTH) -------------------------
 // STEP 12: Get current user info (untuk sync balance dari mobile app)
 // Endpoint PUBLIC (tanpa JWT auth) agar mobile app bisa sync balance dengan mudah
 // GET /api/users/me -> Return user info berdasarkan userId
@@ -401,7 +401,7 @@ app.get('/api/users/:id/public', async (req, res) => {
   }
 });
 
-/* ------------------------- 🧭 ROUTES ------------------------- */
+// ------------------------- 🧭 ROUTES -------------------------
 // STEP 16: Setup routes & static files
 // Mount semua route modules ke Express app
 
@@ -495,7 +495,7 @@ app.get('/api/debug/users', async (req, res) => {
 });
 
 
-/* ------------------------- ⚖️ ADMIN ENDPOINTS ------------------------- */
+// ------------------------- ⚖️ ADMIN ENDPOINTS -------------------------
 // STEP 19: Update balance (top-up saldo) untuk user berdasarkan deviceId/userId
 // Endpoint untuk admin top-up saldo user dari admin dashboard
 // POST /api/update-balance -> Top-up saldo user
@@ -606,7 +606,7 @@ app.delete('/api/delete-device/:deviceId', async (req, res) => {
   }
 });
 
-/* ------------------------- ⚡ SOCKET.IO ------------------------- */
+// ------------------------- ⚡ SOCKET.IO -------------------------
 // STEP 21: Setup Socket.IO untuk real-time updates
 // Socket.IO memungkinkan push notification ke admin dashboard dan mobile app
 
@@ -632,12 +632,12 @@ io.on('connection', (socket) => {
   });
 });
 
-/* ------------------------- ⚙️ ERROR HANDLING ------------------------- */
+// ------------------------- ⚙️ ERROR HANDLING -------------------------
 // STEP 22: Apply error handler middleware
 // Middleware ini akan catch semua error yang tidak tertangkap di endpoint
 app.use(errorHandler);
 
-/* ------------------------- 🌐 NETWORK INFO ------------------------- */
+// ------------------------- 🌐 NETWORK INFO -------------------------
 // STEP 23: Helper function untuk get LAN IP addresses
 // Fungsi ini digunakan untuk menampilkan IP laptop ke console saat server start
 // Berguna untuk tahu IP mana yang harus diakses dari Android
@@ -660,7 +660,7 @@ function getLanIPs() {
   return list; // Return array IP addresses
 }
 
-/* ------------------------- 🚀 SERVER START ------------------------- */
+// ------------------------- 🚀 SERVER START -------------------------
 // STEP 24: Start server dengan async IIFE (Immediately Invoked Function Expression)
 // Fungsi async diperlukan karena kita pakai await untuk Prisma connection
 (async () => {
@@ -705,7 +705,7 @@ function getLanIPs() {
   }
 })();
 
-/* ------------------------- 🧹 GRACEFUL SHUTDOWN ------------------------- */
+// ------------------------- 🧹 GRACEFUL SHUTDOWN -------------------------
 // STEP 25: Setup graceful shutdown handlers
 // Fungsi ini memastikan server shutdown dengan benar (disconnect database, dll)
 // Terjadi saat process menerima signal SIGINT (Ctrl+C) atau SIGTERM (kill)

@@ -1,112 +1,111 @@
-// App.tsx
-/* ==================================================================================
- * 🎉 TITIK MASUK UTAMA APLIKASI
- * ==================================================================================
- *
- * Tujuan:
- * Komponen root untuk aplikasi mobile NFC Payment System.
- * File ini menangani navigasi, autentikasi, inisialisasi awal, dan pengelolaan sesi.
- * Dengan kata lain, App.tsx bertindak sebagai pengatur utama alur aplikasi.
- *
- * Alur saat aplikasi dijalankan:
- * ┌────────────────────────────────────────────────────────────────────┐
- * │ URUTAN STARTUP APLIKASI                                            │
- * │                                                                    │
- * │ 1. Menampilkan loading screen                                      │
- * │ 2. Inisialisasi database lokal                                     │
- * │ 3. Inisialisasi Backend API (restore token dan base URL)           │
- * │ 4. Cek kesehatan backend secara non-blocking                       │
- * │ 5. Registrasi device ke sistem admin                               │
- * │ 6. Cek status autentikasi dari AsyncStorage                        │
- * │ 7. Menentukan layar awal:                                          │
- * │    - Jika sudah login -> Dashboard                                 │
- * │    - Jika belum login -> Login                                     │
- * │                                                                    │
- * │ Proteksi timeout:                                                  │
- * │ - Jika loading terlalu lama, aplikasi dipaksa pindah ke Login      │
- * └────────────────────────────────────────────────────────────────────┘
- *
- * Struktur navigasi:
- * ┌────────────────────────────────────────────────────────────────────┐
- * │                         ALUR NAVIGASI LAYAR                        │
- * ├────────────────────────────────────────────────────────────────────┤
- * │                                                                    │
- * │  LoginScreen <-> RegisterScreen                                    │
- * │       |                                                            │
- * │       v                                                            │
- * │  DashboardScreen (pusat menu utama)                                │
- * │       |- NFCScreen (proses pembayaran merchant)                    │
- * │       |- RegisterCardScreen (daftarkan kartu NFC)                  │
- * │       '- MyCardsScreen (kelola kartu pengguna)                     │
- * │                                                                    │
- * └────────────────────────────────────────────────────────────────────┘
- *
- * Fitur utama:
- *
- * 1. Navigasi stack:
- *    - Menggunakan React Navigation Stack Navigator
- *    - Header bawaan dimatikan agar tiap layar bebas memakai UI sendiri
- *    - Gesture navigation aktif
- *    - Animasi perpindahan layar tetap aktif agar transisi halus
- *
- * 2. Manajemen status autentikasi:
- *    - Tiga state utama: 'loading' | 'signedIn' | 'signedOut'
- *    - Sesi disimpan persisten melalui AsyncStorage
- *    - Saat aplikasi dibuka ulang, sesi akan dicoba dipulihkan otomatis
- *    - Logout membersihkan state dan data sesi yang tersimpan
- *
- * 3. Urutan inisialisasi:
- *    - Database lokal disiapkan lebih dulu
- *    - Service backend diinisialisasi
- *    - Health check dijalankan tanpa memblokir seluruh aplikasi
- *    - Device didaftarkan untuk kebutuhan monitoring admin
- *    - Status login pengguna diverifikasi di tahap akhir
- *
- * 4. Manajemen lifecycle aplikasi:
- *    - Memantau perubahan status aplikasi (active/background)
- *    - Saat aplikasi aktif kembali, status device disinkronkan ulang
- *    - Resource NFC dibersihkan saat aplikasi tidak lagi digunakan
- *
- * 5. Penanganan error:
- *    - Ada proteksi timeout agar loading tidak menggantung terlalu lama
- *    - Tersedia layar error sederhana dengan opsi coba lagi
- *    - Beberapa langkah dibuat non-blocking agar aplikasi tetap bisa masuk
- *      ke mode terbatas saat backend sedang offline
- *
- * 6. Pelacakan device:
- *    - Membuat atau memulihkan device ID unik
- *    - Menyimpan informasi platform (Android/iOS)
- *    - Mengirim data device ke backend admin
- *    - Menyertakan versi aplikasi untuk kebutuhan monitoring
- *
- * Variabel state penting:
- * - authState: Status autentikasi saat ini
- * - currentUser: Data user yang sedang login, atau null jika belum login
- * - error: Pesan error yang ditampilkan ke pengguna jika ada kegagalan
- * - navigationRef: Referensi navigasi untuk perpindahan layar secara programatik
- *
- * Fungsi utama:
- * - initializeApp(): Menjalankan seluruh urutan inisialisasi aplikasi
- * - checkAuthState(): Memeriksa dan memulihkan sesi login dari AsyncStorage
- * - handleLogin(): Menyimpan sesi dan memindahkan user ke Dashboard
- * - handleLogout(): Menghapus sesi dan mengembalikan user ke Login
- * - navigateToScreen(): Helper untuk navigasi antar layar
- * - handleAppStateChange(): Sinkronisasi status device saat app aktif kembali
- *
- * Tipe TypeScript:
- * - RootStackParamList: Definisi parameter untuk setiap screen navigasi
- * - AuthState: Union type untuk status autentikasi
- * - AppScreen: Daftar nama layar internal untuk helper navigasi
- * - AppUser: Struktur data user yang dipakai di level aplikasi
- *
- * Dependensi utama:
- * - React Navigation: Sistem navigasi antar layar
- * - AsyncStorage: Penyimpanan data lokal yang persisten
- * - Expo: Framework aplikasi mobile
- * - SafeAreaProvider: Menjaga UI aman dari notch dan status bar
- *
- * ==================================================================================
- */
+﻿// App.tsx
+// ==================================================================================
+// 🎉 TITIK MASUK UTAMA APLIKASI
+// ==================================================================================
+//
+// Tujuan:
+// Komponen root untuk aplikasi mobile NFC Payment System.
+// File ini menangani navigasi, autentikasi, inisialisasi awal, dan pengelolaan sesi.
+// Dengan kata lain, App.tsx bertindak sebagai pengatur utama alur aplikasi.
+//
+// Alur saat aplikasi dijalankan:
+// ┌────────────────────────────────────────────────────────────────────┐
+// │ URUTAN STARTUP APLIKASI                                            │
+// │                                                                    │
+// │ 1. Menampilkan loading screen                                      │
+// │ 2. Inisialisasi database lokal                                     │
+// │ 3. Inisialisasi Backend API (restore token dan base URL)           │
+// │ 4. Cek kesehatan backend secara non-blocking                       │
+// │ 5. Registrasi device ke sistem admin                               │
+// │ 6. Cek status autentikasi dari AsyncStorage                        │
+// │ 7. Menentukan layar awal:                                          │
+// │    - Jika sudah login -> Dashboard                                 │
+// │    - Jika belum login -> Login                                     │
+// │                                                                    │
+// │ Proteksi timeout:                                                  │
+// │ - Jika loading terlalu lama, aplikasi dipaksa pindah ke Login      │
+// └────────────────────────────────────────────────────────────────────┘
+//
+// Struktur navigasi:
+// ┌────────────────────────────────────────────────────────────────────┐
+// │                         ALUR NAVIGASI LAYAR                        │
+// ├────────────────────────────────────────────────────────────────────┤
+// │                                                                    │
+// │  LoginScreen <-> RegisterScreen                                    │
+// │       |                                                            │
+// │       v                                                            │
+// │  DashboardScreen (pusat menu utama)                                │
+// │       |- NFCScreen (proses pembayaran merchant)                    │
+// │       |- RegisterCardScreen (daftarkan kartu NFC)                  │
+// │       '- MyCardsScreen (kelola kartu pengguna)                     │
+// │                                                                    │
+// └────────────────────────────────────────────────────────────────────┘
+//
+// Fitur utama:
+//
+// 1. Navigasi stack:
+//    - Menggunakan React Navigation Stack Navigator
+//    - Header bawaan dimatikan agar tiap layar bebas memakai UI sendiri
+//    - Gesture navigation aktif
+//    - Animasi perpindahan layar tetap aktif agar transisi halus
+//
+// 2. Manajemen status autentikasi:
+//    - Tiga state utama: 'loading' | 'signedIn' | 'signedOut'
+//    - Sesi disimpan persisten melalui AsyncStorage
+//    - Saat aplikasi dibuka ulang, sesi akan dicoba dipulihkan otomatis
+//    - Logout membersihkan state dan data sesi yang tersimpan
+//
+// 3. Urutan inisialisasi:
+//    - Database lokal disiapkan lebih dulu
+//    - Service backend diinisialisasi
+//    - Health check dijalankan tanpa memblokir seluruh aplikasi
+//    - Device didaftarkan untuk kebutuhan monitoring admin
+//    - Status login pengguna diverifikasi di tahap akhir
+//
+// 4. Manajemen lifecycle aplikasi:
+//    - Memantau perubahan status aplikasi (active/background)
+//    - Saat aplikasi aktif kembali, status device disinkronkan ulang
+//    - Resource NFC dibersihkan saat aplikasi tidak lagi digunakan
+//
+// 5. Penanganan error:
+//    - Ada proteksi timeout agar loading tidak menggantung terlalu lama
+//    - Tersedia layar error sederhana dengan opsi coba lagi
+//    - Beberapa langkah dibuat non-blocking agar aplikasi tetap bisa masuk
+//      ke mode terbatas saat backend sedang offline
+//
+// 6. Pelacakan device:
+//    - Membuat atau memulihkan device ID unik
+//    - Menyimpan informasi platform (Android/iOS)
+//    - Mengirim data device ke backend admin
+//    - Menyertakan versi aplikasi untuk kebutuhan monitoring
+//
+// Variabel state penting:
+// - authState: Status autentikasi saat ini
+// - currentUser: Data user yang sedang login, atau null jika belum login
+// - error: Pesan error yang ditampilkan ke pengguna jika ada kegagalan
+// - navigationRef: Referensi navigasi untuk perpindahan layar secara programatik
+//
+// Fungsi utama:
+// - initializeApp(): Menjalankan seluruh urutan inisialisasi aplikasi
+// - checkAuthState(): Memeriksa dan memulihkan sesi login dari AsyncStorage
+// - handleLogin(): Menyimpan sesi dan memindahkan user ke Dashboard
+// - handleLogout(): Menghapus sesi dan mengembalikan user ke Login
+// - navigateToScreen(): Helper untuk navigasi antar layar
+// - handleAppStateChange(): Sinkronisasi status device saat app aktif kembali
+//
+// Tipe TypeScript:
+// - RootStackParamList: Definisi parameter untuk setiap screen navigasi
+// - AuthState: Union type untuk status autentikasi
+// - AppScreen: Daftar nama layar internal untuk helper navigasi
+// - AppUser: Struktur data user yang dipakai di level aplikasi
+//
+// Dependensi utama:
+// - React Navigation: Sistem navigasi antar layar
+// - AsyncStorage: Penyimpanan data lokal yang persisten
+// - Expo: Framework aplikasi mobile
+// - SafeAreaProvider: Menjaga UI aman dari notch dan status bar
+//
+// ==================================================================================
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'; // React inti + hooks yang dipakai di App
 import { StatusBar } from 'expo-status-bar'; // Komponen status bar yang bisa dikustomisasi warna dan stylenya
@@ -124,12 +123,11 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'; // Provider + View yang menghindari area notch/status bar
 
-/* ==================================================================================
- * IMPORT: Kumpulan Screen
- * ==================================================================================
- * Seluruh komponen layar yang dipakai di navigation stack utama.
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORT: Kumpulan Screen
+// ==================================================================================
+// Seluruh komponen layar yang dipakai di navigation stack utama.
+// ==================================================================================
 import LoginScreen from './src/screens/LoginScreen'; // Layar form login dengan username dan password
 import RegisterScreen from './src/screens/RegisterScreen'; // Layar form pendaftaran akun baru
 import DashboardScreen from './src/screens/DashboardScreen'; // Layar pusat menu setelah login berhasil
@@ -137,30 +135,28 @@ import NFCScreen from './src/screens/NFCScreen'; // Layar proses pembayaran via 
 import RegisterCardScreen from './src/screens/RegisterCardScreen'; // Layar pendaftaran kartu NFC baru
 import MyCardsScreen from './src/screens/MyCardsScreen'; // Layar daftar dan manajemen kartu NFC milik user
 
-/* ==================================================================================
- * IMPORT: Kumpulan Utilitas
- * ==================================================================================
- * Fungsi dan service pendukung untuk database, NFC, dan komunikasi API.
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORT: Kumpulan Utilitas
+// ==================================================================================
+// Fungsi dan service pendukung untuk database, NFC, dan komunikasi API.
+// ==================================================================================
 import { getUserById, initDatabase } from './src/utils/database'; // Fungsi baca user dan inisialisasi database SQLite lokal
 import { NFCService } from './src/utils/nfc'; // Service NFC untuk scan dan cleanup resource hardware NFC
 import { apiService } from './src/utils/apiService'; // Service HTTP untuk komunikasi dengan backend Express
 
-/* ==================================================================================
- * DEFINISI TIPE: Navigasi
- * ==================================================================================
- * Tipe TypeScript untuk kebutuhan React Navigation.
- *
- * RootStackParamList:
- * - Mendefinisikan semua screen pada stack navigasi
- * - Nilai undefined berarti screen tersebut tidak membutuhkan parameter
- *
- * NavigationProp:
- * - Tipe untuk prop navigation yang diteruskan ke screen
- * - Membantu memastikan pemanggilan navigasi tetap type-safe
- * ==================================================================================
- */
+// ==================================================================================
+// DEFINISI TIPE: Navigasi
+// ==================================================================================
+// Tipe TypeScript untuk kebutuhan React Navigation.
+//
+// RootStackParamList:
+// - Mendefinisikan semua screen pada stack navigasi
+// - Nilai undefined berarti screen tersebut tidak membutuhkan parameter
+//
+// NavigationProp:
+// - Tipe untuk prop navigation yang diteruskan ke screen
+// - Membantu memastikan pemanggilan navigasi tetap type-safe
+// ==================================================================================
 export type RootStackParamList = { // Definisi semua route yang ada di navigation stack
   Login: undefined; // Screen login — tidak butuh parameter tambahan
   Register: undefined; // Screen daftar — tidak butuh parameter tambahan
@@ -173,24 +169,23 @@ export type RootStackParamList = { // Definisi semua route yang ada di navigatio
 export type NavigationProp = StackNavigationProp<RootStackParamList>; // Tipe prop navigasi yang type-safe untuk semua screen
 const Stack = createStackNavigator<RootStackParamList>(); // Buat instance stack navigator dengan tipe route yang sudah didefinisikan
 
-/* ==================================================================================
- * DEFINISI TIPE: Aplikasi
- * ==================================================================================
- * AuthState: Tiga kemungkinan status autentikasi
- * - 'loading': State awal saat sesi sedang dicek
- * - 'signedIn': User sudah terautentikasi, tampilkan Dashboard
- * - 'signedOut': Tidak ada sesi aktif, tampilkan Login
- *
- * AppScreen: Nama screen internal untuk helper navigasi programatik
- *
- * AppUser: Struktur data user di level aplikasi
- * - id: Primary key user di database
- * - name: Nama lengkap user
- * - username: Username unik user
- * - balance: Saldo aktif dalam Rupiah
- * - email: Email opsional hasil turunan dari username
- * ==================================================================================
- */
+// ==================================================================================
+// DEFINISI TIPE: Aplikasi
+// ==================================================================================
+// AuthState: Tiga kemungkinan status autentikasi
+// - 'loading': State awal saat sesi sedang dicek
+// - 'signedIn': User sudah terautentikasi, tampilkan Dashboard
+// - 'signedOut': Tidak ada sesi aktif, tampilkan Login
+//
+// AppScreen: Nama screen internal untuk helper navigasi programatik
+//
+// AppUser: Struktur data user di level aplikasi
+// - id: Primary key user di database
+// - name: Nama lengkap user
+// - username: Username unik user
+// - balance: Saldo aktif dalam Rupiah
+// - email: Email opsional hasil turunan dari username
+// ==================================================================================
 type AuthState = 'loading' | 'signedIn' | 'signedOut'; // Tiga kondisi: sedang memuat, sudah login, belum login
 type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards'; // Enum nama screen internal (huruf kecil, beda dari nama route)
 
@@ -202,29 +197,27 @@ interface AppUser { // Struktur data user yang beredar di level komponen App
   email?: string; // Email opsional — dibentuk otomatis dari username
 }
 
-/* ==================================================================================
- * KOMPONEN: App
- * ==================================================================================
- * Komponen utama aplikasi yang menjadi titik masuk seluruh alur mobile app.
- *
- * Tanggung jawab utama:
- * 1. Menyiapkan database dan backend API
- * 2. Memulihkan sesi autentikasi jika tersedia
- * 3. Menyusun navigation stack
- * 4. Menangani perubahan state aplikasi
- * 5. Mengelola alur login dan logout pengguna
- * ==================================================================================
- */
+// ==================================================================================
+// KOMPONEN: App
+// ==================================================================================
+// Komponen utama aplikasi yang menjadi titik masuk seluruh alur mobile app.
+//
+// Tanggung jawab utama:
+// 1. Menyiapkan database dan backend API
+// 2. Memulihkan sesi autentikasi jika tersedia
+// 3. Menyusun navigation stack
+// 4. Menangani perubahan state aplikasi
+// 5. Mengelola alur login dan logout pengguna
+// ==================================================================================
 export default function App() {
-  /* ================================================================================
-   * MANAJEMEN STATE
-   * ================================================================================
-   * authState: Status autentikasi aplikasi saat ini
-   * currentUser: Data user yang sedang login, null jika belum ada sesi
-   * error: Pesan error untuk layar kegagalan
-   * navigationRef: Ref untuk navigasi programatik dari level root
-   * ================================================================================
-   */
+  // ================================================================================
+  // MANAJEMEN STATE
+  // ================================================================================
+  // authState: Status autentikasi aplikasi saat ini
+  // currentUser: Data user yang sedang login, null jika belum ada sesi
+  // error: Pesan error untuk layar kegagalan
+  // navigationRef: Ref untuk navigasi programatik dari level root
+  // ================================================================================
   const [authState, setAuthState] = useState<AuthState>('loading'); // State awal: aplikasi belum tahu user sudah login atau belum.
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null); // Menyimpan data user aktif setelah login berhasil.
   const [error, setError] = useState<string | null>(null); // Dipakai untuk menampilkan pesan error ke layar fallback.
@@ -236,20 +229,19 @@ export default function App() {
 
   console.log('🚀 App.tsx rendered, authState:', authState); // Log ini membantu melihat perubahan state saat debugging.
 
-  /* ================================================================================
-   * EFFECT: Inisialisasi Aplikasi
-   * ================================================================================
-   * Dijalankan satu kali saat komponen App pertama kali di-mount.
-   *
-   * Alur kerja:
-   * 1. Menetapkan timeout pengaman agar loading tidak macet terlalu lama
-   * 2. Memanggil initializeApp() sebagai urutan inisialisasi utama
-   * 3. Mendaftarkan listener perubahan state aplikasi
-   * 4. Saat unmount, timer dibersihkan dan resource NFC dilepas
-   *
-   * Dependencies: [] artinya hanya berjalan sekali saat mount awal
-   * ================================================================================
-   */
+  // ================================================================================
+  // EFFECT: Inisialisasi Aplikasi
+  // ================================================================================
+  // Dijalankan satu kali saat komponen App pertama kali di-mount.
+  //
+  // Alur kerja:
+  // 1. Menetapkan timeout pengaman agar loading tidak macet terlalu lama
+  // 2. Memanggil initializeApp() sebagai urutan inisialisasi utama
+  // 3. Mendaftarkan listener perubahan state aplikasi
+  // 4. Saat unmount, timer dibersihkan dan resource NFC dilepas
+  //
+  // Dependencies: [] artinya hanya berjalan sekali saat mount awal
+  // ================================================================================
   useEffect(() => {
     // Timeout pengaman agar user tidak tertahan di layar loading terlalu lama.
     const forceLoginTimeout = setTimeout(() => {
@@ -269,23 +261,42 @@ export default function App() {
     };
   }, []);
 
-  /* ================================================================================
-   * FUNGSI: handleAppStateChange
-   * ================================================================================
-   * Dipanggil saat status aplikasi berubah, misalnya dari background ke active.
-   *
-   * Alur kerja:
-   * 1. Memeriksa apakah aplikasi kembali aktif
-   * 2. Menyinkronkan status device ke backend
-   * 3. Memperbarui informasi device seperti platform dan versi aplikasi
-   * 4. Menyiapkan konteks user jika user sedang login
-   *
-   * Kegunaan:
-   * - Melacak device aktif dari sisi admin
-   * - Memastikan registry device tetap terbaru
-   * - Membantu monitoring penggunaan aplikasi di lapangan
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: handleAppStateChange
+  // ================================================================================
+  // Dipanggil saat status aplikasi berubah, misalnya dari background ke active.
+  //
+  // Alur kerja:
+  // 1. Memeriksa apakah aplikasi kembali aktif
+  // 2. Menyinkronkan status device ke backend
+  // 3. Memperbarui informasi device seperti platform dan versi aplikasi
+  // 4. Menyiapkan konteks user jika user sedang login
+  //
+  // Kegunaan:
+  // - Melacak device aktif dari sisi admin
+  // - Memastikan registry device tetap terbaru
+  // - Membantu monitoring penggunaan aplikasi di lapangan
+  // ================================================================================
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENJELASAN POLA: const handleAppStateChange = async (...) => { ... }
+  // ─────────────────────────────────────────────────────────────────────────
+  // "const" → Deklarasi variabel TETAP (tidak bisa di-reassign).
+  //           Pilihan lebih aman dibanding "var" atau "let" untuk fungsi
+  //           karena fungsi tidak perlu diganti setelah dibuat.
+  //
+  // "async" → Menandai fungsi sebagai ASYNCHRONOUS (tidak blok antrian eksekusi).
+  //           Fungsi ini mengandung operasi I/O: baca AsyncStorage & kirim API.
+  //           Tanpa async, await di dalamnya tidak bisa digunakan.
+  //
+  // "(nextAppState: AppStateStatus) => { }" → Arrow Function (ES6).
+  //           Lebih ringkas dari "function handleAppStateChange(...)".
+  //           Mewarisi konteks "this" dari komponen React (penting untuk hooks).
+  //
+  // MENGAPA ASYNC? Karena di dalam fungsi ini:
+  //   - AsyncStorage.getItem() → operasi baca disk (perlu await)
+  //   - apiService.registerDevice() → HTTP request ke backend (perlu await)
+  //   Semua ini butuh waktu, maka harus async agar UI tidak freeze.
+  // ─────────────────────────────────────────────────────────────────────────
   const handleAppStateChange = async (nextAppState: AppStateStatus) => {
     if (nextAppState === 'active') {
       console.log('📱 App aktif kembali, sync status device...');
@@ -307,44 +318,65 @@ export default function App() {
     }
   };
 
-  /* ================================================================================
-   * FUNGSI: initializeApp
-   * ================================================================================
-   * Urutan inisialisasi utama aplikasi dengan lima tahap.
-   *
-   * Tahap inisialisasi:
-   *
-   * 1️⃣ Inisialisasi database lokal
-   *    - Menyiapkan database yang dipakai aplikasi
-   *    - Membuat tabel jika belum tersedia
-   *    - Timeout: 10 detik
-   *
-   * 2️⃣ Inisialisasi Backend API
-   *    - Memulihkan token autentikasi dari AsyncStorage
-   *    - Menyiapkan base URL dan konfigurasi service
-   *    - Timeout: 10 detik
-   *
-   * 3️⃣ Koneksi ke backend melalui health check
-   *    - Bersifat non-blocking, jadi aplikasi tetap bisa lanjut
-   *    - Timeout: 5 detik
-   *    - Fallback: mode offline / koneksi backend belum siap
-   *
-   * 4️⃣ Registrasi device
-   *    - Mengambil atau membuat device ID unik
-   *    - Mengirim informasi device ke sistem admin
-   *    - Tetap lanjut walau gagal
-   *    - Timeout: 3 detik
-   *
-   * 5️⃣ Pemeriksaan status autentikasi
-   *    - Memulihkan sesi dari AsyncStorage jika ada
-   *    - Menentukan layar awal: Login atau Dashboard
-   *
-   * Penanganan error:
-   * - Tahap 1-2 dianggap kritis
-   * - Tahap 3-4 dibuat non-blocking agar aplikasi lebih tahan gangguan
-   * - Tahap 5 selalu dijalankan dengan fallback ke signedOut
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: initializeApp
+  // ================================================================================
+  // Urutan inisialisasi utama aplikasi dengan lima tahap.
+  //
+  // Tahap inisialisasi:
+  //
+  // 1️⃣ Inisialisasi database lokal
+  //    - Menyiapkan database yang dipakai aplikasi
+  //    - Membuat tabel jika belum tersedia
+  //    - Timeout: 10 detik
+  //
+  // 2️⃣ Inisialisasi Backend API
+  //    - Memulihkan token autentikasi dari AsyncStorage
+  //    - Menyiapkan base URL dan konfigurasi service
+  //    - Timeout: 10 detik
+  //
+  // 3️⃣ Koneksi ke backend melalui health check
+  //    - Bersifat non-blocking, jadi aplikasi tetap bisa lanjut
+  //    - Timeout: 5 detik
+  //    - Fallback: mode offline / koneksi backend belum siap
+  //
+  // 4️⃣ Registrasi device
+  //    - Mengambil atau membuat device ID unik
+  //    - Mengirim informasi device ke sistem admin
+  //    - Tetap lanjut walau gagal
+  //    - Timeout: 3 detik
+  //
+  // 5️⃣ Pemeriksaan status autentikasi
+  //    - Memulihkan sesi dari AsyncStorage jika ada
+  //    - Menentukan layar awal: Login atau Dashboard
+  //
+  // Penanganan error:
+  // - Tahap 1-2 dianggap kritis
+  // - Tahap 3-4 dibuat non-blocking agar aplikasi lebih tahan gangguan
+  // - Tahap 5 selalu dijalankan dengan fallback ke signedOut
+  // ================================================================================
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENJELASAN POLA: const initializeApp = async () => { ... }
+  // ─────────────────────────────────────────────────────────────────────────
+  // "const" → Fungsi startup ini hanya dibuat sekali, tidak perlu diubah.
+  //           Deklarasi const mencegah bug akibat fungsi tidak sengaja ditimpa.
+  //
+  // "async" → Inisialisasi melibatkan 5 tahap berurutan yang SEMUANYA async:
+  //           1. initDatabase()          → buka file database SQLite di disk
+  //           2. apiService.initialize() → load token dari AsyncStorage
+  //           3. apiService.healthCheck()  → HTTP request ke backend
+  //           4. apiService.registerDevice() → HTTP request daftarkan device
+  //           5. checkAuthState()        → baca AsyncStorage + query database
+  //           Tanpa async/await, operasi-operasi ini akan berjalan bersamaan
+  //           (race condition) dan hasilnya tidak terprediksi.
+  //
+  // "() =>" → Tidak membutuhkan parameter karena membaca state sendiri.
+  //
+  // ALUR EKSEKUSI ASYNC:
+  //   App render → useEffect dipanggil → initializeApp() dijalankan
+  //   → await tahap 1 selesai → await tahap 2 selesai → dst.
+  //   → setAuthState('signedIn'/'signedOut') → UI di-render ulang
+  // ─────────────────────────────────────────────────────────────────────────
   const initializeApp = async () => {
     try {
       setError(null); // Error lama dibersihkan dulu agar startup baru dimulai dari kondisi bersih.
@@ -417,22 +449,44 @@ export default function App() {
     }
   };
 
-  /* ================================================================================
-   * FUNGSI: checkAuthState
-   * ================================================================================
-   * Memulihkan status autentikasi dari AsyncStorage.
-   *
-   * Alur kerja:
-   * 1. Mengambil userId yang tersimpan secara lokal
-   * 2. Jika ada, memuat data user dari database
-   * 3. Jika user valid ditemukan, currentUser diisi dan authState jadi signedIn
-   * 4. Jika tidak ada atau tidak valid, authState menjadi signedOut
-   *
-   * Hasil akhir:
-   * - Berhasil: user masuk ke Dashboard
-   * - Gagal: user diarahkan ke Login
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: checkAuthState
+  // ================================================================================
+  // Memulihkan status autentikasi dari AsyncStorage.
+  //
+  // Alur kerja:
+  // 1. Mengambil userId yang tersimpan secara lokal
+  // 2. Jika ada, memuat data user dari database
+  // 3. Jika user valid ditemukan, currentUser diisi dan authState jadi signedIn
+  // 4. Jika tidak ada atau tidak valid, authState menjadi signedOut
+  //
+  // Hasil akhir:
+  // - Berhasil: user masuk ke Dashboard
+  // - Gagal: user diarahkan ke Login
+  // ================================================================================
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENJELASAN POLA: const checkAuthState = async () => { ... }
+  // ─────────────────────────────────────────────────────────────────────────
+  // "const" → Fungsi cek sesi ini tidak perlu diubah setelah didefinisikan.
+  //
+  // "async" → Mengandung 2 operasi async berurutan:
+  //           1. AsyncStorage.getItem('userId') → baca storage lokal (I/O disk)
+  //           2. getUserById(id) → query database SQLite (I/O disk)
+  //           Keduanya mengembalikan Promise, sehingga HARUS di-await agar
+  //           hasil operasi 1 tersedia sebelum operasi 2 dijalankan.
+  //
+  // POLA ASYNC/AWAIT vs CALLBACK (CALLBACK HELL):
+  //   Tanpa async/await:
+  //     AsyncStorage.getItem('userId', (err, id) => {
+  //       getUserById(id, (err, user) => {
+  //         setCurrentUser(user); // Kode bertumpuk, sulit dibaca
+  //       });
+  //     });
+  //   Dengan async/await (lebih bersih):
+  //     const id = await AsyncStorage.getItem('userId');
+  //     const user = await getUserById(id); // Mudah dibaca seperti kode sinkron
+  //     setCurrentUser(user);
+  // ─────────────────────────────────────────────────────────────────────────
   const checkAuthState = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem('userId'); // Mengambil ID user yang disimpan saat login sebelumnya.
@@ -459,26 +513,50 @@ export default function App() {
     }
   };
 
-  /* ================================================================================
-   * FUNGSI: handleLogin
-   * ================================================================================
-   * Menangani proses setelah login berhasil.
-   *
-   * Parameter:
-   * @param userData - Data user yang dikirim dari LoginScreen
-   *
-   * Alur kerja:
-   * 1. Membentuk objek AppUser yang konsisten untuk level aplikasi
-   * 2. Menyimpan userId ke AsyncStorage agar sesi tetap persisten
-   * 3. Mengisi currentUser
-   * 4. Mengubah authState menjadi signedIn
-   * 5. Memindahkan user ke Dashboard dengan reset stack navigasi
-   *
-   * Catatan navigasi:
-   * - reset() dipakai agar layar login tidak tersisa di stack
-   * - Tombol back tidak akan membawa user kembali ke form login
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: handleLogin
+  // ================================================================================
+  // Menangani proses setelah login berhasil.
+  //
+  // Parameter:
+  // @param userData - Data user yang dikirim dari LoginScreen
+  //
+  // Alur kerja:
+  // 1. Membentuk objek AppUser yang konsisten untuk level aplikasi
+  // 2. Menyimpan userId ke AsyncStorage agar sesi tetap persisten
+  // 3. Mengisi currentUser
+  // 4. Mengubah authState menjadi signedIn
+  // 5. Memindahkan user ke Dashboard dengan reset stack navigasi
+  //
+  // Catatan navigasi:
+  // - reset() dipakai agar layar login tidak tersisa di stack
+  // - Tombol back tidak akan membawa user kembali ke form login
+  // ================================================================================
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENJELASAN POLA: const handleLogin = async (userData: {...}) => { ... }
+  // ─────────────────────────────────────────────────────────────────────────
+  // "const" → Callback login tidak perlu diganti selama komponen hidup.
+  //
+  // "async" → Mengandung operasi async:
+  //           AsyncStorage.setItem('userId', ...) → tulis ke disk (I/O)
+  //           Perlu await agar proses tulis selesai sebelum lanjut ke
+  //           setCurrentUser() dan setAuthState().
+  //
+  // "(userData: { id, name, username, balance? })" → Parameter berupa objek
+  //           dengan tipe TypeScript inline. Tanda "?" pada balance berarti
+  //           opsional (boleh tidak dikirim, default ke 0).
+  //
+  // MENGAPA PERLU ASYNC DI SINI?
+  //   Jika AsyncStorage.setItem TIDAK di-await, ada risiko:
+  //   - App langsung pindah ke Dashboard sebelum userId tersimpan
+  //   - Saat app restart, userId tidak ditemukan → sesi hilang
+  //   Dengan await, urutan dijamin: SIMPAN DULU → BARU NAVIGASI
+  //
+  // CALLBACK PATTERN:
+  //   Fungsi ini di-passing sebagai prop ke LoginScreen:
+  //   <LoginScreen onLogin={handleLogin} />
+  //   LoginScreen akan panggil: onLogin(userData) setelah login berhasil.
+  // ─────────────────────────────────────────────────────────────────────────
   const handleLogin = async (userData: {
     id: number;
     name: string;
@@ -508,24 +586,48 @@ export default function App() {
     }
   };
 
-  /* ================================================================================
-   * FUNGSI: handleLogout
-   * ================================================================================
-   * Menangani proses logout user.
-   *
-   * Alur kerja:
-   * 1. Menghapus userId dari AsyncStorage agar sesi berakhir
-   * 2. Mengosongkan currentUser
-   * 3. Mengubah authState menjadi signedOut
-   * 4. Membersihkan resource NFC yang mungkin masih aktif
-   * 5. Mengarahkan user ke Login dengan reset stack navigasi
-   *
-   * Aspek keamanan:
-   * - Data sesi persisten dibersihkan
-   * - Resource hardware dirilis
-   * - Navigasi di-reset agar user tidak bisa kembali ke area privat lewat back
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: handleLogout
+  // ================================================================================
+  // Menangani proses logout user.
+  //
+  // Alur kerja:
+  // 1. Menghapus userId dari AsyncStorage agar sesi berakhir
+  // 2. Mengosongkan currentUser
+  // 3. Mengubah authState menjadi signedOut
+  // 4. Membersihkan resource NFC yang mungkin masih aktif
+  // 5. Mengarahkan user ke Login dengan reset stack navigasi
+  //
+  // Aspek keamanan:
+  // - Data sesi persisten dibersihkan
+  // - Resource hardware dirilis
+  // - Navigasi di-reset agar user tidak bisa kembali ke area privat lewat back
+  // ================================================================================
+  // ─────────────────────────────────────────────────────────────────────────
+  // PENJELASAN POLA: const handleLogout = async () => { ... }
+  // ─────────────────────────────────────────────────────────────────────────
+  // "const" → Fungsi logout statis, tidak perlu diganti.
+  //
+  // "async" → Mengandung operasi async:
+  //           AsyncStorage.removeItem('userId') → hapus data dari disk (I/O)
+  //           Perlu await agar data benar-benar terhapus dari storage
+  //           sebelum state aplikasi direset.
+  //
+  // MENGAPA URUTAN PENTING DI SINI?
+  //   SALAH (tanpa await):
+  //     AsyncStorage.removeItem('userId'); // Mulai, tapi belum selesai!
+  //     setCurrentUser(null);              // State sudah null
+  //     → Jika app restart, userId masih ada → sesi tidak bersih!
+  //
+  //   BENAR (dengan await):
+  //     await AsyncStorage.removeItem('userId'); // Tunggu sampai benar-benar hapus
+  //     setCurrentUser(null);                     // Baru reset state
+  //     → Urutan terjamin, sesi pasti bersih
+  //
+  // SECURITY NOTE:
+  //   Logout harus HAPUS data sensitif (token, userId) SEBELUM navigasi.
+  //   Jika tidak, data bisa diakses jika HP dipinjam setelah logout.
+  // ─────────────────────────────────────────────────────────────────────────
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('userId'); // Menghapus penanda sesi dari penyimpanan lokal.
@@ -544,32 +646,31 @@ export default function App() {
     }
   };
 
-  /* ================================================================================
-   * FUNGSI: navigateToScreen
-   * ================================================================================
-   * Helper untuk navigasi programatik dari level App.
-   *
-   * Parameter:
-   * @param screen - Nama screen tujuan dalam format internal (huruf kecil)
-   *
-   * Alur kerja:
-   * 1. Memastikan navigationRef sudah tersedia
-   * 2. Mengubah nama screen internal menjadi nama route React Navigation
-   * 3. Menjalankan navigate() ke route tujuan
-   * 4. Menulis log keberhasilan atau error untuk debugging
-   *
-   * Pemetaan screen:
-   * - 'login' -> 'Login'
-   * - 'register' -> 'Register'
-   * - 'dashboard' -> 'Dashboard'
-   * - 'nfc' -> 'NFC'
-   * - 'registerCard' -> 'RegisterCard'
-   * - 'myCards' -> 'MyCards'
-   *
-   * Dipanggil oleh:
-   * - Komponen screen melalui props seperti onBack atau onNavigate*
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: navigateToScreen
+  // ================================================================================
+  // Helper untuk navigasi programatik dari level App.
+  //
+  // Parameter:
+  // @param screen - Nama screen tujuan dalam format internal (huruf kecil)
+  //
+  // Alur kerja:
+  // 1. Memastikan navigationRef sudah tersedia
+  // 2. Mengubah nama screen internal menjadi nama route React Navigation
+  // 3. Menjalankan navigate() ke route tujuan
+  // 4. Menulis log keberhasilan atau error untuk debugging
+  //
+  // Pemetaan screen:
+  // - 'login' -> 'Login'
+  // - 'register' -> 'Register'
+  // - 'dashboard' -> 'Dashboard'
+  // - 'nfc' -> 'NFC'
+  // - 'registerCard' -> 'RegisterCard'
+  // - 'myCards' -> 'MyCards'
+  //
+  // Dipanggil oleh:
+  // - Komponen screen melalui props seperti onBack atau onNavigate*
+  // ================================================================================
   const navigateToScreen = useCallback((screen: AppScreen) => {
     if (!navigationRef.current) {
       console.error('❌ Navigation ref not available');

@@ -6,32 +6,31 @@ const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'
 const router = express.Router(); // Buat instance router untuk grouping endpoint /api/transactions
 const prisma = new PrismaClient(); // Buat koneksi Prisma ke database
 
-/* -------------------------------------------------------------------------- */
-/*                    Z-SCORE BASED ANOMALY DETECTION                         */
-/*          Deteksi anomali transaksi berdasarkan 20 histori terakhir         */
-/* -------------------------------------------------------------------------- */
-/**
- * Fraud Detection menggunakan Z-Score Based Anomaly Detection.
- * Metode: Ambil 20 transaksi historis terakhir sebagai baseline,
- * hitung mean/variance/stddev, lalu Z-Score transaksi baru.
- * Keputusan: Z<=2 ALLOW | 2<Z<=3 REVIEW | Z>3 BLOCK
- *
- * REFERENSI AKADEMIS:
- *   [1] Bolton & Hand (2002). Statistical fraud detection. Statistical Science.
- *       https://doi.org/10.1214/ss/1042727940
- *   [2] Chandola et al. (2009). Anomaly detection: A survey. ACM Comput. Surv.
- *       https://doi.org/10.1145/1541880.1541882
- *   [3] Tagle (2024). ML for Real-time Fraud Detection in NFC Transactions.
- *       https://doi.org/10.62718/vmca.tech-gjtdsi.3.1.sc-1124-009
- *   [4] Vanini et al. (2023). Online payment fraud. Financial Innovation.
- *       https://doi.org/10.1186/s40854-023-00470-w
- *   [5] Zhukabayeva et al. (2025). Anomaly detection via Z-Score.
- */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// Z-SCORE BASED ANOMALY DETECTION
+// Deteksi anomali transaksi berdasarkan 20 histori terakhir
+// --------------------------------------------------------------------------
+//
+// Fraud Detection menggunakan Z-Score Based Anomaly Detection.
+// Metode: Ambil 20 transaksi historis terakhir sebagai baseline,
+// hitung mean/variance/stddev, lalu Z-Score transaksi baru.
+// Keputusan: Z<=2 ALLOW | 2<Z<=3 REVIEW | Z>3 BLOCK
+//
+// REFERENSI AKADEMIS:
+//   [1] Bolton & Hand (2002). Statistical fraud detection. Statistical Science.
+//       https://doi.org/10.1214/ss/1042727940
+//   [2] Chandola et al. (2009). Anomaly detection: A survey. ACM Comput. Surv.
+//       https://doi.org/10.1145/1541880.1541882
+//   [3] Tagle (2024). ML for Real-time Fraud Detection in NFC Transactions.
+//       https://doi.org/10.62718/vmca.tech-gjtdsi.3.1.sc-1124-009
+//   [4] Vanini et al. (2023). Online payment fraud. Financial Innovation.
+//       https://doi.org/10.1186/s40854-023-00470-w
+//   [5] Zhukabayeva et al. (2025). Anomaly detection via Z-Score.
+// --------------------------------------------------------------------------
 
-/* -------------------------------------------------------------------------- */
-/*                          DAPATKAN SEMUA TRANSAKSI                          */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// DAPATKAN SEMUA TRANSAKSI
+// --------------------------------------------------------------------------
 router.get('/', async (req, res) => { // GET / → ambil semua transaksi dengan filter opsional
   try {
     const { limit = 20, offset = 0, userId, status } = req.query; // Ambil query params: limit, offset, userId, status
@@ -63,9 +62,9 @@ router.get('/', async (req, res) => { // GET / → ambil semua transaksi dengan 
   }
 });
 
-/* -------------------------------------------------------------------------- */
-/*                   DAPATKAN TRANSAKSI BERDASARKAN ID PENGGUNA               */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// DAPATKAN TRANSAKSI BERDASARKAN ID PENGGUNA
+// --------------------------------------------------------------------------
 router.get('/user/:userId', async (req, res) => { // GET /user/:userId → transaksi milik user tertentu
   try {
     const userId = parseInt(req.params.userId, 10); // Konversi userId URL param dari string ke integer
@@ -112,9 +111,9 @@ router.get('/user/:userId', async (req, res) => { // GET /user/:userId → trans
   }
 });
 
-/* -------------------------------------------------------------------------- */
-/*           STATISTIK TRANSAKSI (TEMPATKAN SEBELUM /:id)                    */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// STATISTIK TRANSAKSI (TEMPATKAN SEBELUM /:id)
+// --------------------------------------------------------------------------
 router.get('/stats/summary', async (req, res) => { // GET /stats/summary → ringkasan statistik transaksi
   try {
     const { userId, period = '7d' } = req.query; // Ambil filter userId dan period (default 7 hari)
@@ -150,9 +149,9 @@ router.get('/stats/summary', async (req, res) => { // GET /stats/summary → rin
   }
 });
 
-/* -------------------------------------------------------------------------- */
-/*                          BUAT TRANSAKSI BARU                               */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// BUAT TRANSAKSI BARU
+// --------------------------------------------------------------------------
 router.post(
   '/', // POST / → buat transaksi baru (transfer uang antar user)
   [
@@ -365,9 +364,9 @@ router.post(
   }
 );
 
-/* -------------------------------------------------------------------------- */
-/*                      DAPATKAN TRANSAKSI BERDASARKAN ID                     */
-/* -------------------------------------------------------------------------- */
+// --------------------------------------------------------------------------
+// DAPATKAN TRANSAKSI BERDASARKAN ID
+// --------------------------------------------------------------------------
 router.get('/:id', async (req, res) => { // GET /:id → ambil detail transaksi berdasarkan ID
   try {
     const id = parseInt(String(req.params.id), 10); // Konversi ID dari URL param ke integer
