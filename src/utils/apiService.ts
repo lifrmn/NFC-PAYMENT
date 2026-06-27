@@ -26,10 +26,10 @@
 //
 // ==================================================================================
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-import { API_URL, APP_SECRET } from './configuration';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk menyimpan dan membaca JWT token serta userId agar sesi tidak hilang saat aplikasi ditutup
+import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk membedakan platform ('android' atau 'ios') saat mengirim informasi device ke backend
+import Constants from 'expo-constants'; // import Constants dari expo-constants — menyediakan metadata aplikasi seperti nama app dan versi yang dipakai saat registrasi device
+import { API_URL, APP_SECRET } from './configuration'; // import dua konstanta dari file configuration.ts — API_URL adalah base URL backend Ngrok; APP_SECRET adalah kunci rahasia untuk autentikasi device
 
 // ==================================================================================
 // 🔹 APISERVICE CLASS - SINGLETON PATTERN

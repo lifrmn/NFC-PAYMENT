@@ -12,71 +12,71 @@
 // - onDone: Callback saat user tap tombol "Selesai"
 // - onViewDetails: Callback opsional untuk tombol "Lihat Detail"
 // ==================================================================================
-import React from 'react'; // Import React library untuk membuat komponen
+import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan di balik layar setiap kali ada elemen JSX seperti <View>
 import {
-  View,              // Komponen kontainer layout
-  Text,              // Komponen teks
-  TouchableOpacity,  // Tombol dengan efek opacity saat ditekan
-  ScrollView         // Kontainer scrollable untuk konten panjang
+  View,              // View adalah komponen container dasar React Native \u2014 setara div di HTML; digunakan untuk layout dan pembungkus elemen
+  Text,              // Text menampilkan konten teks \u2014 semua teks wajib dibungkus Text di React Native
+  TouchableOpacity,  // TouchableOpacity adalah tombol interaktif dengan efek transparan saat ditekan \u2014 digunakan untuk tombol "Selesai" dan "Lihat Detail"
+  ScrollView         // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar \u2014 penting karena detail transaksi bisa panjang
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Komponen area aman perangkat (notch/status bar)
-import styles from './TransactionSuccessScreen.styles'; // Import styling dari file terpisah
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator Android
+import styles from './TransactionSuccessScreen.styles'; // import stylesheet dari file terpisah agar kode komponen tetap ringkas dan mudah dibaca
 
 // Interface TypeScript untuk mendefinisikan tipe props yang diterima komponen
-interface TransactionSuccessScreenProps {
-  transaction: {
-    amount: number;            // Nominal transaksi dalam Rupiah
-    senderName: string;        // Nama pengirim (pembeli)
-    senderCardId: string;      // UID kartu pengirim (akan di-mask)
-    receiverName: string;      // Nama penerima (merchant)
-    receiverCardId: string;    // UID kartu penerima (akan di-mask)
-    senderBalance: number;     // Saldo pengirim setelah transaksi
-    receiverBalance: number;   // Saldo penerima setelah transaksi
-    riskScore: number | null;  // Z-Score aktual. null jika σ=0 dan X≠μ
-    riskLevel: string;         // NORMAL | SUSPICIOUS | ANOMALY
-    decision?: string;         // ALLOW | REVIEW | BLOCK
-    zScore?: number | null;    // Alias riskScore untuk konsistensi
+interface TransactionSuccessScreenProps { // interface adalah blueprint TypeScript — mendefinisikan struktur objek props sehingga TypeScript bisa mendeteksi jika ada props yang salah tipe
+  transaction: { // props transaction adalah objek berisi detail transaksi yang sudah selesai diproses
+    amount: number;            // Nominal transaksi dalam Rupiah (contoh: 50000)
+    senderName: string;        // Nama pengirim (pembeli yang tap kartu)
+    senderCardId: string;      // UID kartu pengirim — akan di-mask sebagian untuk keamanan tampilan
+    receiverName: string;      // Nama penerima (merchant yang terima pembayaran)
+    receiverCardId: string;    // UID kartu penerima — juga di-mask untuk keamanan
+    senderBalance: number;     // Saldo pengirim SETELAH transaksi berhasil dipotong
+    receiverBalance: number;   // Saldo penerima SETELAH transaksi berhasil ditambah
+    riskScore: number | null;  // Nilai Z-Score aktual hasil perhitungan; null jika σ=0 dan X≠μ (kasus distribusi terdegenerasi)
+    riskLevel: string;         // Kategori risiko: NORMAL | SUSPICIOUS | ANOMALY berdasarkan threshold Z-Score
+    decision?: string;         // tanda ? berarti opsional; nilai: ALLOW | REVIEW | BLOCK sesuai keputusan fraud detection
+    zScore?: number | null;    // Alias dari riskScore; tanda ? berarti opsional — untuk konsistensi response backend
   };
-  onDone: () => void;          // Callback saat user tap tombol "Selesai"
-  onViewDetails?: () => void;  // Callback opsional untuk tombol "Lihat Detail"
+  onDone: () => void;          // callback function () => void — dipanggil saat user menekan tombol "Selesai"; biasanya menutup screen ini dan kembali ke Dashboard
+  onViewDetails?: () => void;  // tanda ? berarti opsional — callback untuk menampilkan detail transaksi lebih lengkap jika diimplementasikan
 }
 
 // Komponen utama TransactionSuccessScreen
-export default function TransactionSuccessScreen({
-  transaction, // Destructuring: ambil data transaksi dari props
-  onDone,      // Destructuring: ambil callback selesai dari props
-  onViewDetails, // Destructuring: ambil callback detail dari props (opsional)
-}: TransactionSuccessScreenProps) {
+export default function TransactionSuccessScreen({ // export default mengekspor komponen sebagai ekspor utama file; function TransactionSuccessScreen menerima tiga props
+  transaction, // destructuring: mengambil props transaction (objek detail transaksi) dari parent component
+  onDone,      // destructuring: mengambil callback onDone (fungsi yang dipanggil saat user selesai melihat layar ini)
+  onViewDetails, // destructuring: mengambil callback opsional onViewDetails
+}: TransactionSuccessScreenProps) { // : TransactionSuccessScreenProps adalah type annotation TypeScript — memastikan props sesuai interface yang didefinisikan di atas
 
   // Fungsi: Format angka ke format mata uang Rupiah Indonesia
   // Contoh: 50000 → "Rp 50.000"
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { // Gunakan locale Indonesia
-      style: 'currency',          // Format sebagai mata uang
-      currency: 'IDR',            // Kode mata uang: Indonesian Rupiah
-      minimumFractionDigits: 0,   // Tidak perlu desimal (Rp 50.000, bukan Rp 50.000,00)
-    }).format(amount); // Format angka ke string mata uang
+  const formatCurrency = (amount: number) => { // const membuat variabel tetap; arrow function (amount: number) => {...} menerima angka dan mengembalikan string format Rupiah
+    return new Intl.NumberFormat('id-ID', { // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia untuk format angka (titik sebagai pemisah ribuan)
+      style: 'currency',          // style: 'currency' memberi tahu Intl bahwa ini format mata uang
+      currency: 'IDR',            // currency: 'IDR' adalah kode mata uang Indonesian Rupiah
+      minimumFractionDigits: 0,   // 0 berarti tidak ada angka desimal — Rp 50.000, bukan Rp 50.000,00
+    }).format(amount); // .format(amount) menjalankan format aktual pada nilai angka dan mengembalikan string
   };
 
   // Fungsi: Tentukan warna badge berdasarkan level risiko Z-Score
   // NORMAL → hijau, SUSPICIOUS → kuning, ANOMALY → merah
-  const getRiskColor = (level: string) => {
-    switch (level.toUpperCase()) { // Ubah ke uppercase agar case-insensitive
+  const getRiskColor = (level: string) => { // arrow function yang menerima string level dan mengembalikan kode warna hex
+    switch (level.toUpperCase()) { // switch membandingkan satu nilai dengan banyak case; .toUpperCase() mengonversi ke huruf besar agar perbandingan tidak case-sensitive
       case 'NORMAL':
-        return '#10B981'; // Hijau emerald: transaksi aman, Z-Score ≤ 2
+        return '#10B981'; // return mengembalikan nilai dari fungsi; warna hijau emerald — Z-Score ≤ 2, transaksi aman
       case 'SUSPICIOUS':
-        return '#F59E0B'; // Kuning amber: perlu review, 2 < Z-Score ≤ 3
+        return '#F59E0B'; // warna kuning amber — 2 < Z-Score ≤ 3, perlu ditinjau admin
       case 'ANOMALY':
-        return '#EF4444'; // Merah: anomali terdeteksi, Z-Score > 3
+        return '#EF4444'; // warna merah — Z-Score > 3, anomali terdeteksi, diperlukan tindakan
       default:
-        return '#64748b'; // Abu-abu: level tidak dikenali
+        return '#64748b'; // warna abu-abu — level tidak dikenali atau belum terdefinisi
     }
   };
 
   // Fungsi: Dapatkan label teks untuk badge level risiko
   // Mengonversi kode risiko menjadi teks yang ditampilkan di UI
-  const getRiskLabel = (level: string) => {
-    switch (level.toUpperCase()) { // Konversi uppercase untuk perbandingan konsisten
+  const getRiskLabel = (level: string) => { // arrow function menerima string level dan mengembalikan label teks yang ramah pengguna
+    switch (level.toUpperCase()) { // .toUpperCase() memastikan perbandingan tidak terpengaruh huruf besar/kecil
       case 'NORMAL':
         return 'NORMAL';      // Tampilkan teks "NORMAL"
       case 'SUSPICIOUS':

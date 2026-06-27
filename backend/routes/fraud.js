@@ -79,12 +79,12 @@
 //
 // ============================================================
 
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { analyzeZScoreAnomaly } = require('../utils/fraudDetection');
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router endpoint fraud
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang menyediakan akses type-safe ke database SQLite
+const { analyzeZScoreAnomaly } = require('../utils/fraudDetection'); // destructuring { analyzeZScoreAnomaly } dari file lokal fraudDetection.js — mengambil fungsi utama perhitungan Z-Score yang akan dipanggil di endpoint /analyze dan /check
 
-const router = express.Router();
-const prisma = new PrismaClient();
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/fraud
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma baru untuk koneksi ke database
 
 // ============================================================
 // ENDPOINT 1: GET /alerts - AMBIL SEMUA PERINGATAN FRAUD

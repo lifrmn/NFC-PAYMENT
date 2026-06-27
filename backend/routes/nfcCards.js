@@ -19,14 +19,14 @@
 // - UID: 7 bytes (unique identifier)
 // - Android NFC API: android.nfc.tech.MifareUltralight
 
-const express = require('express'); // Express framework untuk routing
-const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk database access
-const crypto = require('crypto'); // Node.js crypto untuk encryption & hashing
-const { analyzeZScoreAnomaly } = require('../utils/fraudDetection'); // Engine Z-Score (satu-satunya engine fraud)
-const { authenticateToken } = require('../middleware/auth'); // JWT middleware untuk autentikasi endpoint sensitif
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router HTTP endpoint NFC cards
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari Prisma; PrismaClient adalah kelas ORM untuk query database secara type-safe tanpa raw SQL
+const crypto = require('crypto'); // require('crypto') memanggil module bawaan Node.js (built-in); crypto menyediakan fungsi kriptografi seperti AES-256-CBC encryption dan scryptSync untuk key derivation
+const { analyzeZScoreAnomaly } = require('../utils/fraudDetection'); // destructuring { analyzeZScoreAnomaly } dari file lokal fraudDetection.js — fungsi Z-Score untuk mendeteksi anomali jumlah transaksi NFC
+const { authenticateToken } = require('../middleware/auth'); // destructuring { authenticateToken } dari middleware auth.js — middleware yang memverifikasi JWT token sebelum endpoint sensitif dijalankan
 
-const router = express.Router(); // Buat instance Express Router
-const prisma = new PrismaClient(); // Buat instance Prisma client
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/nfc-cards
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma untuk koneksi ke database
 
 // ============================================================================
 // HELPER FUNCTIONS - Utility functions untuk NFC Card operations

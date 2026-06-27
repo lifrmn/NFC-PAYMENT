@@ -1,206 +1,207 @@
 // src/screens/DashboardScreen.tsx
-import React, { useState, useEffect, useRef } from 'react'; // React inti + hooks untuk state dan efek samping
+import React, { useState, useEffect, useRef } from 'react'; // import digunakan untuk mengambil module dari library; React adalah library utama; useState membuat state lokal komponen; useEffect menjalankan efek samping saat komponen mount/update; useRef membuat referensi mutable yang tidak memicu re-render
 import {
-  View, // Komponen container dasar (setara div)
-  Text, // Komponen teks
-  TouchableOpacity, // Tombol yang merespons sentuhan
-  ScrollView, // Container yang bisa di-scroll
-  Alert, // Dialog popup native
-  RefreshControl // Komponen pull-to-refresh
+  View, // View adalah komponen container dasar React Native — setara dengan <div> di HTML web
+  Text, // Text adalah komponen untuk menampilkan teks di React Native — setara dengan <p> atau <span>
+  TouchableOpacity, // TouchableOpacity adalah tombol yang bisa diklik, tampilan sedikit transparan saat ditekan
+  ScrollView, // ScrollView adalah container yang bisa di-scroll vertikal maupun horizontal
+  Alert, // Alert adalah dialog popup native Android/iOS untuk menampilkan pesan atau konfirmasi
+  RefreshControl // RefreshControl adalah komponen untuk fitur pull-to-refresh (tarik ke bawah untuk refresh)
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // View aman dari notch dan status bar
-import { useFocusEffect } from '@react-navigation/native'; // Hook untuk jalankan kode saat screen sedang aktif/fokus
-import { getUserById, getUserTransactions, syncBalanceFromBackend } from '../utils/database'; // Fungsi akses data user dari SQLite lokal
-import styles from './DashboardScreen.styles'; // Stylesheet khusus DashboardScreen
+import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library eksternal; SafeAreaView adalah wrapper yang otomatis memberi padding agar konten tidak tertutup notch, status bar, atau home indicator
+import { useFocusEffect } from '@react-navigation/native'; // import useFocusEffect dari React Navigation; hook ini menjalankan callback setiap kali screen ini mendapat fokus (misalnya setelah kembali dari screen lain)
+import { getUserById, getUserTransactions, syncBalanceFromBackend } from '../utils/database'; // import tiga fungsi dari file database.ts: getUserById ambil data user dari lokal, getUserTransactions ambil riwayat transaksi, syncBalanceFromBackend sinkronisasi saldo dari backend
+import styles from './DashboardScreen.styles'; // import stylesheet dari file terpisah — memisahkan logika dan tampilan agar kode lebih rapi
 
-interface DashboardScreenProps { // Tipe props yang diterima komponen DashboardScreen
-  user: any; // Data user aktif yang dikirim dari App.tsx
-  onLogout: () => void; // Callback untuk menjalankan proses logout
-  onNavigateToNFC: () => void; // Callback untuk navigasi ke screen pembayaran NFC
-  onNavigateToRegisterCard?: () => void; // Callback opsional ke screen pendaftaran kartu
-  onNavigateToMyCards?: () => void; // Callback opsional ke screen daftar kartu
+interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan tipe data objek; DashboardScreenProps mendefinisikan props (parameter) yang WAJIB dan opsional diterima komponen DashboardScreen
+  user: any; // props user bertipe any (fleksibel) — berisi data user aktif yang dikirim dari App.tsx: id, name, username, balance
+  onLogout: () => void; // props onLogout adalah callback function (fungsi) yang dipanggil ketika user tap tombol logout; () => void berarti tidak menerima argumen dan tidak mengembalikan nilai
+  onNavigateToNFC: () => void; // props onNavigateToNFC adalah callback untuk navigasi ke screen pembayaran NFC
+  onNavigateToRegisterCard?: () => void; // props opsional (tanda ?) — callback untuk navigasi ke screen pendaftaran kartu NFC; tanda ? berarti boleh tidak dikirim
+  onNavigateToMyCards?: () => void; // props opsional — callback untuk navigasi ke screen daftar kartu milik user
 }
 
-export default function DashboardScreen({ // Komponen utama dashboard — menerima semua props navigasi
-  user, // Data user dari App.tsx
-  onLogout, // Handler logout
-  onNavigateToNFC, // Navigasi ke pembayaran
-  onNavigateToRegisterCard, // Navigasi ke daftar kartu baru
-  onNavigateToMyCards // Navigasi ke daftar kartu saya
-}: DashboardScreenProps) {
-  const [currentUser, setCurrentUser] = useState(user || null); // State user lokal — diupdate setelah refresh dari DB
-  const [transactions, setTransactions] = useState<any[]>([]); // Daftar transaksi terakhir milik user
-  const [loading, setLoading] = useState(false); // Flag loading untuk pull-to-refresh
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // Waktu terakhir saldo berhasil disinkronkan
-  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // Status sinkronisasi saldo: sukses/gagal/belum pernah
+export default function DashboardScreen({ // export default mengekspor komponen ini sebagai ekspor utama file sehingga bisa diimport tanpa kurung kurawal; function DashboardScreen adalah komponen React fungsional yang menerima props dalam bentuk destructuring
+  user, // props user: data user dari App.tsx (id, name, username, balance)
+  onLogout, // props onLogout: fungsi yang dipanggil saat user logout
+  onNavigateToNFC, // props onNavigateToNFC: fungsi untuk pindah ke screen NFC payment
+  onNavigateToRegisterCard, // props opsional untuk pindah ke screen daftar kartu baru
+  onNavigateToMyCards // props opsional untuk pindah ke screen daftar kartu saya
+}: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
+  const [currentUser, setCurrentUser] = useState(user || null); // const membuat variabel tetap; useState(initialValue) membuat state lokal — currentUser menyimpan data user terkini; setCurrentUser fungsi untuk memperbarui state; user || null menggunakan nilai user jika ada, null jika tidak
+  const [transactions, setTransactions] = useState<any[]>([]); // useState dengan tipe generik <any[]> berarti state berisi array; transactions menyimpan daftar transaksi; setTransactions untuk memperbarui; [] adalah nilai awal array kosong
+  const [loading, setLoading] = useState(false); // useState(false) membuat state boolean loading; false berarti tidak sedang loading; setLoading(true) dipanggil saat refresh mulai, setLoading(false) saat selesai
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // useState tipe Date atau null; menyimpan waktu terakhir sinkronisasi saldo berhasil; null berarti belum pernah sync
+  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // useState dengan union type — hanya bisa berisi salah satu dari tiga string tersebut; 'never' berarti belum pernah mencoba sync
 
-  const refreshData = async () => {
-    if (!user || !user.id) {
-      console.log('⚠️ No valid user for refresh data');
-      return;
+  const refreshData = async () => { // const membuat variabel tetap; async menandai fungsi ini asynchronous sehingga bisa menggunakan await; arrow function () => {...} mendefinisikan body fungsi
+    if (!user || !user.id) { // ! adalah operator NOT; !user berarti user null/undefined; || berarti ATAU — cek minimal satu kondisi
+      console.log('\u26a0\ufe0f No valid user for refresh data');
+      return; // return menghentikan eksekusi fungsi lebih awal jika tidak ada user valid
     }
     
-    setLoading(true);
-    try {
-      const updatedUser = await getUserById(user.id);
-      if (updatedUser) {
-        setCurrentUser(updatedUser);
-        console.log('💾 Loaded user from local DB');
+    setLoading(true); // setLoading(true) mengubah state loading menjadi true — memicu tampilan spinner RefreshControl di UI
+    try { // try memulai blok percobaan — jika ada error di dalam, eksekusi loncat ke blok catch
+      const updatedUser = await getUserById(user.id); // const membuat variabel tetap; await menunggu Promise selesai; getUserById(user.id) mengambil data user terbaru dari database lokal SQLite
+      if (updatedUser) { // if memeriksa apakah data user berhasil ditemukan (tidak null/undefined)
+        setCurrentUser(updatedUser); // setCurrentUser memperbarui state dengan data user terbaru
+        console.log('\ud83d\udcbe Loaded user from local DB');
       }
 
-      const userTransactions = await getUserTransactions(user.id);
-      setTransactions(userTransactions || []);
+      const userTransactions = await getUserTransactions(user.id); // await getUserTransactions mengambil riwayat transaksi user dari database lokal
+      setTransactions(userTransactions || []); // setTransactions memperbarui state; || [] adalah fallback — jika getUserTransactions mengembalikan null/undefined, gunakan array kosong
 
-      try {
-        console.log('💰 Syncing balance from backend...');
-        const syncedBalance = await syncBalanceFromBackend(user.id);
+      try { // try bersarang — sync saldo dari backend dipisah agar kegagalan sync tidak membatalkan refresh data lokal
+        console.log('\ud83d\udcb0 Syncing balance from backend...');
+        const syncedBalance = await syncBalanceFromBackend(user.id); // await syncBalanceFromBackend menghubungi API backend via HTTP untuk mendapatkan saldo terkini
         
-        if (syncedBalance !== null && typeof syncedBalance === 'number' && updatedUser) {
-          setCurrentUser({ ...updatedUser, balance: syncedBalance }); // Buat objek baru — jangan mutasi state secara langsung
-          setLastSyncTime(new Date());
-          setSyncStatus('success');
-          console.log(`✅ Updated user balance from backend: ${syncedBalance}`);
+        if (syncedBalance !== null && typeof syncedBalance === 'number' && updatedUser) { // !== null memastikan bukan null; typeof === 'number' memastikan tipe data angka; && berarti AND — semua kondisi harus benar
+          setCurrentUser({ ...updatedUser, balance: syncedBalance }); // spread operator {...updatedUser} menyalin semua property ke objek baru; kemudian override property balance dengan nilai terbaru dari backend
+          setLastSyncTime(new Date()); // new Date() membuat objek Date berisi waktu sekarang — dicatat sebagai waktu sync terakhir
+          setSyncStatus('success'); // setSyncStatus mengubah status menjadi 'success' agar UI menampilkan indikator berhasil
+          console.log(`\u2705 Updated user balance from backend: ${syncedBalance}`);
         }
-      } catch (syncError: any) {
-        setSyncStatus('failed');
-        if (syncError.message?.includes('429')) {
+      } catch (syncError: any) { // catch menangkap error dari try bersarang; : any adalah type annotation — syncError bisa berupa tipe apa saja
+        setSyncStatus('failed'); // status sync diubah ke 'failed' — UI menampilkan indikator kegagalan
+        if (syncError.message?.includes('429')) { // optional chaining (?.) aman jika message tidak ada; includes('429') cek error HTTP 429 (Too Many Requests / rate limit dari backend)
           console.log('⏱️ Rate limited, using cached balance');
         } else {
           console.warn('⚠️ Balance sync failed, using local data:', syncError.message);
         }
       }
       
-    } catch (error) {
+    } catch (error) { // catch luar menangkap error dari getUserById atau getUserTransactions
       console.error('Error refreshing data:', error);
-      if (!currentUser || !currentUser.id) {
-        Alert.alert('Error', 'Gagal memuat data terbaru');
+      if (!currentUser || !currentUser.id) { // hanya tampilkan alert jika belum ada data sama sekali di state (belum pernah berhasil load)
+        Alert.alert('Error', 'Gagal memuat data terbaru'); // Alert.alert menampilkan dialog native dengan judul 'Error' dan pesan
       }
-    } finally {
-      setLoading(false);
+    } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk cleanup/reset state
+      setLoading(false); // setLoading(false) menghentikan spinner loading apapun hasilnya
     }
   };
 
   // Ref yang selalu menunjuk ke versi terbaru refreshData — mencegah stale closure di setInterval
-  const refreshDataRef = useRef(refreshData);
-  useEffect(() => {
-    refreshDataRef.current = refreshData; // Perbarui ref setiap render agar setInterval pakai versi terbaru
+  const refreshDataRef = useRef(refreshData); // const membuat variabel tetap; useRef(refreshData) membuat ref yang menyimpan referensi ke fungsi refreshData; ref tidak memicu re-render saat nilainya berubah
+  useEffect(() => { // useEffect tanpa dependency array khusus — dijalankan setiap kali render untuk memperbarui ref
+    refreshDataRef.current = refreshData; // .current adalah property ref yang menyimpan nilai aktual; diperbarui setiap render agar setInterval selalu memanggil versi terbaru fungsi
   });
 
-  useEffect(() => { // Effect ini jalan sekali saat komponen pertama kali di-mount
+  useEffect(() => { // useEffect dengan array dependency [] — dijalankan SEKALI saat komponen pertama kali mount; [] berarti tidak ada dependency yang memicu ulang efek ini
     // refreshData() awal ditangani oleh useFocusEffect di bawah (mencegah double-call saat mount)
 
-    const dataRefreshInterval = setInterval(() => { // Auto-refresh setiap 15 detik
+    const dataRefreshInterval = setInterval(() => { // setInterval menjalankan fungsi secara berulang setiap interval tertentu; const membuat variabel tetap
       console.log('\ud83d\udd04 Auto-refreshing balance and transactions...');
-      refreshDataRef.current(); // Gunakan ref agar tidak stale closure
-    }, 15000); // Interval 15.000ms = 15 detik
+      refreshDataRef.current(); // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure yang terjadi jika langsung pakai refreshData di dalam setInterval
+    }, 15000); // 15000 milidetik = 15 detik; angka kedua setInterval adalah jarak waktu antar eksekusi
     
-    return () => { // Cleanup saat komponen di-unmount
-      clearInterval(dataRefreshInterval); // Hentikan timer agar tidak berjalan setelah screen ditutup
+    return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen di-unmount
+      clearInterval(dataRefreshInterval); // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setInterval — mencegah memory leak
       console.log('\u23f0 Stopped all auto-refresh timers');
     };
-  }, []); // Array kosong = hanya jalan sekali saat mount
+  }, []); // array kosong [] memastikan efek ini HANYA berjalan sekali saat mount dan cleanup saat unmount
 
-  useFocusEffect( // Hook khusus React Navigation — jalan setiap kali screen kembali fokus
-    React.useCallback(() => { // useCallback agar fungsi tidak dibuat ulang setiap render
+  useFocusEffect( // useFocusEffect adalah hook React Navigation yang menjalankan callback setiap kali screen ini mendapat fokus — berbeda dengan useEffect yang hanya jalan saat mount
+    React.useCallback(() => { // React.useCallback(fn, deps) membuat fungsi yang hanya dibuat ulang jika dependency berubah; di sini array kosong [] berarti fungsi tidak pernah dibuat ulang
       console.log('\ud83d\udcf1 Dashboard focused - refreshing balance...');
-      refreshDataRef.current(); // Gunakan ref agar tidak memanggil versi refreshData yang stale
-    }, []) // Tidak perlu dep — refreshDataRef.current selalu up-to-date
+      refreshDataRef.current(); // memanggil refreshData terkini melalui ref — aman dari stale closure
+    }, []) // array dependency kosong [] berarti fungsi callback ini tidak bergantung pada state/props manapun
   );
 
-  const formatCurrency = (amount: number) => { // Helper: format angka ke format mata uang Rupiah
-    return new Intl.NumberFormat('id-ID', { // Gunakan locale Indonesia
-      style: 'currency', // Format sebagai mata uang
-      currency: 'IDR', // Mata uang Rupiah
-      minimumFractionDigits: 0, // Tidak tampilkan desimal (Rp 50.000, bukan Rp 50.000,00)
-    }).format(amount); // Format angka yang diberikan
+  const formatCurrency = (amount: number) => { // const membuat variabel tetap; arrow function (amount: number) => {...} menerima parameter angka dan mengembalikan string format Rupiah
+    return new Intl.NumberFormat('id-ID', { // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia — menentukan format titik sebagai pemisah ribuan
+      style: 'currency', // style: 'currency' memberitahu Intl bahwa ini format mata uang
+      currency: 'IDR', // currency: 'IDR' adalah kode ISO 4217 untuk Indonesian Rupiah
+      minimumFractionDigits: 0, // minimumFractionDigits: 0 menghilangkan angka desimal — Rp 50.000 bukan Rp 50.000,00
+    }).format(amount); // .format(amount) menjalankan pemformatan pada nilai angka dan mengembalikan string
   };
 
-  const formatDate = (dateString: string) => { // Helper: ubah ISO date string ke teks tanggal yang ramah
-    const date = new Date(dateString); // Parse string ISO ke objek Date
-    const now = new Date(); // Waktu sekarang untuk perbandingan
+  const formatDate = (dateString: string) => { // const membuat variabel tetap; arrow function menerima string tanggal ISO dan mengembalikan teks tanggal yang ramah pengguna
+    const date = new Date(dateString); // new Date(string) mem-parse string ISO 8601 menjadi objek Date JavaScript
+    const now = new Date(); // new Date() tanpa argumen membuat objek Date dengan waktu sekarang
 
     // Bandingkan tanggal kalender (bukan selisih jam) agar "Hari ini" dan "Kemarin" akurat
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
+    const yesterday = new Date(now); // menyalin objek Date now ke variabel baru
+    yesterday.setDate(now.getDate() - 1); // setDate mengubah hari dalam bulan; getDate() mengembalikan angka hari; -1 mundur satu hari
 
-    const isToday = date.toDateString() === now.toDateString(); // Sama tanggal hari ini
-    const isYesterday = date.toDateString() === yesterday.toDateString(); // Sama tanggal kemarin
+    const isToday = date.toDateString() === now.toDateString(); // toDateString() mengubah Date ke string tanggal saja tanpa jam; === membandingkan string keduanya
+    const isYesterday = date.toDateString() === yesterday.toDateString(); // cek apakah tanggal transaksi sama dengan kemarin
 
-    if (isToday || isYesterday) { // Jika transaksi hari ini atau kemarin
-      return date.toLocaleString('id-ID', {
-        hour: '2-digit', // Tampilkan jam 2 digit
-        minute: '2-digit', // Tampilkan menit 2 digit
-      }) + (isYesterday ? ', Kemarin' : ', Hari ini'); // Label kalender yang benar
-    } else { // Jika lebih dari kemarin, tampilkan tanggal lengkap
-      return date.toLocaleDateString('id-ID', {
-        day: '2-digit', // Tanggal 2 digit
-        month: 'short', // Bulan disingkat (Jan, Feb, dst)
-        year: 'numeric', // Tahun penuh (2024)
+    if (isToday || isYesterday) { // if memeriksa kondisi; || berarti ATAU — jika salah satu benar, blok ini dijalankan
+      return date.toLocaleString('id-ID', { // toLocaleString memformat Date ke string sesuai locale; 'id-ID' untuk format Indonesia
+        hour: '2-digit', // '2-digit' menampilkan jam dengan dua angka, contoh: 09, 14
+        minute: '2-digit', // '2-digit' menampilkan menit dengan dua angka
+      }) + (isYesterday ? ', Kemarin' : ', Hari ini'); // operator ternary: kondisi ? nilai_jika_benar : nilai_jika_salah
+    } else { // jika transaksi lebih dari kemarin, tampilkan format tanggal lengkap
+      return date.toLocaleDateString('id-ID', { // toLocaleDateString memformat tanggal saja tanpa jam
+        day: '2-digit', // hari dengan dua angka
+        month: 'short', // nama bulan disingkat (Jan, Feb, Mar, dll)
+        year: 'numeric', // tahun penuh (2025)
       });
     }
   };
 
-  const handleLogout = () => { // Handler konfirmasi sebelum logout
-    Alert.alert(
-      'Logout', // Judul dialog
-      'Apakah Anda yakin ingin keluar?', // Pesan konfirmasi
+  const handleLogout = () => { // const membuat variabel tetap; arrow function () => {...} tanpa parameter; fungsi ini memicu dialog konfirmasi sebelum logout
+    Alert.alert( // Alert.alert() menampilkan dialog native dengan judul, pesan, dan tombol pilihan
+      'Logout', // argumen pertama: judul dialog
+      'Apakah Anda yakin ingin keluar?', // argumen kedua: pesan konfirmasi
       [
-        { text: 'Batal', style: 'cancel' }, // Tombol batal — tidak melakukan apa-apa
-        { text: 'Keluar', onPress: onLogout, style: 'destructive' }, // Tombol keluar — memanggil callback logout dari App.tsx
+        { text: 'Batal', style: 'cancel' }, // objek tombol pertama; style: 'cancel' membuat tombol tampil lebih redup sebagai opsi sekunder
+        { text: 'Keluar', onPress: onLogout, style: 'destructive' }, // objek tombol kedua; onPress: onLogout memanggil callback logout dari App.tsx; style: 'destructive' menampilkan teks merah (Android)
       ]
     );
   };
 
-  const handleNotification = () => { // Handler tombol notifikasi (placeholder)
+  const handleNotification = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan ikon lonceng notifikasi
     Alert.alert(
-      '🔔 Notifikasi', // Judul dialog notifikasi
-      'Tidak ada notifikasi baru', // Pesan saat tidak ada notifikasi
-      [{ text: 'OK' }] // Tombol tutup dialog
+      '🔔 Notifikasi', // argumen pertama Alert.alert: judul dialog yang ditampilkan di atas
+      'Tidak ada notifikasi baru', // argumen kedua: pesan isi dialog
+      [{ text: 'OK' }] // argumen ketiga: array tombol; satu objek dengan text: 'OK' untuk menutup dialog
     );
   };
 
-  const handleBalanceHistory = () => { // Handler tombol riwayat saldo (placeholder)
+  const handleBalanceHistory = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan tombol riwayat saldo
     Alert.alert(
-      '📊 Riwayat Saldo', // Judul dialog
-      'Fitur riwayat saldo akan segera hadir!\n\nAnda dapat melihat:\n• Riwayat top-up\n• Perubahan saldo\n• Grafik penggunaan', // Deskripsi fitur mendatang
-      [{ text: 'OK' }] // Tombol tutup
+      '📊 Riwayat Saldo', // judul dialog
+      'Fitur riwayat saldo akan segera hadir!\n\nAnda dapat melihat:\n• Riwayat top-up\n• Perubahan saldo\n• Grafik penggunaan', // \n adalah karakter newline untuk baris baru dalam string
+      [{ text: 'OK' }] // array dengan satu objek tombol; text: 'OK' adalah label tombol tutup dialog
     );
   };
 
-  const handleSeeAllTransactions = () => { // Handler tombol lihat semua transaksi (placeholder)
+  const handleSeeAllTransactions = () => { // arrow function tanpa parameter; dipanggil saat user menekan link "Lihat Semua" di section transaksi
     Alert.alert(
-      '📋 Semua Transaksi', // Judul dialog
-      `Total ${transactions.length} transaksi\n\nFitur detail transaksi akan segera hadir!`, // Tampilkan jumlah transaksi
-      [{ text: 'OK' }] // Tombol tutup
+      '📋 Semua Transaksi',
+      `Total ${transactions.length} transaksi\n\nFitur detail transaksi akan segera hadir!`, // template literal ${} menyisipkan nilai dinamis; transactions.length adalah jumlah elemen dalam array transactions
+      [{ text: 'OK' }]
     );
   };
 
-  const handleTopUp = () => { // Handler tombol top up saldo (placeholder)
+  const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up
     Alert.alert(
-      '💰 Top Up Saldo', // Judul dialog
-      'Fitur top-up akan segera hadir!\n\nMetode top-up yang tersedia:\n• Transfer Bank\n• Virtual Account\n• E-Wallet', // Deskripsi metode pembayaran
-      [{ text: 'OK' }] // Tombol tutup
+      '💰 Top Up Saldo',
+      'Fitur top-up akan segera hadir!\n\nMetode top-up yang tersedia:\n• Transfer Bank\n• Virtual Account\n• E-Wallet',
+      [{ text: 'OK' }]
     );
   };
 
-  if (!currentUser) { // Jika data user belum tersedia, tampilkan layar loading
-    return (
+  if (!currentUser) { // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undefined; tampilkan loading screen jika data user belum ada
+    return ( // return di luar JSX utama — mengembalikan UI alternatif (early return pattern)
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading user data...</Text> {/* Teks placeholder sambil data dimuat */}
+          <Text style={styles.loadingText}>Loading user data...</Text> {/* Teks sementara yang ditampilkan sambil data user diambil dari database */}
         </View>
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}> {/* Container utama yang aman dari notch/status bar */}
+  return ( // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() adalah yang akan dirender ke layar
+    <SafeAreaView style={styles.container}> {/* SafeAreaView adalah komponen dari react-native-safe-area-context yang otomatis memberi padding sesuai safe area perangkat */}
       <ScrollView
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* showsVerticalScrollIndicator=false: sembunyikan scrollbar agar tampilan lebih bersih */}
+        {/* refreshControl: RefreshControl adalah komponen animasi pull-to-refresh; refreshing={loading} mengontrol spinner; onRefresh={refreshData} dipanggil saat user menarik layar ke bawah */}
+        {/* showsVerticalScrollIndicator={false} menyembunyikan scrollbar vertikal untuk tampilan lebih bersih */}
         {/* Header */}
         <View style={styles.header}> {/* Baris atas berisi sapaan dan tombol notifikasi */}
           <View>

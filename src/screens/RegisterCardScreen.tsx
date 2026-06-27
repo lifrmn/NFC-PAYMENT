@@ -89,42 +89,42 @@
 // - NFCService: Utilitas NFC (init, read physical card, cleanup)
 // - apiService: HTTP client (getCardInfo, registerCard)
 // ==================================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 6 state variable (nfcSupported, nfcEnabled, loading, scanning, scannedCardId, registrationStatus); useEffect untuk init NFC dan cleanup saat unmount
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator
+  View, // View adalah container dasar React Native — setara div di HTML
+  Text, // Text menampilkan teks di UI
+  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan saat ditekan
+  Alert, // Alert menampilkan dialog popup native — untuk pesan sukses, error, dan konfirmasi registrasi kartu
+  ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat proses registrasi atau scanning berlangsung
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NFCService } from '../utils/nfc';
-import { apiService } from '../utils/apiService';
-import styles from './RegisterCardScreen.styles';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch atau status bar
+import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — menyediakan method initNFC, readPhysicalCard untuk scan kartu NFC, dan cleanup resource
+import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil endpoint backend: getCardInfo (cek kartu sudah terdaftar) dan registerCard (daftarkan kartu baru)
+import styles from './RegisterCardScreen.styles'; // import stylesheet dari file terpisah
 
 // Props yang diterima dari parent (App.tsx atau MyCardsScreen)
-interface RegisterCardScreenProps {
-  user: any;               // Data user login: id, name, deviceId, dll
-  onBack: () => void;      // Callback kembali ke screen sebelumnya
-  onSuccess?: () => void;  // Callback opsional setelah registrasi berhasil
+interface RegisterCardScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur props
+  user: any;               // props user bertipe any — berisi data user yang login (id, name, deviceId, dll)
+  onBack: () => void;      // callback function () => void — dipanggil saat user tekan tombol kembali ke screen sebelumnya
+  onSuccess?: () => void;  // tanda ? berarti props opsional — jika disediakan, dipanggil setelah registrasi kartu berhasil
 }
 
-export default function RegisterCardScreen({ user, onBack, onSuccess }: RegisterCardScreenProps) {
+export default function RegisterCardScreen({ user, onBack, onSuccess }: RegisterCardScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama; destructuring props sesuai interface
   // STATE 1: nfcSupported - Apakah perangkat mendukung NFC secara hardware
   // false → tampilkan screen "NFC Tidak Didukung"
-  const [nfcSupported, setNfcSupported] = useState(false);
+  const [nfcSupported, setNfcSupported] = useState(false); // useState(false) membuat state boolean; false berarti belum dicek; setNfcSupported digunakan untuk memperbarui hasil cek hardware
 
   // STATE 2: nfcEnabled - Apakah user sudah mengaktifkan NFC di Settings
   // false → tampilkan instruksi cara mengaktifkan NFC
-  const [nfcEnabled, setNfcEnabled] = useState(false);
+  const [nfcEnabled, setNfcEnabled] = useState(false); // false berarti NFC belum aktif saat screen dibuka; diperbarui setelah initNFC() berhasil
 
   // STATE 3: loading - Flag saat proses registrasi API berlangsung
   // true → tampilkan spinner, disable tombol
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // false berarti tidak sedang loading; setLoading(true) dipanggil saat request ke backend dimulai
 
   // STATE 4: scanning - Flag saat sedang scan kartu NFC
   // true → sedang menunggu user tempelkan kartu ke HP
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(false); // false berarti tidak sedang dalam mode scan NFC; setScanning(true) dipanggil saat readPhysicalCard() dimulai
 
   // STATE 5: scannedCardId - Menyimpan UID kartu yang berhasil di-scan
   // Digunakan untuk ditampilkan ke user & dikirim ke backend

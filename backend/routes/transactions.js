@@ -1,10 +1,10 @@
-const express = require('express'); // Express framework untuk membuat HTTP routes
-const { body, validationResult } = require('express-validator'); // Library validasi input dari client
-const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk akses database SQLite
-const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'); // Engine Z-Score fraud detection
+const express = require('express'); // const membuat variabel tetap; require digunakan Node.js untuk memanggil module; express adalah framework web Node.js yang menyediakan routing dan middleware
+const { body, validationResult } = require('express-validator'); // const membuat variabel tetap; { body, validationResult } destructuring mengambil dua fungsi: body untuk mendefinisikan aturan validasi input, validationResult untuk mengambil hasil validasi
+const { PrismaClient } = require('@prisma/client'); // const membuat variabel tetap; { PrismaClient } destructuring mengambil class ORM dari module @prisma/client; PrismaClient memungkinkan query database SQLite dengan sintaks JavaScript
+const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'); // const membuat variabel tetap; { analyzeZScoreAnomaly, HISTORY_SIZE } destructuring mengambil fungsi utama Z-Score dan konstanta jumlah histori dari file fraudDetection.js; require('../utils/fraudDetection') memanggil file lokal (bukan library eksternal, tanda titik berarti path relatif)
 
-const router = express.Router(); // Buat instance router untuk grouping endpoint /api/transactions
-const prisma = new PrismaClient(); // Buat koneksi Prisma ke database
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru — kumpulan route yang di-mount ke /api/transactions di server.js
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma untuk operasi database SQLite
 
 // --------------------------------------------------------------------------
 // Z-SCORE BASED ANOMALY DETECTION
@@ -215,11 +215,11 @@ router.post(
         take: HISTORY_SIZE, // Ambil maksimal 20 transaksi (HISTORY_SIZE = 20)
       });
 
-      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs); // Hitung Z-Score untuk amount ini
+      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs); // const membuat variabel tetap; analyzeZScoreAnomaly(amount, history) adalah fungsi dari fraudDetection.js yang menghitung Z-Score: mengambil amount transaksi baru sebagai X dan array histori sebagai baseline, lalu mengembalikan objek { zScore, decision, mean, stdDev, variance, n, reasons }
       // Handle edge case: zScore null (σ=0, amount≠mean) → Z tidak terdefinisi → ANOMALY/BLOCK
-      const zScoreLevel = (fraudResult.zScore === null) // Cek apakah Z tidak terdefinisi
-        ? 'ANOMALY' // Jika null: anomali (distribusi degenerasi)
-        : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY'); // Three-sigma rule
+      const zScoreLevel = (fraudResult.zScore === null) // const membuat variabel tetap; operator === null mengecek apakah Z-Score tidak terdefinisi (kasus khusus sigma=0)
+        ? 'ANOMALY' // jika Z null: anomali (distribusi degenerasi — semua histori identik tapi amount berbeda)
+        : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY'); // ternary berantai: Z≤2=NORMAL, 2<Z≤3=SUSPICIOUS, Z>3=ANOMALY (Three-Sigma Rule)
 
       // BLOCK: Tolak transaksi, catat sebagai percobaan fraud
       if (fraudResult.decision === 'BLOCK') { // Z > 3: anomali ekstrem, blokir transaksi
@@ -261,40 +261,40 @@ router.post(
       }
 
       // ALLOW / REVIEW: Proses transaksi, perbarui saldo
-      const transaction = await prisma.$transaction(async (tx) => { // Jalankan operasi atomik (semua berhasil atau semua dibatalkan)
+      const transaction = await prisma.$transaction(async (tx) => { // const membuat variabel tetap; await menunggu; prisma.$transaction() menjalankan beberapa operasi database secara ATOMIK — artinya semua berhasil atau semua dibatalkan (rollback), tidak ada keadaan setengah-setengah; ini mencegah saldo berkurang tapi transaksi tidak tercatat; async (tx) adalah callback function dimana tx adalah Prisma client khusus yang terikat dalam transaction
         // Atomic check-and-decrement: kurangi saldo HANYA jika masih cukup
         // Mencegah TOCTOU race condition — jika dua transaksi diproses bersamaan,
         // hanya satu yang berhasil karena updateMany dengan WHERE balance >= amount.
-        const deducted = await tx.user.updateMany({
-          where: { id: Number(senderId), balance: { gte: amountNum } }, // Kondisi: saldo harus cukup
-          data: { balance: { decrement: amountNum } }, // Atomic decrement
+        const deducted = await tx.user.updateMany({ // const membuat variabel tetap; await menunggu; tx.user.updateMany mengupdate banyak record; tx (bukan prisma) digunakan agar operasi ini masuk dalam transaksi atomik
+          where: { id: Number(senderId), balance: { gte: amountNum } }, // WHERE id=senderId AND balance >= amountNum — kondisi atomik: hanya update jika saldo masih cukup; gte = greater than or equal
+          data: { balance: { decrement: amountNum } }, // SET balance = balance - amountNum — decrement adalah operasi atomik bawaan Prisma untuk pengurangan
         });
-        if (deducted.count === 0) { // Jika tidak ada row yang terupdate, saldo tidak cukup
-          throw new Error('INSUFFICIENT_BALANCE'); // Lempar error agar $transaction di-rollback
+        if (deducted.count === 0) { // if mengecek apakah tidak ada row yang terupdate; .count adalah jumlah row yang teraffect; 0 berarti kondisi WHERE tidak terpenuhi yaitu saldo tidak cukup
+          throw new Error('INSUFFICIENT_BALANCE'); // throw melempar error secara sengaja untuk memicu rollback seluruh $transaction; new Error() membuat objek error baru dengan pesan custom
         }
 
-        await tx.user.update({ // Tambah saldo receiver
-          where: { id: receiver.id }, // Identifikasi receiver berdasarkan ID
-          data: { balance: { increment: amountNum } }, // Atomic increment: tambah saldo
+        await tx.user.update({ // await menunggu; tx.user.update mengupdate satu record; menggunakan tx agar masuk dalam transaksi atomik
+          where: { id: receiver.id }, // WHERE id = receiver.id — identifikasi receiver berdasarkan ID
+          data: { balance: { increment: amountNum } }, // SET balance = balance + amountNum — increment adalah operasi atomik bawaan Prisma untuk penambahan
         });
 
-        const created = await tx.transaction.create({ // Simpan record transaksi ke database
+        const created = await tx.transaction.create({ // const membuat variabel tetap; await menunggu; tx.transaction.create menyimpan record transaksi baru ke tabel Transaction; menggunakan tx agar atomik
           data: {
-            senderId: Number(senderId), // ID pengirim
-            receiverId: receiver.id, // ID penerima
-            amount: amountNum, // Jumlah transfer
-            description, // Catatan transaksi (opsional)
-            deviceId, // ID perangkat yang digunakan
-            fraudRiskScore: fraudResult.zScore ?? null,  // Float? di schema — null saat edge case sigma=0
-            fraudRiskLevel: zScoreLevel, // NORMAL/SUSPICIOUS/ANOMALY
-            fraudReasons: JSON.stringify(fraudResult.reasons), // Alasan deteksi fraud sebagai JSON string
-            ipAddress: req.ip, // IP address untuk audit
+            senderId: Number(senderId), // Number() mengkonversi nilai ke tipe number untuk memastikan tipe data benar
+            receiverId: receiver.id, // ID user penerima
+            amount: amountNum, // jumlah transfer dalam Rupiah
+            description, // shorthand ES6: description: description — catatan transaksi opsional
+            deviceId, // shorthand ES6: deviceId: deviceId — ID perangkat Android
+            fraudRiskScore: fraudResult.zScore ?? null,  // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float? di schema Prisma — kolom nullable
+            fraudRiskLevel: zScoreLevel, // level risiko: NORMAL/SUSPICIOUS/ANOMALY
+            fraudReasons: JSON.stringify(fraudResult.reasons), // JSON.stringify() mengubah array JavaScript menjadi string JSON untuk disimpan di kolom teks database
+            ipAddress: req.ip, // IP address client untuk audit keamanan
           },
           include: {
-            sender: { // Include data sender dalam response
-              select: { id: true, name: true, username: true, balance: true, deviceId: true }, // Field yang dikembalikan
+            sender: { // include melakukan JOIN ke tabel User untuk data sender
+              select: { id: true, name: true, username: true, balance: true, deviceId: true }, // SELECT hanya field yang diperlukan (hindari password)
             },
-            receiver: { // Include data receiver dalam response
+            receiver: { // include melakukan JOIN ke tabel User untuk data receiver
               select: { id: true, name: true, username: true, balance: true, deviceId: true },
             },
           },
@@ -333,25 +333,25 @@ router.post(
       }
 
       // Emit realtime
-      if (req.io) { // Cek apakah Socket.IO tersedia (disetup di server.js)
-        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult }); // Notifikasi admin dashboard: transaksi baru
-        if (transaction.sender?.deviceId) { // Jika sender punya device terdaftar
-          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', { // Kirim update saldo ke device sender
-            balance: transaction.sender.balance, // Saldo terbaru setelah transfer
+      if (req.io) { // if mengecek apakah Socket.IO tersedia (diset di server.js via middleware app.use)
+        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult }); // req.io.to('admin-room') mengirim event ke semua socket yang ada di room admin; .emit(eventName, data) mengirim event real-time dengan data transaksi dan hasil fraud detection ke admin dashboard
+        if (transaction.sender?.deviceId) { // ?. adalah optional chaining — mencegah error jika sender null; mengecek apakah sender punya deviceId
+          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', { // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit mengirim event update saldo
+            balance: transaction.sender.balance, // saldo sender setelah dikurangi (sudah diupdate dalam $transaction)
           });
         }
-        if (transaction.receiver?.deviceId) { // Jika receiver punya device terdaftar
-          req.io.to(`device-${transaction.receiver.deviceId}`).emit('balance-updated', { // Kirim update saldo ke device receiver
-            balance: transaction.receiver.balance, // Saldo terbaru setelah menerima
+        if (transaction.receiver?.deviceId) { // ?. mencegah error jika receiver null; mengecek deviceId receiver
+          req.io.to(`device-${transaction.receiver.deviceId}`).emit('balance-updated', { // kirim event update saldo ke device receiver
+            balance: transaction.receiver.balance, // saldo receiver setelah ditambah (sudah diupdate dalam $transaction)
           });
         }
       }
 
-      res.status(201).json({ // Return 201 Created: transaksi berhasil dibuat
-        success: true, // Flag sukses untuk client
-        message: 'Transaksi berhasil diselesaikan', // Pesan konfirmasi
-        transaction, // Data transaksi lengkap
-        fraudResult, // Hasil analisis fraud (untuk ditampilkan di receipt)
+      res.status(201).json({ // res.status(201) mengatur HTTP status 201 Created; .json() mengirim response dalam format JSON
+        success: true, // flag sukses untuk client — mobile app cek ini untuk menampilkan pesan berhasil
+        message: 'Transaksi berhasil diselesaikan', // pesan konfirmasi yang ditampilkan ke user
+        transaction, // shorthand ES6: mengirim data transaksi lengkap (include sender & receiver)
+        fraudResult, // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt transaksi
       });
     } catch (error) {
       console.error('\u274c Kesalahan membuat transaksi:', error);
@@ -388,4 +388,4 @@ router.get('/:id', async (req, res) => { // GET /:id → ambil detail transaksi 
   }
 });
 
-module.exports = router; // Export router agar bisa di-mount di server.js sebagai /api/transactions
+module.exports = router; // module.exports adalah cara CommonJS untuk mengekspor router dari file ini; router yang di-export akan di-mount di server.js sebagai app.use('/api/transactions', authenticateToken, transactionRoutes)

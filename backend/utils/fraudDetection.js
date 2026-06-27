@@ -27,7 +27,7 @@
 //   Data ke-21 hanya digunakan sebagai nilai X pada rumus Z-Score
 // ============================================================================
 
-const HISTORY_SIZE = 20; // Jumlah transaksi historis yang digunakan sebagai baseline
+const HISTORY_SIZE = 20; // const membuat variabel tetap; HISTORY_SIZE adalah konstanta yang menyimpan jumlah transaksi historis yang digunakan sebagai window baseline untuk perhitungan Z-Score; nilai 20 dipilih berdasarkan prinsip statistik: cukup untuk menghitung mean dan standar deviasi yang representatif
 
 // ============================================================================
 // FUNGSI UTAMA: analyzeZScoreAnomaly()
@@ -289,4 +289,4 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
 // Ekspor fungsi dan konstanta agar bisa diimpor di file lain (fraud.js)
 // analyzeZScoreAnomaly → fungsi utama perhitungan
 // HISTORY_SIZE → konstanta 20, diekspor agar file lain bisa referensi nilai yang sama
-module.exports = { analyzeZScoreAnomaly, HISTORY_SIZE };
+module.exports = { analyzeZScoreAnomaly, HISTORY_SIZE }; // module.exports adalah cara CommonJS Node.js untuk mengekspor dari file ini; objek berisi dua item yang bisa di-import file lain: fungsi analyzeZScoreAnomaly untuk menghitung Z-Score dan konstanta HISTORY_SIZE (20); digunakan di transactions.js dan fraud.js

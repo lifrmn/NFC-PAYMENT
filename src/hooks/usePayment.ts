@@ -88,10 +88,10 @@
 //
 // ==================================================================================
 
-import { useState } from 'react';
-import { Alert } from 'react-native';
-import { NFCService } from '../utils/nfc';
-import { apiService } from '../utils/apiService';
+import { useState } from 'react'; // import digunakan untuk mengambil module; useState adalah hook React untuk membuat state lokal dalam komponen atau hook kustom
+import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog konfirmasi dan pesan error ke user dalam format native Android/iOS
+import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — service yang menangani inisialisasi, pembacaan kartu NFC, dan cleanup resource hardware
+import { apiService } from '../utils/apiService'; // import apiService — HTTP client Singleton yang menangani semua komunikasi dengan backend Express (validasi kartu, proses payment, refresh saldo)
 
 // ==================================================================================
 // HOOK: usePayment

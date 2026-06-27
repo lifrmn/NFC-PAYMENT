@@ -114,9 +114,9 @@
 // IMPORTS - Library yang dibutuhkan
 // ============================================================================
 // react-native-nfc-manager: Library untuk handle NFC di React Native
-import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
+import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager'; // import NfcManager sebagai default export (instance singleton NFC manager); { NfcTech } adalah enum yang berisi teknologi NFC (NfcA, IsoDep, dll); { Ndef } adalah helper untuk encode/decode data format NDEF ke NFC tag
 // Platform: Untuk deteksi OS (Android/iOS)
-import { Platform } from 'react-native';
+import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk membedakan perilaku NFC di Android vs iOS karena ada perbedaan implementasi hardware
 
 // ============================================================================
 // INTERFACE: NFCData

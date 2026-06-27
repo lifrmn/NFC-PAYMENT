@@ -107,12 +107,12 @@
 //
 // ==================================================================================
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // React inti + hooks yang dipakai di App
-import { StatusBar } from 'expo-status-bar'; // Komponen status bar yang bisa dikustomisasi warna dan stylenya
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // Wrapper utama navigasi + ref untuk kontrol programatik
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // Stack navigator + tipe prop navigasi
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Penyimpanan key-value persisten di device untuk sesi login
-import { registerRootComponent } from 'expo'; // Mendaftarkan App sebagai entry point utama Expo
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // import React (wajib untuk JSX); useState untuk state authState, currentUser, error; useEffect untuk inisialisasi app saat mount; useCallback untuk memoize fungsi navigateToScreen agar tidak dibuat ulang setiap render; useRef untuk menyimpan referensi stabil ke navigationRef dan authStateRef
+import { StatusBar } from 'expo-status-bar'; // import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian atas layar (warna, style dark/light)
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationContainerRef (tipe TypeScript untuk ref navigasi programatik)
+import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // import createStackNavigator untuk membuat navigator stack (tumpukan layar); StackNavigationProp adalah tipe TypeScript untuk prop navigation di tiap screen
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digunakan untuk menyimpan userId dan deviceId agar sesi tidak hilang saat app ditutup
+import { registerRootComponent } from 'expo'; // import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebagai entry point utama aplikasi Expo
 import {
   ActivityIndicator, // Spinner loading yang tampil saat startup
   StyleSheet, // Utility untuk membuat stylesheet yang dioptimalkan
@@ -166,8 +166,8 @@ export type RootStackParamList = { // Definisi semua route yang ada di navigatio
   MyCards: undefined; // Screen daftar kartu — tidak butuh parameter tambahan
 };
 
-export type NavigationProp = StackNavigationProp<RootStackParamList>; // Tipe prop navigasi yang type-safe untuk semua screen
-const Stack = createStackNavigator<RootStackParamList>(); // Buat instance stack navigator dengan tipe route yang sudah didefinisikan
+export type NavigationProp = StackNavigationProp<RootStackParamList>; // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
+const Stack = createStackNavigator<RootStackParamList>(); // const membuat variabel tetap; createStackNavigator<RootStackParamList>() membuat instance stack navigator bertipe — semua Screen.name harus sesuai dengan key di RootStackParamList
 
 // ==================================================================================
 // DEFINISI TIPE: Aplikasi

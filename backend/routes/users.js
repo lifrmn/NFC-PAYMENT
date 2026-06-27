@@ -19,12 +19,12 @@
 // 3. REAL-TIME SYNC: Perubahan data langsung dikirim ke client via Socket.IO
 // ============================================================
 
-const express = require('express'); // Framework untuk membuat API routes
-const { body, validationResult } = require('express-validator'); // Validasi input dari client
-const { PrismaClient } = require('@prisma/client'); // ORM untuk akses database SQLite
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js yang sudah terinstall di node_modules; digunakan untuk membuat router HTTP
+const { body, validationResult } = require('express-validator'); // const dengan destructuring { body, validationResult }; body adalah fungsi untuk mendefinisikan aturan validasi input; validationResult mengambil hasil validasi dari request
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman
 
-const router = express.Router(); // Buat router baru untuk endpoint /api/users
-const prisma = new PrismaClient(); // Buat koneksi ke database
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/users
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke database; operator new memanggil constructor class PrismaClient
 
 // ============================================================
 // ENDPOINT 1: GET / - AMBIL SEMUA DATA PENGGUNA
@@ -54,36 +54,36 @@ const prisma = new PrismaClient(); // Buat koneksi ke database
 //   }
 // ]
 // ============================================================
-router.get('/', async (req, res) => {
-  try {
+router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handler ini adalah fungsi asynchronous yang bisa menggunakan await; req adalah objek request dari client; res adalah objek response untuk mengirim data balik
+  try { // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi loncat ke blok catch
     // STEP 1: Query database untuk ambil semua user
     // Gunakan Prisma ORM - lebih aman dari SQL injection
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,                    // ID unik pengguna
+    const users = await prisma.user.findMany({ // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; prisma.user.findMany() adalah method Prisma ORM yang setara SQL SELECT * FROM users
+      select: { // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — seperti SELECT id, name, ... di SQL
+        id: true,                    // true berarti kolom id IKUT dikembalikan
         name: true,                  // Nama lengkap
         username: true,              // Username untuk login
         balance: true,               // Saldo e-wallet (dalam Rupiah)
         deviceId: true,              // ID perangkat Android yang digunakan
         isActive: true,              // Status aktif/diblokir
         createdAt: true,             // Tanggal registrasi
-        _count: {                    // Hitung jumlah transaksi
+        _count: {                    // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
           select: {
-            sentTransactions: true,    // Transaksi yang dikirim user
-            receivedTransactions: true // Transaksi yang diterima user
+            sentTransactions: true,    // Hitung jumlah transaksi yang dikirim user
+            receivedTransactions: true // Hitung jumlah transaksi yang diterima user
           }
         }
       },
       orderBy: {
-        createdAt: 'desc'            // Urutkan: yang terbaru dulu (DESC)
+        createdAt: 'desc'            // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
       }
     });
 
     // STEP 2: Kirim response berupa array JSON ke client
-    res.json(users);
-  } catch (error) {
-    console.error('❌ Gagal mendapatkan data pengguna:', error);
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
+    res.json(users); // res.json() mengirim respons dengan Content-Type: application/json dan mengonversi array users ke string JSON otomatis
+  } catch (error) { // catch menangkap error yang terjadi di dalam blok try; variabel error berisi objek Error
+    console.error('\u274c Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal server dengan format merah
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() mengirim pesan error sebagai JSON
   }
 });
 

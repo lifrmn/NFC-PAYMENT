@@ -99,33 +99,33 @@
 // - usePayment: Custom hook untuk proses pembayaran
 // - apiService: HTTP client untuk update/get saldo user
 // ==================================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 5 state variable (nfcEnabled, amount, balance, merchant, scanning); useEffect untuk init NFC saat mount dan cleanup saat unmount
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal
+  View, // View adalah container dasar React Native \u2014 setara div di HTML
+  Text, // Text menampilkan teks
+  TextInput, // TextInput adalah input teks dengan keyboard numerik \u2014 digunakan bersama keypad kustom untuk input nominal pembayaran
+  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan \u2014 digunakan untuk tombol keypad, tombol bayar, dan tombol kembali
+  Alert, // Alert menampilkan dialog popup native \u2014 untuk pesan error dan konfirmasi pembayaran
+  ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan saat NFC processing berlangsung
+  Modal // Modal adalah overlay layar penuh \u2014 digunakan untuk menampilkan tampilan scan NFC di atas screen utama
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NFCService } from '../utils/nfc';
-import { usePayment } from '../hooks/usePayment';
-import { apiService } from '../utils/apiService';
-import styles from './NFCScreenPayment.styles';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
+import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts \u2014 menyediakan initNFC, readPhysicalCard, dan cleanup untuk hardware NFC
+import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari file usePayment.ts \u2014 menyediakan processTapToPayTransfer dan isProcessing untuk alur pembayaran NFC
+import { apiService } from '../utils/apiService'; // import apiService Singleton \u2014 digunakan untuk mengambil data user dan saldo terbaru setelah transaksi
+import styles from './NFCScreenPayment.styles'; // import stylesheet dari file terpisah
 
 // Props yang diterima komponen ini dari parent (App.tsx atau DashboardScreen)
-interface NFCScreenProps {
-  user: any;     // Data user yang login: id, name, balance, dll
-  onBack: () => void; // Callback untuk navigasi kembali
+interface NFCScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur props yang diterima komponen ini
+  user: any;     // props user bertipe any (fleksibel) \u2014 berisi data user yang sedang login (id, name, balance, dll)
+  onBack: () => void; // callback function () => void \u2014 tidak menerima argumen dan tidak mengembalikan nilai; dipanggil saat user menekan tombol kembali
 }
 
-export default function NFCScreen({ user, onBack }: NFCScreenProps) {
+export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama file; destructuring props sesuai NFCScreenProps
   // STATE 1: nfcEnabled - Apakah NFC hardware aktif?
   // false = tampilkan instruksi aktifkan NFC
   // true  = tampilkan form pembayaran
-  const [nfcEnabled, setNfcEnabled] = useState(false);
+  const [nfcEnabled, setNfcEnabled] = useState(false); // useState(false) membuat state boolean; false berarti NFC dianggap tidak aktif sampai dicek; setNfcEnabled digunakan untuk memperbarui hasil cek
 
   // STATE 2: amount - Nominal pembayaran yang diinput user
   // Format string dengan separator: "50.000" (bukan 50000)

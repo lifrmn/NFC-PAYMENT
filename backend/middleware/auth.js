@@ -9,10 +9,10 @@
 // Middleware ini digunakan untuk proteksi endpoint API agar hanya
 // user yang terautentikasi atau admin yang bisa akses
 
-const jwt = require('jsonwebtoken'); // Library untuk verify JWT token
-const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk query database
+const jwt = require('jsonwebtoken'); // const membuat variabel tetap; require digunakan Node.js untuk memanggil module; jsonwebtoken adalah library untuk membuat dan memvalidasi JWT (JSON Web Token) — token yang digunakan untuk autentikasi stateless tanpa perlu cek database di setiap request.
+const { PrismaClient } = require('@prisma/client'); // const membuat variabel tetap; { PrismaClient } menggunakan destructuring untuk mengambil class PrismaClient; require memanggil module @prisma/client yang merupakan ORM untuk database SQLite.
 
-const prisma = new PrismaClient(); // Instance Prisma client untuk akses database
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma baru yang terhubung ke database SQLite; instance ini digunakan untuk semua operasi database di file ini.
 
 // ==============================================================
 // FUNGSI 1: authenticateToken - Middleware untuk cek JWT token
@@ -26,20 +26,20 @@ const prisma = new PrismaClient(); // Instance Prisma client untuk akses databas
 // 5. Jika tidak valid, return error 401/403
 //
 // Usage: app.get('/api/protected', authenticateToken, handler)
-const authenticateToken = async (req, res, next) => {
-  try {
+const authenticateToken = async (req, res, next) => { // const membuat variabel tetap; async membuat function bisa menggunakan await; (req, res, next) adalah tiga parameter standar middleware Express: req=request dari client, res=response ke client, next=fungsi untuk lanjut ke middleware/handler berikutnya
+  try { // try menjalankan kode yang berpotensi error: jwt.verify, database query
     // STEP 1: Ambil Authorization header dari request
     // Format: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Split "Bearer TOKEN" -> ambil TOKEN
+    const authHeader = req.headers['authorization']; // const membuat variabel tetap; req.headers['authorization'] membaca header Authorization dari HTTP request yang dikirim mobile app
+    const token = authHeader && authHeader.split(' ')[1]; // const membuat variabel tetap; authHeader && ... adalah short-circuit evaluation: hanya evaluasi kanan jika kiri truthy; .split(' ') memecah "Bearer TOKEN" menjadi array, [1] mengambil TOKEN-nya
     
     // STEP 2: Cek apakah ada app secret key (untuk backward compatibility dengan mobile app lama)
     // Mobile app kirim x-app-key header sebagai pengganti JWT token
-    const appKey = req.headers['x-app-key']; // Ambil x-app-key dari header
-    const appSecret = process.env.APP_SECRET || 'NFC2025SecureApp'; // App secret dari .env atau default
-    if (appKey === appSecret) { // Jika app key cocok
+    const appKey = req.headers['x-app-key']; // const membuat variabel tetap; req.headers['x-app-key'] membaca custom header x-app-key yang dikirim mobile app
+    const appSecret = process.env.APP_SECRET || 'NFC2025SecureApp'; // const membuat variabel tetap; process.env.APP_SECRET membaca dari .env; || fallback ke nilai default jika tidak ada
+    if (appKey === appSecret) { // if mengecek apakah app key cocok dengan secret yang ditentukan; === adalah perbandingan ketat (strict equality) — harus sama tipe dan nilai
       // Mobile app access - skip JWT for now (legacy compatibility)
-      return next(); // Langsung lanjut ke endpoint (bypass JWT check)
+      return next(); // return menghentikan eksekusi middleware ini; next() memanggil middleware atau route handler berikutnya — request dilanjutkan tanpa cek JWT
     }
 
     console.log('🔐 Auth middleware: Checking token...'); // Log untuk debug
@@ -48,32 +48,32 @@ const authenticateToken = async (req, res, next) => {
     // STEP 3: Validasi token wajib ada (jika tidak pakai app key)
     if (!token) {
       console.log('❌ No token provided'); // Log untuk debug
-      return res.status(401).json({ error: 'Access token required' }); // 401 Unauthorized
+      return res.status(401).json({ error: 'Access token required' }); // return menghentikan; res.status(401) mengatur HTTP status 401 Unauthorized; .json() mengirim pesan error dalam format JSON
     }
 
     // STEP 4: Verify JWT token
     // jwt.verify() akan throw error jika token invalid atau expired
-    const jwtSecret = process.env.JWT_SECRET || 'nfc-payment-jwt-secret-2025-ultra-secure-key'; // JWT secret dari .env
+    const jwtSecret = process.env.JWT_SECRET || 'nfc-payment-jwt-secret-2025-ultra-secure-key'; // const membuat variabel tetap; process.env.JWT_SECRET membaca secret dari .env yang HARUS sama dengan secret yang dipakai saat jwt.sign di auth.js
     
-    let decoded;
-    try {
-      decoded = jwt.verify(token, jwtSecret); // Decode dan verify token
-      console.log('✅ Token verified for user:', decoded.userId); // Log sukses
-    } catch (jwtError) {
+    let decoded; // let membuat variabel yang nilainya bisa berubah; awalnya undefined, akan diisi hasil verify
+    try { // try dalam try — untuk menangkap error JWT secara spesifik
+      decoded = jwt.verify(token, jwtSecret); // jwt.verify memvalidasi token: cek signature menggunakan jwtSecret dan cek apakah token sudah expired; jika valid mengembalikan payload token (userId, username, iat, exp)
+      console.log('✅ Token verified for user:', decoded.userId); // decoded.userId adalah field yang dimasukkan saat jwt.sign di auth.js
+    } catch (jwtError) { // catch menangkap error spesifik dari jwt.verify
       // Handle JWT-specific errors dengan pesan yang lebih jelas
       console.error('❌ JWT verification failed:', jwtError.message);
       
-      if (jwtError.name === 'TokenExpiredError') {
+      if (jwtError.name === 'TokenExpiredError') { // if mengecek tipe error; .name adalah property dari Error object; TokenExpiredError terjadi ketika token melewati waktu exp
         return res.status(401).json({ 
           error: 'Token expired',
           message: 'Your session has expired. Please login again.' 
         });
-      } else if (jwtError.name === 'JsonWebTokenError') {
-        return res.status(403).json({ 
+      } else if (jwtError.name === 'JsonWebTokenError') { // else if kondisi lanjutan; JsonWebTokenError terjadi ketika format token salah atau signature tidak cocok
+        return res.status(403).json({ // 403 Forbidden — beda dari 401, ini berarti terautentikasi tapi tidak diizinkan
           error: 'Invalid token',
           message: 'Authentication token is invalid. Please login again.' 
         });
-      } else {
+      } else { // else dijalankan jika semua kondisi sebelumnya tidak terpenuhi
         return res.status(403).json({ 
           error: 'Token verification failed',
           message: 'Unable to verify authentication token.' 
@@ -84,15 +84,15 @@ const authenticateToken = async (req, res, next) => {
     // decoded = { userId: 123, username: 'john', iat: 1234567890, exp: 1234571490 }
     
     // STEP 5: Cek apakah user masih ada di database dan session masih valid
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }, // WHERE id = decoded.userId (dari JWT payload)
-      include: { // JOIN dengan tabel userSessions
-        userSessions: {
-          where: { // Filter session yang:
-            token: token, // - Tokennya sama dengan token yang dikirim
-            isActive: true, // - Masih aktif (belum logout)
-            expiresAt: { // - Belum expired
-              gt: new Date() // Greater than now (expiresAt > Date.now())
+    const user = await prisma.user.findUnique({ // const membuat variabel tetap; await menunggu database; prisma.user.findUnique mencari satu user berdasarkan field unik
+      where: { id: decoded.userId }, // WHERE id = decoded.userId — menggunakan ID dari payload token yang sudah terverifikasi
+      include: { // include melakukan JOIN dengan tabel lain; setara LEFT JOIN di SQL
+        userSessions: { // include relasi userSessions dari tabel UserSession
+          where: { // kondisi untuk filter session yang valid
+            token: token, // session harus punya token yang sama dengan yang dikirim client
+            isActive: true, // session harus masih aktif (belum logout)
+            expiresAt: { // kondisi pada field expiresAt
+              gt: new Date() // gt = greater than; new Date() adalah waktu sekarang; artinya expiresAt > sekarang (belum kadaluarsa)
             }
           }
         }
@@ -100,17 +100,17 @@ const authenticateToken = async (req, res, next) => {
     });
 
     // STEP 6: Validasi user dan session
-    if (!user) {
+    if (!user) { // if mengecek apakah user null — user tidak ditemukan di database (mungkin sudah dihapus)
       console.log('❌ User not found for ID:', decoded.userId); // Log untuk debug
-      return res.status(401).json({ 
+      return res.status(401).json({ // return menghentikan; 401 Unauthorized
         error: 'User not found',
         message: 'User account no longer exists.' 
       });
     }
     
-    if (user.userSessions.length === 0) {
+    if (user.userSessions.length === 0) { // if mengecek apakah array userSessions kosong; .length mengambil panjang array; === 0 berarti tidak ada session valid yang ditemukan
       console.log('❌ No valid session found for user:', decoded.userId); // Log untuk debug
-      return res.status(401).json({ 
+      return res.status(401).json({ // 401 Unauthorized — session tidak valid
         error: 'Session expired',
         message: 'Your session has expired or been logged out. Please login again.' 
       });
@@ -118,9 +118,9 @@ const authenticateToken = async (req, res, next) => {
 
     // STEP 7: Token valid! Attach user data ke request object
     console.log('✅ Authentication successful for user:', user.username); // Log sukses
-    req.user = user; // Agar endpoint bisa akses user via req.user
-    req.token = token; // Agar endpoint bisa akses token via req.token
-    next(); // Lanjut ke endpoint handler
+    req.user = user; // req.user = user menyimpan data user ke objek request agar bisa diakses oleh route handler via req.user.id, req.user.username, dll
+    req.token = token; // req.token menyimpan token ke objek request agar route handler bisa akses token jika diperlukan
+    next(); // next() memanggil middleware atau route handler berikutnya — request dilanjutkan karena sudah terautentikasi
     
   } catch (error) {
     // STEP 8: Handle error (unexpected errors)
@@ -208,8 +208,8 @@ const authenticateDevice = (req, res, next) => {
 };
 
 // STEP 7: Export semua fungsi middleware agar bisa diimport di file lain
-module.exports = {
-  authenticateToken, // Untuk proteksi endpoint yang perlu JWT token
-  authenticateAdmin, // Untuk proteksi endpoint admin
-  authenticateDevice // Untuk proteksi endpoint device sync
+module.exports = { // module.exports adalah cara CommonJS (Node.js) untuk mengekspor nilai dari file ini; objek berisi tiga fungsi yang akan tersedia saat file lain melakukan require('./middleware/auth')
+  authenticateToken, // shorthand ES6: sama dengan authenticateToken: authenticateToken — digunakan untuk proteksi endpoint yang perlu JWT token
+  authenticateAdmin, // shorthand ES6: sama dengan authenticateAdmin: authenticateAdmin — digunakan untuk proteksi endpoint admin
+  authenticateDevice // shorthand ES6: sama dengan authenticateDevice: authenticateDevice — digunakan untuk proteksi endpoint device sync
 };

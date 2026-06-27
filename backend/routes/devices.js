@@ -24,12 +24,12 @@
 // Server save device info -> Return success -> App siap digunakan
 // ============================================================
 
-const express = require('express'); // Import framework Express
-const { PrismaClient } = require('@prisma/client'); // Import Prisma ORM untuk akses database
-const { authenticateDevice } = require('../middleware/auth'); // Import middleware autentikasi perangkat
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router HTTP endpoint devices
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman tanpa SQL mentah
+const { authenticateDevice } = require('../middleware/auth'); // destructuring { authenticateDevice } dari middleware auth.js — middleware yang memvalidasi x-app-key header sebelum endpoint device sensitif bisa diakses
 
-const router = express.Router(); // Buat router Express baru
-const prisma = new PrismaClient(); // Buat instance Prisma untuk query database
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/devices
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
 
 // ============================================================
 // ENDPOINT 1: POST /register - DAFTARKAN PERANGKAT BARU

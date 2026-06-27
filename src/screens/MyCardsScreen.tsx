@@ -91,33 +91,33 @@
 // Utils:
 // - apiService: HTTP client (getUserCards, updateCardStatus)
 // ==================================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk state cards/loading/refreshing; useEffect untuk auto-load data kartu saat screen pertama kali dibuka
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  RefreshControl,
-  ActivityIndicator
+  View, // View adalah container dasar React Native — setara div di HTML
+  Text, // Text menampilkan teks statis maupun dinamis
+  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan saat ditekan — digunakan untuk tombol blokir, aktifkan, tambah kartu
+  ScrollView, // ScrollView memungkinkan konten di-scroll — digunakan karena daftar kartu bisa panjang
+  Alert, // Alert menampilkan dialog popup native — digunakan untuk konfirmasi blokir kartu dan pesan error
+  RefreshControl, // RefreshControl adalah komponen khusus pull-to-refresh yang dipasang di dalam ScrollView
+  ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat loading data kartu pertama kali
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { apiService } from '../utils/apiService';
-import styles from './MyCardsScreen.styles';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
+import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil API getUserCards (ambil kartu) dan updateCardStatus (blokir/aktifkan kartu)
+import styles from './MyCardsScreen.styles'; // import stylesheet dari file terpisah agar komponen tetap bersih
 
 // Props yang diterima dari parent component (App.tsx atau DashboardScreen)
-interface MyCardsScreenProps {
-  user: any;                    // Data user login: id, name, balance, dll
-  onBack: () => void;           // Callback navigasi kembali
-  onRegisterNew?: () => void;   // Callback ke halaman registrasi kartu (opsional)
+interface MyCardsScreenProps { // interface adalah blueprint TypeScript — mendefinisikan struktur props agar type-safe
+  user: any;                    // props user bertipe any — berisi data user yang sedang login (id, name, balance, dll)
+  onBack: () => void;           // callback function () => void — dipanggil saat user menekan tombol kembali ke DashboardScreen
+  onRegisterNew?: () => void;   // tanda ? berarti props ini opsional — jika disediakan, dipanggil untuk navigasi ke RegisterCardScreen
 }
 
 // Interface tipe data kartu NFC (sesuai schema Prisma di backend)
-interface NFCCard {
+interface NFCCard { // interface mendefinisikan struktur objek kartu NFC yang diterima dari backend API
   id: number;                                          // Primary key di database
-  cardId: string;                                      // UID fisik kartu NFC (hex)
-  userId: number;                                      // FK ke tabel User
-  balance: number;                                     // Saldo kartu (dalam rupiah)
+  cardId: string;                                      // UID fisik kartu NFC (format hexadecimal, contoh: 04AB12CD78)
+  userId: number;                                      // Foreign key ke tabel User — menghubungkan kartu dengan pemiliknya
+  balance: number;                                     // Saldo kartu dalam satuan Rupiah
   cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED'; // Status kartu (4 pilihan)
   cardType?: string;                                   // Tipe kartu NFC (opsional)
   cardFrequency?: string;                              // Frekuensi RF kartu (opsional)

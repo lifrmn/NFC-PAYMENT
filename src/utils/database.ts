@@ -30,9 +30,9 @@
 //
 // ==================================================================================
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { apiService } from './apiService';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk cache data user agar akses lebih cepat tanpa perlu request API setiap saat
+import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk mendeteksi platform Android/iOS, berguna saat format atau logika berbeda tiap platform
+import { apiService } from './apiService'; // import apiService Singleton dari apiService.ts — semua operasi HTTP (login, register, getUser, dll) dilakukan melalui service ini
 
 // ==================================================================================
 // 🔹 TYPE DEFINITIONS - INTERFACE UNTUK DATA STRUCTURES

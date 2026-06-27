@@ -110,21 +110,21 @@
 // API:
 // - apiService: HTTP client untuk getUserById (balance refresh)
 // ==================================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // import digunakan untuk mengambil module; React adalah library utama React Native; useState membuat state lokal; useEffect menjalankan kode saat komponen mount atau update
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  ActivityIndicator
+  View, // View adalah komponen container dasar React Native — setara div di HTML
+  Text, // Text menampilkan teks
+  TextInput, // TextInput adalah input teks — di sini digunakan untuk input nominal pembayaran dengan keyboard numerik
+  TouchableOpacity, // TouchableOpacity adalah tombol interaktif yang tampak transparan saat ditekan
+  Alert, // Alert menampilkan dialog popup native untuk konfirmasi dan error
+  ScrollView, // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar
+  ActivityIndicator // ActivityIndicator adalah spinner loading yang ditampilkan saat proses payment berlangsung
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NFCService } from '../utils/nfc';
-import { usePayment } from '../hooks/usePayment';
-import { apiService } from '../utils/apiService';
-import styles from './NFCScreen.styles';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
+import { NFCService } from '../utils/nfc'; // import NFCService dari utils/nfc.ts — service yang menangani inisialisasi hardware NFC, pembacaan kartu, dan cleanup resource
+import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari hooks/usePayment.ts — hook yang menyediakan logika inti pembayaran NFC (processTapToPayTransfer)
+import { apiService } from '../utils/apiService'; // import apiService dari utils/apiService.ts — HTTP client Singleton untuk komunikasi dengan backend API
+import styles from './NFCScreen.styles'; // import stylesheet dari file terpisah untuk menjaga kode komponen tetap bersih
 
 // ==================================================================================
 // TYPE DEFINITIONS
@@ -134,9 +134,9 @@ import styles from './NFCScreen.styles';
 //   Properties: id, name, username, balance
 // - onBack: Callback function untuk navigate back ke DashboardScreen
 // ==================================================================================
-interface NFCScreenProps {
-  user: any;
-  onBack: () => void;
+interface NFCScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur objek props yang diterima komponen NFCScreen
+  user: any; // props user bertipe any (fleksibel) — berisi data user yang sedang login sebagai merchant (id, name, username, balance)
+  onBack: () => void; // props onBack adalah callback function () => void (tidak menerima argumen, tidak mengembalikan nilai) — dipanggil untuk kembali ke DashboardScreen
 }
 
 // ==================================================================================
@@ -148,27 +148,27 @@ interface NFCScreenProps {
 // @param user - Current user object (merchant)
 // @param onBack - Callback untuk navigate back
 // ==================================================================================
-export default function NFCScreen({ user, onBack }: NFCScreenProps) {
+export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export default mengekspor komponen sebagai ekspor utama file; function NFCScreen menerima props user dan onBack yang didefinisikan di NFCScreenProps
   // STATE 1: nfcEnabled - Flag untuk cek apakah hardware NFC aktif atau tidak
   // false = tampilkan layar instruksi "Aktifkan NFC"
   // true = tampilkan form pembayaran
-  const [nfcEnabled, setNfcEnabled] = useState(false); // Asumsi awal: disabled
+  const [nfcEnabled, setNfcEnabled] = useState(false); // const membuat variabel tetap; useState(false) membuat state boolean; false berarti NFC dianggap tidak aktif sampai dicek; setNfcEnabled fungsi untuk memperbarui state ini
   
   // STATE 2: amount - Input jumlah uang yang akan diterima oleh merchant
   // Controlled component: value={amount} onChangeText={setAmount}
   // Nilai berupa string karena TextInput bekerja dengan string
-  const [amount, setAmount] = useState(''); // Awalnya kosong
+  const [amount, setAmount] = useState(''); // useState('') membuat state string kosong; setAmount dipanggil setiap kali user mengetik di TextInput
   
   // STATE 3: currentBalance - Saldo merchant yang ditampilkan di layar
   // Nilai awal dari props user, tapi akan di-update setelah transaksi berhasil
   // Digunakan untuk menampilkan "Saldo Anda: Rp xxx"
-  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0); // Fallback ke 0 jika undefined
+  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0); // user?.balance menggunakan optional chaining — aman jika user undefined; || 0 adalah fallback jika balance null/undefined
   
   // HOOK: usePayment - Custom hook yang menyediakan logika pembayaran NFC
   // Returns dua hal penting:
   // - isProcessing: boolean untuk disable tombol saat proses payment berlangsung
   // - processTapToPayTransfer: function utama untuk memproses pembayaran
-  const { isProcessing, processTapToPayTransfer } = usePayment(); // Destructuring object
+  const { isProcessing, processTapToPayTransfer } = usePayment(); // const membuat variabel tetap; destructuring objek yang dikembalikan hook usePayment — mengambil dua property: isProcessing dan processTapToPayTransfer
 
   // ================================================================================
   // EFFECT: NFC Initialization & Cleanup
@@ -184,16 +184,16 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
   //
   // Dependencies: [] = run once on mount
   // ================================================================================
-  useEffect(() => {
+  useEffect(() => { // useEffect menjalankan kode saat komponen pertama kali mount; array kosong [] sebagai parameter kedua berarti efek hanya jalan SEKALI saat mount — tidak berulang saat re-render
     // Panggil checkNFC saat komponen pertama kali di-render
-    checkNFC(); // Cek apakah NFC supported dan enabled
+    checkNFC(); // memanggil fungsi checkNFC() untuk mendeteksi status hardware NFC saat screen dibuka
     
     // Cleanup function yang dijalankan saat komponen di-unmount (dihapus dari layar)
     // Penting untuk melepas resource NFC agar tidak memory leak
-    return () => {
-      NFCService.cleanup(); // Bersihkan resource NFC hardware
+    return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen dihapus dari layar (unmount)
+      NFCService.cleanup(); // memanggil method cleanup() dari NFCService untuk melepas resource NFC hardware — mencegah memory leak dan error jika user berpindah screen
     };
-  }, []); // Array kosong = hanya jalan sekali saat mount
+  }, []); // array kosong [] berarti efek ini hanya berjalan SEKALI saat mount, tidak diulang
 
   // ================================================================================
   // FUNCTION: checkNFC

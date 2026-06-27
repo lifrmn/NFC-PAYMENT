@@ -101,22 +101,22 @@
 // - registerUser: Offline registration via SQLite (from database.ts)
 // - apiService: HTTP client untuk backend API registration (from apiService.ts)
 // ==================================================================================
-import React, { useState } from 'react';
+import React, { useState } from 'react'; // import React (wajib untuk JSX) dan useState hook untuk membuat state lokal (name, username, password, confirmPassword, loading)
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView
+  View, // View adalah komponen container dasar React Native — setara div di HTML
+  Text, // Text menampilkan teks
+  TextInput, // TextInput adalah input teks — digunakan untuk semua field form (nama, username, password, konfirmasi)
+  TouchableOpacity, // TouchableOpacity adalah area yang bisa ditekan dengan efek transparan — digunakan untuk link "Sudah punya akun?"
+  Alert, // Alert menampilkan dialog popup native untuk validasi input dan pesan sukses registrasi
+  KeyboardAvoidingView, // KeyboardAvoidingView menggeser layout secara otomatis saat keyboard muncul agar form tidak tertutup keyboard
+  Platform, // Platform.OS mengembalikan 'android' atau 'ios' — digunakan karena perilaku keyboard berbeda di tiap platform
+  ScrollView // ScrollView memungkinkan form bisa di-scroll saat konten melebihi tinggi layar atau keyboard muncul
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import CustomButton from '../components/CustomButton';
-import { apiService } from '../utils/apiService';
-import styles from './RegisterScreen.styles';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan UI tidak tertutup notch, status bar, atau home indicator
+import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage adalah penyimpanan key-value persisten — digunakan untuk menyimpan token dan userId setelah registrasi berhasil
+import CustomButton from '../components/CustomButton'; // import komponen CustomButton dari file lokal — tombol reusable dengan loading state dan variant warna
+import { apiService } from '../utils/apiService'; // import apiService Singleton dari apiService.ts — digunakan untuk mengirim request registrasi ke backend
+import styles from './RegisterScreen.styles'; // import stylesheet dari file terpisah agar kode komponen tetap bersih
 
 // ==================================================================================
 // TYPE DEFINITIONS
@@ -130,9 +130,9 @@ import styles from './RegisterScreen.styles';
 //   No parameters
 //   Use case: User tap "Sudah punya akun? Masuk di sini" link
 // ==================================================================================
-interface RegisterScreenProps {
-  onRegisterSuccess: () => void;
-  onNavigateToLogin: () => void;
+interface RegisterScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur props yang diterima komponen RegisterScreen
+  onRegisterSuccess: () => void; // callback function tanpa argumen (() => void) — dipanggil App.tsx saat registrasi berhasil, biasanya untuk navigasi kembali ke login
+  onNavigateToLogin: () => void; // callback function tanpa argumen — dipanggil saat user menekan link "Sudah punya akun?"
 }
 
 // ==================================================================================

@@ -18,12 +18,12 @@
 // Semua endpoint di file ini memerlukan authenticateAdmin middleware
 // (kecuali yang dibuat public untuk debugging)
 
-const express = require('express'); // Express framework untuk routing
-const { body, validationResult } = require('express-validator'); // Untuk validasi input request
-const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk database access
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; Express digunakan untuk membuat router HTTP dan mendefinisikan endpoint
+const { body, validationResult } = require('express-validator'); // const dengan destructuring; body adalah fungsi pembuat aturan validasi input; validationResult mengambil hasil validasi dari request — mencegah data tidak valid masuk ke database
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang digunakan untuk query database dengan type-safe
 
-const router = express.Router(); // Buat instance Express Router
-const prisma = new PrismaClient(); // Buat instance Prisma client
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/admin
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database SQLite
 
 // ===============================================================
 // ENDPOINT 1: GET /dashboard - Statistik sistem untuk admin dashboard
@@ -37,11 +37,11 @@ const prisma = new PrismaClient(); // Buat instance Prisma client
 //
 // Usage: GET /api/admin/dashboard
 // Headers: x-admin-password: admin123, x-app-key: NFC2025SecureApp
-router.get('/dashboard', async (req, res) => {
-  try {
+router.get('/dashboard', async (req, res) => { // router.get mendaftarkan endpoint HTTP GET; '/dashboard' adalah path relatif endpoint ini di bawah /api/admin; async berarti handler adalah fungsi asynchronous
+  try { // try memulai blok percobaan; jika ada error di dalamnya, eksekusi loncat ke blok catch
     // STEP 1: Query berbagai data secara parallel menggunakan Promise.all
     // Promise.all menjalankan semua query sekaligus (lebih cepat dari serial)
-    const [
+    const [ // const membuat variabel tetap; array destructuring untuk mengambil hasil masing-masing query dari Promise.all secara berurutan
       totalUsers, // Total user aktif
       totalDevices, // Total device terdaftar
       onlineDevices, // Device online (lastSeen < 5 menit yang lalu)
@@ -50,57 +50,57 @@ router.get('/dashboard', async (req, res) => {
       fraudAlerts, // Fraud alerts terakhir (window monitoring)
       recentTransactions, // 10 transaksi terbaru
       recentAlerts // 5 fraud alert terbaru
-    ] = await Promise.all([
+    ] = await Promise.all([ // await menunggu semua Promise selesai; Promise.all menerima array Promise dan menjalankan SEMUA secara paralel — lebih efisien dari await satu per satu
       // Query 1: Count total user yang aktif (isActive = true)
-      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isActive: true } }), // prisma.user.count() adalah setara SQL SELECT COUNT(*) FROM users WHERE isActive = true
       
       // Query 2: Count total device
-      prisma.device.count(),
+      prisma.device.count(), // prisma.device.count() menghitung semua baris di tabel device
       
       // Query 3: Count device online (lastSeen dalam 5 menit terakhir)
       prisma.device.count({
         where: {
           lastSeen: {
-            gte: new Date(Date.now() - 300000) // Last 5 minutes (300,000 ms = 5 menit)
+            gte: new Date(Date.now() - 300000) // gte berarti greater than or equal (>=); Date.now() mengembalikan timestamp sekarang dalam milidetik; 300000 = 5 menit dalam milidetik
           }
         }
       }),
       
       // Query 4: Count total transaksi
-      prisma.transaction.count(),
+      prisma.transaction.count(), // menghitung semua baris di tabel transaction
       
       // Query 5: Sum total balance semua user aktif
       prisma.user.aggregate({
-        _sum: { balance: true }, // SUM(balance)
-        where: { isActive: true } // WHERE isActive = true
+        _sum: { balance: true }, // _sum adalah operasi agregasi Prisma — setara SQL SUM(balance); true berarti field balance ikut dihitung
+        where: { isActive: true } // filter hanya user aktif
       }),
       
       // Query 6: Count fraud alerts dalam window monitoring (1 hari terakhir)
       prisma.fraudAlert.count({
         where: {
           createdAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours — 24 jam × 60 menit × 60 detik × 1000 milidetik
           }
         }
       }),
       
       // Query 7: Get 10 transaksi terbaru dengan data sender & receiver
       prisma.transaction.findMany({
-        include: { // JOIN dengan tabel user (sender dan receiver)
-          sender: { select: { id: true, name: true, username: true } }, // Data sender
-          receiver: { select: { id: true, name: true, username: true } } // Data receiver
+        include: { // include adalah fitur Prisma untuk JOIN tabel relasi — setara SQL INNER JOIN
+          sender: { select: { id: true, name: true, username: true } }, // JOIN ke tabel user sebagai sender; select memilih kolom yang dikembalikan
+          receiver: { select: { id: true, name: true, username: true } } // JOIN ke tabel user sebagai receiver
         },
-        orderBy: { createdAt: 'desc' }, // ORDER BY createdAt DESC
-        take: 10 // LIMIT 10
+        orderBy: { createdAt: 'desc' }, // ORDER BY createdAt DESC — terbaru di atas
+        take: 10 // take adalah LIMIT di Prisma — ambil maksimal 10 baris
       }),
       
       // Query 8: Get 5 fraud alert terbaru dengan data user
       prisma.fraudAlert.findMany({
-        include: { // JOIN dengan tabel user
-          user: { select: { id: true, name: true, username: true } } // Data user yang kena fraud alert
+        include: { // JOIN ke tabel relasi
+          user: { select: { id: true, name: true, username: true } } // Data user yang terkena fraud alert
         },
-        orderBy: { createdAt: 'desc' }, // ORDER BY createdAt DESC
-        take: 5 // LIMIT 5
+        orderBy: { createdAt: 'desc' }, // terbaru di atas
+        take: 5 // ambil 5 baris teratas
       })
     ]);
 

@@ -89,66 +89,66 @@ AUTO REFRESH (REALTIME):
 @author NFC Payment Team
 @created 2025
 -->
-<html lang="id">
+<html lang="id"> <!-- lang="id" memberitahu browser bahwa bahasa konten halaman ini adalah Indonesia; penting untuk aksesibilitas dan SEO -->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Dompet Digital NFC</title>
-    <link rel="stylesheet" href="./dashboard.css">
+    <meta charset="UTF-8"> <!-- meta charset mendefinisikan encoding karakter; UTF-8 mendukung semua karakter Unicode termasuk huruf Indonesia -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- meta viewport mengatur skala tampilan di perangkat mobile; initial-scale=1.0 memastikan tidak ada zoom otomatis -->
+    <title>Admin Dashboard - Dompet Digital NFC</title> <!-- title ditampilkan di tab browser dan digunakan mesin pencari -->
+    <link rel="stylesheet" href="./dashboard.css"> <!-- link rel="stylesheet" menghubungkan file CSS eksternal; href adalah path relatif ke file CSS yang berisi semua gaya tampilan dashboard -->
 </head>
-<body>
-    <div class="container">
+<body> <!-- body adalah elemen yang menampung semua konten yang terlihat di halaman -->
+    <div class="container"> <!-- div adalah elemen container HTML generik; class="container" memungkinkan CSS menargetkan elemen ini untuk layout flex/grid utama -->
         <!-- ========================================
              SIDEBAR: Navigation menu
              ======================================== -->
-        <aside class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">💳</div>
-                <div class="logo-text">
-                    <h3>Dompet</h3>
-                    <h3>Digital NFC</h3>
+        <aside class="sidebar"> <!-- aside adalah elemen semantik HTML5 untuk konten sampingan; class="sidebar" ditargetkan CSS untuk tampilan sidebar navigasi kiri -->
+            <div class="logo"> <!-- div.logo membungkus elemen logo di bagian atas sidebar -->
+                <div class="logo-icon">💳</div> <!-- div.logo-icon menampilkan ikon kartu kredit sebagai logo visual aplikasi -->
+                <div class="logo-text"> <!-- div.logo-text menampung teks nama aplikasi di samping ikon -->
+                    <h3>Dompet</h3> <!-- h3 adalah heading level 3 untuk teks nama aplikasi -->
+                    <h3>Digital NFC</h3> <!-- h3 kedua untuk baris kedua nama aplikasi -->
                 </div>
             </div>
 
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a class="nav-link active" onclick="switchTab('dashboard')" id="nav-dashboard">
-                        <span class="nav-icon">📊</span>
+            <ul class="nav-menu"> <!-- ul adalah unordered list (daftar tanpa nomor); class="nav-menu" ditargetkan CSS untuk menu navigasi vertikal -->
+                <li class="nav-item"> <!-- li adalah list item; class="nav-item" digunakan CSS untuk styling setiap item menu -->
+                    <a class="nav-link active" onclick="switchTab('dashboard')" id="nav-dashboard"> <!-- a adalah elemen hyperlink; onclick="switchTab('dashboard')" memanggil fungsi JavaScript saat diklik; class="active" menandai tab ini sebagai aktif; id digunakan untuk referensi DOM -->
+                        <span class="nav-icon">📊</span> <!-- span adalah inline container; class="nav-icon" untuk styling ikon menu; emoji digunakan sebagai ikon visual -->
                         Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('fraud-alert')" id="nav-fraud-alert">
+                    <a class="nav-link" onclick="switchTab('fraud-alert')" id="nav-fraud-alert"> <!-- onclick memanggil switchTab('fraud-alert') saat diklik untuk berpindah ke tab Fraud Alert -->
                         <span class="nav-icon">🚨</span>
                         Fraud Alert
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('transaksi')" id="nav-transaksi">
+                    <a class="nav-link" onclick="switchTab('transaksi')" id="nav-transaksi"> <!-- switchTab('transaksi') berpindah ke tab daftar transaksi -->
                         <span class="nav-icon">💰</span>
                         Transaksi
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('pengguna')" id="nav-pengguna">
+                    <a class="nav-link" onclick="switchTab('pengguna')" id="nav-pengguna"> <!-- switchTab('pengguna') berpindah ke tab manajemen pengguna -->
                         <span class="nav-icon">👥</span>
                         Pengguna
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('perangkat')" id="nav-perangkat">
+                    <a class="nav-link" onclick="switchTab('perangkat')" id="nav-perangkat"> <!-- switchTab('perangkat') berpindah ke tab daftar perangkat terdaftar -->
                         <span class="nav-icon">📱</span>
                         Perangkat
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('laporan')" id="nav-laporan">
+                    <a class="nav-link" onclick="switchTab('laporan')" id="nav-laporan"> <!-- switchTab('laporan') berpindah ke tab laporan statistik -->
                         <span class="nav-icon">📈</span>
                         Laporan
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" onclick="switchTab('pengaturan')" id="nav-pengaturan">
+                    <a class="nav-link" onclick="switchTab('pengaturan')" id="nav-pengaturan"> <!-- switchTab('pengaturan') berpindah ke tab pengaturan sistem -->
                         <span class="nav-icon">⚙️</span>
                         Pengaturan
                     </a>
@@ -163,26 +163,26 @@ AUTO REFRESH (REALTIME):
             <!-- ========================================
                  TAB 1: DASHBOARD - Overview & Statistics
                  ======================================== -->
-            <div id="tab-dashboard" class="tab-content active">
+            <div id="tab-dashboard" class="tab-content active"> <!-- div dengan id="tab-dashboard" adalah konten tab Dashboard; class="tab-content active" menampilkan tab ini; JavaScript akan toggle class "active" saat tab berganti -->
                 <!-- Header -->
-                <div class="header">
-                    <div class="header-title">
-                        <h1>Dashboard</h1>
-                        <p>
-                            <span id="connection-status" class="connection-status">
-                                <span class="connection-dot"></span>
-                                <span class="connection-text">Connected to Backend (PORT 4000)</span>
+                <div class="header"> <!-- div.header membungkus seluruh baris header halaman: judul dan tombol aksi -->
+                    <div class="header-title"> <!-- div.header-title menampung judul dan status koneksi backend -->
+                        <h1>Dashboard</h1> <!-- h1 adalah heading utama halaman; hanya ada satu h1 per halaman (best practice HTML) -->
+                        <p> <!-- p adalah paragraf; di sini digunakan untuk menampung status koneksi backend -->
+                            <span id="connection-status" class="connection-status"> <!-- span dengan id="connection-status" diperbarui JavaScript untuk menampilkan status koneksi realtime -->
+                                <span class="connection-dot"></span> <!-- span.connection-dot adalah titik kecil animasi (CSS pulse) yang menandakan koneksi aktif -->
+                                <span class="connection-text">Connected to Backend (PORT 4000)</span> <!-- teks status koneksi yang bisa diperbarui JavaScript -->
                             </span>
                         </p>
                     </div>
-                    <div class="header-actions">
-                        <button class="btn-export btn-refresh" onclick="refreshAllData()">
+                    <div class="header-actions"> <!-- div.header-actions menampung tombol dan profil admin di pojok kanan header -->
+                        <button class="btn-export btn-refresh" onclick="refreshAllData()"> <!-- button adalah elemen tombol HTML; onclick="refreshAllData()" memanggil fungsi JavaScript untuk memuat ulang semua data dari backend -->
                             <span>🔄</span>
                             Refresh Data
                         </button>
-                        <div class="user-profile">
-                            <div class="user-avatar">AD</div>
-                            <div class="user-info">
+                        <div class="user-profile"> <!-- div.user-profile menampilkan avatar dan info admin yang sedang login -->
+                            <div class="user-avatar">AD</div> <!-- div.user-avatar menampilkan inisial nama admin sebagai avatar -->
+                            <div class="user-info"> <!-- div.user-info menampilkan nama dan email admin -->
                                 <h4>Admin</h4>
                                 <p>admin@nfc.com</p>
                             </div>
@@ -191,15 +191,15 @@ AUTO REFRESH (REALTIME):
                 </div>
 
                 <!-- Statistics Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-row">
-                            <div class="stat-info">
+                <div class="stats-grid"> <!-- div.stats-grid adalah container CSS Grid untuk 4 kartu statistik yang tersusun berjajar -->
+                    <div class="stat-card"> <!-- div.stat-card adalah kartu statistik individual dengan shadow dan border radius -->
+                        <div class="stat-row"> <!-- div.stat-row mengatur konten kartu dengan flexbox: teks di kiri, ikon di kanan -->
+                            <div class="stat-info"> <!-- div.stat-info menampilkan judul, angka, dan perubahan persentase -->
                                 <h3>Total Pengguna</h3>
-                                <h2 id="stat-users">0</h2>
-                                <div class="stat-change positive">↑ 12% dari kemarin</div>
+                                <h2 id="stat-users">0</h2> <!-- h2 dengan id="stat-users" diperbarui JavaScript saat data dari API berhasil dimuat -->
+                                <div class="stat-change positive">↑ 12% dari kemarin</div> <!-- div.stat-change.positive ditampilkan hijau oleh CSS untuk tren positif -->
                             </div>
-                            <div class="stat-icon blue">👥</div>
+                            <div class="stat-icon blue">👥</div> <!-- div.stat-icon.blue menampilkan ikon dengan background biru -->
                         </div>
                     </div>
 
@@ -207,7 +207,7 @@ AUTO REFRESH (REALTIME):
                         <div class="stat-row">
                             <div class="stat-info">
                                 <h3>Transaksi Hari Ini</h3>
-                                <h2 id="stat-transactions">0</h2>
+                                <h2 id="stat-transactions">0</h2> <!-- id="stat-transactions" diperbarui JavaScript dengan jumlah total transaksi dari backend -->
                                 <div class="stat-change positive">↑ 8% dari kemarin</div>
                             </div>
                             <div class="stat-icon green">💰</div>
@@ -218,7 +218,7 @@ AUTO REFRESH (REALTIME):
                         <div class="stat-row">
                             <div class="stat-info">
                                 <h3>Kartu NFC Aktif</h3>
-                                <h2 id="stat-cards">0</h2>
+                                <h2 id="stat-cards">0</h2> <!-- id="stat-cards" diperbarui JavaScript dengan jumlah kartu NFC aktif -->
                                 <div class="stat-change positive">↑ 5% dari kemarin</div>
                             </div>
                             <div class="stat-icon purple">💳</div>
@@ -229,8 +229,8 @@ AUTO REFRESH (REALTIME):
                         <div class="stat-row">
                             <div class="stat-info">
                                 <h3>Fraud Alerts</h3>
-                                <h2 id="stat-fraud">0</h2>
-                                <div class="stat-change negative">↑ 15% dari kemarin</div>
+                                <h2 id="stat-fraud">0</h2> <!-- id="stat-fraud" diperbarui JavaScript dengan jumlah fraud alert terdeteksi -->
+                                <div class="stat-change negative">↑ 15% dari kemarin</div> <!-- class="negative" ditampilkan merah oleh CSS untuk tren buruk -->
                             </div>
                             <div class="stat-icon red">🚨</div>
                         </div>
@@ -238,27 +238,27 @@ AUTO REFRESH (REALTIME):
                 </div>
 
                 <!-- Content Grid: Transactions + Fraud Chart -->
-                <div class="content-grid">
+                <div class="content-grid"> <!-- div.content-grid adalah container CSS Grid dua kolom: tabel transaksi di kiri, chart fraud di kanan -->
                     <!-- Transaction Table -->
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card"> <!-- div.card adalah komponen kartu dengan padding, shadow, dan border radius -->
+                        <div class="card-header"> <!-- div.card-header menampilkan judul kartu dan link "Lihat Semua" -->
                             <h3 class="card-title">Transaksi Terbaru</h3>
-                            <a href="#" class="card-action">Lihat Semua →</a>
+                            <a href="#" class="card-action">Lihat Semua →</a> <!-- a dengan class="card-action" adalah link kecil di pojok kanan header kartu -->
                         </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Waktu</th>
+                        <div class="table-container"> <!-- div.table-container memungkinkan tabel di-scroll horizontal jika terlalu lebar -->
+                            <table> <!-- table adalah elemen HTML untuk data tabular: transaksi ditampilkan dalam baris dan kolom -->
+                                <thead> <!-- thead mengelompokkan baris header tabel -->
+                                    <tr> <!-- tr adalah table row (baris tabel) -->
+                                        <th>Waktu</th> <!-- th adalah table header cell (sel header); ditampilkan tebal oleh default browser -->
                                         <th>Pengguna</th>
                                         <th>Jenis</th>
                                         <th>Jumlah</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
-                                <tbody id="transaction-tbody">
+                                <tbody id="transaction-tbody"> <!-- tbody mengelompokkan baris data tabel; id="transaction-tbody" digunakan JavaScript untuk mengisi data transaksi dari API -->
                                     <tr>
-                                        <td colspan="5" class="table-loading">Loading...</td>
+                                        <td colspan="5" class="table-loading">Loading...</td> <!-- td adalah table data cell (sel data); colspan="5" membuat sel ini meregang ke 5 kolom selebar tabel -->
                                     </tr>
                                 </tbody>
                             </table>
@@ -269,14 +269,14 @@ AUTO REFRESH (REALTIME):
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Distribusi Fraud</h3>
-                            <a class="card-action" onclick="switchTab('fraud-alert')">Detail →</a>
+                            <a class="card-action" onclick="switchTab('fraud-alert')">Detail →</a> <!-- onclick="switchTab('fraud-alert')" berpindah ke tab Fraud Alert saat diklik -->
                         </div>
-                        <div class="chart-container">
-                            <svg class="chart-donut" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="20"></circle>
-                                <circle id="chart-normal" cx="50" cy="50" r="40" fill="none" stroke="#3B82F6" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle>
-                                <circle id="chart-suspicious" cx="50" cy="50" r="40" fill="none" stroke="#F59E0B" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle>
-                                <circle id="chart-anomaly" cx="50" cy="50" r="40" fill="none" stroke="#EF4444" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle>
+                        <div class="chart-container"> <!-- div.chart-container membungkus SVG donut chart dan legenda di bawahnya -->
+                            <svg class="chart-donut" viewBox="0 0 100 100"> <!-- svg adalah elemen grafis vektor; viewBox="0 0 100 100" mendefinisikan koordinat sistem: mulai (0,0) ukuran 100x100 unit -->
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="20"></circle> <!-- circle adalah lingkaran SVG; cx/cy adalah pusat; r=40 adalah radius; stroke adalah warna garis; ini adalah lingkaran latar belakang abu-abu -->
+                                <circle id="chart-normal" cx="50" cy="50" r="40" fill="none" stroke="#3B82F6" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle> <!-- id="chart-normal" diperbarui JavaScript dengan panjang dash; stroke-dasharray="panjang jarak" membuat efek donut chart; transform="rotate(-90 50 50)" memutar titik awal ke atas -->
+                                <circle id="chart-suspicious" cx="50" cy="50" r="40" fill="none" stroke="#F59E0B" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle> <!-- id="chart-suspicious" untuk segmen kuning SUSPICIOUS -->
+                                <circle id="chart-anomaly" cx="50" cy="50" r="40" fill="none" stroke="#EF4444" stroke-width="20" stroke-dasharray="0 100" transform="rotate(-90 50 50)"></circle> <!-- id="chart-anomaly" untuk segmen merah ANOMALY -->
                             </svg>
                             <div class="chart-center">
                                 <h3 id="chart-total">0</h3>

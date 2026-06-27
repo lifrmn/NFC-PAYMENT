@@ -2,162 +2,162 @@
    GLOBAL RESET & BASE STYLES
    Menghapus margin/padding default browser agar tampilan konsisten di semua browser
    ======================================== */
-* {
-    margin: 0;              /* Hapus margin default semua elemen */
-    padding: 0;             /* Hapus padding default semua elemen */
-    box-sizing: border-box; /* Padding & border masuk dalam ukuran elemen, bukan menambah ukuran */
+* { /* selector * (asterisk/bintang) menargetkan SEMUA elemen HTML di halaman */
+    margin: 0;              /* margin: 0 menghapus jarak luar default browser pada semua elemen */
+    padding: 0;             /* padding: 0 menghapus jarak dalam default browser pada semua elemen */
+    box-sizing: border-box; /* box-sizing: border-box berarti padding dan border DIHITUNG dalam total lebar/tinggi elemen, bukan ditambahkan di luar */
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font utama UI - modern dan mudah dibaca */
-    background: #f8fafc;   /* Warna latar abu-abu sangat muda untuk seluruh halaman */
-    color: #1e293b;         /* Warna teks default abu-biru tua agar mudah dibaca */
+body { /* selector body menargetkan elemen body — area konten yang terlihat di halaman */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* font-family mendefinisikan urutan font; browser pakai yang tersedia; sans-serif adalah fallback terakhir */
+    background: #f8fafc;   /* background menetapkan warna latar belakang; #f8fafc adalah abu-abu sangat muda */
+    color: #1e293b;         /* color menetapkan warna teks default seluruh halaman; #1e293b adalah abu-biru tua */
 }
 
-.container {
-    display: flex;          /* Menggunakan flexbox agar sidebar dan konten berdampingan horizontal */
-    min-height: 100vh;      /* Tinggi minimum penuh layar agar sidebar selalu penuh */
+.container { /* selector .container menargetkan elemen dengan class="container" */
+    display: flex;          /* display: flex mengaktifkan Flexbox layout — konten disusun dalam satu baris atau kolom */
+    min-height: 100vh;      /* min-height: 100vh berarti tinggi minimum = 100% tinggi viewport agar sidebar selalu penuh layar */
 }
 
 /* ========================================
    SIDEBAR NAVIGATION
    Area navigasi kiri yang berisi menu utama admin
    ======================================== */
-.sidebar {
-    width: 280px;                       /* Lebar sidebar tetap 280 piksel */
-    background: #fff;                   /* Latar putih agar kontras dengan konten abu-abu */
-    border-right: 1px solid #e2e8f0;   /* Garis tipis kanan sebagai pemisah visual */
-    padding: 24px;                      /* Jarak dalam dari tepi ke konten sidebar */
-    position: fixed;                    /* Sidebar tetap di posisi saat scroll */
-    height: 100vh;                      /* Tinggi penuh layar */
-    overflow-y: auto;                   /* Scroll vertikal jika menu terlalu panjang */
+.sidebar { /* selector .sidebar menargetkan elemen aside.sidebar */
+    width: 280px;                       /* width menetapkan lebar sidebar tetap 280 piksel */
+    background: #fff;                   /* background: #fff adalah putih murni */
+    border-right: 1px solid #e2e8f0;   /* border-right menggambar garis 1px solid di sisi kanan sebagai pemisah visual */
+    padding: 24px;                      /* padding: 24px memberi jarak dalam 24px di semua sisi */
+    position: fixed;                    /* position: fixed membuat sidebar tetap di posisi layar meski halaman di-scroll */
+    height: 100vh;                      /* height: 100vh membuat tinggi sidebar = 100% tinggi viewport */
+    overflow-y: auto;                   /* overflow-y: auto menampilkan scrollbar vertikal hanya jika konten melebihi tinggi */
 }
 
-.logo {
-    display: flex;          /* Ikon dan teks logo berdampingan */
-    align-items: center;    /* Sejajarkan ikon dan teks secara vertikal */
-    gap: 12px;              /* Jarak antara ikon dan teks */
-    margin-bottom: 32px;    /* Jarak di bawah logo sebelum menu navigasi */
+.logo { /* selector .logo menargetkan div.logo berisi ikon dan teks nama aplikasi */
+    display: flex;          /* display: flex membuat ikon dan teks logo berdampingan horizontal */
+    align-items: center;    /* align-items: center menyelaraskan ikon dan teks secara vertikal di tengah */
+    gap: 12px;              /* gap: 12px memberi jarak 12px antara ikon dan teks */
+    margin-bottom: 32px;    /* margin-bottom: 32px memberi jarak 32px di bawah logo sebelum menu */
 }
 
-.logo-icon {
-    width: 48px;                                                /* Lebar kotak ikon logo */
-    height: 48px;                                               /* Tinggi kotak ikon logo */
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); /* Gradien biru dari kiri-atas ke kanan-bawah */
-    border-radius: 12px;                                        /* Sudut membulat agar tampak modern */
-    display: flex;                                              /* Flexbox untuk pusatkan emoji di dalam kotak */
-    align-items: center;                                        /* Pusatkan secara vertikal */
-    justify-content: center;                                    /* Pusatkan secara horizontal */
-    font-size: 24px;                                            /* Ukuran emoji kartu NFC */
+.logo-icon { /* selector .logo-icon menargetkan div.logo-icon yang berisi emoji kartu NFC */
+    width: 48px;                                                /* width: 48px mengatur lebar kotak ikon */
+    height: 48px;                                               /* height: 48px mengatur tinggi kotak ikon — sama dengan lebar agar berbentuk persegi */
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); /* linear-gradient membuat gradasi warna dari biru muda ke biru tua; 135deg adalah arah diagonal kiri-atas ke kanan-bawah */
+    border-radius: 12px;                                        /* border-radius: 12px membulatkan sudut kotak; semakin besar nilainya, semakin bulat */
+    display: flex;                                              /* display: flex untuk memusatkan emoji di dalam kotak */
+    align-items: center;                                        /* align-items: center memusatkan secara vertikal */
+    justify-content: center;                                    /* justify-content: center memusatkan secara horizontal */
+    font-size: 24px;                                            /* font-size: 24px mengatur ukuran emoji */
 }
 
-.logo-text h3 {
-    font-size: 16px;        /* Ukuran font nama aplikasi */
-    font-weight: 700;       /* Tebal/bold untuk kesan brand yang kuat */
-    color: #1e293b;         /* Warna gelap agar terbaca di atas latar putih */
+.logo-text h3 { /* selector .logo-text h3 menargetkan elemen h3 di dalam .logo-text */
+    font-size: 16px;        /* font-size: 16px mengatur ukuran teks nama aplikasi */
+    font-weight: 700;       /* font-weight: 700 adalah tebal (bold); nilai 400 = normal, 700 = bold */
+    color: #1e293b;         /* color mengatur warna teks menjadi abu-biru tua */
 }
 
-.logo-text p {
-    font-size: 12px;        /* Ukuran kecil untuk subtitle logo */
-    color: #64748b;         /* Abu-abu sedang untuk teks sekunder */
+.logo-text p { /* selector .logo-text p menargetkan paragraf subtitle di dalam .logo-text */
+    font-size: 12px;        /* font-size: 12px membuat teks subtitle lebih kecil dari judul */
+    color: #64748b;         /* color: #64748b adalah abu-abu sedang untuk teks sekunder */
 }
 
-.nav-menu {
-    list-style: none;       /* Hapus bullet point dari daftar menu */
+.nav-menu { /* selector .nav-menu menargetkan elemen ul.nav-menu */
+    list-style: none;       /* list-style: none menghapus bullet point (titik) default dari unordered list */
 }
 
-.nav-item {
-    margin-bottom: 8px;     /* Jarak antar item menu */
+.nav-item { /* selector .nav-item menargetkan setiap li.nav-item */
+    margin-bottom: 8px;     /* margin-bottom: 8px memberi jarak 8px antara setiap item menu */
 }
 
-.nav-link {
-    display: flex;              /* Icon dan teks menu berdampingan */
-    align-items: center;        /* Sejajarkan icon dan teks */
-    gap: 12px;                  /* Jarak antara ikon dan teks menu */
-    padding: 12px 16px;         /* Ruang dalam agar mudah ditekan */
-    border-radius: 12px;        /* Sudut membulat untuk tampilan modern */
-    color: #64748b;             /* Warna teks abu-abu untuk menu tidak aktif */
-    text-decoration: none;      /* Hapus garis bawah dari anchor tag */
-    transition: all 0.2s;       /* Animasi halus saat hover */
-    font-size: 14px;            /* Ukuran teks menu */
-    font-weight: 500;           /* Semi-bold agar mudah dibaca */
-    cursor: pointer;            /* Kursor tangan saat hover */
+.nav-link { /* selector .nav-link menargetkan semua elemen a.nav-link di sidebar */
+    display: flex;              /* display: flex agar ikon dan teks menu berdampingan */
+    align-items: center;        /* align-items: center menyelaraskan ikon dan teks secara vertikal */
+    gap: 12px;                  /* gap: 12px memberi jarak antara ikon dan teks */
+    padding: 12px 16px;         /* padding: 12px vertikal, 16px horizontal untuk area klik yang nyaman */
+    border-radius: 12px;        /* border-radius: 12px membulatkan sudut item menu */
+    color: #64748b;             /* color: #64748b adalah abu-abu untuk menu tidak aktif */
+    text-decoration: none;      /* text-decoration: none menghapus garis bawah bawaan elemen anchor <a> */
+    transition: all 0.2s;       /* transition: all 0.2s membuat semua perubahan property (warna, background) berlangsung mulus selama 0.2 detik — memberi efek animasi hover */
+    font-size: 14px;            /* font-size: 14px mengatur ukuran teks setiap item menu */
+    font-weight: 500;           /* font-weight: 500 adalah medium — lebih tebal dari normal (400) tapi lebih tipis dari bold (700) */
+    cursor: pointer;            /* cursor: pointer mengubah kursor menjadi tangan saat mouse berada di atas elemen */
 }
 
-.nav-link:hover {
-    background: #f1f5f9;        /* Latar abu muda saat hover */
-    color: #3B82F6;             /* Teks berubah biru saat hover */
+.nav-link:hover { /* selector :hover adalah pseudo-class CSS yang aktif saat mouse berada di atas elemen */
+    background: #f1f5f9;        /* background berubah menjadi abu-abu muda saat hover untuk visual feedback */
+    color: #3B82F6;             /* color berubah menjadi biru saat hover */
 }
 
-.nav-link.active {
-    background: #EFF6FF;        /* Latar biru sangat muda untuk menu aktif */
-    color: #3B82F6;             /* Teks biru untuk menu yang sedang aktif */
+.nav-link.active { /* selector .nav-link.active menargetkan elemen yang MEMILIKI KEDUA class nav-link DAN active secara bersamaan */
+    background: #EFF6FF;        /* background biru sangat muda untuk menandai menu yang sedang aktif */
+    color: #3B82F6;             /* color biru untuk teks menu aktif */
 }
 
-.nav-icon {
-    font-size: 18px;            /* Ukuran ikon emoji di sebelah teks menu */
+.nav-icon { /* selector .nav-icon menargetkan span.nav-icon berisi emoji ikon menu */
+    font-size: 18px;            /* font-size: 18px mengatur ukuran emoji ikon menu */
 }
 
 /* ========================================
    MAIN CONTENT AREA
    Area konten utama di sebelah kanan sidebar
    ======================================== */
-.main-content {
-    flex: 1;                /* Konten utama mengisi sisa ruang setelah sidebar */
-    margin-left: 280px;     /* Geser kanan sejauh lebar sidebar agar tidak tertimpa */
-    padding: 32px;          /* Jarak dalam konten dari tepi area */
+.main-content { /* selector .main-content menargetkan div.main-content yang berisi semua konten tab di sebelah kanan sidebar */
+    flex: 1;                /* flex: 1 berarti elemen ini mengisi semua sisa ruang yang tersedia setelah sidebar mengambil 280px */
+    margin-left: 280px;     /* margin-left: 280px menggeser konten ke kanan sejauh lebar sidebar yang fixed agar tidak tertimpa */
+    padding: 32px;          /* padding: 32px memberi jarak 32px dari semua tepi area konten */
 }
 
-.header {
-    display: flex;                  /* Header menggunakan flexbox */
-    justify-content: space-between; /* Judul di kiri, tombol di kanan */
-    align-items: center;            /* Sejajarkan secara vertikal */
-    margin-bottom: 32px;            /* Jarak bawah sebelum konten statistik */
+.header { /* selector .header menargetkan div.header yang berisi judul halaman dan tombol aksi */
+    display: flex;                  /* display: flex membuat judul dan tombol berdampingan */
+    justify-content: space-between; /* justify-content: space-between menempatkan judul di kiri dan tombol di kanan dengan ruang di antara */
+    align-items: center;            /* align-items: center menyelaraskan semua item header secara vertikal di tengah */
+    margin-bottom: 32px;            /* margin-bottom: 32px memberi jarak 32px di bawah header sebelum kartu statistik */
 }
 
-.header-title h1 {
-    font-size: 32px;        /* Ukuran judul halaman yang besar dan mencolok */
-    font-weight: 700;       /* Tebal/bold untuk judul utama */
-    margin-bottom: 8px;     /* Jarak antara judul dan subjudul */
+.header-title h1 { /* selector .header-title h1 menargetkan elemen h1 di dalam div.header-title */
+    font-size: 32px;        /* font-size: 32px membuat judul halaman besar dan menonjol */
+    font-weight: 700;       /* font-weight: 700 adalah bold */
+    margin-bottom: 8px;     /* margin-bottom: 8px memberi jarak 8px antara judul dan status koneksi di bawahnya */
 }
 
-.header-title p {
-    font-size: 14px;        /* Ukuran kecil untuk subjudul/deskripsi halaman */
-    color: #64748b;         /* Abu-abu sedang untuk teks sekunder */
+.header-title p { /* selector .header-title p menargetkan paragraf status koneksi di bawah judul */
+    font-size: 14px;        /* font-size: 14px untuk teks sekunder yang lebih kecil */
+    color: #64748b;         /* color: #64748b adalah abu-abu sedang untuk teks sekunder */
 }
 
-.header-actions {
-    display: flex;          /* Tombol-tombol header berdampingan */
-    align-items: center;    /* Sejajarkan tombol secara vertikal */
-    gap: 12px;              /* Jarak antar tombol header */
+.header-actions { /* selector .header-actions menargetkan div yang berisi tombol refresh dan profil admin */
+    display: flex;          /* display: flex membuat tombol-tombol berdampingan */
+    align-items: center;    /* align-items: center menyelaraskan tombol secara vertikal */
+    gap: 12px;              /* gap: 12px memberi jarak 12px antara setiap tombol */
 }
 
-.btn-export {
-    display: flex;          /* Ikon dan teks tombol berdampingan */
-    align-items: center;    /* Sejajarkan ikon dan teks */
-    gap: 8px;               /* Jarak antara ikon dan teks tombol */
-    background: #3B82F6;    /* Warna latar biru untuk tombol utama */
-    color: #fff;            /* Teks putih agar kontras dengan latar biru */
-    padding: 10px 20px;     /* Ruang dalam tombol */
-    border-radius: 10px;    /* Sudut membulat */
-    border: none;           /* Hapus border default browser */
-    font-size: 14px;        /* Ukuran teks tombol */
-    font-weight: 500;       /* Semi-bold untuk keterbacaan */
-    cursor: pointer;        /* Kursor tangan saat hover */
-    transition: all 0.2s;   /* Animasi halus saat hover */
+.btn-export { /* selector .btn-export menargetkan tombol ekspor/refresh */
+    display: flex;          /* display: flex agar ikon dan teks tombol berdampingan */
+    align-items: center;    /* align-items: center menyelaraskan ikon dan teks secara vertikal */
+    gap: 8px;               /* gap: 8px jarak antara ikon dan teks dalam tombol */
+    background: #3B82F6;    /* background: #3B82F6 adalah warna biru tombol utama */
+    color: #fff;            /* color: #fff adalah putih untuk teks tombol agar kontras */
+    padding: 10px 20px;     /* padding: 10px atas-bawah, 20px kiri-kanan memberi ukuran tombol yang nyaman */
+    border-radius: 10px;    /* border-radius: 10px membulatkan sudut tombol */
+    border: none;           /* border: none menghapus border default elemen button di browser */
+    font-size: 14px;        /* font-size: 14px untuk teks tombol */
+    font-weight: 500;       /* font-weight: 500 untuk teks tombol semi-bold */
+    cursor: pointer;        /* cursor: pointer menampilkan tangan saat hover */
+    transition: all 0.2s;   /* transition: all 0.2s untuk animasi warna saat hover */
 }
 
-.btn-export:hover {
-    background: #2563EB;    /* Biru lebih gelap saat di-hover untuk feedback visual */
+.btn-export:hover { /* :hover pseudo-class aktif saat mouse di atas tombol */
+    background: #2563EB;    /* background berubah ke biru lebih gelap saat hover sebagai visual feedback */
 }
 
-.user-profile {
-    display: flex;          /* Avatar dan info user berdampingan */
-    align-items: center;    /* Sejajarkan secara vertikal */
-    gap: 12px;              /* Jarak antara avatar dan info */
-    background: #fff;       /* Latar putih untuk area profil */
-    padding: 8px 16px;      /* Ruang dalam area profil */
-    border-radius: 12px;    /* Sudut membulat */
+.user-profile { /* selector .user-profile menargetkan div berisi avatar dan info admin */
+    display: flex;          /* display: flex membuat avatar dan teks info berdampingan */
+    align-items: center;    /* align-items: center menyelaraskan avatar dan teks secara vertikal */
+    gap: 12px;              /* gap: 12px jarak antara avatar dan informasi nama/email */
+    background: #fff;       /* background: #fff latar putih untuk area profil */
+    padding: 8px 16px;      /* padding: 8px vertikal, 16px horizontal */
+    border-radius: 12px;    /* border-radius: 12px membulatkan sudut area profil */
     cursor: pointer;        /* Kursor tangan saat ditekan */
 }
 
@@ -187,122 +187,122 @@ body {
    TAB CONTENT VISIBILITY
    Mengontrol visibilitas konten berdasarkan tab yang aktif
    ======================================== */
-.tab-content {
-    display: none;          /* Semua konten tab tersembunyi secara default */
+.tab-content { /* selector .tab-content menargetkan semua div konten tab */
+    display: none;          /* display: none menyembunyikan elemen dari halaman sepenuhnya; semua tab disembunyikan by default */
 }
 
-.tab-content.active {
-    display: block;         /* Hanya tab aktif yang ditampilkan */
+.tab-content.active { /* selector .tab-content.active menargetkan tab yang memiliki kedua class tab-content dan active */
+    display: block;         /* display: block menampilkan elemen kembali; JavaScript menambah class 'active' ke tab yang dipilih */
 }
 
 /* ========================================
    STATISTICS CARDS
    Kartu ringkasan statistik di bagian atas dashboard
    ======================================== */
-.stats-grid {
-    display: grid;                                      /* CSS Grid untuk kartu statistik */
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Kolom menyesuaikan lebar layar */
-    gap: 20px;                                          /* Jarak antar kartu */
-    margin-bottom: 32px;                                /* Jarak bawah sebelum konten lain */
+.stats-grid { /* selector .stats-grid menargetkan container 4 kartu statistik */
+    display: grid;                                      /* display: grid mengaktifkan CSS Grid — layout berbasis baris dan kolom */
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* grid-template-columns mendefinisikan kolom; repeat(auto-fit,...) otomatis menyesuaikan jumlah kolom; minmax(240px,1fr) = lebar minimum 240px, maksimum 1 bagian ruang bebas */
+    gap: 20px;                                          /* gap: 20px memberi jarak 20px antara setiap kartu statistik */
+    margin-bottom: 32px;                                /* margin-bottom: 32px memberi jarak di bawah grid sebelum konten berikutnya */
 }
 
-.stat-card {
-    background: #fff;                           /* Latar putih untuk kartu */
-    padding: 24px;                              /* Ruang dalam kartu */
-    border-radius: 16px;                        /* Sudut sangat membulat */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* Bayangan tipis untuk kedalaman */
+.stat-card { /* selector .stat-card menargetkan setiap kartu statistik individual */
+    background: #fff;                           /* background: #fff latar putih kartu */
+    padding: 24px;                              /* padding: 24px memberi ruang dalam kartu di semua sisi */
+    border-radius: 16px;                        /* border-radius: 16px membulatkan sudut kartu lebih dari biasa */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* box-shadow menambah bayangan; 0=x-offset, 1px=y-offset, 3px=blur, rgba()=warna transparan — menciptakan efek kedalaman */
 }
 
-.stat-card h3 {
-    font-size: 12px;        /* Label statistik berukuran kecil */
-    font-weight: 500;       /* Medium weight untuk label */
-    color: #64748b;         /* Abu-abu untuk label sekunder */
-    margin-bottom: 12px;    /* Jarak dari label ke nilai */
+.stat-card h3 { /* selector .stat-card h3 menargetkan heading label di dalam kartu statistik */
+    font-size: 12px;        /* font-size: 12px membuat label kecil seperti "Total Pengguna" */
+    font-weight: 500;       /* font-weight: 500 medium */
+    color: #64748b;         /* color abu-abu sedang untuk label sekunder */
+    margin-bottom: 12px;    /* margin-bottom memberi jarak antara label dan nilai angka */
 }
 
-.stat-value {
-    display: flex;          /* Ikon dan angka berdampingan */
-    align-items: center;    /* Sejajarkan secara vertikal */
-    gap: 12px;              /* Jarak antara ikon dan angka */
-    margin-bottom: 12px;    /* Jarak bawah sebelum info perubahan */
+.stat-value { /* selector .stat-value menargetkan div yang menampung ikon dan angka */
+    display: flex;          /* display: flex membuat ikon dan angka berdampingan */
+    align-items: center;    /* align-items: center menyelaraskan secara vertikal */
+    gap: 12px;              /* gap: 12px jarak antara ikon dan angka */
+    margin-bottom: 12px;    /* margin-bottom memberi jarak di bawah sebelum persentase perubahan */
 }
 
-.stat-icon {
-    width: 48px;                    /* Ukuran kotak ikon statistik */
-    height: 48px;                   /* Tinggi sama dengan lebar */
-    border-radius: 12px;            /* Sudut membulat */
-    display: flex;                  /* Pusatkan emoji ikon */
-    align-items: center;            /* Pusatkan vertikal */
-    justify-content: center;        /* Pusatkan horizontal */
-    font-size: 24px;                /* Ukuran emoji ikon */
+.stat-icon { /* selector .stat-icon menargetkan kotak ikon emoji di kartu statistik */
+    width: 48px;                    /* width: 48px lebar kotak ikon */
+    height: 48px;                   /* height: 48px tinggi sama dengan lebar — membentuk persegi */
+    border-radius: 12px;            /* border-radius: 12px membulatkan sudut kotak ikon */
+    display: flex;                  /* display: flex untuk memusatkan emoji di dalam kotak */
+    align-items: center;            /* align-items: center memusatkan vertikal */
+    justify-content: center;        /* justify-content: center memusatkan horizontal */
+    font-size: 24px;                /* font-size: 24px mengatur ukuran emoji ikon */
 }
 
-.stat-icon.blue   { background: #EFF6FF; } /* Ikon biru - statistik pengguna */
+.stat-icon.blue   { background: #EFF6FF; } /* .stat-icon.blue menargetkan ikon biru untuk kartu pengguna; background biru sangat muda */
 .stat-icon.green  { background: #F0FDF4; } /* Ikon hijau - transaksi sukses */
 .stat-icon.purple { background: #FAF5FF; } /* Ikon ungu - kartu NFC */
 .stat-icon.red    { background: #FEF2F2; } /* Ikon merah - fraud alert */
 .stat-icon.yellow { background: #FEF9C3; } /* Ikon kuning - peringatan */
 
-.stat-number {
-    font-size: 32px;        /* Angka statistik besar dan mencolok */
-    font-weight: 700;       /* Tebal/bold untuk angka utama */
+.stat-number { /* selector .stat-number menargetkan angka besar di kartu statistik */
+    font-size: 32px;        /* font-size: 32px membuat angka statistik besar dan menonjol */
+    font-weight: 700;       /* font-weight: 700 bold agar angka tampak kuat */
 }
 
-.stat-info h2 {
-    font-size: 32px;        /* Angka utama statistik besar */
-    font-weight: 700;       /* Tebal untuk angka */
-    margin-bottom: 8px;     /* Jarak ke info perubahan di bawahnya */
+.stat-info h2 { /* selector .stat-info h2 menargetkan h2 di dalam div.stat-info */
+    font-size: 32px;        /* font-size: 32px untuk angka utama statistik */
+    font-weight: 700;       /* font-weight: 700 bold */
+    margin-bottom: 8px;     /* margin-bottom: 8px memberi jarak antara angka dan persentase perubahan */
 }
 
-.stat-change {
-    font-size: 12px;        /* Kecil untuk teks perubahan persentase */
-    display: flex;          /* Panah dan teks berdampingan */
-    align-items: center;    /* Sejajarkan secara vertikal */
-    gap: 4px;               /* Jarak antara ikon panah dan teks persen */
+.stat-change { /* selector .stat-change menargetkan div yang menampilkan perubahan persentase */
+    font-size: 12px;        /* font-size: 12px untuk teks persentase yang kecil */
+    display: flex;          /* display: flex agar panah dan teks persentase berdampingan */
+    align-items: center;    /* align-items: center menyelaraskan panah dan teks secara vertikal */
+    gap: 4px;               /* gap: 4px jarak kecil antara ikon panah dan angka persen */
 }
 
-.stat-change.positive { color: #10B981; } /* Hijau untuk perubahan positif/naik */
-.stat-change.negative { color: #EF4444; } /* Merah untuk perubahan negatif/turun */
+.stat-change.positive { color: #10B981; } /* color: #10B981 adalah hijau — menandakan tren positif/meningkat */
+.stat-change.negative { color: #EF4444; } /* color: #EF4444 adalah merah — menandakan tren negatif/menurun */
 
 /* ========================================
    CARD CONTAINER
    Kartu umum sebagai wadah konten dengan bayangan
    ======================================== */
-.card {
-    background: #fff;                           /* Latar putih untuk kartu */
-    border-radius: 16px;                        /* Sudut membulat modern */
-    padding: 24px;                              /* Ruang dalam kartu */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* Bayangan tipis untuk kedalaman */
-    margin-bottom: 24px;                        /* Jarak bawah antar kartu */
+.card { /* selector .card menargetkan semua div.card yang digunakan sebagai container konten bershadow */
+    background: #fff;                           /* background: #fff latar putih kartu */
+    border-radius: 16px;                        /* border-radius: 16px sudut membulat untuk tampilan modern */
+    padding: 24px;                              /* padding: 24px ruang dalam kartu di semua sisi */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);  /* box-shadow membuat bayangan ringan; rgba(0,0,0,0.1) adalah hitam 10% transparan */
+    margin-bottom: 24px;                        /* margin-bottom: 24px jarak di bawah setiap kartu */
 }
 
-.card-header {
-    display: flex;                  /* Judul dan aksi berdampingan */
-    justify-content: space-between; /* Judul di kiri, aksi di kanan */
-    align-items: center;            /* Sejajarkan secara vertikal */
-    margin-bottom: 20px;            /* Jarak dari header ke konten kartu */
+.card-header { /* selector .card-header menargetkan bagian atas kartu yang berisi judul dan link aksi */
+    display: flex;                  /* display: flex agar judul dan link berdampingan */
+    justify-content: space-between; /* justify-content: space-between menempatkan judul di kiri dan link di kanan */
+    align-items: center;            /* align-items: center menyelaraskan secara vertikal */
+    margin-bottom: 20px;            /* margin-bottom: 20px jarak antara header kartu dan konten di bawahnya */
 }
 
-.card-title {
-    font-size: 18px;        /* Ukuran judul kartu */
-    font-weight: 700;       /* Tebal untuk judul */
+.card-title { /* selector .card-title menargetkan h3 atau elemen dengan class card-title sebagai judul kartu */
+    font-size: 18px;        /* font-size: 18px untuk judul kartu yang menonjol tapi tidak terlalu besar */
+    font-weight: 700;       /* font-weight: 700 bold untuk judul */
 }
 
-.card-action {
-    font-size: 14px;        /* Ukuran teks tautan aksi */
-    color: #3B82F6;         /* Biru untuk tautan/aksi */
-    text-decoration: none;  /* Hapus garis bawah tautan */
-    font-weight: 500;       /* Semi-bold untuk keterbacaan */
-    cursor: pointer;        /* Kursor tangan saat ditekan */
+.card-action { /* selector .card-action menargetkan link aksi di pojok kanan header kartu */
+    font-size: 14px;        /* font-size: 14px untuk link kecil "Lihat Semua" atau "Detail" */
+    color: #3B82F6;         /* color: #3B82F6 biru untuk link agar mudah dikenali sebagai tautan */
+    text-decoration: none;  /* text-decoration: none menghapus garis bawah */
+    font-weight: 500;       /* font-weight: 500 medium */
+    cursor: pointer;        /* cursor: pointer menampilkan tangan saat hover */
 }
 
 /* ========================================
    CONTENT GRID (Dashboard Tab)
    Tata letak dua kolom untuk konten utama dashboard
    ======================================== */
-.content-grid {
-    display: grid;                      /* CSS Grid untuk dua kolom konten */
-    grid-template-columns: 2fr 1fr;     /* Kolom kiri 2x lebih lebar dari kanan */
+.content-grid { /* selector .content-grid menargetkan container dua kolom untuk tabel transaksi dan chart fraud */
+    display: grid;                      /* display: grid mengaktifkan CSS Grid */
+    grid-template-columns: 2fr 1fr;     /* grid-template-columns: 2fr 1fr berarti kolom kiri mendapat 2 bagian dan kolom kanan 1 bagian dari total lebar */
     gap: 24px;                          /* Jarak antar kolom */
     margin-bottom: 32px;                /* Jarak bawah sebelum konten lain */
 }
@@ -315,24 +315,24 @@ body {
     overflow-x: auto;   /* Scroll horizontal jika tabel terlalu lebar untuk layar */
 }
 
-table {
-    width: 100%;                /* Tabel mengisi seluruh lebar container */
-    border-collapse: collapse;  /* Hapus celah ganda antar border sel */
+table { /* selector table menargetkan semua elemen tabel HTML di dashboard */
+    width: 100%;                /* width: 100% membuat tabel mengisi seluruh lebar container-nya */
+    border-collapse: collapse;  /* border-collapse: collapse menghapus celah ganda antara border sel yang berdekatan */
 }
 
-th {
-    text-align: left;                   /* Teks header rata kiri */
-    padding: 12px;                      /* Ruang dalam header kolom */
-    font-size: 12px;                    /* Ukuran kecil untuk header tabel */
-    font-weight: 600;                   /* Semi-bold untuk header */
-    color: #64748b;                     /* Abu-abu untuk teks header */
-    border-bottom: 1px solid #f1f5f9;   /* Garis bawah tipis pemisah header */
+th { /* selector th menargetkan semua sel header tabel (table header) */
+    text-align: left;                   /* text-align: left membuat teks header rata kiri */
+    padding: 12px;                      /* padding: 12px ruang dalam sel header di semua sisi */
+    font-size: 12px;                    /* font-size: 12px untuk header kolom yang kecil */
+    font-weight: 600;                   /* font-weight: 600 semi-bold untuk header */
+    color: #64748b;                     /* color abu-abu untuk teks header agar tidak terlalu mencolok */
+    border-bottom: 1px solid #f1f5f9;   /* border-bottom menggambar garis 1px di bawah header sebagai pemisah */
 }
 
-td {
-    padding: 16px 12px;                 /* Ruang dalam sel data (atas-bawah lebih dari kiri-kanan) */
-    font-size: 14px;                    /* Ukuran teks data tabel */
-    border-bottom: 1px solid #f1f5f9;   /* Garis tipis pemisah antar baris */
+td { /* selector td menargetkan semua sel data tabel (table data) */
+    padding: 16px 12px;                 /* padding: 16px atas-bawah, 12px kiri-kanan memberi ruang lebih lega di baris data */
+    font-size: 14px;                    /* font-size: 14px ukuran teks data tabel */
+    border-bottom: 1px solid #f1f5f9;   /* border-bottom garis tipis pemisah antar baris tabel */
 }
 
 .user-cell {

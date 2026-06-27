@@ -57,14 +57,14 @@
 //
 // ==================================================================================
 
-import React from 'react';
+import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan otomatis saat ada elemen JSX seperti <TouchableOpacity>
 import {
-  TouchableOpacity,  // Pressable component dengan opacity animation
-  Text,              // Text display component
-  StyleSheet,        // Style definition utility
-  ViewStyle,         // TypeScript type untuk View styling
-  TextStyle,         // TypeScript type untuk Text styling
-  ActivityIndicator, // Loading spinner component
+  TouchableOpacity,  // TouchableOpacity adalah tombol interaktif dengan efek transparansi saat ditekan \u2014 digunakan sebagai wrapper utama CustomButton
+  Text,              // Text menampilkan label teks di dalam tombol
+  StyleSheet,        // StyleSheet.create() adalah API React Native untuk mendefinisikan style dengan validasi tipe dan optimasi performa
+  ViewStyle,         // ViewStyle adalah tipe TypeScript khusus untuk styling View \u2014 digunakan di prop style agar type-safe
+  TextStyle,         // TextStyle adalah tipe TypeScript khusus untuk styling Text \u2014 digunakan di prop textStyle
+  ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan menggantikan teks label saat state loading=true
 } from 'react-native';
 
 // ==================================================================================

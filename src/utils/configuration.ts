@@ -48,11 +48,11 @@
 // Format: base URL tanpa trailing slash, endpoint akan ditambahkan di apiService
 // Contoh full URL: API_URL + '/api/auth/login'
 // PENTING: Ganti URL ini dengan URL Ngrok terbaru setiap kali Ngrok di-restart
-export const API_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // URL Ngrok aktif
+export const API_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // export const mengekspor konstanta ini agar bisa diimport di file lain; const membuat nilai tetap (tidak bisa diubah); API_URL adalah base URL backend yang diakses melalui Ngrok tunnel — harus diperbarui setiap kali Ngrok di-restart
 
 // App Secret untuk bypass JWT check (development only)
 // Ini matching dengan APP_SECRET di backend .env
-export const APP_SECRET = 'NFC2025SecureApp';
+export const APP_SECRET = 'NFC2025SecureApp'; // export const mengekspor konstanta ini; APP_SECRET adalah kunci rahasia yang cocok dengan konfigurasi di backend .env; digunakan sebagai x-app-key header untuk autentikasi device
 
 // INSTRUKSI UPDATE URL (UNTUK DEVELOPMENT):
 // 1. Buka terminal, jalankan: ngrok http 4000
