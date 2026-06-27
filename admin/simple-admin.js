@@ -269,7 +269,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // Password adm
 // - Update URL ini setiap kali restart ngrok
 // - Cara dapatkan: ngrok http 4000 ? copy URL dari terminal
 const BACKEND_URL = 'http://localhost:4000'; // Backend URL (localhost karena sama-sama di laptop)
-const NGROK_URL = 'https://unbellicose-troublesomely-miley.ngrok-free.dev'; // URL ngrok untuk mobile app
+const NGROK_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev'; // URL ngrok untuk mobile app
 
 // ==================== HELPER FUNCTIONS ====================
 //

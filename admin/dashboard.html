@@ -550,7 +550,7 @@ AUTO REFRESH (REALTIME):
                                 <tr>
                                     <th>ID</th>
                                     <th>Nama</th>
-                                    <th>Email</th>
+                                    <th>Username</th>
                                     <th>Saldo</th>
                                     <th>Status</th>
                                     <th>Kartu NFC</th>
@@ -909,10 +909,17 @@ AUTO REFRESH (REALTIME):
                 if (!res.ok) throw new Error('Failed to load users');
                 allUsers = await res.json();
                 updateStats();
+                // Re-render pengguna tab jika sedang aktif
+                if (currentTab === 'pengguna') renderPenggunaTab();
                 console.log('✅ Users loaded:', allUsers.length);
             } catch (error) {
                 console.error('❌ Error loading users:', error);
                 allUsers = [];
+                // Show error message di pengguna tab jika sedang aktif
+                if (currentTab === 'pengguna') {
+                    const tbody = document.getElementById('pengguna-table-body');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Gagal memuat data pengguna</td></tr>';
+                }
             }
         }
 
@@ -926,11 +933,21 @@ AUTO REFRESH (REALTIME):
                     headers: { 'x-app-key': 'NFC2025SecureApp' }
                 });
                 if (!res.ok) throw new Error('Failed to load cards');
-                nfcCards = await res.json();
+                var data = await res.json();
+                // Handle response format: { cards: [...] } atau array langsung
+                nfcCards = Array.isArray(data) ? data : (data.cards || []);
+                // Re-render perangkat tab jika sedang aktif
+                if (currentTab === 'perangkat') renderPerangkatTab();
+                // Re-render pengguna tab juga karena menampilkan jumlah kartu per user
+                if (currentTab === 'pengguna') renderPenggunaTab();
                 console.log('✅ NFC Cards loaded:', nfcCards.length);
             } catch (error) {
                 console.error('❌ Error loading NFC cards:', error);
                 nfcCards = [];
+                if (currentTab === 'perangkat') {
+                    const tbody = document.getElementById('perangkat-table-body');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-loading-muted">Gagal memuat data kartu NFC</td></tr>';
+                }
             }
         }
 
@@ -946,10 +963,18 @@ AUTO REFRESH (REALTIME):
                 if (!res.ok) throw new Error('Failed to load transactions');
                 allTransactions = await res.json();
                 renderTransactions();
+                // Re-render transaksi tab jika sedang aktif
+                if (currentTab === 'transaksi') renderTransaksiTab();
+                // Update laporan tab juga
+                if (currentTab === 'laporan') renderLaporanTab();
                 console.log('✅ Transactions loaded:', allTransactions.length);
             } catch (error) {
                 console.error('❌ Error loading transactions:', error);
                 allTransactions = [];
+                if (currentTab === 'transaksi') {
+                    const tbody = document.getElementById('transaksi-table-body');
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Gagal memuat data transaksi</td></tr>';
+                }
             }
         }
 
@@ -979,6 +1004,8 @@ AUTO REFRESH (REALTIME):
             }
             updateFraudStats();
             renderFraudTable();
+            // Re-render laporan tab jika sedang aktif
+            if (currentTab === 'laporan') renderLaporanTab();
         }
 
         // =================================================================
@@ -1326,8 +1353,41 @@ Time: ${formatDate(alert.createdAt)}
                 
                 const elapsed = Date.now() - startTime;
                 console.log(`✅ Refresh complete (${elapsed}ms)`);
+                
+                // Re-render current tab setelah semua data selesai load
+                renderCurrentTab();
             } catch (error) {
                 console.error('❌ Refresh failed:', error);
+            }
+        }
+        
+        /**
+         * Re-render current active tab
+         * Dipanggil setelah data selesai load
+         */
+        function renderCurrentTab() {
+            switch(currentTab) {
+                case 'dashboard':
+                    updateStats();
+                    renderTransactions();
+                    updateFraudStats();
+                    break;
+                case 'fraud-alert':
+                    updateFraudStats();
+                    renderFraudTable();
+                    break;
+                case 'transaksi':
+                    renderTransaksiTab();
+                    break;
+                case 'pengguna':
+                    renderPenggunaTab();
+                    break;
+                case 'perangkat':
+                    renderPerangkatTab();
+                    break;
+                case 'laporan':
+                    renderLaporanTab();
+                    break;
             }
         }
 
