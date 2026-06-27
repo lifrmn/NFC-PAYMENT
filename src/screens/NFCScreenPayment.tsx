@@ -129,98 +129,87 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
 
   // STATE 2: amount - Nominal pembayaran yang diinput user
   // Format string dengan separator: "50.000" (bukan 50000)
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(''); // const membuat variabel tetap; useState('') membuat state string kosong; amount menyimpan teks nominal yang diinput user; setAmount memperbarui state
 
   // STATE 3: currentBalance - Saldo pembeli saat ini (dari backend)
   // Diinisialisasi dari prop user.balance, lalu diperbarui via fetchBalance()
-  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0);
+  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0); // optional chaining (?.) aman jika user null; || 0 fallback jika balance tidak ada; setCurrentBalance memperbarui saldo yang ditampilkan di layar
 
   // STATE 4: merchant - Info merchant penerima pembayaran
   // Defaultnya adalah user sendiri (nama + tipe toko)
-  const [merchant, setMerchant] = useState({ name: user?.name || 'Merchant', type: 'Toko Retail' });
+  const [merchant, setMerchant] = useState({ name: user?.name || 'Merchant', type: 'Toko Retail' }); // useState menerima objek sebagai nilai awal; objek shorthand dengan dua property: name (nama merchant) dan type (jenis toko)
 
   // STATE 5: scanning - Kontrol visibilitas Modal scan NFC
   // true = Modal scan tampil (sedang proses tap kartu)
   // false = Modal tersembunyi
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(false); // useState(false) nilai awal boolean false; scanning=true menampilkan Modal overlay saat proses scan NFC berlangsung
 
   // Ambil fungsi & state dari custom hook usePayment
   // isProcessing: boolean - apakah sedang memproses pembayaran
   // processTapToPayTransfer: fungsi utama pembayaran NFC
-  const { isProcessing, processTapToPayTransfer } = usePayment();
+  const { isProcessing, processTapToPayTransfer } = usePayment(); // const membuat variabel tetap; destructuring {} mengambil dua property dari objek yang dikembalikan hook usePayment; isProcessing adalah boolean status proses; processTapToPayTransfer adalah fungsi utama pembayaran
 
   // useEffect: Dijalankan 1x saat komponen pertama kali mount
   // Tujuan: Inisialisasi NFC hardware dan bersihkan listener saat unmount
-  useEffect(() => {
-    checkNFC(); // Init dan cek status NFC
-    return () => {
-      NFCService.cleanup(); // Bersihkan listener NFC saat layar ditutup (cegah memory leak)
+  useEffect(() => { // useEffect(callback, deps) menjalankan efek samping; tanpa deps array bawaan di sini deps [] ada di bawah
+    checkNFC(); // memanggil checkNFC() untuk mendeteksi status hardware NFC saat screen pertama kali dibuka
+    return () => { // return function adalah cleanup — dijalankan saat komponen di-unmount
+      NFCService.cleanup(); // melepas resource NFC agar tidak memory leak saat layar ditutup
     };
-  }, []); // [] = hanya dijalankan sekali saat mount
+  }, []); // [] array kosong berarti efek ini hanya berjalan SEKALI saat mount
 
   // Fungsi: Inisialisasi NFC hardware dan cek apakah NFC aktif
-  const checkNFC = async () => {
-    const supported = await NFCService.initNFC(); // Inisialisasi NFC library
-    if (!supported) return; // Jika NFC tidak didukung perangkat, hentikan
-    const enabled = await NFCService.checkNFCEnabled(); // Cek apakah NFC diaktifkan user
-    setNfcEnabled(enabled); // Update state berdasarkan hasil cek
+  const checkNFC = async () => { // async karena mengakses hardware NFC yang membutuhkan waktu
+    const supported = await NFCService.initNFC(); // await menunggu inisialisasi NFC; mengembalikan true jika device mendukung NFC
+    if (!supported) return; // return menghentikan fungsi lebih awal jika NFC tidak didukung
+    const enabled = await NFCService.checkNFCEnabled(); // await mengecek apakah user sudah mengaktifkan NFC di pengaturan
+    setNfcEnabled(enabled); // setNfcEnabled memperbarui state; true = tampilkan form, false = tampilkan instruksi
   };
 
   // Fungsi: Ambil saldo terbaru user dari backend API
   // Dipanggil setelah transaksi berhasil untuk refresh tampilan saldo
-  const fetchBalance = async () => {
+  const fetchBalance = async () => { // async karena melakukan HTTP request ke backend API
     try {
-      const resp = await apiService.getUserById(user.id); // GET /api/users/:id
-      const bal = resp?.user?.balance ?? resp?.balance; // Extract saldo dari response
-      if (typeof bal === 'number') {
-        setCurrentBalance(bal); // Update state saldo
+      const resp = await apiService.getUserById(user.id); // await menunggu respons GET /api/users/:id dari backend
+      const bal = resp?.user?.balance ?? resp?.balance; // optional chaining (?.) untuk akses property aman; ?? (nullish coalescing) menggunakan nilai kanan hanya jika kiri null/undefined
+      if (typeof bal === 'number') { // typeof === 'number' memastikan tipe data angka sebelum di-set ke state
+        setCurrentBalance(bal); // setCurrentBalance memperbarui state saldo dengan nilai terbaru dari backend
       }
-    } catch (error: any) {
+    } catch (error: any) { // catch menangkap error; : any agar TypeScript tidak strict tentang tipe error
       console.error('❌ Failed to refresh balance:', error?.message || error);
     }
   };
 
   // Fungsi: Handler utama saat tombol "Lanjutkan Scan" ditekan
   // Validasi input → buka modal scan → proses pembayaran via usePayment hook
-  const handleStartScan = async () => {
-    // Validasi: user harus valid
-    if (!user?.id) {
+  const handleStartScan = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
+    if (!user?.id) { // optional chaining (?.) aman jika user null; ! membalik boolean — stop jika tidak ada user valid
       Alert.alert('Error', 'User tidak valid');
       return;
     }
 
-    // Bersihkan format angka (hapus titik separator) lalu parse ke float
-    // Contoh: "50.000" → "50000" → 50000
-    const raw = amount.replace(/[^0-9]/g, '');
-    const amountNum = parseFloat(raw);
-    if (!amountNum || amountNum <= 0) {
+    const raw = amount.replace(/[^0-9]/g, ''); // .replace() mengganti teks; regex /[^0-9]/g mencocokkan semua karakter non-angka; 'g' = global (semua kemunculan); hasilnya hanya digit
+    const amountNum = parseFloat(raw); // parseFloat() mengubah string ke bilangan desimal
+    if (!amountNum || amountNum <= 0) { // !amountNum berarti NaN/0/null; amountNum <= 0 berarti angka tidak valid
       Alert.alert('Error', 'Masukkan jumlah yang valid');
       return;
     }
 
-    setScanning(true); // Tampilkan modal scan NFC
-    // Panggil hook usePayment untuk proses pembayaran:
-    // - Scan kartu NFC pembeli
-    // - Kirim ke backend untuk transfer balance
-    // - Return true jika berhasil, false jika gagal/batal
-    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance);
-    setScanning(false); // Sembunyikan modal scan
+    setScanning(true); // setScanning(true) menampilkan Modal overlay scan NFC
+    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance); // await menunggu seluruh proses: scan kartu NFC → validasi kartu di backend → transfer saldo → deteksi fraud Z-Score; mengembalikan true jika berhasil
+    setScanning(false); // setScanning(false) menyembunyikan Modal overlay setelah proses selesai
 
-    if (success) setAmount(''); // Reset input nominal jika berhasil
+    if (success) setAmount(''); // jika transaksi berhasil, kosongkan input untuk transaksi berikutnya
   };
 
-  // Fungsi: Format angka ke string dengan separator ribuan (locale Indonesia)
-  // Contoh: "50000" → "50.000", "1000000" → "1.000.000"
-  const formatNumber = (text: string) => {
-    const digits = text.replace(/[^0-9]/g, ''); // Hanya ambil digit, buang non-angka
-    const num = parseInt(digits || '0'); // Parse ke integer
-    return new Intl.NumberFormat('id-ID').format(num); // Format: 50.000 (titik sebagai separator)
+  const formatNumber = (text: string) => { // arrow function menerima string dan mengembalikan string terformat
+    const digits = text.replace(/[^0-9]/g, ''); // .replace dengan regex menghapus semua karakter non-angka dari input
+    const num = parseInt(digits || '0'); // parseInt() mengubah string ke bilangan bulat; || '0' fallback jika digits kosong
+    return new Intl.NumberFormat('id-ID').format(num); // Intl.NumberFormat('id-ID') memformat angka dengan titik sebagai separator ribuan Indonesia
   };
 
-  // Fungsi: Handler saat user input nominal (via TextInput atau keypad kustom)
-  // Otomatis format ulang angka yang diinput
-  const handleAmountChange = (text: string) => {
-    setAmount(formatNumber(text)); // Format dan simpan ke state
+  const handleAmountChange = (text: string) => { // arrow function dipanggil setiap user mengetik nominal
+    setAmount(formatNumber(text)); // setAmount memperbarui state dengan nilai yang sudah diformat
   };
 
   // ============================================================

@@ -211,16 +211,14 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // - nfcEnabled = true: Show payment form
   // - nfcEnabled = false: Show instruction screen (aktifkan NFC)
   // ================================================================================
-  const checkNFC = async () => {
+  const checkNFC = async () => { // const membuat variabel tetap; async menandai fungsi asynchronous karena mengakses hardware NFC
     // STEP 1: Inisialisasi hardware NFC dan cek apakah device support NFC
-    // Returns true jika support, false jika tidak
-    const supported = await NFCService.initNFC(); // Async karena akses hardware
+    const supported = await NFCService.initNFC(); // await menunggu Promise dari NFCService.initNFC(); mengembalikan true jika device support NFC, false jika tidak
     
-    if (supported) {
+    if (supported) { // if memeriksa apakah device support NFC
       // STEP 2: Jika device support, cek apakah user sudah mengaktifkan NFC di pengaturan
-      // Bisa saja device support tapi NFC dimatikan oleh user
-      const enabled = await NFCService.checkNFCEnabled(); // Cek status enabled/disabled
-      setNfcEnabled(enabled); // Update state UI
+      const enabled = await NFCService.checkNFCEnabled(); // await NFCService.checkNFCEnabled() mengirim query ke OS untuk status NFC aktif/nonaktif
+      setNfcEnabled(enabled); // setNfcEnabled memperbarui state; jika true = tampilkan form pembayaran, jika false = tampilkan layar instruksi
     }
     // Jika tidak support, nfcEnabled tetap false (nilai default)
   };
@@ -310,54 +308,26 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // - Money transferred FROM customer TO merchant
   // - This is a RECEIVE operation, not SEND
   // ================================================================================
-  const handleSendMoney = async () => {
-    // VALIDASI 1: Pastikan user sudah login dan punya ID yang valid
-    // Operator ?. = optional chaining, cek property hanya jika object tidak null
-    if (!user?.id) {
-      Alert.alert('Error', 'User tidak valid. Silakan login ulang.'); // Alert native
-      return; // Stop proses jika user invalid
+  const handleSendMoney = async () => { // const membuat variabel tetap; async karena proses pembayaran NFC melibatkan hardware dan HTTP request
+    if (!user?.id) { // optional chaining (?.) aman jika user null; ! berarti tidak ada user ID yang valid
+      Alert.alert('Error', 'User tidak valid. Silakan login ulang.');
+      return; // return menghentikan fungsi lebih awal
     }
 
-    // VALIDASI 2: Convert input string menjadi angka dan cek validitasnya
-    // parseFloat mengubah "50000" (string) menjadi 50000 (number)
-    // Bisa handle desimal: "50000.50" → 50000.50
-    const amountNum = parseFloat(amount); // Parse string ke float
+    const amountNum = parseFloat(amount); // parseFloat() mengubah string ke bilangan desimal; contoh: '50000' -> 50000
     
-    // Cek apakah hasil parsing valid dan lebih dari 0
-    // !amountNum akan true jika: NaN, 0, null, atau undefined
-    if (!amountNum || amountNum <= 0) {
-      Alert.alert('Error', 'Masukkan jumlah yang valid'); // Pesan error
-      return; // Stop proses
+    if (!amountNum || amountNum <= 0) { // !amountNum berarti NaN/0/null/undefined; <= 0 berarti angka negatif atau nol tidak valid
+      Alert.alert('Error', 'Masukkan jumlah yang valid');
+      return;
     }
 
-    // CATATAN PENTING: Tidak ada batasan minimum jumlah transfer
-    // Sistem Z-Score Based Anomaly Detection akan mendeteksi jumlah yang tidak normal
-    // Algoritma menganalisis 20 transaksi historis untuk mendeteksi pola anomali
+    // CATATAN: Tidak ada batasan minimum — sistem Z-Score Anomaly Detection akan mendeteksi jumlah abnormal
 
-    // PAYMENT PROCESSING
-    // Call processTapToPayTransfer dari usePayment hook
-    // Parameters:
-    // - user.id: Merchant ID (receiver/penjual)
-    // - amountNum: Payment amount in Rupiah
-    // - fetchBalance: Callback untuk refresh balance after success
-    // 
-    // processTapToPayTransfer akan:
-    // 1. Show alert "Scan Kartu Pembeli"
-    // 2. Read buyer card UID
-    // 3. Validate buyer card
-    // 4. Get merchant card (auto-detect dari database)
-    // 5. Process payment: buyer → merchant
-    // 6. Z-Score fraud detection (Z≤2 ALLOW | 2<Z≤3 REVIEW | Z>3 BLOCK)
-    // 7. Show success/error alert
-    // 8. Call fetchBalance() if success
-    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance);
+    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance); // await menunggu proses pembayaran selesai; processTapToPayTransfer dari usePayment hook melakukan: scan NFC → validasi kartu → proses transfer → deteksi fraud Z-Score
     
-    // SUCCESS: Reset form untuk next transaction
-    if (success) {
-      setAmount(''); // Clear amount input
-      // currentBalance sudah updated oleh fetchBalance callback
+    if (success) { // if memeriksa apakah transaksi berhasil
+      setAmount(''); // setAmount('') mengosongkan kembali input amount untuk transaksi berikutnya
     }
-    // Jika failed, amount tetap di input (user bisa retry)
   };
 
   // ================================================================================
@@ -381,35 +351,29 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // - Prevent rendering payment form when unusable
   // - Better UX: Clear error state with actionable instructions
   // ================================================================================
-  if (!nfcEnabled) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          {/* Error Icon - Mobile dengan NFC */}
-          <Text style={styles.errorIcon}>📲</Text>
+  if (!nfcEnabled) { // if memeriksa kondisi; !nfcEnabled berarti NFC tidak aktif atau tidak didukung; early return menampilkan layar instruksi sebagai pengganti form pembayaran
+    return ( // return mengembalikan UI alternatif — early return pattern
+      <SafeAreaView style={styles.container}> {/* SafeAreaView memastikan konten tidak tertutup notch atau status bar */}
+        <View style={styles.centerContent}> {/* View dengan style centerContent menengahkan semua elemen */}
+          <Text style={styles.errorIcon}>📲</Text> {/* Text menampilkan emoji ikon sebagai ilustrasi */}
           
-          {/* Error Message */}
-          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text> {/* judul pesan error */}
           
-          {/* Info Text */}
           <Text style={styles.infoText}>
-            Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda:
+            Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda: {/* teks instruksi panduan */}
           </Text>
           
-          {/* Step-by-step Instructions */}
-          {/* instructionBox: White box dengan left border accent */}
-          <View style={styles.instructionBox}>
+          {/* Kotak instruksi langkah demi langkah */}
+          <View style={styles.instructionBox}> {/* View container dengan border kiri sebagai visual accent */}
             <Text style={styles.instructionText}>
-              1. Buka Pengaturan HP{'\n'}
+              1. Buka Pengaturan HP{'\n'} {/* {'\n'} adalah escape sequence newline di dalam JSX string */}
               2. Cari menu "Koneksi Perangkat" atau "NFC"{'\n'}
               3. Aktifkan toggle NFC{'\n'}
               4. Kembali ke aplikasi ini
             </Text>
           </View>
           
-          {/* Back Button */}
-          {/* Navigate back to DashboardScreen */}
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}> {/* TouchableOpacity adalah tombol dengan efek transparan saat ditekan; onPress={onBack} memanggil callback kembali ke Dashboard */}
             <Text style={styles.backButtonText}>Kembali</Text>
           </TouchableOpacity>
         </View>
@@ -464,41 +428,35 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   //    - Disabled jika: !amount || isProcessing
   //    - onPress: handleSendMoney
   // ================================================================================
-  return (
+  return ( // return JSX utama — form pembayaran yang tampil saat NFC aktif
     <SafeAreaView style={styles.container}>
-      {/* ===== HEADER SECTION ===== */}
-      {/* Flexbox row: back button | title | spacer */}
-      <View style={styles.header}>
-        {/* Back Button */}
-        <TouchableOpacity onPress={onBack}>
+      {/* Header: tombol kembali dan judul screen */}
+      <View style={styles.header}> {/* View flexbox row mengelompokkan elemen header secara horizontal */}
+        <TouchableOpacity onPress={onBack}> {/* onPress={onBack} memanggil callback untuk kembali ke DashboardScreen */}
           <Text style={styles.backText}>← Kembali</Text>
         </TouchableOpacity>
         
-        {/* Screen Title */}
-        <Text style={styles.title}>💳 NFC Payment</Text>
+        <Text style={styles.title}>💳 NFC Payment</Text> {/* judul screen di tengah */}
         
-        {/* Empty Spacer (untuk symmetry dengan back button) */}
+        {/* Spacer kosong untuk menyeimbangkan posisi judul di tengah */}
         <View style={styles.headerSpacerLarge} />
       </View>
 
-      {/* ===== SCROLLABLE CONTENT ===== */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {/* ===== USER INFO CARD ===== */}
-        {/* Display merchant name dan current balance */}
-        <View style={styles.userCard}>
-          <Text style={styles.userName}>👤 {user?.name}</Text>
+      {/* ScrollView: konten bisa di-scroll jika melebihi tinggi layar */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}> {/* contentContainerStyle mengatur padding dalam area scroll */}
+        {/* Kartu info merchant: nama dan saldo */}
+        <View style={styles.userCard}> {/* View kartu putih dengan shadow */}
+          <Text style={styles.userName}>👤 {user?.name}</Text> {/* optional chaining (?.) aman jika user null; menampilkan nama merchant */}
           <Text style={styles.userBalance}>
-            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'}
+            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'} {/* toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia; || '0' fallback jika null */}
           </Text>
         </View>
 
-        {/* ===== INSTRUCTION CARD ===== */}
-        {/* Blue card dengan step-by-step guide untuk merchant */}
-        {/* Help user understand payment flow */}
-        <View style={styles.instructionCard}>
+        {/* Kartu instruksi cara terima pembayaran */}
+        <View style={styles.instructionCard}> {/* View kartu biru dengan panduan langkah demi langkah */}
           <Text style={styles.instructionTitle}>📖 Cara Terima Pembayaran:</Text>
           <Text style={styles.instructionText}>
-            1. Masukkan jumlah pembayaran{'\n'}
+            1. Masukkan jumlah pembayaran{'\n'} {/* {'\n'} newline di dalam JSX string */}
             2. Tekan tombol "Terima Pembayaran"{'\n'}
             3. Pembeli tempelkan kartu NFC ke HP Anda{'\n'}
             4. Saldo Anda otomatis bertambah! ✅{'\n'}
@@ -506,47 +464,38 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           </Text>
         </View>
 
-        {/* ===== AMOUNT INPUT CARD ===== */}
-        {/* White card dengan amount input field */}
+        {/* Kartu input jumlah pembayaran */}
         <View style={styles.inputCard}>
           <Text style={styles.inputLabel}>💰 Jumlah Pembayaran:</Text>
           
-          {/* Controlled TextInput untuk amount */}
-          {/* keyboardType="numeric": Show number keyboard */}
-          {/* editable={!isProcessing}: Disable saat processing */}
           <TextInput
             style={styles.input}
-            placeholder="Contoh: 50000"
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            editable={!isProcessing}
+            placeholder="Contoh: 50000" {/* placeholder teks abu-abu saat input kosong */}
+            keyboardType="numeric" {/* keyboardType="numeric" menampilkan keyboard angka saja */}
+            value={amount} {/* value={amount} controlled component — nilai input sinkron dengan state */}
+            onChangeText={setAmount} {/* onChangeText={setAmount} memperbarui state setiap user mengetik */}
+            editable={!isProcessing} {/* editable={!isProcessing} menonaktifkan input saat proses pembayaran berlangsung */}
           />
           
-          {/* Hint text: flexible amount */}
-          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text>
+          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text> {/* teks petunjuk di bawah input */}
         </View>
 
-        {/* ===== ACTION BUTTON: TERIMA PEMBAYARAN ===== */}
-        {/* Green button untuk start payment flow */}
-        {/* Conditional styling: disabled state jika !amount || isProcessing */}
+        {/* Tombol Terima Pembayaran */}
         <TouchableOpacity
           style={[
             styles.actionButton,
-            styles.sendButton, // Green color
-            (!amount || isProcessing) && styles.disabledButton // Gray when disabled
+            styles.sendButton, {/* sendButton memberikan warna hijau pada tombol */}
+            (!amount || isProcessing) && styles.disabledButton {/* conditional style: && menambahkan style disabled jika kondisi benar */}
           ]}
-          onPress={handleSendMoney}
-          disabled={!amount || isProcessing}
+          onPress={handleSendMoney} {/* onPress memanggil handleSendMoney saat tombol ditekan */}
+          disabled={!amount || isProcessing} {/* disabled menonaktifkan tombol jika amount kosong atau sedang processing */}
         >
-          {/* LOADING STATE: Show spinner + "Processing..." */}
-          {isProcessing ? (
-            <>
-              <ActivityIndicator color="white" />
+          {isProcessing ? ( {/* ternary operator: jika isProcessing=true tampilkan spinner, jika false tampilkan teks normal */}
+            <> {/* Fragment <> mengelompokkan beberapa elemen tanpa div tambahan */}
+              <ActivityIndicator color="white" /> {/* ActivityIndicator adalah spinner animasi loading bawaan React Native */}
               <Text style={styles.actionButtonText}>  Processing...</Text>
             </>
           ) : (
-            // NORMAL STATE: Show button text
             <>
               <Text style={styles.actionButtonText}>💵 Terima Pembayaran</Text>
               <Text style={styles.actionButtonSubtext}>

@@ -479,15 +479,14 @@ export class NFCService {
   // Method ini membaca UID dan tag info untuk identifikasi kartu fisik
   // 
   // Output: NFCCardInfo dengan UID dan detail kartu
-  static async readPhysicalCard(): Promise<NFCCardInfo | null> {
+  static async readPhysicalCard(): Promise<NFCCardInfo | null> { // static berarti dipanggil langsung NFCService.readPhysicalCard() tanpa new; async menandai fungsi asynchronous; Promise<NFCCardInfo | null> return type — info kartu atau null jika gagal
     try {
-      // Cek apakah ada request yang sedang aktif
-      if (this.isRequestActive) {
-        console.log('⚠️ Request NFC sedang berlangsung');
-        return null;
+      if (this.isRequestActive) { // if memeriksa flag; isRequestActive=true berarti sudah ada pembacaan NFC yang sedang berjalan
+        console.log('\u26a0\ufe0f Request NFC sedang berlangsung');
+        return null; // return null menghentikan fungsi dan mencegah scan bersamaan
       }
 
-      this.isRequestActive = true;
+      this.isRequestActive = true; // set flag menjadi true — mengunci agar tidak ada scan lain yang bisa masuk
 
       // Cancel request sebelumnya jika ada
       try {
@@ -496,70 +495,62 @@ export class NFCService {
         // Abaikan
       }
 
-      // Request teknologi NFC (NfcA untuk NTag215)
-      // NTag215 menggunakan protokol ISO14443A
-      await NfcManager.requestTechnology(NfcTech.NfcA, {
-        alertMessage: 'Dekatkan kartu NFC ke HP...'
+      await NfcManager.requestTechnology(NfcTech.NfcA, { // await menunggu izin akses hardware NFC; NfcTech.NfcA adalah protokol ISO14443A yang digunakan NTag215
+        alertMessage: 'Dekatkan kartu NFC ke HP...' // pesan yang ditampilkan di dialog NFC pada iOS
       });
       
-      // Ambil info tag dengan timeout 30 detik
-      const tag = await Promise.race([
-        NfcManager.getTag(),
+      const tag = await Promise.race([ // Promise.race() menjalankan dua promise bersamaan dan mengambil mana yang selesai lebih dulu
+        NfcManager.getTag(), // mencoba membaca tag NFC dari hardware
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('NFC_TIMEOUT')), 30000)
+          setTimeout(() => reject(new Error('NFC_TIMEOUT')), 30000) // setTimeout membuat timeout 30 detik; jika tag tidak terbaca, reject dengan error NFC_TIMEOUT
         )
       ]) as any;
 
-      if (!tag || !tag.id) {
+      if (!tag || !tag.id) { // ! membalik boolean; !tag berarti null; !tag.id berarti tidak ada UID — kartu tidak terdeteksi
         console.warn('⚠️ No NFC card detected');
-        return null;
+        return null; // return null memberitahu pemanggil bahwa tidak ada kartu
       }
 
-      // Extract UID dari tag
-      // UID adalah unique identifier kartu (7-10 bytes untuk NTag215)
-      const uidBytes = tag.id as any;
-      const cardId = Array.isArray(uidBytes) ? this.bytesToHexString(uidBytes) : String(uidBytes);
+      const uidBytes = tag.id as any; // mengambil UID kartu sebagai array byte; as any mengabaikan type check TypeScript
+      const cardId = Array.isArray(uidBytes) ? this.bytesToHexString(uidBytes) : String(uidBytes); // ternary operator: jika array byte, konversi ke hex string; jika bukan, konversi langsung ke string
 
-      // Ambil tipe teknologi
-      const techTypes = tag.techTypes || [];
+      const techTypes = tag.techTypes || []; // mengambil daftar teknologi NFC; || [] fallback jika techTypes tidak ada
 
-      // Deteksi tipe kartu
-      let cardType = 'Tidak Diketahui';
+      let cardType = 'Tidak Diketahui'; // let karena nilai akan berubah tergantung tipe kartu yang terdeteksi
       if (techTypes.includes('android.nfc.tech.NfcA') || 
-          techTypes.includes('android.nfc.tech.MifareUltralight')) {
-        cardType = 'NTag215'; // Kemungkinan besar NTag215
+          techTypes.includes('android.nfc.tech.MifareUltralight')) { // .includes() memeriksa apakah array mengandung nilai; || berarti OR
+        cardType = 'NTag215'; // NTag215 adalah tipe kartu fisik yang digunakan dalam sistem ini
       }
 
-      // Ambil produsen dari UID (byte pertama)
-      const manufacturerId = typeof uidBytes[0] === 'number' ? uidBytes[0] : parseInt(uidBytes[0] as any);
-      let manufacturer = 'Tidak Diketahui';
-      if (manufacturerId === 4) {
-        manufacturer = 'NXP Semiconductors'; // Produsen NTag215
+      const manufacturerId = typeof uidBytes[0] === 'number' ? uidBytes[0] : parseInt(uidBytes[0] as any); // typeof memeriksa tipe; ternary: jika sudah number pakai langsung, jika string konversi dengan parseInt
+      let manufacturer = 'Tidak Diketahui'; // let karena nilainya bisa berubah
+      if (manufacturerId === 4) { // kode 4 pada byte pertama UID menandakan NXP Semiconductors
+        manufacturer = 'NXP Semiconductors'; // produsen chip NTag215
       }
 
-      const cardInfo: NFCCardInfo = {
-        id: cardId,
-        type: cardType,
-        techTypes,
-        maxSize: tag.maxSize || 888, // NTag215 punya 888 bytes
-        isWritable: true, // Asumsi bisa ditulis untuk NTag215
-        manufacturer
+      const cardInfo: NFCCardInfo = { // const membuat objek tetap; : NFCCardInfo adalah type annotation TypeScript
+        id: cardId, // UID kartu dalam format hex string
+        type: cardType, // tipe kartu yang terdeteksi
+        techTypes, // shorthand property: sama dengan techTypes: techTypes
+        maxSize: tag.maxSize || 888, // || 888 fallback; NTag215 memiliki 888 bytes memori
+        isWritable: true, // kartu NTag215 dapat ditulis dan dibaca berkali-kali
+        manufacturer // shorthand property: nama produsen kartu
       };
 
       console.log('✅ Kartu Fisik Terbaca:', cardInfo);
-      return cardInfo;
+      return cardInfo; // mengembalikan info kartu ke pemanggil
       
     } catch (error) {
       console.log('Error Baca Kartu Fisik:', error);
-      return null;
+      return null; // return null memberitahu pemanggil bahwa pembacaan gagal
       
-    } finally {
+    } finally { // finally selalu dijalankan setelah try/catch — cocok untuk melepas resource hardware
       try {
-        await NfcManager.cancelTechnologyRequest();
+        await NfcManager.cancelTechnologyRequest(); // melepaskan izin akses hardware NFC agar bisa digunakan kembali
       } catch (e) {
-        // Abaikan
+        // abaikan error cancel
       }
-      this.isRequestActive = false;
+      this.isRequestActive = false; // reset flag — scanner siap menerima pembacaan berikutnya
     }
   }
 

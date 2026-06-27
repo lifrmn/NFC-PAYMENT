@@ -128,18 +128,18 @@ interface NFCCard { // interface mendefinisikan struktur objek kartu NFC yang di
 export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsScreenProps) {
   // STATE 1: cards - Array kartu NFC milik user
   // Awalnya kosong, diisi setelah fetch dari backend
-  const [cards, setCards] = useState<NFCCard[]>([]);
+  const [cards, setCards] = useState<NFCCard[]>([]); // const membuat variabel tetap; useState<NFCCard[]>([]) membuat state array bertipe NFCCard; [] nilai awal array kosong; setCards memperbarui daftar kartu
 
   // STATE 2: loading - Flag loading awal (tampilkan full-screen spinner)
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // useState(false) membuat state boolean untuk loading awal; setLoading(true) dipanggil sebelum fetch data, setLoading(false) setelah selesai
 
   // STATE 3: refreshing - Flag pull-to-refresh (tampilkan spinner di atas scroll)
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // useState(false) membuat state boolean untuk pull-to-refresh; berbeda dengan loading — refreshing tidak menampilkan full-screen spinner
 
   // useEffect: Auto-load kartu saat komponen pertama kali mount
-  useEffect(() => {
-    loadCards(); // Fetch data kartu dari backend saat screen dibuka
-  }, []); // [] = hanya sekali saat mount
+  useEffect(() => { // useEffect(callback, []) dijalankan SEKALI saat komponen pertama kali mount
+    loadCards(); // memanggil loadCards() untuk mengambil data kartu dari backend saat screen dibuka
+  }, []); // array kosong [] berarti efek ini hanya berjalan sekali saat mount
 
   // Fungsi: Ambil daftar kartu user dari backend API
   // Kebijakan: max 1 kartu per user (.slice(0, 1))
@@ -179,33 +179,32 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // Fungsi: Handler pull-to-refresh
   // Dipanggil saat user tarik layar ke bawah
-  const onRefresh = async () => {
-    setRefreshing(true);  // Aktifkan spinner pull-to-refresh
-    await loadCards();     // Fetch ulang data kartu
-    setRefreshing(false); // Matikan spinner setelah selesai
+  const onRefresh = async () => { // async karena memanggil loadCards yang berisi await
+    setRefreshing(true);  // setRefreshing(true) mengaktifkan spinner pull-to-refresh di RefreshControl
+    await loadCards();     // await menunggu loadCards selesai sebelum mematikan spinner
+    setRefreshing(false); // setRefreshing(false) mematikan spinner setelah data selesai dimuat
   };
 
   // Fungsi: Handler aksi kartu (BLOCK atau ACTIVATE)
   // Tampilkan konfirmasi dulu sebelum eksekusi perubahan status
-  const handleCardAction = async (card: NFCCard, action: 'BLOCK' | 'ACTIVATE') => {
-    const actionText = action === 'BLOCK' ? 'memblokir' : 'mengaktifkan'; // Teks untuk UI
-    const newStatus = action === 'BLOCK' ? 'BLOCKED' : 'ACTIVE'; // Status baru yang akan di-set
+  const handleCardAction = async (card: NFCCard, action: 'BLOCK' | 'ACTIVATE') => { // async karena memanggil API; parameter card bertipe NFCCard; action bertipe union string literal 'BLOCK' | 'ACTIVATE'
+    const actionText = action === 'BLOCK' ? 'memblokir' : 'mengaktifkan'; // ternary operator: jika action adalah 'BLOCK' gunakan 'memblokir', jika tidak gunakan 'mengaktifkan'
+    const newStatus = action === 'BLOCK' ? 'BLOCKED' : 'ACTIVE'; // ternary menentukan nilai status baru yang akan dikirim ke backend
 
-    Alert.alert(
+    Alert.alert( // Alert.alert menampilkan dialog konfirmasi sebelum eksekusi perubahan status
       'Konfirmasi',
-      `Apakah Anda yakin ingin ${actionText} kartu ini?`,
+      `Apakah Anda yakin ingin ${actionText} kartu ini?`, // template literal ${} menyisipkan variabel ke string
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' }, // tombol batal — tidak melakukan apa-apa
         {
           text: 'Ya',
-          onPress: async () => {
+          onPress: async () => { // async arrow function sebagai callback tombol 'Ya'
             try {
-              // Panggil API untuk update status kartu: PUT /api/nfc-cards/:cardId/status
-              await apiService.updateCardStatus(card.cardId, newStatus);
-              Alert.alert('Berhasil', `Kartu berhasil di${actionText}`);
-              loadCards(); // Refresh tampilan setelah status berubah
+              await apiService.updateCardStatus(card.cardId, newStatus); // await menunggu HTTP PUT /api/nfc-cards/:cardId/status mengubah status kartu di backend
+              Alert.alert('Berhasil', `Kartu berhasil di${actionText}`); // template literal menyisipkan actionText ke pesan
+              loadCards(); // memanggil loadCards() untuk me-refresh tampilan daftar kartu setelah status berubah
             } catch (error: any) {
-              Alert.alert('Error', error.message || `Gagal ${actionText} kartu`);
+              Alert.alert('Error', error.message || `Gagal ${actionText} kartu`); // || menampilkan pesan fallback jika error.message tidak ada
             }
           },
         },
@@ -215,50 +214,48 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // Fungsi: Dapatkan warna badge berdasarkan status kartu
   // Digunakan untuk memberi warna visual yang berbeda tiap status
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':   return '#10B981'; // Hijau: aktif & bisa digunakan
-      case 'BLOCKED':  return '#EF4444'; // Merah: diblokir, tidak bisa bertransaksi
-      case 'LOST':     return '#94a3b8'; // Abu-abu: dilaporkan hilang
-      case 'EXPIRED':  return '#F59E0B'; // Kuning: masa berlaku habis
-      default:         return '#64748b'; // Default abu-abu gelap
+  const getStatusColor = (status: string) => { // arrow function menerima status string dan mengembalikan kode warna hex
+    switch (status) { // switch memeriksa nilai status dan menjalankan case yang cocok
+      case 'ACTIVE':   return '#10B981'; // return langsung mengembalikan nilai; hijau untuk kartu aktif
+      case 'BLOCKED':  return '#EF4444'; // merah untuk kartu diblokir
+      case 'LOST':     return '#94a3b8'; // abu-abu untuk kartu dilaporkan hilang
+      case 'EXPIRED':  return '#F59E0B'; // kuning untuk kartu kadaluarsa
+      default:         return '#64748b'; // default dipanggil jika tidak ada case yang cocok
     }
   };
 
-  // Fungsi: Dapatkan teks label status dalam Bahasa Indonesia
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string) => { // arrow function mengubah status kode ke teks Bahasa Indonesia
     switch (status) {
       case 'ACTIVE':   return 'Aktif';
+      case 'ACTIVE':   return 'Aktif'; // case cocok dengan 'ACTIVE', return langsung keluar dari switch
       case 'BLOCKED':  return 'Diblokir';
       case 'LOST':     return 'Hilang';
       case 'EXPIRED':  return 'Kadaluarsa';
-      default:         return status; // Fallback ke nilai asli
+      default:         return status; // default: jika tidak ada case yang cocok, kembalikan nilai asli string
     }
   };
 
-  // Fungsi: Format tanggal ISO string ke format Indonesia (dd MMM yyyy)
-  // Contoh: "2025-01-20T10:00:00Z" → "20 Jan 2025"
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString); // Parse ISO string ke Date object
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',   // Tanggal 2 digit: "01", "20"
-      month: 'short',   // Bulan singkat: "Jan", "Des"
-      year: 'numeric',  // Tahun 4 digit: "2025"
+  const formatDate = (dateString: string) => { // arrow function menerima string ISO date dan mengembalikan string tanggal terformat
+    const date = new Date(dateString); // new Date(string) mem-parse string ISO 8601 menjadi objek Date JavaScript
+    return date.toLocaleDateString('id-ID', { // toLocaleDateString('id-ID') memformat tanggal sesuai locale Indonesia
+      day: '2-digit',   // '2-digit' menampilkan hari dengan dua angka: "01", "20"
+      month: 'short',   // 'short' menampilkan nama bulan disingkat: "Jan", "Des"
+      year: 'numeric',  // 'numeric' menampilkan tahun penuh: "2025"
     });
   };
 
   // ── RENDER KONDISIONAL: Loading State (awal, belum ada data) ──
   // Tampilkan full-screen spinner HANYA saat loading pertama kali
   // (bukan saat pull-to-refresh, karena pull-to-refresh punya spinner sendiri)
-  if (loading && cards.length === 0) {
-    return (
+  if (loading && cards.length === 0) { // if memeriksa dua kondisi sekaligus dengan &&; loading=true DAN belum ada data kartu — tampilkan full-screen spinner
+    return ( // early return menampilkan UI loading alternatif
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* TouchableOpacity tombol kembali */}
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Daftar Kartu</Text>
-          <View style={styles.headerSpacer} />
+          <View style={styles.headerSpacer} /> {/* View kosong sebagai spacer */}
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3B82F6" />{/* Spinner biru besar */}

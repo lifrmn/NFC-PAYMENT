@@ -326,27 +326,22 @@ export const getUserById = async (id: number): Promise<User | null> => {
   try {
     // STEP 1: Try load dari cache local dulu (untuk speed)
     // Cache key format: "user_123" untuk user dengan ID 123
-    const cacheKey = `user_${id}`;
-    const cachedUser = await AsyncStorage.getItem(cacheKey);
+    const cacheKey = `user_${id}`; // template literal: membuat key cache unik berdasarkan ID, contoh: 'user_123'
+    const cachedUser = await AsyncStorage.getItem(cacheKey); // await membaca data dari penyimpanan lokal; getItem mengembalikan string atau null
     
-    // STEP 2: Jika ada di cache, parse JSON dan return
-    if (cachedUser) {
-      const user = JSON.parse(cachedUser); // Convert JSON string → JavaScript object
-      console.log(`💾 Loaded user from cache: ${user.username}`);
-      return user; // Fast response dari cache!
+    if (cachedUser) { // jika cachedUser tidak null berarti data tersedia di cache
+      const user = JSON.parse(cachedUser); // JSON.parse mengonversi string JSON menjadi objek JavaScript
+      console.log(`\ud83d\udcbe Loaded user from cache: ${user.username}`);
+      return user; // mengembalikan data dari cache — lebih cepat daripada request ke backend
     }
     
     // STEP 3: Jika tidak ada di cache, fetch dari backend
     // apiService.getUserById() returns the user object directly (not wrapped in {user: ...})
-    const res = await apiService.getUserById(id);
+    const res = await apiService.getUserById(id); // await memanggil HTTP GET ke backend; id diteruskan sebagai parameter untuk mencari user berdasarkan ID
     
-    // STEP 4: Jika backend response valid, save ke cache untuk next time
-    // Handle both {user: {...}} (legacy) and direct user object formats
-    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null);
+    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null); // ternary operator: jika respons membungkus user dalam properti 'user', ambil itu; jika respons adalah objek user langsung, gunakan langsung
     if (userObj) {
-      // Save user object ke AsyncStorage sebagai JSON string
-      // JSON.stringify() convert JavaScript object → JSON string
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(userObj));
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(userObj)); // JSON.stringify mengonversi objek JavaScript menjadi string JSON untuk disimpan di AsyncStorage
       console.log(`✅ Loaded user from backend: ${userObj.username}`);
       return userObj;
     }
@@ -404,12 +399,9 @@ export const getAllUsers = async (): Promise<User[]> => {
     // STEP 1: Call apiService.getAllUsers()
     // Endpoint: GET /api/admin/users
     // Requires admin token (untuk security)
-    const res = await apiService.getAllUsers();
+    const res = await apiService.getAllUsers(); // await memanggil HTTP GET /api/admin/users untuk mengambil semua data user
     
-    // STEP 2: Validate response adalah array
-    // Backend bisa return array atau object dengan array di dalamnya
-    // Array.isArray() check apakah res adalah array
-    return Array.isArray(res) ? res : [];
+    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: jika ya kembalikan, jika bukan kembalikan array kosong
     
   } catch {
     // STEP 3: Handle errors dengan silent failure
@@ -469,12 +461,12 @@ export const processPayment = async (
 ): Promise<boolean> => {
   try {
     // STEP 1: Build payload dengan transaction data
-    const payload = {
-      senderId,              // ID user pengirim
-      receiverUsername,      // Username receiver (TODO: convert ke receiverId)
-      amount,                // Jumlah uang
-      description,           // Deskripsi transaksi
-      deviceId: Platform.OS, // Platform device ('ios' atau 'android')
+    const payload = { // const membuat objek tetap; berisi semua data yang diperlukan untuk transaksi
+      senderId,              // shorthand property: ID user pengirim
+      receiverUsername,      // shorthand property: username penerima (perlu dikonversi ke ID)
+      amount,                // shorthand property: jumlah uang dalam Rupiah
+      description,           // shorthand property: deskripsi transaksi
+      deviceId: Platform.OS, // Platform.OS mengembalikan 'ios' atau 'android' — digunakan untuk fraud detection
     };
 
     // STEP 2: TODO - Implement user lookup by username
@@ -530,11 +522,9 @@ export const getUserTransactions = async (
     // STEP 1: Call apiService wrapper
     // Endpoint: GET /api/transactions/user/{userId}
     // Backend akan query: WHERE senderId = userId OR receiverId = userId
-    const res = await apiService.getUserTransactions(userId);
+    const res = await apiService.getUserTransactions(userId); // await memanggil HTTP GET ke backend; userId diteruskan untuk mengambil riwayat transaksi user tersebut
     
-    // STEP 2: Validate response adalah array
-    // Jika backend return object { transactions: [...] }, extract array
-    return Array.isArray(res) ? res : [];
+    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: kembalikan array jika ya, atau array kosong sebagai fallback
     
   } catch {
     // STEP 3: Handle errors dengan silent failure

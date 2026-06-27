@@ -90,9 +90,9 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
 
   // Fungsi: Sensor/masking UID kartu untuk keamanan dan privasi
   // Contoh: "04AB1234567890" → "04AB •••• •••• 7890"
-  const maskCardId = (cardId: string) => {
-    if (cardId.length <= 8) return cardId; // Kartu pendek: tampilkan apa adanya
-    return cardId.substring(0, 4) + ' •••• •••• ' + cardId.substring(cardId.length - 4); // Mask bagian tengah
+  const maskCardId = (cardId: string) => { // const membuat variabel tetap; arrow function menerima UID kartu sebagai string dan mengembalikan versi yang di-sensor
+    if (cardId.length <= 8) return cardId; // .length mengembalikan jumlah karakter; <= berarti kurang dari atau sama; jika UID pendek, tampilkan apa adanya
+    return cardId.substring(0, 4) + ' •••• •••• ' + cardId.substring(cardId.length - 4); // .substring(start, end) mengambil sebagian string; 0,4 mengambil 4 karakter pertama; cardId.length-4 menghitung posisi 4 karakter terakhir
   };
 
   // Render UI komponen sukses transaksi

@@ -65,12 +65,12 @@ import { apiService } from '../utils/apiService';
 export const useNFCScanner = (currentUserId: number) => {
   // STATE 1: lastScannedCard - Menyimpan UID kartu terakhir yang berhasil di-scan
   // Berguna untuk mencegah scan duplikat dan menampilkan info "terakhir scan"
-  const [lastScannedCard, setLastScannedCard] = useState<string>(''); // Awalnya kosong
+  const [lastScannedCard, setLastScannedCard] = useState<string>(''); // const membuat variabel tetap; useState<string>('') membuat state string kosong; <string> adalah type annotation TypeScript; lastScannedCard menyimpan UID kartu terakhir yang berhasil di-scan
   
   // STATE 2: isScanning - Flag lock untuk mencegah multiple scan bersamaan
   // NFC hardware hanya bisa handle 1 operasi pada satu waktu
   // true = sedang scan, false = siap scan baru
-  const [isScanning, setIsScanning] = useState(false); // Awalnya idle
+  const [isScanning, setIsScanning] = useState(false); // useState(false) membuat state boolean dengan nilai awal false; isScanning=true mengunci scanner agar tidak bisa dipanggil dua kali bersamaan
 
   // ================================================================================
   // FUNGSI: scanAndValidateCard
@@ -114,18 +114,13 @@ export const useNFCScanner = (currentUserId: number) => {
   // - Error baca NFC → Peringatan "Gagal membaca kartu"
   // - Error jaringan → Pesan peringatan error
   // ================================================================================
-  const scanAndValidateCard = async (): Promise<string | null> => {
-    // STEP 1: Cek apakah sudah ada scan yang sedang berjalan
-    // Guard clause untuk mencegah conflict hardware NFC
-    // NFC hanya bisa handle 1 operasi pada satu waktu
-    if (isScanning) {
-      Alert.alert('Error', 'Scan sudah berjalan'); // Tampilkan peringatan
-      return null; // Keluar dari function tanpa melanjutkan
+  const scanAndValidateCard = async (): Promise<string | null> => { // const membuat variabel tetap; async menandai fungsi asynchronous; : Promise<string | null> adalah return type TypeScript — mengembalikan string (UID kartu) atau null jika gagal
+    if (isScanning) { // if memeriksa kondisi; isScanning=true berarti sudah ada scan yang berjalan
+      Alert.alert('Error', 'Scan sudah berjalan'); // Alert.alert menampilkan dialog native
+      return null; // return null menghentikan fungsi dan mengembalikan null ke pemanggil
     }
 
-    // STEP 2: Aktifkan lock scanner agar tidak bisa dipanggil lagi
-    // Pattern locking: variable flag untuk kontrol akses function
-    setIsScanning(true); // Lock ON
+    setIsScanning(true); // setIsScanning(true) mengaktifkan lock — mencegah panggilan bersamaan
 
     try {
       // STEP 3: Read Physical Card UID
@@ -135,15 +130,9 @@ export const useNFCScanner = (currentUserId: number) => {
       // 2. Wait for card detection (auto-detect mode)
       // 3. Read UID dari NDEF atau ISO15693 tag
       // 4. Return UID as string or null if failed
-      const cardInfo = await NFCService.readPhysicalCard();
+      const cardInfo = await NFCService.readPhysicalCard(); // await menunggu hasil pembacaan kartu NFC dari hardware; NFCService.readPhysicalCard() mengaktifkan sensor NFC dan menunggu kartu ditempelkan
 
-      // VALIDASI 3.1: Check apakah berhasil read UID
-      // cardInfo akan null jika:
-      // - User cancel scanning
-      // - NFC hardware error
-      // - Card tidak support (bukan NTag215)
-      // - Timeout (user tidak dekatkan card dalam waktu yang ditentukan)
-      if (!cardInfo) {
+      if (!cardInfo) { // ! membalik boolean; !cardInfo berarti null/undefined — pembacaan gagal
         Alert.alert(
           '❌ Kartu Tidak Terbaca',
           'Pastikan:\n• Kartu NFC dekat dengan HP\n• Kartu dalam kondisi baik\n• NFC aktif di Pengaturan',
@@ -175,14 +164,9 @@ export const useNFCScanner = (currentUserId: number) => {
       //     }
       //   }
       // }
-      const checkResult = await apiService.get(`/api/nfc-cards/info/${cardInfo.id}`);
+      const checkResult = await apiService.get(`/api/nfc-cards/info/${cardInfo.id}`); // await menunggu HTTP GET ke backend; template literal ${cardInfo.id} menyisipkan UID kartu ke URL
 
-      // VALIDASI 4.1: Check apakah card registered di database
-      // success = false berarti:
-      // - Card UID tidak ditemukan di tabel nfc_cards
-      // - Card belum pernah didaftarkan oleh user manapun
-      // User harus daftar card dulu di RegisterCardScreen
-      if (!checkResult.success) {
+      if (!checkResult.success) { // ! membalik boolean; success=false berarti kartu belum terdaftar di database
         Alert.alert(
           '📝 Kartu Belum Terdaftar',
           `UID: ${cardInfo.id.slice(0, 16)}...\n\nDaftar kartu di menu "Daftar Kartu" terlebih dahulu.`,
@@ -193,14 +177,9 @@ export const useNFCScanner = (currentUserId: number) => {
 
       // Extract card data dari response
       // cardData berisi info lengkap card + user owner
-      const cardData = checkResult.card;
+      const cardData = checkResult.card; // mengambil property card dari objek respons backend
 
-      // VALIDASI 4.2: Check ownership - apakah card milik current user
-      // Security check: Prevent user pakai card user lain
-      // currentUserId = ID user yang login (dari parameter hook)
-      // cardData.userId = ID user pemilik card (dari database)
-      // Jika tidak match, berarti card milik user lain
-      if (cardData.userId !== currentUserId) {
+      if (cardData.userId !== currentUserId) { // !== berarti tidak sama; membandingkan ID pemilik kartu dengan ID user yang sedang login
         Alert.alert(
           '⚠️ Kartu Milik Akun Lain',
           `Kartu ini terdaftar atas nama: ${cardData.user?.name || 'User lain'}\n\nAnda tidak dapat menggunakan kartu ini.`,
@@ -209,13 +188,7 @@ export const useNFCScanner = (currentUserId: number) => {
         return null; // Early return: wrong owner
       }
 
-      // VALIDASI 4.3: Check card status
-      // Card harus dalam status ACTIVE untuk bisa digunakan
-      // Status lain:
-      // - BLOCKED: Card diblokir karena fraud atau admin action
-      // - SUSPENDED: Card ditangguhkan sementara (pending verification)
-      // - INACTIVE: Card belum diaktivasi setelah registrasi
-      if (cardData.cardStatus !== 'ACTIVE') {
+      if (cardData.cardStatus !== 'ACTIVE') { // !== berarti tidak sama persis; hanya kartu dengan status 'ACTIVE' yang bisa digunakan bertransaksi
         Alert.alert(
           '🚫 Kartu Tidak Aktif',
           `Status: ${cardData.cardStatus}\n\nAktifkan kartu di menu "Kartu Saya".`,
@@ -238,16 +211,14 @@ export const useNFCScanner = (currentUserId: number) => {
       // - deviceId: Identifier device (untuk detect multi-device fraud)
       // - signalStrength: Kekuatan sinyal NFC (untuk detect card cloning)
       // - readTime: Timestamp tap (untuk analisis pola transaksi)
-      await apiService.post('/api/nfc-cards/tap', {
-        cardId: cardInfo.id,
+      await apiService.post('/api/nfc-cards/tap', { // await menunggu HTTP POST ke backend untuk mencatat data tap kartu ke log analytics
+        cardId: cardInfo.id, // UID kartu yang ditap
         deviceId: 'unknown', // TODO: Get real device ID
-        signalStrength: 'strong',
-        readTime: Date.now()
+        signalStrength: 'strong', // kekuatan sinyal NFC — digunakan untuk mendeteksi card cloning
+        readTime: Date.now() // Date.now() mengembalikan timestamp milidetik sejak Unix epoch
       });
 
-      // Save UID ke state untuk tracking last scan
-      // Use case: Display "last scanned" info, prevent duplicate scan
-      setLastScannedCard(cardInfo.id);
+      setLastScannedCard(cardInfo.id); // setLastScannedCard menyimpan UID terakhir ke state
 
       // STEP 6: Show Success Alert with Card Info
       // Display info card yang berhasil di-scan
@@ -279,20 +250,10 @@ export const useNFCScanner = (currentUserId: number) => {
       // - Timeout error: API call terlalu lama
       // - Parse error: Response format tidak sesuai
       console.error('Scan error:', error);
-      
-      // Display error ke user dengan Alert
-      // error?.message akan extract error message jika ada
-      // Fallback ke 'Terjadi kesalahan' jika error tidak punya message
-      Alert.alert('❌ Gagal Scan Kartu', error?.message || 'Terjadi kesalahan');
-      return null; // Return null untuk indicate failure
-    } finally {
-      // FINALLY BLOCK: Always executed
-      // Reset isScanning flag untuk unlock scanner
-      // Ini penting karena:
-      // - Jika ada error, scanner harus di-unlock untuk retry
-      // - finally block dijalankan meskipun ada return di try/catch
-      // - Prevent scanner stuck di locked state
-      setIsScanning(false);
+      Alert.alert('\u274c Gagal Scan Kartu', error?.message || 'Terjadi kesalahan'); // optional chaining (?.) aman; || fallback jika error.message tidak ada
+      return null; // return null memberitahu pemanggil bahwa scan gagal
+    } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk melepas kunci
+      setIsScanning(false); // setIsScanning(false) melepas kunci scanner agar bisa menerima scan berikutnya
     }
   };
 
@@ -312,38 +273,14 @@ export const useNFCScanner = (currentUserId: number) => {
   // - Allow fresh scan
   // - Clean component unmount
   // ================================================================================
-  const resetScanner = () => {
-    // Clear lastScannedCard state
-    // setLastScannedCard('') akan trigger re-render jika state berubah
-    // Components yang subscribe ke lastScannedCard akan update UI
-    setLastScannedCard('');
+  const resetScanner = () => { // arrow function sederhana tanpa async; hanya mereset state lokal
+    setLastScannedCard(''); // setLastScannedCard('') mengosongkan UID terakhir; memicu re-render komponen yang menggunakan state ini
   };
 
-  // ================================================================================
-  // HOOK RETURN OBJECT
-  // ================================================================================
-  // Return object dengan destructuring pattern.
-  //
-  // Usage di component:
-  // ```tsx
-  // const { scanAndValidateCard, isScanning, lastScannedCard, resetScanner } = useNFCScanner(userId);
-  // ```
-  //
-  // Benefits destructuring:
-  // 1. Caller hanya ambil yang diperlukan: const { scanAndValidateCard } = useNFCScanner()
-  // 2. Clear naming: Variable names sudah explicit
-  // 3. Order-independent: Tidak peduli urutan destructuring
-  //
-  // Return values:
-  // - lastScannedCard: string - UID terakhir yang di-scan (untuk display)
-  // - isScanning: boolean - Flag scanning state (untuk disable button, show loading)
-  // - scanAndValidateCard: Function - Main scan function (untuk onPress handler)
-  // - resetScanner: Function - Reset function (untuk cleanup)
-  // ================================================================================
-  return {
-    lastScannedCard,    // State: Last scanned card UID
-    isScanning,         // State: Is scanning in progress (loading indicator)
-    scanAndValidateCard, // Action: Scan and validate card
-    resetScanner        // Action: Reset scanner state
+  return { // return objek — komponen yang menggunakan hook ini bisa destructuring nilai yang dibutuhkan
+    lastScannedCard,     // UID kartu terakhir yang berhasil di-scan
+    isScanning,          // boolean: apakah sedang proses scan (untuk disable tombol)
+    scanAndValidateCard, // fungsi utama: scan kartu NFC lalu validasi ke backend
+    resetScanner         // fungsi untuk mengosongkan state scanner
   };
 };

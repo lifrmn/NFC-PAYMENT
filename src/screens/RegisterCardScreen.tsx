@@ -128,137 +128,120 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
 
   // STATE 5: scannedCardId - Menyimpan UID kartu yang berhasil di-scan
   // Digunakan untuk ditampilkan ke user & dikirim ke backend
-  const [scannedCardId, setScannedCardId] = useState('');
+  const [scannedCardId, setScannedCardId] = useState(''); // const membuat variabel tetap; useState('') nilai awal string kosong; scannedCardId menyimpan UID kartu yang berhasil dibaca NFC; setScannedCardId memperbarui state
 
   // STATE 6: registrationStatus - Status proses registrasi kartu
   // 'idle'     → Belum mulai (tampilkan tombol scan)
   // 'scanning' → Sedang scan kartu NFC
   // 'success'  → Registrasi berhasil
   // 'error'    → Registrasi gagal
-  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle'); // useState dengan union type TypeScript; hanya bisa berisi salah satu dari empat string tersebut; 'idle' adalah nilai awal
 
   // useEffect: Inisialisasi NFC saat screen mount
   // Cleanup listener NFC saat screen unmount (cegah memory leak)
-  useEffect(() => {
-    initializeNFC();
-    return () => {
-      NFCService.cleanup();
+  useEffect(() => { // useEffect(callback, []) dijalankan SEKALI saat komponen mount
+    initializeNFC(); // memanggil initializeNFC() untuk mendeteksi hardware NFC saat screen dibuka
+    return () => { // cleanup function dijalankan saat komponen di-unmount
+      NFCService.cleanup(); // melepas resource NFC untuk mencegah memory leak
     };
-  }, []);
+  }, []); // array kosong [] berarti efek ini hanya berjalan sekali
 
   // Fungsi: Inisialisasi NFC hardware dan cek status NFC
   // Dipanggil saat screen pertama kali dibuka
-  const initializeNFC = async () => {
-    const supported = await NFCService.initNFC(); // Init NFC library, return true jika didukung
-    setNfcSupported(supported); // Simpan status dukungan NFC hardware
+  const initializeNFC = async () => { // const membuat variabel tetap; async karena mengakses hardware NFC
+    const supported = await NFCService.initNFC(); // await menunggu inisialisasi; mengembalikan true jika device mendukung NFC hardware
+    setNfcSupported(supported); // setNfcSupported memperbarui state; false = tampilkan layar "tidak didukung"
     
-    if (supported) {
-      // Jika hardware NFC ada, cek apakah user sudah aktifkan NFC di Settings
-      const enabled = await NFCService.checkNFCEnabled();
-      setNfcEnabled(enabled); // true = NFC aktif, false = NFC mati
+    if (supported) { // if memeriksa apakah hardware NFC tersedia
+      const enabled = await NFCService.checkNFCEnabled(); // await mengecek status NFC di pengaturan sistem
+      setNfcEnabled(enabled); // setNfcEnabled memperbarui state; true = NFC aktif, false = NFC mati
     }
   };
 
   // Fungsi: Handler utama saat tombol "Scan Kartu NFC" ditekan
   // Flow: Tampilkan alert → scan kartu → validasi → daftarkan
-  const handleScanCard = async () => {
-    // Guard: NFC harus aktif sebelum bisa scan
-    if (!nfcEnabled) {
+  const handleScanCard = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
+    if (!nfcEnabled) { // ! membalik boolean; jika NFC tidak aktif, tampilkan pesan dan hentikan
       Alert.alert('NFC Tidak Aktif', 'Aktifkan NFC untuk melanjutkan');
-      return;
+      return; // return menghentikan fungsi lebih awal
     }
 
-    setScanning(true);               // Tandai sedang scanning
-    setRegistrationStatus('scanning'); // Update status UI
+    setScanning(true);               // setScanning(true) memperbarui state menandai proses scan dimulai
+    setRegistrationStatus('scanning'); // setRegistrationStatus('scanning') mengubah tampilan UI ke status scan
 
-    try {
-      // STEP 1: Tampilkan instruksi ke user untuk tempelkan kartu
-      Alert.alert(
+    try { // try memulai blok percobaan utama
+      Alert.alert( // Alert.alert menampilkan dialog instruksi ke user
         'Scan Kartu NFC',
         'Tempelkan kartu NFC Anda ke perangkat',
         [{ text: 'OK' }]
       );
 
-      // STEP 2: Baca kartu NFC fisik (menunggu user tempelkan kartu)
-      // Return: { id: "UID_HEX", type: "NTag215", manufacturer: "NXP" }
-      const cardData = await NFCService.readPhysicalCard();
+      const cardData = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; mengembalikan objek { id, type, manufacturer }
       
-      // Validasi: pastikan data kartu berhasil dibaca dengan UID yang valid
-      if (!cardData || !cardData.id) {
-        throw new Error('Gagal membaca kartu NFC');
+      if (!cardData || !cardData.id) { // !cardData berarti null/undefined; !cardData.id berarti UID kosong
+        throw new Error('Gagal membaca kartu NFC'); // throw Error membuat exception yang akan ditangkap oleh catch
       }
 
-      setScannedCardId(cardData.id); // Simpan UID untuk ditampilkan ke user
+      setScannedCardId(cardData.id); // setScannedCardId menyimpan UID kartu untuk ditampilkan ke user
 
-      // STEP 3: Cek apakah kartu sudah pernah terdaftar di backend
-      // Endpoint: GET /api/nfc-cards/info/:cardId
-      try {
-        const cardInfo = await apiService.getCardInfo(cardData.id);
+      try { // try bersarang untuk cek apakah kartu sudah terdaftar
+        const cardInfo = await apiService.getCardInfo(cardData.id); // await HTTP GET /api/nfc-cards/info/:cardId untuk cek status kartu
         
-        if (cardInfo && cardInfo.card?.userId === user.id) {
-          // SKENARIO A: Kartu sudah terdaftar di akun INI → tampilkan info, jangan daftar ulang
+        if (cardInfo && cardInfo.card?.userId === user.id) { // optional chaining (?.) aman; === operator kesamaan strict
           Alert.alert(
             'Kartu Sudah Terdaftar',
-            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`,
-            [{ text: 'OK', onPress: () => setRegistrationStatus('success') }]
+            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`, // template literal ${} menyisipkan nilai dinamis; toLocaleString('id-ID') memformat angka ke format Indonesia
+            [{ text: 'OK', onPress: () => setRegistrationStatus('success') }] // onPress callback mengubah status ke 'success'
           );
-          return; // Hentikan proses registrasi
-        } else if (cardInfo && cardInfo.card?.userId !== user.id) {
-          // SKENARIO B: Kartu sudah terdaftar di akun ORANG LAIN → tolak registrasi
+          return; // return menghentikan proses registrasi lebih awal
+        } else if (cardInfo && cardInfo.card?.userId !== user.id) { // !== berarti tidak sama persis
           Alert.alert(
             'Kartu Sudah Digunakan',
             'Kartu ini sudah terdaftar di akun pengguna lain',
             [{ text: 'OK', onPress: () => setRegistrationStatus('error') }]
           );
-          return; // Hentikan, tidak bisa daftar kartu orang lain
+          return;
         }
-      } catch (error: any) {
-        // SKENARIO C: Error 404 = kartu BELUM terdaftar → lanjutkan registrasi
-        // Error lain (jaringan, server) → lempar ke catch utama
-        if (!error.message?.includes('404')) {
-          throw error; // Re-throw error selain 404
+      } catch (error: any) { // catch bersarang menangkap error dari getCardInfo
+        if (!error.message?.includes('404')) { // optional chaining (?.) aman; includes('404') cek apakah HTTP 404 (kartu belum terdaftar)
+          throw error; // throw melempar ulang error agar ditangkap catch luar jika bukan 404
         }
-        // Jika 404: card not found = belum terdaftar, lanjutkan ke STEP 4
+        // Jika 404: kartu belum terdaftar — lanjutkan ke STEP 4 registrasi
       }
 
-      // STEP 4: Daftarkan kartu baru ke backend
-      setLoading(true); // Tampilkan loading saat request API
-      // Endpoint: POST /api/nfc-cards/register
-      const registerResponse = await apiService.registerCard({
-        cardId: cardData.id,              // UID kartu dari scan
-        userId: user.id,                  // ID user pemilik
-        balance: 0,                       // Saldo awal = 0
-        deviceId: user.deviceId || 'mobile-app', // Device ID untuk audit trail
+      setLoading(true); // setLoading(true) menampilkan spinner saat mengirim request ke backend
+      const registerResponse = await apiService.registerCard({ // await menunggu HTTP POST /api/nfc-cards/register
+        cardId: cardData.id,              // UID kartu yang dibaca dari NFC
+        userId: user.id,                  // ID user pemilik kartu
+        balance: 0,                       // saldo awal kartu = 0
+        deviceId: user.deviceId || 'mobile-app', // || 'mobile-app' fallback jika deviceId tidak ada
       });
 
-      if (registerResponse && registerResponse.success) {
-        setRegistrationStatus('success'); // Update status ke sukses
+      if (registerResponse && registerResponse.success) { // && berarti AND; kedua kondisi harus benar
+        setRegistrationStatus('success'); // mengubah status ke 'success' untuk memperbarui tampilan UI
         Alert.alert(
           'Berhasil!',
           `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`,
           [
             {
               text: 'OK',
-              onPress: () => {
-                // Panggil callback yang sesuai setelah sukses:
-                // onSuccess (jika ada) atau onBack sebagai fallback
-                if (onSuccess) onSuccess();
-                else onBack();
+              onPress: () => { // arrow function sebagai callback saat user tekan OK
+                if (onSuccess) onSuccess(); // if memeriksa apakah prop onSuccess ada sebelum dipanggil
+                else onBack(); // else dipanggil jika onSuccess tidak ada — fallback ke onBack
               },
             },
           ]
         );
       } else {
-        throw new Error('Gagal mendaftarkan kartu'); // Respons tidak sukses
+        throw new Error('Gagal mendaftarkan kartu'); // throw Error jika respons backend tidak sukses
       }
-    } catch (error: any) {
+    } catch (error: any) { // catch luar menangkap semua error yang tidak tertangani
       console.error('Error registering card:', error);
-      setRegistrationStatus('error'); // Update status ke error
-      Alert.alert('Error', error.message || 'Gagal mendaftarkan kartu NFC');
-    } finally {
-      // Cleanup: selalu matikan loading & scanning, apapun hasilnya
-      setLoading(false);
-      setScanning(false);
+      setRegistrationStatus('error'); // setRegistrationStatus('error') menampilkan UI error
+      Alert.alert('Error', error.message || 'Gagal mendaftarkan kartu NFC'); // || fallback jika error.message tidak ada
+    } finally { // finally selalu dijalankan baik berhasil maupun error
+      setLoading(false); // setLoading(false) menyembunyikan spinner
+      setScanning(false); // setScanning(false) mengakhiri status scanning
     }
   };
 
