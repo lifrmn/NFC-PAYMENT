@@ -1,108 +1,106 @@
 // src/screens/RegisterScreen.tsx
-/* ==================================================================================
- * 📝 SCREEN: RegisterScreen
- * ==================================================================================
- * 
- * Purpose:
- * User registration screen untuk create new account.
- * Implement hybrid registration: Backend API first, fallback ke SQLite offline.
- * 
- * User Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │ 1. User tap "Belum punya akun?" di LoginScreen                    │
- * │ 2. RegisterScreen muncul                                           │
- * │ 3. User input: name, username, password, confirm password         │
- * │ 4. User tap "Daftar" button                                        │
- * │ 5. System validate input:                                          │
- * │    - All fields not empty                                          │
- * │    - Username min 3 chars                                          │
- * │    - Password min 6 chars                                          │
- * │    - Password match dengan confirm                                 │
- * │ 6. System try register via Backend API                             │
- * │    └─ Success: Create user, save token, show success alert       │
- * │    └─ Failed: Fallback ke SQLite offline mode                     │
- * │ 7. Success alert muncul dengan "OK" button                         │
- * │ 8. User tap "OK", navigate back ke LoginScreen                     │
- * │ 9. User login dengan credentials baru                              │
- * └─────────────────────────────────────────────────────────────────────┘
- * 
- * Features:
- * 1. Hybrid Registration:
- *    - Primary: Backend API dengan password bcrypt hashing
- *    - Fallback: SQLite offline registration
- *    - Seamless switch tanpa user aware
- * 
- * 2. Form Validation (5 checks):
- *    - All fields not empty
- *    - Username min 3 characters (prevent too short)
- *    - Password min 6 characters (security requirement)
- *    - Password match dengan confirm (prevent typo)
- *    - Show specific error alert untuk setiap validation
- * 
- * 3. Loading State:
- *    - Disable button saat processing
- *    - Show loading indicator "Membuat Akun..."
- *    - Prevent multiple concurrent requests
- * 
- * 4. Persistent Authentication:
- *    - Save JWT token ke AsyncStorage (jika dari backend)
- *    - Save userId ke AsyncStorage
- *    - Auto-login after registration
- * 
- * 5. Navigation:
- *    - Link to LoginScreen ("Sudah punya akun?")
- *    - Callback to parent after success
- *    - Navigate back to login for user to login
- * 
- * 6. Scrollable Form:
- *    - ScrollView untuk handle keyboard overlap
- *    - KeyboardAvoidingView untuk iOS/Android
- *    - Support small screens
- * 
- * State Management:
- * - name: string - Input nama lengkap dari user
- * - username: string - Input username (unique identifier)
- * - password: string - Input password dari user
- * - confirmPassword: string - Input konfirmasi password
- * - loading: boolean - Flag loading state
- * 
- * Props:
- * - onRegisterSuccess: () => void - Callback saat register berhasil
- * - onNavigateToLogin: () => void - Callback untuk navigate ke LoginScreen
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 📝 SCREEN: RegisterScreen
+// ==================================================================================
+//
+// Purpose:
+// User registration screen untuk create new account.
+// Implement hybrid registration: Backend API first, fallback ke SQLite offline.
+//
+// User Flow:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │ 1. User tap "Belum punya akun?" di LoginScreen                    │
+// │ 2. RegisterScreen muncul                                           │
+// │ 3. User input: name, username, password, confirm password         │
+// │ 4. User tap "Daftar" button                                        │
+// │ 5. System validate input:                                          │
+// │    - All fields not empty                                          │
+// │    - Username min 3 chars                                          │
+// │    - Password min 6 chars                                          │
+// │    - Password match dengan confirm                                 │
+// │ 6. System try register via Backend API                             │
+// │    └─ Success: Create user, save token, show success alert       │
+// │    └─ Failed: Fallback ke SQLite offline mode                     │
+// │ 7. Success alert muncul dengan "OK" button                         │
+// │ 8. User tap "OK", navigate back ke LoginScreen                     │
+// │ 9. User login dengan credentials baru                              │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Features:
+// 1. Hybrid Registration:
+//    - Primary: Backend API dengan password bcrypt hashing
+//    - Fallback: SQLite offline registration
+//    - Seamless switch tanpa user aware
+//
+// 2. Form Validation (5 checks):
+//    - All fields not empty
+//    - Username min 3 characters (prevent too short)
+//    - Password min 6 characters (security requirement)
+//    - Password match dengan confirm (prevent typo)
+//    - Show specific error alert untuk setiap validation
+//
+// 3. Loading State:
+//    - Disable button saat processing
+//    - Show loading indicator "Membuat Akun..."
+//    - Prevent multiple concurrent requests
+//
+// 4. Persistent Authentication:
+//    - Save JWT token ke AsyncStorage (jika dari backend)
+//    - Save userId ke AsyncStorage
+//    - Auto-login after registration
+//
+// 5. Navigation:
+//    - Link to LoginScreen ("Sudah punya akun?")
+//    - Callback to parent after success
+//    - Navigate back to login for user to login
+//
+// 6. Scrollable Form:
+//    - ScrollView untuk handle keyboard overlap
+//    - KeyboardAvoidingView untuk iOS/Android
+//    - Support small screens
+//
+// State Management:
+// - name: string - Input nama lengkap dari user
+// - username: string - Input username (unique identifier)
+// - password: string - Input password dari user
+// - confirmPassword: string - Input konfirmasi password
+// - loading: boolean - Flag loading state
+//
+// Props:
+// - onRegisterSuccess: () => void - Callback saat register berhasil
+// - onNavigateToLogin: () => void - Callback untuk navigate ke LoginScreen
+//
+// ==================================================================================
 
-/* ==================================================================================
- * IMPORTS
- * ==================================================================================
- * React:
- * - useState: Hook untuk state management (4 fields + loading)
- * 
- * React Native Core:
- * - View, Text: Basic UI components
- * - TextInput: Input field untuk name, username, password, confirmPassword
- * - TouchableOpacity: Pressable area untuk login link
- * - KeyboardAvoidingView: Auto-adjust layout saat keyboard muncul
- * - Platform: Detect iOS/Android untuk keyboard behavior
- * - Alert: Native alert dialog untuk validation errors dan success
- * - StyleSheet: Type-safe styling API
- * - ScrollView: Scrollable container untuk form (prevent keyboard overlap)
- * 
- * React Native Safe Area:
- * - SafeAreaView: Respect device safe area (notch, status bar)
- * 
- * AsyncStorage:
- * - Persistent storage untuk token & userId after registration
- * 
- * Custom Components:
- * - CustomButton: Reusable button dengan loading state, variant "secondary" (green)
- * 
- * Utils:
- * - registerUser: Offline registration via SQLite (from database.ts)
- * - apiService: HTTP client untuk backend API registration (from apiService.ts)
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORTS
+// ==================================================================================
+// React:
+// - useState: Hook untuk state management (4 fields + loading)
+//
+// React Native Core:
+// - View, Text: Basic UI components
+// - TextInput: Input field untuk name, username, password, confirmPassword
+// - TouchableOpacity: Pressable area untuk login link
+// - KeyboardAvoidingView: Auto-adjust layout saat keyboard muncul
+// - Platform: Detect iOS/Android untuk keyboard behavior
+// - Alert: Native alert dialog untuk validation errors dan success
+// - StyleSheet: Type-safe styling API
+// - ScrollView: Scrollable container untuk form (prevent keyboard overlap)
+//
+// React Native Safe Area:
+// - SafeAreaView: Respect device safe area (notch, status bar)
+//
+// AsyncStorage:
+// - Persistent storage untuk token & userId after registration
+//
+// Custom Components:
+// - CustomButton: Reusable button dengan loading state, variant "secondary" (green)
+//
+// Utils:
+// - registerUser: Offline registration via SQLite (from database.ts)
+// - apiService: HTTP client untuk backend API registration (from apiService.ts)
+// ==================================================================================
 import React, { useState } from 'react';
 import {
   View,
@@ -120,35 +118,33 @@ import CustomButton from '../components/CustomButton';
 import { apiService } from '../utils/apiService';
 import styles from './RegisterScreen.styles';
 
-/* ==================================================================================
- * TYPE DEFINITIONS
- * ==================================================================================
- * RegisterScreenProps:
- * - onRegisterSuccess: Callback function yang dipanggil saat registration berhasil
- *   No parameters
- *   Use case: Parent component (App.tsx) akan navigate back ke LoginScreen
- * 
- * - onNavigateToLogin: Callback function untuk navigate ke LoginScreen
- *   No parameters
- *   Use case: User tap "Sudah punya akun? Masuk di sini" link
- * ==================================================================================
- */
+// ==================================================================================
+// TYPE DEFINITIONS
+// ==================================================================================
+// RegisterScreenProps:
+// - onRegisterSuccess: Callback function yang dipanggil saat registration berhasil
+//   No parameters
+//   Use case: Parent component (App.tsx) akan navigate back ke LoginScreen
+//
+// - onNavigateToLogin: Callback function untuk navigate ke LoginScreen
+//   No parameters
+//   Use case: User tap "Sudah punya akun? Masuk di sini" link
+// ==================================================================================
 interface RegisterScreenProps {
   onRegisterSuccess: () => void;
   onNavigateToLogin: () => void;
 }
 
-/* ==================================================================================
- * COMPONENT: RegisterScreen
- * ==================================================================================
- * Functional component dengan React hooks untuk state management.
- * 4 controlled inputs + 1 loading state = 5 useState hooks.
- * 
- * PARAMS:
- * @param onRegisterSuccess - Callback saat registration berhasil
- * @param onNavigateToLogin - Callback untuk navigate ke LoginScreen
- * ==================================================================================
- */
+// ==================================================================================
+// COMPONENT: RegisterScreen
+// ==================================================================================
+// Functional component dengan React hooks untuk state management.
+// 4 controlled inputs + 1 loading state = 5 useState hooks.
+//
+// PARAMS:
+// @param onRegisterSuccess - Callback saat registration berhasil
+// @param onNavigateToLogin - Callback untuk navigate ke LoginScreen
+// ==================================================================================
 export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: RegisterScreenProps) {
   // STATE 1: name - Input nama lengkap user (contoh: "Budi Santoso")
   // Controlled component, nilai selalu sinkron dengan state
@@ -171,39 +167,38 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
   // false = tombol aktif, text "Daftar"
   const [loading, setLoading] = useState(false); // Awalnya tidak loading
 
-  /* ================================================================================
-   * FUNCTION: handleRegister
-   * ================================================================================
-   * Main registration handler dengan hybrid registration strategy.
-   * Implement 5-layer validation sebelum submit ke backend/database.
-   * 
-   * VALIDATION FLOW:
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ VALIDATION 1: All fields not empty                                   │
-   * │               └─ Check: name, username, password, confirmPassword   │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ VALIDATION 2: Username min 3 characters                              │
-   * │               └─ Prevent: "ab" (too short)                       │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ VALIDATION 3: Password min 6 characters                              │
-   * │               └─ Security requirement                             │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ VALIDATION 4: Password match dengan confirmPassword                  │
-   * │               └─ Prevent typo errors                              │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ BACKEND REGISTRATION                                                 │
-   * │   └─ Try Backend API: POST /api/auth/register                    │
-   * │   └─ Success: Save token + userId, show success alert          │
-   * │   └─ Failed: Fallback ke SQLite offline registration           │
-   * └─────────────────────────────────────────────────────────────────────┘
-   * 
-   * Kenapa 5 Validations?
-   * - Better UX: Specific error messages
-   * - Security: Prevent weak passwords
-   * - Data integrity: Ensure complete data
-   * - Reduce backend load: Client-side validation first
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: handleRegister
+  // ================================================================================
+  // Main registration handler dengan hybrid registration strategy.
+  // Implement 5-layer validation sebelum submit ke backend/database.
+  //
+  // VALIDATION FLOW:
+  // ┌─────────────────────────────────────────────────────────────────────┐
+  // │ VALIDATION 1: All fields not empty                                   │
+  // │               └─ Check: name, username, password, confirmPassword   │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ VALIDATION 2: Username min 3 characters                              │
+  // │               └─ Prevent: "ab" (too short)                       │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ VALIDATION 3: Password min 6 characters                              │
+  // │               └─ Security requirement                             │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ VALIDATION 4: Password match dengan confirmPassword                  │
+  // │               └─ Prevent typo errors                              │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ BACKEND REGISTRATION                                                 │
+  // │   └─ Try Backend API: POST /api/auth/register                    │
+  // │   └─ Success: Save token + userId, show success alert          │
+  // │   └─ Failed: Fallback ke SQLite offline registration           │
+  // └─────────────────────────────────────────────────────────────────────┘
+  //
+  // Kenapa 5 Validations?
+  // - Better UX: Specific error messages
+  // - Security: Prevent weak passwords
+  // - Data integrity: Ensure complete data
+  // - Reduce backend load: Client-side validation first
+  // ================================================================================
   const handleRegister = async () => {
     // VALIDATION 1: All fields not empty
     // Check semua fields dengan trim() untuk remove whitespace
@@ -276,50 +271,48 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     }
   };
 
-  /* ================================================================================
-   * FUNCTION: handleNavigateToLogin
-   * ================================================================================
-   * Simple callback wrapper untuk navigate ke LoginScreen.
-   * Call onNavigateToLogin prop yang diberikan dari parent (App.tsx).
-   * 
-   * Use case:
-   * - User tap "Sudah punya akun? Masuk di sini" link
-   * - Navigate back to LoginScreen (user berubah pikiran, mau login instead)
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: handleNavigateToLogin
+  // ================================================================================
+  // Simple callback wrapper untuk navigate ke LoginScreen.
+  // Call onNavigateToLogin prop yang diberikan dari parent (App.tsx).
+  //
+  // Use case:
+  // - User tap "Sudah punya akun? Masuk di sini" link
+  // - Navigate back to LoginScreen (user berubah pikiran, mau login instead)
+  // ================================================================================
   const handleNavigateToLogin = () => {
     onNavigateToLogin();
   };
 
-  /* ================================================================================
-   * RENDER: UI Components
-   * ================================================================================
-   * Render registration form dengan React Native components.
-   * 
-   * Component Hierarchy:
-   * <SafeAreaView>                          - Respect device safe area
-   *   <KeyboardAvoidingView>                - Auto-adjust saat keyboard muncul
-   *     <ScrollView>                        - Scrollable form (support small screens)
-   *       <View style={content}>            - Main content container
-   *         <Text>Daftar Akun</Text>        - Title
-   *         <Text>Buat akun baru...</Text>  - Subtitle
-   *         <View style={form}>             - Form container
-   *           <TextInput name />            - Name input (autoCapitalize="words")
-   *           <TextInput username />        - Username input
-   *           <TextInput password />        - Password input (secure)
-   *           <TextInput confirmPassword /> - Confirm password input (secure)
-   *           <CustomButton />              - Register button (variant="secondary"=green)
-   *           <TouchableOpacity>            - Login link (pressable)
-   *             <Text>Sudah punya akun?     - Link text
-   * 
-   * Differences dari LoginScreen:
-   * - 4 TextInputs instead of 2
-   * - ScrollView untuk handle long form
-   * - CustomButton variant="secondary" (green) instead of "primary" (blue)
-   * - More complex validation (5 checks)
-   * - autoCapitalize="words" untuk name input (capitalize each word)
-   * ================================================================================
-   */
+  // ================================================================================
+  // RENDER: UI Components
+  // ================================================================================
+  // Render registration form dengan React Native components.
+  //
+  // Component Hierarchy:
+  // <SafeAreaView>                          - Respect device safe area
+  //   <KeyboardAvoidingView>                - Auto-adjust saat keyboard muncul
+  //     <ScrollView>                        - Scrollable form (support small screens)
+  //       <View style={content}>            - Main content container
+  //         <Text>Daftar Akun</Text>        - Title
+  //         <Text>Buat akun baru...</Text>  - Subtitle
+  //         <View style={form}>             - Form container
+  //           <TextInput name />            - Name input (autoCapitalize="words")
+  //           <TextInput username />        - Username input
+  //           <TextInput password />        - Password input (secure)
+  //           <TextInput confirmPassword /> - Confirm password input (secure)
+  //           <CustomButton />              - Register button (variant="secondary"=green)
+  //           <TouchableOpacity>            - Login link (pressable)
+  //             <Text>Sudah punya akun?     - Link text
+  //
+  // Differences dari LoginScreen:
+  // - 4 TextInputs instead of 2
+  // - ScrollView untuk handle long form
+  // - CustomButton variant="secondary" (green) instead of "primary" (blue)
+  // - More complex validation (5 checks)
+  // - autoCapitalize="words" untuk name input (capitalize each word)
+  // ================================================================================
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -419,21 +412,20 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
   );
 }
 
-/* ==================================================================================
- * STYLES
- * ==================================================================================
- * StyleSheet.create() untuk type-safe styling.
- * Design system sama dengan LoginScreen untuk consistency.
- * 
- * Key Differences:
- * - scrollContainer: flexGrow=1 untuk ScrollView (allow scrolling)
- * - registerButton margin (same spacing pattern)
- * 
- * Same as LoginScreen:
- * - Color Palette: #f5f5f5, #2c3e50, #7f8c8d, #3498db
- * - Typography: 32px title, 16px body
- * - Spacing: 20px padding, 16px margin
- * - Border Radius: 12px rounded corners
- * - Shadows: subtle depth
- * ==================================================================================
- */
+// ==================================================================================
+// STYLES
+// ==================================================================================
+// StyleSheet.create() untuk type-safe styling.
+// Design system sama dengan LoginScreen untuk consistency.
+//
+// Key Differences:
+// - scrollContainer: flexGrow=1 untuk ScrollView (allow scrolling)
+// - registerButton margin (same spacing pattern)
+//
+// Same as LoginScreen:
+// - Color Palette: #f5f5f5, #2c3e50, #7f8c8d, #3498db
+// - Typography: 32px title, 16px body
+// - Spacing: 20px padding, 16px margin
+// - Border Radius: 12px rounded corners
+// - Shadows: subtle depth
+// ==================================================================================

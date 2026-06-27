@@ -1,69 +1,67 @@
 // src/hooks/useNFCScanner.ts
-/* ==================================================================================
- * 🪝 HOOK KUSTOM: useNFCScanner
- * ==================================================================================
- * 
- * Tujuan Hook:
- * Hook React kustom untuk menangani pemindaian kartu NFC dan logika validasi.
- * Memisahkan business logic dari UI components untuk better code organization.
- * 
- * Apa itu Hook Kustom?
- * - Fungsi yang menggunakan React hooks (useState, useEffect, dll)
- * - Awalan "use" adalah konvensi penamaan React
- * - Dapat dipanggil dari komponen fungsional
- * - Logika yang dapat digunakan kembali di berbagai layar
- * 
- * Kenapa Pakai Hook Kustom?
- * 1. Pemisahan Kepentingan: Logika UI terpisah dari logika bisnis
- * 2. Dapat Digunakan Kembali: Logika bisa dipakai di berbagai layar
- * 3. Dapat Diuji: Lebih mudah menguji logika bisnis tanpa UI
- * 4. Dapat Dipelihara: Perubahan di logika tidak mempengaruhi struktur UI
- * 
- * Fitur:
- * 1. Pemindaian Kartu Fisik: Baca UID kartu NFC dari perangkat keras
- * 2. Validasi Backend: Cek apakah kartu terdaftar dan aktif
- * 3. Validasi Kepemilikan: Cek apakah kartu milik pengguna saat ini
- * 4. Validasi Status: Cek apakah status kartu AKTIF
- * 5. Pencatatan Ketukan: Catat setiap ketukan ke backend untuk analitik
- * 6. Umpan Balik Pengguna: Pesan peringatan untuk semua skenario
- * 
- * Manajemen State:
- * - lastScannedCard: Menyimpan UID kartu terakhir yang dipindai (untuk mencegah duplikasi)
- * - isScanning: Flag untuk mencegah pemindaian bersamaan (mekanisme penguncian)
- * 
- * Contoh Penggunaan:
- * ```tsx
- * const { scanAndValidateCard, isScanning, lastScannedCard } = useNFCScanner(userId);
- * 
- * const handleScan = async () => {
- *   const cardId = await scanAndValidateCard();
- *   if (cardId) {
- *     // Card valid, proceed dengan payment
- *   }
- * };
- * ```
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🪝 HOOK KUSTOM: useNFCScanner
+// ==================================================================================
+//
+// Tujuan Hook:
+// Hook React kustom untuk menangani pemindaian kartu NFC dan logika validasi.
+// Memisahkan business logic dari UI components untuk better code organization.
+//
+// Apa itu Hook Kustom?
+// - Fungsi yang menggunakan React hooks (useState, useEffect, dll)
+// - Awalan "use" adalah konvensi penamaan React
+// - Dapat dipanggil dari komponen fungsional
+// - Logika yang dapat digunakan kembali di berbagai layar
+//
+// Kenapa Pakai Hook Kustom?
+// 1. Pemisahan Kepentingan: Logika UI terpisah dari logika bisnis
+// 2. Dapat Digunakan Kembali: Logika bisa dipakai di berbagai layar
+// 3. Dapat Diuji: Lebih mudah menguji logika bisnis tanpa UI
+// 4. Dapat Dipelihara: Perubahan di logika tidak mempengaruhi struktur UI
+//
+// Fitur:
+// 1. Pemindaian Kartu Fisik: Baca UID kartu NFC dari perangkat keras
+// 2. Validasi Backend: Cek apakah kartu terdaftar dan aktif
+// 3. Validasi Kepemilikan: Cek apakah kartu milik pengguna saat ini
+// 4. Validasi Status: Cek apakah status kartu AKTIF
+// 5. Pencatatan Ketukan: Catat setiap ketukan ke backend untuk analitik
+// 6. Umpan Balik Pengguna: Pesan peringatan untuk semua skenario
+//
+// Manajemen State:
+// - lastScannedCard: Menyimpan UID kartu terakhir yang dipindai (untuk mencegah duplikasi)
+// - isScanning: Flag untuk mencegah pemindaian bersamaan (mekanisme penguncian)
+//
+// Contoh Penggunaan:
+// ```tsx
+// const { scanAndValidateCard, isScanning, lastScannedCard } = useNFCScanner(userId);
+//
+// const handleScan = async () => {
+//   const cardId = await scanAndValidateCard();
+//   if (cardId) {
+//     // Card valid, proceed dengan payment
+//   }
+// };
+// ```
+//
+// ==================================================================================
 
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { NFCService } from '../utils/nfc';
 import { apiService } from '../utils/apiService';
 
-/* ==================================================================================
- * HOOK: useNFCScanner
- * ==================================================================================
- * PARAMETER:
- * - currentUserId: nomor - ID pengguna yang sedang login (untuk validasi kepemilikan)
- * 
- * HASIL KEMBALIAN:
- * - lastScannedCard: string - UID kartu terakhir yang dipindai
- * - isScanning: boolean - Flag apakah sedang memindai
- * - scanAndValidateCard: Fungsi - Fungsi utama untuk scan dan validasi
- * - resetScanner: Fungsi - Reset state pemindai
- * ==================================================================================
- */
+// ==================================================================================
+// HOOK: useNFCScanner
+// ==================================================================================
+// PARAMETER:
+// - currentUserId: nomor - ID pengguna yang sedang login (untuk validasi kepemilikan)
+//
+// HASIL KEMBALIAN:
+// - lastScannedCard: string - UID kartu terakhir yang dipindai
+// - isScanning: boolean - Flag apakah sedang memindai
+// - scanAndValidateCard: Fungsi - Fungsi utama untuk scan dan validasi
+// - resetScanner: Fungsi - Reset state pemindai
+// ==================================================================================
 export const useNFCScanner = (currentUserId: number) => {
   // STATE 1: lastScannedCard - Menyimpan UID kartu terakhir yang berhasil di-scan
   // Berguna untuk mencegah scan duplikat dan menampilkan info "terakhir scan"
@@ -74,49 +72,48 @@ export const useNFCScanner = (currentUserId: number) => {
   // true = sedang scan, false = siap scan baru
   const [isScanning, setIsScanning] = useState(false); // Awalnya idle
 
-  /* ================================================================================
-   * FUNGSI: scanAndValidateCard
-   * ================================================================================
-   * Fungsi utama untuk memindai kartu NFC fisik dan validasi dengan backend.
-   * 
-   * DIAGRAM ALUR:
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ STEP 1: Check if already scanning (prevent concurrent)              │
-   * │         └─ Return null jika isScanning = true                       │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 2: Set isScanning = true (lock scanner)                        │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 3: Read Physical Card UID                                      │
-   * │         └─ Call NFCService.readPhysicalCard()                       │
-   * │         └─ Return null jika gagal read                              │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 4: Backend Validation - Get Card Info                          │
-   * │         └─ API: GET /api/nfc-cards/info/{cardId}                    │
-   * │         └─ Check: card registered? ownership? status ACTIVE?        │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 5: Log Tap to Backend (Analytics)                              │
-   * │         └─ API: POST /api/nfc-cards/tap                             │
-   * │         └─ Track: cardId, timestamp, location                       │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 6: Show Success Alert with Card Info                           │
-   * │         └─ Display: cardId, owner name, balance                     │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 7: Set isScanning = false (unlock scanner)                     │
-   * │         └─ Return cardId for further processing                     │
-   * └─────────────────────────────────────────────────────────────────────┘
-   * 
-   * HASIL KEMBALIAN: 
-   * - string (cardId) jika berhasil
-   * - null jika gagal atau tidak valid
-   * 
-   * PENANGANAN ERROR:
-   * - Kartu tidak terdaftar → Peringatan "Kartu belum terdaftar"
-   * - Pemilik salah → Peringatan "Kartu ini bukan milik Anda"
-   * - Kartu tidak aktif → Peringatan "Kartu tidak aktif"
-   * - Error baca NFC → Peringatan "Gagal membaca kartu"
-   * - Error jaringan → Pesan peringatan error
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNGSI: scanAndValidateCard
+  // ================================================================================
+  // Fungsi utama untuk memindai kartu NFC fisik dan validasi dengan backend.
+  //
+  // DIAGRAM ALUR:
+  // ┌─────────────────────────────────────────────────────────────────────┐
+  // │ STEP 1: Check if already scanning (prevent concurrent)              │
+  // │         └─ Return null jika isScanning = true                       │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 2: Set isScanning = true (lock scanner)                        │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 3: Read Physical Card UID                                      │
+  // │         └─ Call NFCService.readPhysicalCard()                       │
+  // │         └─ Return null jika gagal read                              │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 4: Backend Validation - Get Card Info                          │
+  // │         └─ API: GET /api/nfc-cards/info/{cardId}                    │
+  // │         └─ Check: card registered? ownership? status ACTIVE?        │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 5: Log Tap to Backend (Analytics)                              │
+  // │         └─ API: POST /api/nfc-cards/tap                             │
+  // │         └─ Track: cardId, timestamp, location                       │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 6: Show Success Alert with Card Info                           │
+  // │         └─ Display: cardId, owner name, balance                     │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 7: Set isScanning = false (unlock scanner)                     │
+  // │         └─ Return cardId for further processing                     │
+  // └─────────────────────────────────────────────────────────────────────┘
+  //
+  // HASIL KEMBALIAN:
+  // - string (cardId) jika berhasil
+  // - null jika gagal atau tidak valid
+  //
+  // PENANGANAN ERROR:
+  // - Kartu tidak terdaftar → Peringatan "Kartu belum terdaftar"
+  // - Pemilik salah → Peringatan "Kartu ini bukan milik Anda"
+  // - Kartu tidak aktif → Peringatan "Kartu tidak aktif"
+  // - Error baca NFC → Peringatan "Gagal membaca kartu"
+  // - Error jaringan → Pesan peringatan error
+  // ================================================================================
   const scanAndValidateCard = async (): Promise<string | null> => {
     // STEP 1: Cek apakah sudah ada scan yang sedang berjalan
     // Guard clause untuk mencegah conflict hardware NFC
@@ -299,23 +296,22 @@ export const useNFCScanner = (currentUserId: number) => {
     }
   };
 
-  /* ================================================================================
-   * FUNCTION: resetScanner
-   * ================================================================================
-   * Reset scanner state dengan clear lastScannedCard.
-   * 
-   * Use Cases:
-   * 1. User ingin scan card baru (clear previous scan)
-   * 2. Navigate ke screen baru (cleanup state)
-   * 3. Error recovery (clear invalid scan)
-   * 4. Logout (clear user data)
-   * 
-   * Simple function tapi penting untuk state management:
-   * - Prevent showing stale data
-   * - Allow fresh scan
-   * - Clean component unmount
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: resetScanner
+  // ================================================================================
+  // Reset scanner state dengan clear lastScannedCard.
+  //
+  // Use Cases:
+  // 1. User ingin scan card baru (clear previous scan)
+  // 2. Navigate ke screen baru (cleanup state)
+  // 3. Error recovery (clear invalid scan)
+  // 4. Logout (clear user data)
+  //
+  // Simple function tapi penting untuk state management:
+  // - Prevent showing stale data
+  // - Allow fresh scan
+  // - Clean component unmount
+  // ================================================================================
   const resetScanner = () => {
     // Clear lastScannedCard state
     // setLastScannedCard('') akan trigger re-render jika state berubah
@@ -323,28 +319,27 @@ export const useNFCScanner = (currentUserId: number) => {
     setLastScannedCard('');
   };
 
-  /* ================================================================================
-   * HOOK RETURN OBJECT
-   * ================================================================================
-   * Return object dengan destructuring pattern.
-   * 
-   * Usage di component:
-   * ```tsx
-   * const { scanAndValidateCard, isScanning, lastScannedCard, resetScanner } = useNFCScanner(userId);
-   * ```
-   * 
-   * Benefits destructuring:
-   * 1. Caller hanya ambil yang diperlukan: const { scanAndValidateCard } = useNFCScanner()
-   * 2. Clear naming: Variable names sudah explicit
-   * 3. Order-independent: Tidak peduli urutan destructuring
-   * 
-   * Return values:
-   * - lastScannedCard: string - UID terakhir yang di-scan (untuk display)
-   * - isScanning: boolean - Flag scanning state (untuk disable button, show loading)
-   * - scanAndValidateCard: Function - Main scan function (untuk onPress handler)
-   * - resetScanner: Function - Reset function (untuk cleanup)
-   * ================================================================================
-   */
+  // ================================================================================
+  // HOOK RETURN OBJECT
+  // ================================================================================
+  // Return object dengan destructuring pattern.
+  //
+  // Usage di component:
+  // ```tsx
+  // const { scanAndValidateCard, isScanning, lastScannedCard, resetScanner } = useNFCScanner(userId);
+  // ```
+  //
+  // Benefits destructuring:
+  // 1. Caller hanya ambil yang diperlukan: const { scanAndValidateCard } = useNFCScanner()
+  // 2. Clear naming: Variable names sudah explicit
+  // 3. Order-independent: Tidak peduli urutan destructuring
+  //
+  // Return values:
+  // - lastScannedCard: string - UID terakhir yang di-scan (untuk display)
+  // - isScanning: boolean - Flag scanning state (untuk disable button, show loading)
+  // - scanAndValidateCard: Function - Main scan function (untuk onPress handler)
+  // - resetScanner: Function - Reset function (untuk cleanup)
+  // ================================================================================
   return {
     lastScannedCard,    // State: Last scanned card UID
     isScanning,         // State: Is scanning in progress (loading indicator)

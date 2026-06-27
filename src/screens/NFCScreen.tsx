@@ -1,117 +1,115 @@
 // src/screens/NFCScreen.tsx
-/* ==================================================================================
- * 💳 SCREEN: NFCScreen
- * ==================================================================================
- * 
- * Purpose:
- * Main NFC payment screen untuk merchant/receiver terima pembayaran dari customer.
- * Implement merchant payment flow: Input amount → Buyer tap card → Balance transfer.
- * 
- * User Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │ MERCHANT (RECEIVER) FLOW:                                           │
- * │                                                                     │
- * │ 1. Merchant tap "💳 NFC Payment" di DashboardScreen                │
- * │ 2. NFCScreen muncul                                                 │
- * │ 3. System check NFC enabled:                                        │
- * │    - Jika disabled: Show instruction screen (aktifkan NFC)         │
- * │    - Jika enabled: Show payment form                               │
- * │ 4. Merchant input jumlah pembayaran (e.g., Rp 50.000)              │
- * │ 5. Merchant tap "Terima Pembayaran" button                          │
- * │ 6. Alert muncul: "Scan Kartu Pembeli"                               │
- * │ 7. Customer (buyer) dekatkan kartu NFC ke HP merchant              │
- * │ 8. System baca UID kartu buyer                                      │
- * │ 9. System validate buyer card (registered, active, balance cukup)  │
- * │ 10. System ambil receiver card dari database (auto-detect)         │
- * │ 11. System proses payment: buyer → merchant                         │
- * │ 12. Backend jalankan Z-Score fraud detection                            │
- * │ 13. Success alert dengan info transaksi                            │
- * │ 14. Balance auto-refresh di screen                                 │
- * │ 15. Form reset, ready untuk transaksi berikutnya                   │
- * └─────────────────────────────────────────────────────────────────────┘
- * 
- * Key Features:
- * 
- * 1. NFC Hardware Check:
- *    - Init NFC on screen mount
- *    - Check NFC enabled/disabled
- *    - Show instruction screen jika disabled
- *    - Cleanup NFC on unmount (prevent memory leak)
- * 
- * 2. Merchant Payment (Receive Money):
- *    - Input amount dengan validation
- *    - Use usePayment hook (processTapToPayTransfer)
- *    - Merchant scan buyer card untuk receive payment
- *    - Auto-transfer dari buyer balance → merchant balance
- * 
- * 3. Amount Validation:
- *    - Must be number > 0
- *    - Tidak ada batasan minimum (fraud AI handle abnormal amounts)
- *    - Parse float untuk handle decimal input
- * 
- * 4. Real-time Balance Display:
- *    - Show current merchant balance
- *    - Auto-refresh after successful payment
- *    - Fetch from backend API (getUserById)
- * 
- * 5. Loading State:
- *    - Disable button saat processing
- *    - Show ActivityIndicator (spinner)
- *    - Prevent double-tap during payment
- * 
- * 6. User Guidance:
- *    - Clear instructions: "Cara Terima Pembayaran"
- *    - Step-by-step guide
- *    - Visual feedback: emoji, colors
- * 
- * State Management:
- * - nfcEnabled: boolean - Status NFC hardware enabled/disabled
- * - amount: string - Input jumlah pembayaran (controlled input)
- * - currentBalance: number - Merchant balance terkini
- * - isProcessing: boolean - Flag payment processing (dari usePayment hook)
- * 
- * Hooks Used:
- * - usePayment: Custom hook untuk payment logic
- *   Returns: { isProcessing, processTapToPayTransfer }
- * - useEffect: NFC initialization & cleanup
- * 
- * Props:
- * - user: Current user object (merchant)
- * - onBack: Callback untuk navigate back ke DashboardScreen
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 💳 SCREEN: NFCScreen
+// ==================================================================================
+//
+// Purpose:
+// Main NFC payment screen untuk merchant/receiver terima pembayaran dari customer.
+// Implement merchant payment flow: Input amount → Buyer tap card → Balance transfer.
+//
+// User Flow:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │ MERCHANT (RECEIVER) FLOW:                                           │
+// │                                                                     │
+// │ 1. Merchant tap "💳 NFC Payment" di DashboardScreen                │
+// │ 2. NFCScreen muncul                                                 │
+// │ 3. System check NFC enabled:                                        │
+// │    - Jika disabled: Show instruction screen (aktifkan NFC)         │
+// │    - Jika enabled: Show payment form                               │
+// │ 4. Merchant input jumlah pembayaran (e.g., Rp 50.000)              │
+// │ 5. Merchant tap "Terima Pembayaran" button                          │
+// │ 6. Alert muncul: "Scan Kartu Pembeli"                               │
+// │ 7. Customer (buyer) dekatkan kartu NFC ke HP merchant              │
+// │ 8. System baca UID kartu buyer                                      │
+// │ 9. System validate buyer card (registered, active, balance cukup)  │
+// │ 10. System ambil receiver card dari database (auto-detect)         │
+// │ 11. System proses payment: buyer → merchant                         │
+// │ 12. Backend jalankan Z-Score fraud detection                            │
+// │ 13. Success alert dengan info transaksi                            │
+// │ 14. Balance auto-refresh di screen                                 │
+// │ 15. Form reset, ready untuk transaksi berikutnya                   │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Key Features:
+//
+// 1. NFC Hardware Check:
+//    - Init NFC on screen mount
+//    - Check NFC enabled/disabled
+//    - Show instruction screen jika disabled
+//    - Cleanup NFC on unmount (prevent memory leak)
+//
+// 2. Merchant Payment (Receive Money):
+//    - Input amount dengan validation
+//    - Use usePayment hook (processTapToPayTransfer)
+//    - Merchant scan buyer card untuk receive payment
+//    - Auto-transfer dari buyer balance → merchant balance
+//
+// 3. Amount Validation:
+//    - Must be number > 0
+//    - Tidak ada batasan minimum (fraud AI handle abnormal amounts)
+//    - Parse float untuk handle decimal input
+//
+// 4. Real-time Balance Display:
+//    - Show current merchant balance
+//    - Auto-refresh after successful payment
+//    - Fetch from backend API (getUserById)
+//
+// 5. Loading State:
+//    - Disable button saat processing
+//    - Show ActivityIndicator (spinner)
+//    - Prevent double-tap during payment
+//
+// 6. User Guidance:
+//    - Clear instructions: "Cara Terima Pembayaran"
+//    - Step-by-step guide
+//    - Visual feedback: emoji, colors
+//
+// State Management:
+// - nfcEnabled: boolean - Status NFC hardware enabled/disabled
+// - amount: string - Input jumlah pembayaran (controlled input)
+// - currentBalance: number - Merchant balance terkini
+// - isProcessing: boolean - Flag payment processing (dari usePayment hook)
+//
+// Hooks Used:
+// - usePayment: Custom hook untuk payment logic
+//   Returns: { isProcessing, processTapToPayTransfer }
+// - useEffect: NFC initialization & cleanup
+//
+// Props:
+// - user: Current user object (merchant)
+// - onBack: Callback untuk navigate back ke DashboardScreen
+//
+// ==================================================================================
 
-/* ==================================================================================
- * IMPORTS
- * ==================================================================================
- * React:
- * - useState: State management (nfcEnabled, amount, currentBalance)
- * - useEffect: Side effects (NFC init, cleanup)
- * 
- * React Native Core:
- * - View, Text: Basic UI components
- * - TextInput: Amount input (numeric keyboard)
- * - TouchableOpacity: Buttons (back, terima pembayaran)
- * - ScrollView: Scrollable container
- * - Alert: Confirmation dialogs
- * - ActivityIndicator: Loading spinner
- * - StyleSheet: Type-safe styling
- * 
- * React Native Safe Area:
- * - SafeAreaView: Respect device safe area
- * 
- * Utils:
- * - NFCService: NFC hardware management (init, check, cleanup)
- * 
- * Hooks:
- * - useNFCScanner: Custom hook untuk NFC scanning logic (not used di screen ini)
- * - usePayment: Custom hook untuk payment processing
- * 
- * API:
- * - apiService: HTTP client untuk getUserById (balance refresh)
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORTS
+// ==================================================================================
+// React:
+// - useState: State management (nfcEnabled, amount, currentBalance)
+// - useEffect: Side effects (NFC init, cleanup)
+//
+// React Native Core:
+// - View, Text: Basic UI components
+// - TextInput: Amount input (numeric keyboard)
+// - TouchableOpacity: Buttons (back, terima pembayaran)
+// - ScrollView: Scrollable container
+// - Alert: Confirmation dialogs
+// - ActivityIndicator: Loading spinner
+// - StyleSheet: Type-safe styling
+//
+// React Native Safe Area:
+// - SafeAreaView: Respect device safe area
+//
+// Utils:
+// - NFCService: NFC hardware management (init, check, cleanup)
+//
+// Hooks:
+// - useNFCScanner: Custom hook untuk NFC scanning logic (not used di screen ini)
+// - usePayment: Custom hook untuk payment processing
+//
+// API:
+// - apiService: HTTP client untuk getUserById (balance refresh)
+// ==================================================================================
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -128,30 +126,28 @@ import { usePayment } from '../hooks/usePayment';
 import { apiService } from '../utils/apiService';
 import styles from './NFCScreen.styles';
 
-/* ==================================================================================
- * TYPE DEFINITIONS
- * ==================================================================================
- * NFCScreenProps:
- * - user: Current user object (merchant yang menerima pembayaran)
- *   Properties: id, name, username, balance
- * - onBack: Callback function untuk navigate back ke DashboardScreen
- * ==================================================================================
- */
+// ==================================================================================
+// TYPE DEFINITIONS
+// ==================================================================================
+// NFCScreenProps:
+// - user: Current user object (merchant yang menerima pembayaran)
+//   Properties: id, name, username, balance
+// - onBack: Callback function untuk navigate back ke DashboardScreen
+// ==================================================================================
 interface NFCScreenProps {
   user: any;
   onBack: () => void;
 }
 
-/* ==================================================================================
- * COMPONENT: NFCScreen
- * ==================================================================================
- * Main NFC payment screen dengan merchant payment flow.
- * 
- * PARAMS:
- * @param user - Current user object (merchant)
- * @param onBack - Callback untuk navigate back
- * ==================================================================================
- */
+// ==================================================================================
+// COMPONENT: NFCScreen
+// ==================================================================================
+// Main NFC payment screen dengan merchant payment flow.
+//
+// PARAMS:
+// @param user - Current user object (merchant)
+// @param onBack - Callback untuk navigate back
+// ==================================================================================
 export default function NFCScreen({ user, onBack }: NFCScreenProps) {
   // STATE 1: nfcEnabled - Flag untuk cek apakah hardware NFC aktif atau tidak
   // false = tampilkan layar instruksi "Aktifkan NFC"
@@ -174,21 +170,20 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
   // - processTapToPayTransfer: function utama untuk memproses pembayaran
   const { isProcessing, processTapToPayTransfer } = usePayment(); // Destructuring object
 
-  /* ================================================================================
-   * EFFECT: NFC Initialization & Cleanup
-   * ================================================================================
-   * Run on component mount:
-   * 1. Check NFC hardware support & enabled status
-   * 2. Set nfcEnabled state
-   * 
-   * Cleanup on component unmount:
-   * 1. Call NFCService.cleanup() untuk release NFC resources
-   * 2. Prevent memory leak
-   * 3. Important: NFC hardware must be released properly
-   * 
-   * Dependencies: [] = run once on mount
-   * ================================================================================
-   */
+  // ================================================================================
+  // EFFECT: NFC Initialization & Cleanup
+  // ================================================================================
+  // Run on component mount:
+  // 1. Check NFC hardware support & enabled status
+  // 2. Set nfcEnabled state
+  //
+  // Cleanup on component unmount:
+  // 1. Call NFCService.cleanup() untuk release NFC resources
+  // 2. Prevent memory leak
+  // 3. Important: NFC hardware must be released properly
+  //
+  // Dependencies: [] = run once on mount
+  // ================================================================================
   useEffect(() => {
     // Panggil checkNFC saat komponen pertama kali di-render
     checkNFC(); // Cek apakah NFC supported dan enabled
@@ -200,23 +195,22 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     };
   }, []); // Array kosong = hanya jalan sekali saat mount
 
-  /* ================================================================================
-   * FUNCTION: checkNFC
-   * ================================================================================
-   * Check NFC hardware support dan enabled status.
-   * 
-   * FLOW:
-   * 1. Call NFCService.initNFC() untuk init hardware
-   *    - Returns true jika device support NFC
-   *    - Returns false jika device tidak support NFC
-   * 2. Jika supported, check apakah NFC enabled di settings
-   * 3. Update nfcEnabled state
-   * 
-   * Result:
-   * - nfcEnabled = true: Show payment form
-   * - nfcEnabled = false: Show instruction screen (aktifkan NFC)
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: checkNFC
+  // ================================================================================
+  // Check NFC hardware support dan enabled status.
+  //
+  // FLOW:
+  // 1. Call NFCService.initNFC() untuk init hardware
+  //    - Returns true jika device support NFC
+  //    - Returns false jika device tidak support NFC
+  // 2. Jika supported, check apakah NFC enabled di settings
+  // 3. Update nfcEnabled state
+  //
+  // Result:
+  // - nfcEnabled = true: Show payment form
+  // - nfcEnabled = false: Show instruction screen (aktifkan NFC)
+  // ================================================================================
   const checkNFC = async () => {
     // STEP 1: Inisialisasi hardware NFC dan cek apakah device support NFC
     // Returns true jika support, false jika tidak
@@ -231,31 +225,30 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     // Jika tidak support, nfcEnabled tetap false (nilai default)
   };
 
-  /* ================================================================================
-   * FUNCTION: fetchBalance
-   * ================================================================================
-   * Refresh merchant balance dari backend after successful payment.
-   * 
-   * Flow:
-   * 1. API Call: GET /api/users/{userId}
-   * 2. Extract balance dari response (handle 2 response formats)
-   * 3. Update currentBalance state
-   * 4. Display updated balance di UI
-   * 
-   * Response Formats:
-   * Format 1: { user: { balance: number } }
-   * Format 2: { balance: number } (direct user object)
-   * 
-   * Error Handling:
-   * - Silent fail (no alert to user)
-   * - Log error untuk debugging
-   * - Balance akan refresh on next screen focus (DashboardScreen auto-refresh)
-   * 
-   * Use Case:
-   * - Called as onSuccess callback dari processTapToPayTransfer
-   * - Update balance immediately after payment success
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: fetchBalance
+  // ================================================================================
+  // Refresh merchant balance dari backend after successful payment.
+  //
+  // Flow:
+  // 1. API Call: GET /api/users/{userId}
+  // 2. Extract balance dari response (handle 2 response formats)
+  // 3. Update currentBalance state
+  // 4. Display updated balance di UI
+  //
+  // Response Formats:
+  // Format 1: { user: { balance: number } }
+  // Format 2: { balance: number } (direct user object)
+  //
+  // Error Handling:
+  // - Silent fail (no alert to user)
+  // - Log error untuk debugging
+  // - Balance akan refresh on next screen focus (DashboardScreen auto-refresh)
+  //
+  // Use Case:
+  // - Called as onSuccess callback dari processTapToPayTransfer
+  // - Update balance immediately after payment success
+  // ================================================================================
   const fetchBalance = async () => {
     try {
       // Panggil API untuk mendapatkan data user terbaru (termasuk balance)
@@ -284,40 +277,39 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     }
   };
 
-  /* ================================================================================
-   * FUNCTION: handleSendMoney (Actually RECEIVE money - naming misleading)
-   * ================================================================================
-   * Main handler untuk merchant receive payment dari customer.
-   * Despite nama "SendMoney", ini adalah RECEIVE money flow.
-   * 
-   * VALIDATION FLOW:
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ VALIDATION 1: User ID exists                                        │
-   * │               └─ Must have valid logged-in user                     │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ VALIDATION 2: Amount is valid number                                │
-   * │               └─ parseFloat(amount) must be > 0                     │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ VALIDATION 3: No minimum amount restriction                         │
-   * │               └─ Fraud AI will detect abnormal amounts             │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ PAYMENT PROCESSING                                                  │
-   * │   └─ Call processTapToPayTransfer (from usePayment hook)           │
-   * │   └─ Pass: merchantId, amount, fetchBalance callback               │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ SUCCESS: Reset form for next transaction                            │
-   * │          └─ Clear amount input                                      │
-   * └─────────────────────────────────────────────────────────────────────┘
-   * 
-   * IMPORTANT NOTE:
-   * Function name "handleSendMoney" is misleading!
-   * Actual flow: MERCHANT RECEIVES money from CUSTOMER
-   * - Merchant input amount
-   * - Customer tap card to merchant's phone
-   * - Money transferred FROM customer TO merchant
-   * - This is a RECEIVE operation, not SEND
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: handleSendMoney (Actually RECEIVE money - naming misleading)
+  // ================================================================================
+  // Main handler untuk merchant receive payment dari customer.
+  // Despite nama "SendMoney", ini adalah RECEIVE money flow.
+  //
+  // VALIDATION FLOW:
+  // ┌─────────────────────────────────────────────────────────────────────┐
+  // │ VALIDATION 1: User ID exists                                        │
+  // │               └─ Must have valid logged-in user                     │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ VALIDATION 2: Amount is valid number                                │
+  // │               └─ parseFloat(amount) must be > 0                     │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ VALIDATION 3: No minimum amount restriction                         │
+  // │               └─ Fraud AI will detect abnormal amounts             │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ PAYMENT PROCESSING                                                  │
+  // │   └─ Call processTapToPayTransfer (from usePayment hook)           │
+  // │   └─ Pass: merchantId, amount, fetchBalance callback               │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ SUCCESS: Reset form for next transaction                            │
+  // │          └─ Clear amount input                                      │
+  // └─────────────────────────────────────────────────────────────────────┘
+  //
+  // IMPORTANT NOTE:
+  // Function name "handleSendMoney" is misleading!
+  // Actual flow: MERCHANT RECEIVES money from CUSTOMER
+  // - Merchant input amount
+  // - Customer tap card to merchant's phone
+  // - Money transferred FROM customer TO merchant
+  // - This is a RECEIVE operation, not SEND
+  // ================================================================================
   const handleSendMoney = async () => {
     // VALIDASI 1: Pastikan user sudah login dan punya ID yang valid
     // Operator ?. = optional chaining, cek property hanya jika object tidak null
@@ -368,28 +360,27 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     // Jika failed, amount tetap di input (user bisa retry)
   };
 
-  /* ================================================================================
-   * EARLY RETURN: NFC Disabled Screen
-   * ================================================================================
-   * Jika NFC tidak enabled, show instruction screen instead of payment form.
-   * 
-   * Screen Purpose:
-   * - Inform user NFC is required
-   * - Provide step-by-step instructions to enable NFC
-   * - Allow user to go back to DashboardScreen
-   * 
-   * Design:
-   * - Center-aligned content
-   * - Clear error message: "📡 NFC Tidak Aktif"
-   * - Numbered instructions (1-4 steps)
-   * - Back button untuk return to dashboard
-   * 
-   * Why Early Return?
-   * - Guard clause pattern: handle edge cases first
-   * - Prevent rendering payment form when unusable
-   * - Better UX: Clear error state with actionable instructions
-   * ================================================================================
-   */
+  // ================================================================================
+  // EARLY RETURN: NFC Disabled Screen
+  // ================================================================================
+  // Jika NFC tidak enabled, show instruction screen instead of payment form.
+  //
+  // Screen Purpose:
+  // - Inform user NFC is required
+  // - Provide step-by-step instructions to enable NFC
+  // - Allow user to go back to DashboardScreen
+  //
+  // Design:
+  // - Center-aligned content
+  // - Clear error message: "📡 NFC Tidak Aktif"
+  // - Numbered instructions (1-4 steps)
+  // - Back button untuk return to dashboard
+  //
+  // Why Early Return?
+  // - Guard clause pattern: handle edge cases first
+  // - Prevent rendering payment form when unusable
+  // - Better UX: Clear error state with actionable instructions
+  // ================================================================================
   if (!nfcEnabled) {
     return (
       <SafeAreaView style={styles.container}>
@@ -426,54 +417,53 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
     );
   }
 
-  /* ================================================================================
-   * RENDER: Main Payment Screen
-   * ================================================================================
-   * Render payment form dengan merchant flow.
-   * 
-   * Screen Structure:
-   * <SafeAreaView>                       - Safe area container
-   *   <Header>                           - Back button + Title
-   *     <TouchableOpacity onBack>        - Back to DashboardScreen
-   *     <Text>💳 NFC Payment</Text>      - Screen title
-   *   <ScrollView>                       - Scrollable content
-   *     <UserCard>                       - Merchant info + balance
-   *     <InstructionCard>                - Step-by-step guide
-   *     <InputCard>                      - Amount input field
-   *     <ActionButton>                   - "Terima Pembayaran" button
-   * 
-   * Component Breakdown:
-   * 
-   * 1. HEADER:
-   *    - Back button (← Kembali)
-   *    - Title (💳 NFC Payment)
-   *    - Empty spacer untuk symmetry
-   * 
-   * 2. USER CARD:
-   *    - Display merchant name
-   *    - Display current balance (formatted Rupiah)
-   *    - White card dengan shadow
-   * 
-   * 3. INSTRUCTION CARD:
-   *    - Blue background card
-   *    - Title: "📖 Cara Terima Pembayaran:"
-   *    - 5-step numbered instructions
-   *    - Help user understand the flow
-   * 
-   * 4. INPUT CARD:
-   *    - Label: "💰 Jumlah Pembayaran:"
-   *    - TextInput dengan numeric keyboard
-   *    - Hint: "Masukkan jumlah (contoh: 19456)"
-   *    - Controlled input: value={amount} onChangeText={setAmount}
-   *    - Disabled saat isProcessing
-   * 
-   * 5. ACTION BUTTON:
-   *    - "Terima Pembayaran" button (green)
-   *    - Loading state: Show ActivityIndicator + "Processing..."
-   *    - Disabled jika: !amount || isProcessing
-   *    - onPress: handleSendMoney
-   * ================================================================================
-   */
+  // ================================================================================
+  // RENDER: Main Payment Screen
+  // ================================================================================
+  // Render payment form dengan merchant flow.
+  //
+  // Screen Structure:
+  // <SafeAreaView>                       - Safe area container
+  //   <Header>                           - Back button + Title
+  //     <TouchableOpacity onBack>        - Back to DashboardScreen
+  //     <Text>💳 NFC Payment</Text>      - Screen title
+  //   <ScrollView>                       - Scrollable content
+  //     <UserCard>                       - Merchant info + balance
+  //     <InstructionCard>                - Step-by-step guide
+  //     <InputCard>                      - Amount input field
+  //     <ActionButton>                   - "Terima Pembayaran" button
+  //
+  // Component Breakdown:
+  //
+  // 1. HEADER:
+  //    - Back button (← Kembali)
+  //    - Title (💳 NFC Payment)
+  //    - Empty spacer untuk symmetry
+  //
+  // 2. USER CARD:
+  //    - Display merchant name
+  //    - Display current balance (formatted Rupiah)
+  //    - White card dengan shadow
+  //
+  // 3. INSTRUCTION CARD:
+  //    - Blue background card
+  //    - Title: "📖 Cara Terima Pembayaran:"
+  //    - 5-step numbered instructions
+  //    - Help user understand the flow
+  //
+  // 4. INPUT CARD:
+  //    - Label: "💰 Jumlah Pembayaran:"
+  //    - TextInput dengan numeric keyboard
+  //    - Hint: "Masukkan jumlah (contoh: 19456)"
+  //    - Controlled input: value={amount} onChangeText={setAmount}
+  //    - Disabled saat isProcessing
+  //
+  // 5. ACTION BUTTON:
+  //    - "Terima Pembayaran" button (green)
+  //    - Loading state: Show ActivityIndicator + "Processing..."
+  //    - Disabled jika: !amount || isProcessing
+  //    - onPress: handleSendMoney
+  // ================================================================================
   return (
     <SafeAreaView style={styles.container}>
       {/* ===== HEADER SECTION ===== */}
@@ -556,7 +546,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
               <Text style={styles.actionButtonText}>  Processing...</Text>
             </>
           ) : (
-            /* NORMAL STATE: Show button text */
+            // NORMAL STATE: Show button text
             <>
               <Text style={styles.actionButtonText}>💵 Terima Pembayaran</Text>
               <Text style={styles.actionButtonSubtext}>
@@ -571,38 +561,37 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) {
   );
 }
 
-/* ==================================================================================
- * STYLES
- * ==================================================================================
- * StyleSheet.create() untuk type-safe styling.
- * 
- * Design System:
- * - Color Palette:
- *   * Background: #f5f5f5 (light gray)
- *   * Cards: white (#fff) dengan shadow
- *   * Primary: #3498db (blue)
- *   * Success: #27ae60 (green)
- *   * Error: #e74c3c (red)
- *   * Info: #2196f3 (blue)
- *   * Warning: #f39c12 (orange)
- * 
- * - Card Styles:
- *   * Border radius: 12px (rounded)
- *   * Padding: 20px
- *   * Shadow: subtle depth (elevation: 3)
- *   * Left border accent untuk instruction cards
- * 
- * - Button Styles:
- *   * Large padding: 18px
- *   * Border radius: 12px
- *   * Shadow depth
- *   * Color coding: blue (scan), green (receive), purple (send)
- *   * Disabled state: gray with opacity
- * 
- * - Typography:
- *   * Title: 20px bold
- *   * Card title: 16-18px bold
- *   * Body: 14-16px normal
- *   * Hint: 12px gray
- * ==================================================================================
- */
+// ==================================================================================
+// STYLES
+// ==================================================================================
+// StyleSheet.create() untuk type-safe styling.
+//
+// Design System:
+// - Color Palette:
+//   * Background: #f5f5f5 (light gray)
+//   * Cards: white (#fff) dengan shadow
+//   * Primary: #3498db (blue)
+//   * Success: #27ae60 (green)
+//   * Error: #e74c3c (red)
+//   * Info: #2196f3 (blue)
+//   * Warning: #f39c12 (orange)
+//
+// - Card Styles:
+//   * Border radius: 12px (rounded)
+//   * Padding: 20px
+//   * Shadow: subtle depth (elevation: 3)
+//   * Left border accent untuk instruction cards
+//
+// - Button Styles:
+//   * Large padding: 18px
+//   * Border radius: 12px
+//   * Shadow depth
+//   * Color coding: blue (scan), green (receive), purple (send)
+//   * Disabled state: gray with opacity
+//
+// - Typography:
+//   * Title: 20px bold
+//   * Card title: 16-18px bold
+//   * Body: 14-16px normal
+//   * Hint: 12px gray
+// ==================================================================================

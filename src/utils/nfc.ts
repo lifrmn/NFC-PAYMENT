@@ -1,115 +1,114 @@
 // src/utils/nfc.ts
-/* ==================================================================================
- * 📡 UTILITY: NFCService
- * ==================================================================================
- * 
- * Tujuan:
- * Layanan NFC (Near Field Communication) komprehensif untuk handle semua operasi
- * pembacaan dan penulisan NFC physical cards (NTag215).
- * Core utility untuk contactless payment system dengan physical NFC cards.
- * 
- * Stack Teknologi:
- * - Library: react-native-nfc-manager
- * - Tipe Kartu: NTag215 (NXP Semiconductors)
- * - Frekuensi: 13.56 MHz (HF - High Frequency)
- * - Protokol: ISO/IEC 14443 Type A
- * - Memori: 540 bytes user memory (144 bytes NDEF)
- * - Format: NDEF (NFC Data Exchange Format)
- * 
- * Spesifikasi NTag215:
- * ┌────────────────────────────────────────────────────────────────────┐
- * │ Struktur Memori:                                                    │
- * │ - Total: 540 bytes                                                  │
- * │ - User Memory: 504 bytes (pages 4-129)                             │
- * │ - NDEF Message: Hingga 144 bytes                                   │
- * │ - UID: 7 bytes (unique identifier)                                  │
- * │ - Read/Write: Multiple kali (tidak one-time programmable)          │
- * │ - Keamanan: Password protection tersedia (32-bit)                  │
- * └────────────────────────────────────────────────────────────────────┘
- * 
- * Use Cases (Kasus Penggunaan):
- * 
- * 1. Transaksi Pembayaran:
- *    - Pembeli tap kartu ke HP merchant
- *    - Sistem baca UID kartu untuk identifikasi user
- *    - Backend proses payment: balance pembeli → balance merchant
- *    - Tidak perlu internet di kartu (backend yang handle transaksi)
- * 
- * 2. Registrasi Kartu:
- *    - User baru scan physical NTag215 card
- *    - Sistem baca UID kartu (unique identifier)
- *    - Backend daftarkan kartu ke akun user
- *    - Kartu menjadi instrumen pembayaran yang ter-link
- * 
- * 3. Validasi Kartu:
- *    - Baca info kartu (UID, type, manufacturer)
- *    - Validasi kartu adalah NTag215 (bukan Mifare, dll)
- *    - Cek status kartu (aktif, diblokir, hilang)
- *    - Verifikasi kepemilikan kartu
- * 
- * Ringkasan Arsitektur:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │                      ALUR OPERASI NFC                               │
- * ├─────────────────────────────────────────────────────────────────────┤
- * │                                                                      │
- * │  Aplikasi Mobile (React Native)                                     │
- * │       ↓                                                              │
- * │  NFCService.readPhysicalCard()                                      │
- * │       ↓                                                              │
- * │  react-native-nfc-manager                                           │
- * │       ↓                                                              │
- * │  Native NFC Hardware (Android/iOS)                                  │
- * │       ↓                                                              │
- * │  Physical NTag215 Card (13.56 MHz RF)                               │
- * │       ↓                                                              │
- * │  Baca UID + Data NDEF                                               │
- * │       ↓                                                              │
- * │  Return ke App: { id, type, manufacturer }                          │
- * │       ↓                                                              │
- * │  Backend API: Validasi & Proses                                     │
- * │                                                                      │
- * └─────────────────────────────────────────────────────────────────────┘
- * 
- * Method Utama:
- * 
- * 1. initNFC():
- *    - Inisialisasi hardware NFC
- *    - Cek dukungan device & status enabled
- *    - Dipanggil saat app startup
- * 
- * 2. readPhysicalCard():
- *    - Baca UID dari physical NTag215 card
- *    - Method terpenting untuk payment flow
- *    - Return: { id, type, manufacturer }
- * 
- * 3. writePhysicalCard():
- *    - Tulis NDEF data ke card (opsional)
- *    - Biasanya tidak diperlukan (kita hanya pakai UID)
- *    - Untuk fitur masa depan
- * 
- * 4. checkNFCEnabled():
- *    - Cek NFC enabled di device settings
- *    - Dipanggil sebelum operasi NFC
- * 
- * 5. cleanup():
- *    - Lepaskan resource NFC
- *    - Dipanggil saat component unmount
- * 
- * Penanganan Error:
- * - Device tidak support NFC: Return false, fallback ke manual mode
- * - NFC disabled: Tampilkan alert dengan instruksi
- * - Error baca kartu: Return null, prompt retry
- * - Timeout: Cancel setelah 30 detik
- * 
- * Pertimbangan Keamanan:
- * - UID bersifat publik (bisa di-clone)
- * - Backend harus validasi kepemilikan kartu
- * - Backend cek status kartu (aktif, diblokir)
- * - Backend verifikasi legitimasi transaksi
- * - Balance kartu disimpan di backend (tidak di kartu)
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 📡 UTILITY: NFCService
+// ==================================================================================
+//
+// Tujuan:
+// Layanan NFC (Near Field Communication) komprehensif untuk handle semua operasi
+// pembacaan dan penulisan NFC physical cards (NTag215).
+// Core utility untuk contactless payment system dengan physical NFC cards.
+//
+// Stack Teknologi:
+// - Library: react-native-nfc-manager
+// - Tipe Kartu: NTag215 (NXP Semiconductors)
+// - Frekuensi: 13.56 MHz (HF - High Frequency)
+// - Protokol: ISO/IEC 14443 Type A
+// - Memori: 540 bytes user memory (144 bytes NDEF)
+// - Format: NDEF (NFC Data Exchange Format)
+//
+// Spesifikasi NTag215:
+// ┌────────────────────────────────────────────────────────────────────┐
+// │ Struktur Memori:                                                    │
+// │ - Total: 540 bytes                                                  │
+// │ - User Memory: 504 bytes (pages 4-129)                             │
+// │ - NDEF Message: Hingga 144 bytes                                   │
+// │ - UID: 7 bytes (unique identifier)                                  │
+// │ - Read/Write: Multiple kali (tidak one-time programmable)          │
+// │ - Keamanan: Password protection tersedia (32-bit)                  │
+// └────────────────────────────────────────────────────────────────────┘
+//
+// Use Cases (Kasus Penggunaan):
+//
+// 1. Transaksi Pembayaran:
+//    - Pembeli tap kartu ke HP merchant
+//    - Sistem baca UID kartu untuk identifikasi user
+//    - Backend proses payment: balance pembeli → balance merchant
+//    - Tidak perlu internet di kartu (backend yang handle transaksi)
+//
+// 2. Registrasi Kartu:
+//    - User baru scan physical NTag215 card
+//    - Sistem baca UID kartu (unique identifier)
+//    - Backend daftarkan kartu ke akun user
+//    - Kartu menjadi instrumen pembayaran yang ter-link
+//
+// 3. Validasi Kartu:
+//    - Baca info kartu (UID, type, manufacturer)
+//    - Validasi kartu adalah NTag215 (bukan Mifare, dll)
+//    - Cek status kartu (aktif, diblokir, hilang)
+//    - Verifikasi kepemilikan kartu
+//
+// Ringkasan Arsitektur:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │                      ALUR OPERASI NFC                               │
+// ├─────────────────────────────────────────────────────────────────────┤
+// │                                                                      │
+// │  Aplikasi Mobile (React Native)                                     │
+// │       ↓                                                              │
+// │  NFCService.readPhysicalCard()                                      │
+// │       ↓                                                              │
+// │  react-native-nfc-manager                                           │
+// │       ↓                                                              │
+// │  Native NFC Hardware (Android/iOS)                                  │
+// │       ↓                                                              │
+// │  Physical NTag215 Card (13.56 MHz RF)                               │
+// │       ↓                                                              │
+// │  Baca UID + Data NDEF                                               │
+// │       ↓                                                              │
+// │  Return ke App: { id, type, manufacturer }                          │
+// │       ↓                                                              │
+// │  Backend API: Validasi & Proses                                     │
+// │                                                                      │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Method Utama:
+//
+// 1. initNFC():
+//    - Inisialisasi hardware NFC
+//    - Cek dukungan device & status enabled
+//    - Dipanggil saat app startup
+//
+// 2. readPhysicalCard():
+//    - Baca UID dari physical NTag215 card
+//    - Method terpenting untuk payment flow
+//    - Return: { id, type, manufacturer }
+//
+// 3. writePhysicalCard():
+//    - Tulis NDEF data ke card (opsional)
+//    - Biasanya tidak diperlukan (kita hanya pakai UID)
+//    - Untuk fitur masa depan
+//
+// 4. checkNFCEnabled():
+//    - Cek NFC enabled di device settings
+//    - Dipanggil sebelum operasi NFC
+//
+// 5. cleanup():
+//    - Lepaskan resource NFC
+//    - Dipanggil saat component unmount
+//
+// Penanganan Error:
+// - Device tidak support NFC: Return false, fallback ke manual mode
+// - NFC disabled: Tampilkan alert dengan instruksi
+// - Error baca kartu: Return null, prompt retry
+// - Timeout: Cancel setelah 30 detik
+//
+// Pertimbangan Keamanan:
+// - UID bersifat publik (bisa di-clone)
+// - Backend harus validasi kepemilikan kartu
+// - Backend cek status kartu (aktif, diblokir)
+// - Backend verifikasi legitimasi transaksi
+// - Balance kartu disimpan di backend (tidak di kartu)
+//
+// ==================================================================================
 
 // ============================================================================
 // IMPORTS - Library yang dibutuhkan

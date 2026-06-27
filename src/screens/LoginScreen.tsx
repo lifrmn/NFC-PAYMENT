@@ -1,98 +1,96 @@
 
 // src/screens/LoginScreen.tsx
-/* ==================================================================================
- * 🔑 SCREEN: LoginScreen
- * ==================================================================================
- * 
- * Purpose:
- * Authentication screen untuk user login ke aplikasi.
- * Implement hybrid authentication: Backend API first, fallback ke SQLite offline.
- * 
- * User Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │ 1. User buka app                                                       │
- * │ 2. LoginScreen muncul (default screen)                              │
- * │ 3. User input username & password                                   │
- * │ 4. User tap "Masuk" button                                          │
- * │ 5. System validate input (not empty)                                │
- * │ 6. System try login via Backend API                                 │
- * │    └─ Success: Get token + user data, save to AsyncStorage       │
- * │    └─ Failed: Fallback ke SQLite offline mode                     │
- * │ 7. onLogin callback called dengan user data                         │
- * │ 8. App.tsx navigate ke DashboardScreen                              │
- * └─────────────────────────────────────────────────────────────────────┘
- * 
- * Features:
- * 1. Hybrid Authentication:
- *    - Primary: Backend API with JWT token
- *    - Fallback: SQLite offline authentication
- *    - Seamless switch tanpa user aware
- * 
- * 2. Form Validation:
- *    - Check username & password not empty
- *    - Show error alert if validation failed
- * 
- * 3. Loading State:
- *    - Disable button saat processing
- *    - Show loading indicator
- *    - Prevent multiple concurrent requests
- * 
- * 4. Persistent Authentication:
- *    - Save JWT token ke AsyncStorage
- *    - Save userId ke AsyncStorage
- *    - Auto-restore session on next app launch
- * 
- * 5. Navigation:
- *    - Link to RegisterScreen ("Belum punya akun?")
- *    - Callback to parent (App.tsx) after success
- * 
- * 6. Keyboard Handling:
- *    - KeyboardAvoidingView untuk iOS/Android
- *    - Auto-adjust saat keyboard muncul
- *    - Prevent input tertutup keyboard
- * 
- * State Management:
- * - username: string - Input username dari user
- * - password: string - Input password dari user
- * - loading: boolean - Flag loading state (disable button + show spinner)
- * 
- * Props:
- * - onLogin: (user: any) => void - Callback saat login berhasil
- * - onNavigateToRegister: () => void - Callback untuk navigate ke RegisterScreen
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🔑 SCREEN: LoginScreen
+// ==================================================================================
+//
+// Purpose:
+// Authentication screen untuk user login ke aplikasi.
+// Implement hybrid authentication: Backend API first, fallback ke SQLite offline.
+//
+// User Flow:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │ 1. User buka app                                                       │
+// │ 2. LoginScreen muncul (default screen)                              │
+// │ 3. User input username & password                                   │
+// │ 4. User tap "Masuk" button                                          │
+// │ 5. System validate input (not empty)                                │
+// │ 6. System try login via Backend API                                 │
+// │    └─ Success: Get token + user data, save to AsyncStorage       │
+// │    └─ Failed: Fallback ke SQLite offline mode                     │
+// │ 7. onLogin callback called dengan user data                         │
+// │ 8. App.tsx navigate ke DashboardScreen                              │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Features:
+// 1. Hybrid Authentication:
+//    - Primary: Backend API with JWT token
+//    - Fallback: SQLite offline authentication
+//    - Seamless switch tanpa user aware
+//
+// 2. Form Validation:
+//    - Check username & password not empty
+//    - Show error alert if validation failed
+//
+// 3. Loading State:
+//    - Disable button saat processing
+//    - Show loading indicator
+//    - Prevent multiple concurrent requests
+//
+// 4. Persistent Authentication:
+//    - Save JWT token ke AsyncStorage
+//    - Save userId ke AsyncStorage
+//    - Auto-restore session on next app launch
+//
+// 5. Navigation:
+//    - Link to RegisterScreen ("Belum punya akun?")
+//    - Callback to parent (App.tsx) after success
+//
+// 6. Keyboard Handling:
+//    - KeyboardAvoidingView untuk iOS/Android
+//    - Auto-adjust saat keyboard muncul
+//    - Prevent input tertutup keyboard
+//
+// State Management:
+// - username: string - Input username dari user
+// - password: string - Input password dari user
+// - loading: boolean - Flag loading state (disable button + show spinner)
+//
+// Props:
+// - onLogin: (user: any) => void - Callback saat login berhasil
+// - onNavigateToRegister: () => void - Callback untuk navigate ke RegisterScreen
+//
+// ==================================================================================
 
-/* ==================================================================================
- * IMPORTS
- * ==================================================================================
- * React:
- * - useState: Hook untuk state management
- * 
- * React Native Core:
- * - View, Text: Basic UI components
- * - TextInput: Input field untuk username/password
- * - TouchableOpacity: Pressable area untuk register link
- * - KeyboardAvoidingView: Auto-adjust layout saat keyboard muncul
- * - Platform: Detect iOS/Android untuk keyboard behavior
- * - Alert: Native alert dialog untuk errors
- * - StyleSheet: Type-safe styling API
- * 
- * React Native Safe Area:
- * - SafeAreaView: Respect device safe area (notch, status bar)
- * 
- * AsyncStorage:
- * - Persistent storage untuk token & userId
- * - Key-value storage di native layer
- * 
- * Custom Components:
- * - CustomButton: Reusable button dengan loading state
- * 
- * Utils:
- * - loginUser: Offline login via SQLite (from database.ts)
- * - apiService: HTTP client untuk backend API (from apiService.ts)
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORTS
+// ==================================================================================
+// React:
+// - useState: Hook untuk state management
+//
+// React Native Core:
+// - View, Text: Basic UI components
+// - TextInput: Input field untuk username/password
+// - TouchableOpacity: Pressable area untuk register link
+// - KeyboardAvoidingView: Auto-adjust layout saat keyboard muncul
+// - Platform: Detect iOS/Android untuk keyboard behavior
+// - Alert: Native alert dialog untuk errors
+// - StyleSheet: Type-safe styling API
+//
+// React Native Safe Area:
+// - SafeAreaView: Respect device safe area (notch, status bar)
+//
+// AsyncStorage:
+// - Persistent storage untuk token & userId
+// - Key-value storage di native layer
+//
+// Custom Components:
+// - CustomButton: Reusable button dengan loading state
+//
+// Utils:
+// - loginUser: Offline login via SQLite (from database.ts)
+// - apiService: HTTP client untuk backend API (from apiService.ts)
+// ==================================================================================
 import React, { useState } from 'react';
 import {
   View,
@@ -110,34 +108,32 @@ import { loginUser } from '../utils/database';
 import { apiService } from '../utils/apiService';
 import styles from './LoginScreen.styles';
 
-/* ==================================================================================
- * TYPE DEFINITIONS
- * ==================================================================================
- * LoginScreenProps:
- * - onLogin: Callback function yang dipanggil saat login berhasil
- *   Parameter: user object dengan data user (id, username, email, balance, etc)
- *   Use case: Parent component (App.tsx) akan set currentUser state
- * 
- * - onNavigateToRegister: Callback function untuk navigate ke RegisterScreen
- *   No parameters
- *   Use case: User tap "Belum punya akun? Daftar di sini"
- * ==================================================================================
- */
+// ==================================================================================
+// TYPE DEFINITIONS
+// ==================================================================================
+// LoginScreenProps:
+// - onLogin: Callback function yang dipanggil saat login berhasil
+//   Parameter: user object dengan data user (id, username, email, balance, etc)
+//   Use case: Parent component (App.tsx) akan set currentUser state
+//
+// - onNavigateToRegister: Callback function untuk navigate ke RegisterScreen
+//   No parameters
+//   Use case: User tap "Belum punya akun? Daftar di sini"
+// ==================================================================================
 interface LoginScreenProps {
   onLogin: (user: any) => void;
   onNavigateToRegister: () => void;
 }
 
-/* ==================================================================================
- * COMPONENT: LoginScreen
- * ==================================================================================
- * Functional component dengan React hooks untuk state management.
- * 
- * PARAMS:
- * @param onLogin - Callback saat login berhasil
- * @param onNavigateToRegister - Callback untuk navigate ke RegisterScreen
- * ==================================================================================
- */
+// ==================================================================================
+// COMPONENT: LoginScreen
+// ==================================================================================
+// Functional component dengan React hooks untuk state management.
+//
+// PARAMS:
+// @param onLogin - Callback saat login berhasil
+// @param onNavigateToRegister - Callback untuk navigate ke RegisterScreen
+// ==================================================================================
 export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScreenProps) {
   // STATE 1: username input
   // Pattern controlled component: value={username} onChangeText={setUsername}
@@ -153,38 +149,37 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   // Saat false: tombol login aktif kembali
   const [loading, setLoading] = useState(false); // Nilai awal: false (tombol aktif)
 
-  /* ================================================================================
-   * FUNCTION: handleLogin
-   * ================================================================================
-   * Main login handler dengan hybrid authentication strategy.
-   * 
-   * FLOW:
-   * ┌─────────────────────────────────────────────────────────────────────┐
-   * │ STEP 1: Validate Input                                              │
-   * │         └─ Check username & password not empty                     │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 2: Set loading = true                                          │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 3: Try Backend API Login                                      │
-   * │         └─ API: POST /api/auth/login                             │
-   * │         └─ Success: Save token + userId to AsyncStorage         │
-   * │         └─ Failed: Catch error, continue to Step 4             │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 4: Fallback to SQLite Offline Login                           │
-   * │         └─ Query local database untuk validate credentials       │
-   * │         └─ Success: Call onLogin callback                        │
-   * │         └─ Failed: Show error alert                              │
-   * ├─────────────────────────────────────────────────────────────────────┤
-   * │ STEP 5: Set loading = false (finally block)                        │
-   * └─────────────────────────────────────────────────────────────────────┘
-   * 
-   * Kenapa Hybrid Approach?
-   * - Online: Full features, sync data, centralized authentication
-   * - Offline: Basic features, cached data, local authentication
-   * - Seamless: User tidak perlu tahu mode apa yang aktif
-   * - Resilient: App tetap bisa digunakan meski backend down
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: handleLogin
+  // ================================================================================
+  // Main login handler dengan hybrid authentication strategy.
+  //
+  // FLOW:
+  // ┌─────────────────────────────────────────────────────────────────────┐
+  // │ STEP 1: Validate Input                                              │
+  // │         └─ Check username & password not empty                     │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 2: Set loading = true                                          │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 3: Try Backend API Login                                      │
+  // │         └─ API: POST /api/auth/login                             │
+  // │         └─ Success: Save token + userId to AsyncStorage         │
+  // │         └─ Failed: Catch error, continue to Step 4             │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 4: Fallback to SQLite Offline Login                           │
+  // │         └─ Query local database untuk validate credentials       │
+  // │         └─ Success: Call onLogin callback                        │
+  // │         └─ Failed: Show error alert                              │
+  // ├─────────────────────────────────────────────────────────────────────┤
+  // │ STEP 5: Set loading = false (finally block)                        │
+  // └─────────────────────────────────────────────────────────────────────┘
+  //
+  // Kenapa Hybrid Approach?
+  // - Online: Full features, sync data, centralized authentication
+  // - Offline: Basic features, cached data, local authentication
+  // - Seamless: User tidak perlu tahu mode apa yang aktif
+  // - Resilient: App tetap bisa digunakan meski backend down
+  // ================================================================================
   const handleLogin = async () => {
     // STEP 1: Validasi input - pastikan tidak ada field yang kosong
     // trim() menghapus spasi di awal/akhir string
@@ -263,50 +258,48 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
     }
   };
 
-  /* ================================================================================
-   * FUNCTION: handleNavigateToRegister
-   * ================================================================================
-   * Simple callback wrapper untuk navigate ke RegisterScreen.
-   * Call onNavigateToRegister prop yang diberikan dari parent (App.tsx).
-   * 
-   * Use case:
-   * - User tap "Belum punya akun? Daftar di sini" link
-   * - Navigate to RegisterScreen untuk create new account
-   * ================================================================================
-   */
+  // ================================================================================
+  // FUNCTION: handleNavigateToRegister
+  // ================================================================================
+  // Simple callback wrapper untuk navigate ke RegisterScreen.
+  // Call onNavigateToRegister prop yang diberikan dari parent (App.tsx).
+  //
+  // Use case:
+  // - User tap "Belum punya akun? Daftar di sini" link
+  // - Navigate to RegisterScreen untuk create new account
+  // ================================================================================
   const handleNavigateToRegister = () => {
     onNavigateToRegister();
   };
 
-  /* ================================================================================
-   * RENDER: UI Components
-   * ================================================================================
-   * Render login form dengan React Native components.
-   * 
-   * Component Hierarchy:
-   * <SafeAreaView>                      - Respect device safe area (notch, status bar)
-   *   <ScrollView>                      - Scrollable container
-   *     <KeyboardAvoidingView>            - Auto-adjust saat keyboard muncul
-   *       <View style={header}>          - Header dengan logo dan judul
-   *       <View style={card}>            - Card putih dengan form
-   *         <TextInput username />      - Username input dengan icon
-   *         <TextInput password />      - Password input dengan icon
-   *         <TouchableOpacity>         - Link lupa password
-   *         <CustomButton />            - Login button biru besar
-   *       <TouchableOpacity>           - Link register
-   * 
-   * Controlled Components Pattern:
-   * - value={username} - Bind state to TextInput value
-   * - onChangeText={setUsername} - Update state on user type
-   * - Result: Single source of truth (state)
-   * 
-   * Keyboard Handling:
-   * - KeyboardAvoidingView dengan behavior based on Platform
-   * - iOS: 'padding' - Add padding saat keyboard muncul
-   * - Android: 'height' - Adjust height saat keyboard muncul
-   * - Prevent input tertutup keyboard
-   * ================================================================================
-   */
+  // ================================================================================
+  // RENDER: UI Components
+  // ================================================================================
+  // Render login form dengan React Native components.
+  //
+  // Component Hierarchy:
+  // <SafeAreaView>                      - Respect device safe area (notch, status bar)
+  //   <ScrollView>                      - Scrollable container
+  //     <KeyboardAvoidingView>            - Auto-adjust saat keyboard muncul
+  //       <View style={header}>          - Header dengan logo dan judul
+  //       <View style={card}>            - Card putih dengan form
+  //         <TextInput username />      - Username input dengan icon
+  //         <TextInput password />      - Password input dengan icon
+  //         <TouchableOpacity>         - Link lupa password
+  //         <CustomButton />            - Login button biru besar
+  //       <TouchableOpacity>           - Link register
+  //
+  // Controlled Components Pattern:
+  // - value={username} - Bind state to TextInput value
+  // - onChangeText={setUsername} - Update state on user type
+  // - Result: Single source of truth (state)
+  //
+  // Keyboard Handling:
+  // - KeyboardAvoidingView dengan behavior based on Platform
+  // - iOS: 'padding' - Add padding saat keyboard muncul
+  // - Android: 'height' - Adjust height saat keyboard muncul
+  // - Prevent input tertutup keyboard
+  // ================================================================================
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
@@ -395,34 +388,33 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   );
 }
 
-/* ==================================================================================
- * STYLES
- * ==================================================================================
- * StyleSheet.create() untuk type-safe styling.
- * 
- * Design System:
- * - Color Palette:
- *   * Background: #f5f5f5 (light gray)
- *   * Text primary: #2c3e50 (dark blue)
- *   * Text secondary: #7f8c8d (gray)
- *   * Link: #3498db (blue)
- *   * Input border: #ddd (light gray)
- * 
- * - Typography:
- *   * Title: 32px bold
- *   * Subtitle: 16px normal
- *   * Input: 16px normal
- *   * Link: 16px semibold
- * 
- * - Spacing:
- *   * Container padding: 20px
- *   * Input margin: 16px
- *   * Button margin: 20px
- * 
- * - Border Radius:
- *   * Inputs: 12px (rounded corners)
- * 
- * - Shadows:
- *   * Inputs: subtle shadow untuk depth
- * ==================================================================================
- */
+// ==================================================================================
+// STYLES
+// ==================================================================================
+// StyleSheet.create() untuk type-safe styling.
+//
+// Design System:
+// - Color Palette:
+//   * Background: #f5f5f5 (light gray)
+//   * Text primary: #2c3e50 (dark blue)
+//   * Text secondary: #7f8c8d (gray)
+//   * Link: #3498db (blue)
+//   * Input border: #ddd (light gray)
+//
+// - Typography:
+//   * Title: 32px bold
+//   * Subtitle: 16px normal
+//   * Input: 16px normal
+//   * Link: 16px semibold
+//
+// - Spacing:
+//   * Container padding: 20px
+//   * Input margin: 16px
+//   * Button margin: 20px
+//
+// - Border Radius:
+//   * Inputs: 12px (rounded corners)
+//
+// - Shadows:
+//   * Inputs: subtle shadow untuk depth
+// ==================================================================================

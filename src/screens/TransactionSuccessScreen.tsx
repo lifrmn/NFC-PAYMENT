@@ -1,18 +1,17 @@
 // src/screens/TransactionSuccessScreen.tsx
-/* ==================================================================================
- * ✅ SCREEN: TransactionSuccessScreen
- * ==================================================================================
- *
- * Purpose:
- * Screen yang ditampilkan setelah transaksi NFC berhasil diproses.
- * Menampilkan detail transaksi: nominal, pengirim, penerima, dan hasil Z-Score.
- *
- * Props:
- * - transaction: object berisi detail transaksi (amount, sender, receiver, z-score)
- * - onDone: Callback saat user tap tombol "Selesai"
- * - onViewDetails: Callback opsional untuk tombol "Lihat Detail"
- * ==================================================================================
- */
+// ==================================================================================
+// ✅ SCREEN: TransactionSuccessScreen
+// ==================================================================================
+//
+// Purpose:
+// Screen yang ditampilkan setelah transaksi NFC berhasil diproses.
+// Menampilkan detail transaksi: nominal, pengirim, penerima, dan hasil Z-Score.
+//
+// Props:
+// - transaction: object berisi detail transaksi (amount, sender, receiver, z-score)
+// - onDone: Callback saat user tap tombol "Selesai"
+// - onViewDetails: Callback opsional untuk tombol "Lihat Detail"
+// ==================================================================================
 import React from 'react'; // Import React library untuk membuat komponen
 import {
   View,              // Komponen kontainer layout

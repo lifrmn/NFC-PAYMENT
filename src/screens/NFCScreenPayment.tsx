@@ -1,106 +1,104 @@
 // src/screens/NFCScreenPayment.tsx
-/* ==================================================================================
- * 💸 SCREEN: NFCScreenPayment
- * ==================================================================================
- *
- * Purpose:
- * Screen pembayaran NFC dari sisi PEMBELI (customer).
- * User (pembeli) input nominal → tap kartu NFC ke HP merchant → pembayaran terjadi.
- *
- * Perbedaan dengan NFCScreen.tsx:
- * - NFCScreen.tsx    → untuk MERCHANT (penerima), scan kartu PEMBELI
- * - NFCScreenPayment → untuk PEMBELI (pengirim), input nominal + tap kartu
- *
- * User Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │ PEMBELI (PENGIRIM) FLOW:                                            │
- * │                                                                     │
- * │ 1. Pembeli tap "💸 Bayar" di DashboardScreen                       │
- * │ 2. NFCScreenPayment muncul                                          │
- * │ 3. System check NFC enabled:                                        │
- * │    - Jika disabled: Tampilkan instruksi aktifkan NFC               │
- * │    - Jika enabled: Tampilkan keypad & merchant info                │
- * │ 4. Pembeli input nominal (e.g., Rp 50.000) via keypad              │
- * │ 5. Pembeli tap "Lanjutkan Scan"                                     │
- * │ 6. Modal Scan muncul: "Tempelkan kartu ke perangkat"               │
- * │ 7. Pembeli dekatkan kartu NFC ke HP merchant                       │
- * │ 8. System baca UID kartu pembeli                                    │
- * │ 9. Backend proses: balance pembeli → balance merchant               │
- * │ 10. Backend cek Z-Score fraud detection                             │
- * │ 11. Success: nominal dikosongkan, siap transaksi berikutnya        │
- * └─────────────────────────────────────────────────────────────────────┘
- *
- * Features:
- * 1. NFC Hardware Check:
- *    - Check status NFC enabled/disabled saat screen mount
- *    - Tampilkan instruksi jika NFC non-aktif
- *    - Cleanup NFC listener saat unmount (cegah memory leak)
- *
- * 2. Input Nominal via Keypad Custom:
- *    - Keypad numerik 0-9 kustom (bukan native keyboard)
- *    - Format otomatis: 50000 → "50.000" (locale id-ID)
- *    - Tombol ⌫ untuk hapus digit terakhir
- *    - Prefix "Rp" untuk kejelasan mata uang
- *
- * 3. Info Merchant:
- *    - Tampilkan nama merchant yang akan menerima pembayaran
- *    - Tampilkan tipe toko (Toko Retail)
- *
- * 4. Modal Scanning:
- *    - Modal fullscreen saat proses scan NFC
- *    - Animasi visual kartu NFC
- *    - Tampilkan nominal transaksi yang sedang diproses
- *    - Tombol "Batalkan" untuk abort transaksi
- *
- * 5. Loading State:
- *    - Disable tombol "Lanjutkan Scan" saat processing
- *    - Show ActivityIndicator spinner dalam tombol
- *    - Prevent double-tap
- *
- * State Management:
- * - nfcEnabled: boolean     - Status NFC hardware (enabled/disabled)
- * - amount: string          - Nominal pembayaran (format: "50.000")
- * - currentBalance: number  - Saldo pembeli terkini
- * - merchant: object        - Info merchant penerima (name, type)
- * - scanning: boolean       - Flag modal scan sedang tampil
- *
- * Hooks:
- * - usePayment: Custom hook untuk logika pembayaran NFC
- *   Returns: { isProcessing, processTapToPayTransfer }
- * - useEffect: Init NFC hardware + cleanup saat unmount
- *
- * Props:
- * - user: any      - Data user yang login (pembeli)
- * - onBack: () => void - Callback kembali ke DashboardScreen
- *
- * ==================================================================================
- */
+// ==================================================================================
+// 💸 SCREEN: NFCScreenPayment
+// ==================================================================================
+//
+// Purpose:
+// Screen pembayaran NFC dari sisi PEMBELI (customer).
+// User (pembeli) input nominal → tap kartu NFC ke HP merchant → pembayaran terjadi.
+//
+// Perbedaan dengan NFCScreen.tsx:
+// - NFCScreen.tsx    → untuk MERCHANT (penerima), scan kartu PEMBELI
+// - NFCScreenPayment → untuk PEMBELI (pengirim), input nominal + tap kartu
+//
+// User Flow:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │ PEMBELI (PENGIRIM) FLOW:                                            │
+// │                                                                     │
+// │ 1. Pembeli tap "💸 Bayar" di DashboardScreen                       │
+// │ 2. NFCScreenPayment muncul                                          │
+// │ 3. System check NFC enabled:                                        │
+// │    - Jika disabled: Tampilkan instruksi aktifkan NFC               │
+// │    - Jika enabled: Tampilkan keypad & merchant info                │
+// │ 4. Pembeli input nominal (e.g., Rp 50.000) via keypad              │
+// │ 5. Pembeli tap "Lanjutkan Scan"                                     │
+// │ 6. Modal Scan muncul: "Tempelkan kartu ke perangkat"               │
+// │ 7. Pembeli dekatkan kartu NFC ke HP merchant                       │
+// │ 8. System baca UID kartu pembeli                                    │
+// │ 9. Backend proses: balance pembeli → balance merchant               │
+// │ 10. Backend cek Z-Score fraud detection                             │
+// │ 11. Success: nominal dikosongkan, siap transaksi berikutnya        │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Features:
+// 1. NFC Hardware Check:
+//    - Check status NFC enabled/disabled saat screen mount
+//    - Tampilkan instruksi jika NFC non-aktif
+//    - Cleanup NFC listener saat unmount (cegah memory leak)
+//
+// 2. Input Nominal via Keypad Custom:
+//    - Keypad numerik 0-9 kustom (bukan native keyboard)
+//    - Format otomatis: 50000 → "50.000" (locale id-ID)
+//    - Tombol ⌫ untuk hapus digit terakhir
+//    - Prefix "Rp" untuk kejelasan mata uang
+//
+// 3. Info Merchant:
+//    - Tampilkan nama merchant yang akan menerima pembayaran
+//    - Tampilkan tipe toko (Toko Retail)
+//
+// 4. Modal Scanning:
+//    - Modal fullscreen saat proses scan NFC
+//    - Animasi visual kartu NFC
+//    - Tampilkan nominal transaksi yang sedang diproses
+//    - Tombol "Batalkan" untuk abort transaksi
+//
+// 5. Loading State:
+//    - Disable tombol "Lanjutkan Scan" saat processing
+//    - Show ActivityIndicator spinner dalam tombol
+//    - Prevent double-tap
+//
+// State Management:
+// - nfcEnabled: boolean     - Status NFC hardware (enabled/disabled)
+// - amount: string          - Nominal pembayaran (format: "50.000")
+// - currentBalance: number  - Saldo pembeli terkini
+// - merchant: object        - Info merchant penerima (name, type)
+// - scanning: boolean       - Flag modal scan sedang tampil
+//
+// Hooks:
+// - usePayment: Custom hook untuk logika pembayaran NFC
+//   Returns: { isProcessing, processTapToPayTransfer }
+// - useEffect: Init NFC hardware + cleanup saat unmount
+//
+// Props:
+// - user: any      - Data user yang login (pembeli)
+// - onBack: () => void - Callback kembali ke DashboardScreen
+//
+// ==================================================================================
 
-/* ==================================================================================
- * IMPORTS
- * ==================================================================================
- * React & Hooks:
- * - useState: Untuk state nfcEnabled, amount, balance, merchant, scanning
- * - useEffect: Untuk init NFC saat mount & cleanup saat unmount
- *
- * React Native Core:
- * - View, Text: Layout & teks dasar
- * - TextInput: Input nominal (dipakai bersama keypad kustom)
- * - TouchableOpacity: Tombol yang bisa diklik
- * - StyleSheet: Styling type-safe
- * - Alert: Pop-up notifikasi (error, konfirmasi)
- * - ActivityIndicator: Spinner animasi loading
- * - Modal: Overlay modal saat scan NFC
- *
- * Safe Area:
- * - SafeAreaView: Hindari area notch/status bar perangkat
- *
- * Utils & Hooks:
- * - NFCService: Utility NFC (init, read, cleanup)
- * - usePayment: Custom hook untuk proses pembayaran
- * - apiService: HTTP client untuk update/get saldo user
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORTS
+// ==================================================================================
+// React & Hooks:
+// - useState: Untuk state nfcEnabled, amount, balance, merchant, scanning
+// - useEffect: Untuk init NFC saat mount & cleanup saat unmount
+//
+// React Native Core:
+// - View, Text: Layout & teks dasar
+// - TextInput: Input nominal (dipakai bersama keypad kustom)
+// - TouchableOpacity: Tombol yang bisa diklik
+// - StyleSheet: Styling type-safe
+// - Alert: Pop-up notifikasi (error, konfirmasi)
+// - ActivityIndicator: Spinner animasi loading
+// - Modal: Overlay modal saat scan NFC
+//
+// Safe Area:
+// - SafeAreaView: Hindari area notch/status bar perangkat
+//
+// Utils & Hooks:
+// - NFCService: Utility NFC (init, read, cleanup)
+// - usePayment: Custom hook untuk proses pembayaran
+// - apiService: HTTP client untuk update/get saldo user
+// ==================================================================================
 import React, { useState, useEffect } from 'react';
 import {
   View,

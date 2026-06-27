@@ -1,55 +1,53 @@
 // src/utils/database.ts
-/* ==================================================================================
- * 💾 DATABASE UTILITY - WRAPPER FUNCTIONS UNTUK API SERVICE
- * ==================================================================================
- * 
- * Tujuan File:
- * File ini adalah "abstraction layer" antara UI components dengan API service.
- * Menyediakan simple functions untuk operasi database (auth, users, transactions).
- * 
- * Kenapa Perlu Abstraction Layer?
- * 1. Simplicity: UI components tidak perlu tahu detail HTTP calls
- * 2. Caching: Implement local cache untuk data yang sering diakses
- * 3. Offline Support: Fallback ke cached data jika API gagal
- * 4. Consistency: Semua files menggunakan functions yang sama
- * 
- * Pattern yang Digunakan:
- * - Wrapper Functions: Thin wrapper around apiService methods
- * - Caching Strategy: Cache user data di AsyncStorage untuk speed
- * - Error Handling: Silent failures dengan fallback ke cache
- * - Logging: Console logs untuk debugging
- * 
- * Struktur File:
- * 1. Type Definitions: Interface untuk User dan Transaction
- * 2. Auth Functions: register, login, logout, restoreSession
- * 3. User Functions: getUserById, getAllUsers (with caching)
- * 4. Transaction Functions: processPayment, getUserTransactions, getAllTransactions
- * 5. Admin Functions: getAdminStats
- * 6. Balance Sync Functions: updateUserBalance, syncBalanceFromBackend
- * 7. Database Init/Close Functions
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 💾 DATABASE UTILITY - WRAPPER FUNCTIONS UNTUK API SERVICE
+// ==================================================================================
+//
+// Tujuan File:
+// File ini adalah "abstraction layer" antara UI components dengan API service.
+// Menyediakan simple functions untuk operasi database (auth, users, transactions).
+//
+// Kenapa Perlu Abstraction Layer?
+// 1. Simplicity: UI components tidak perlu tahu detail HTTP calls
+// 2. Caching: Implement local cache untuk data yang sering diakses
+// 3. Offline Support: Fallback ke cached data jika API gagal
+// 4. Consistency: Semua files menggunakan functions yang sama
+//
+// Pattern yang Digunakan:
+// - Wrapper Functions: Thin wrapper around apiService methods
+// - Caching Strategy: Cache user data di AsyncStorage untuk speed
+// - Error Handling: Silent failures dengan fallback ke cache
+// - Logging: Console logs untuk debugging
+//
+// Struktur File:
+// 1. Type Definitions: Interface untuk User dan Transaction
+// 2. Auth Functions: register, login, logout, restoreSession
+// 3. User Functions: getUserById, getAllUsers (with caching)
+// 4. Transaction Functions: processPayment, getUserTransactions, getAllTransactions
+// 5. Admin Functions: getAdminStats
+// 6. Balance Sync Functions: updateUserBalance, syncBalanceFromBackend
+// 7. Database Init/Close Functions
+//
+// ==================================================================================
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { apiService } from './apiService';
 
-/* ==================================================================================
- * 🔹 TYPE DEFINITIONS - INTERFACE UNTUK DATA STRUCTURES
- * ==================================================================================
- * 
- * Interface adalah "contract" atau "blueprint" untuk object structure.
- * TypeScript akan validate bahwa object sesuai dengan interface ini.
- * 
- * Keuntungan Interface:
- * - Type Safety: Error jika object tidak sesuai structure
- * - Autocomplete: IDE bisa suggest properties
- * - Documentation: Interface describe data structure dengan jelas
- * - Refactoring: Easier to change structure across all files
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🔹 TYPE DEFINITIONS - INTERFACE UNTUK DATA STRUCTURES
+// ==================================================================================
+//
+// Interface adalah "contract" atau "blueprint" untuk object structure.
+// TypeScript akan validate bahwa object sesuai dengan interface ini.
+//
+// Keuntungan Interface:
+// - Type Safety: Error jika object tidak sesuai structure
+// - Autocomplete: IDE bisa suggest properties
+// - Documentation: Interface describe data structure dengan jelas
+// - Refactoring: Easier to change structure across all files
+//
+// ==================================================================================
 
 // Interface untuk User object
 // Describes structure dari user data yang diterima dari backend
@@ -72,44 +70,42 @@ export interface Transaction {
   createdAt: string;       // ISO timestamp kapan transaksi terjadi
 }
 
-/* ==================================================================================
- * 🔐 AUTH FUNCTIONS - USER AUTHENTICATION OPERATIONS
- * ==================================================================================
- * 
- * Functions untuk register, login, logout, dan restore session.
- * Semua functions ini adalah wrappers around apiService methods.
- * 
- * Auth Flow:
- * 1. User register → Create account di backend
- * 2. User login → Get token dari backend
- * 3. Token saved to AsyncStorage (persistent)
- * 4. App restart → Restore session from token
- * 5. User logout → Delete token from storage
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🔐 AUTH FUNCTIONS - USER AUTHENTICATION OPERATIONS
+// ==================================================================================
+//
+// Functions untuk register, login, logout, dan restore session.
+// Semua functions ini adalah wrappers around apiService methods.
+//
+// Auth Flow:
+// 1. User register → Create account di backend
+// 2. User login → Get token dari backend
+// 3. Token saved to AsyncStorage (persistent)
+// 4. App restart → Restore session from token
+// 5. User logout → Delete token from storage
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: registerUser()
- * ================================================================================
- * TUJUAN:
- * Register user baru dengan name, username, dan password.
- * 
- * FLOW:
- * 1. Call apiService.register() dengan user data
- * 2. Backend validate dan save user ke database
- * 3. Return user object jika berhasil
- * 4. Throw error jika gagal (username already exists, dll)
- * 
- * PARAMETER:
- * - name: string - Full name user
- * - username: string - Username untuk login (harus unique)
- * - password: string - Password (akan di-hash by backend)
- * 
- * RETURN:
- * - Promise<User> - User object jika berhasil
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: registerUser()
+// ================================================================================
+// TUJUAN:
+// Register user baru dengan name, username, dan password.
+//
+// FLOW:
+// 1. Call apiService.register() dengan user data
+// 2. Backend validate dan save user ke database
+// 3. Return user object jika berhasil
+// 4. Throw error jika gagal (username already exists, dll)
+//
+// PARAMETER:
+// - name: string - Full name user
+// - username: string - Username untuk login (harus unique)
+// - password: string - Password (akan di-hash by backend)
+//
+// RETURN:
+// - Promise<User> - User object jika berhasil
+// ================================================================================
 export const registerUser = async (
   name: string,
   username: string,
@@ -123,27 +119,26 @@ export const registerUser = async (
   // Caller harus panggil loginUser() secara manual setelah register berhasil
 };
 
-/* ================================================================================
- * FUNCTION: loginUser()
- * ================================================================================
- * TUJUAN:
- * Login user dengan username dan password, save token ke storage.
- * 
- * FLOW:
- * 1. Call apiService.login() dengan credentials
- * 2. Backend validate credentials (bcrypt compare password)
- * 3. Jika valid, backend generate JWT token
- * 4. Save token dan userId ke AsyncStorage (persistent)
- * 5. Return user object untuk display di UI
- * 
- * PARAMETER:
- * - username: string - Username untuk login
- * - password: string - Password (plain text, akan divalidasi by backend)
- * 
- * RETURN:
- * - Promise<User | null> - User object jika berhasil, null jika gagal
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: loginUser()
+// ================================================================================
+// TUJUAN:
+// Login user dengan username dan password, save token ke storage.
+//
+// FLOW:
+// 1. Call apiService.login() dengan credentials
+// 2. Backend validate credentials (bcrypt compare password)
+// 3. Jika valid, backend generate JWT token
+// 4. Save token dan userId ke AsyncStorage (persistent)
+// 5. Return user object untuk display di UI
+//
+// PARAMETER:
+// - username: string - Username untuk login
+// - password: string - Password (plain text, akan divalidasi by backend)
+//
+// RETURN:
+// - Promise<User | null> - User object jika berhasil, null jika gagal
+// ================================================================================
 export const loginUser = async (
   username: string,
   password: string
@@ -191,22 +186,21 @@ export const loginUser = async (
   }
 };
 
-/* ================================================================================
- * FUNCTION: logoutUser()
- * ================================================================================
- * TUJUAN:
- * Logout user dan hapus semua session data dari storage.
- * 
- * FLOW:
- * 1. Notify backend bahwa user logout (optional, best effort)
- * 2. Delete token dan userId dari AsyncStorage
- * 3. Clear any cached user data
- * 4. App akan redirect ke login screen
- * 
- * RETURN:
- * - Promise<void> - No return value
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: logoutUser()
+// ================================================================================
+// TUJUAN:
+// Logout user dan hapus semua session data dari storage.
+//
+// FLOW:
+// 1. Notify backend bahwa user logout (optional, best effort)
+// 2. Delete token dan userId dari AsyncStorage
+// 3. Clear any cached user data
+// 4. App akan redirect ke login screen
+//
+// RETURN:
+// - Promise<void> - No return value
+// ================================================================================
 export const logoutUser = async (): Promise<void> => {
   try {
     // STEP 1: Cek apakah ada token tersimpan (user sedang login)
@@ -233,27 +227,26 @@ export const logoutUser = async (): Promise<void> => {
   }
 };
 
-/* ================================================================================
- * FUNCTION: restoreSession()
- * ================================================================================
- * TUJUAN:
- * Restore user session dari token yang tersimpan (auto-login saat app startup).
- * 
- * FLOW:
- * 1. Check apakah token dan userId ada di AsyncStorage
- * 2. Jika ada, fetch user data from backend (validate token masih valid)
- * 3. Jika token valid, return user object (auto-login berhasil)
- * 4. Jika token invalid/expired, return null (user harus login lagi)
- * 
- * USE CASE:
- * - App startup: Check apakah user sudah login sebelumnya
- * - After app restart: Don't force user to login again
- * - Token validation: Check apakah token masih active
- * 
- * RETURN:
- * - Promise<User | null> - User object jika session valid, null jika tidak
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: restoreSession()
+// ================================================================================
+// TUJUAN:
+// Restore user session dari token yang tersimpan (auto-login saat app startup).
+//
+// FLOW:
+// 1. Check apakah token dan userId ada di AsyncStorage
+// 2. Jika ada, fetch user data from backend (validate token masih valid)
+// 3. Jika token valid, return user object (auto-login berhasil)
+// 4. Jika token invalid/expired, return null (user harus login lagi)
+//
+// USE CASE:
+// - App startup: Check apakah user sudah login sebelumnya
+// - After app restart: Don't force user to login again
+// - Token validation: Check apakah token masih active
+//
+// RETURN:
+// - Promise<User | null> - User object jika session valid, null jika tidak
+// ================================================================================
 export const restoreSession = async (): Promise<User | null> => {
   try {
     // STEP 1: Coba load session credentials dari AsyncStorage
@@ -291,46 +284,44 @@ export const restoreSession = async (): Promise<User | null> => {
   }
 };
 
-/* ==================================================================================
- * 👤 USER FUNCTIONS - OPERASI UNTUK MENGAMBIL DATA USER
- * ==================================================================================
- * 
- * Functions untuk get user data by ID atau get all users.
- * Implements caching strategy untuk improve performance dan offline support.
- * 
- * Caching Strategy:
- * 1. Try get dari cache first (AsyncStorage) → Fast response
- * 2. If not in cache, fetch from backend → Save to cache
- * 3. If backend fails, fallback to cache → Offline support
- * 
- * Cache Key Format: `user_{userId}` (contoh: "user_123")
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 👤 USER FUNCTIONS - OPERASI UNTUK MENGAMBIL DATA USER
+// ==================================================================================
+//
+// Functions untuk get user data by ID atau get all users.
+// Implements caching strategy untuk improve performance dan offline support.
+//
+// Caching Strategy:
+// 1. Try get dari cache first (AsyncStorage) → Fast response
+// 2. If not in cache, fetch from backend → Save to cache
+// 3. If backend fails, fallback to cache → Offline support
+//
+// Cache Key Format: `user_{userId}` (contoh: "user_123")
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: getUserById()
- * ================================================================================
- * TUJUAN:
- * Mengambil data user berdasarkan ID dengan intelligent caching.
- * 
- * CACHING FLOW:
- * 1. Check cache first (AsyncStorage) → Return jika ada
- * 2. If not in cache, fetch from backend → Save to cache
- * 3. If backend fails, fallback to cache → Better than nothing!
- * 
- * USE CASE:
- * - Get receiver info before payment
- * - Display user profile
- * - Sync balance after transaction
- * 
- * PARAMETER:
- * - id: number - User ID yang ingin diambil
- * 
- * RETURN:
- * - Promise<User | null> - User object jika found, null jika not found
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: getUserById()
+// ================================================================================
+// TUJUAN:
+// Mengambil data user berdasarkan ID dengan intelligent caching.
+//
+// CACHING FLOW:
+// 1. Check cache first (AsyncStorage) → Return jika ada
+// 2. If not in cache, fetch from backend → Save to cache
+// 3. If backend fails, fallback to cache → Better than nothing!
+//
+// USE CASE:
+// - Get receiver info before payment
+// - Display user profile
+// - Sync balance after transaction
+//
+// PARAMETER:
+// - id: number - User ID yang ingin diambil
+//
+// RETURN:
+// - Promise<User | null> - User object jika found, null jika not found
+// ================================================================================
 export const getUserById = async (id: number): Promise<User | null> => {
   try {
     // STEP 1: Try load dari cache local dulu (untuk speed)
@@ -389,26 +380,25 @@ export const getUserById = async (id: number): Promise<User | null> => {
   }
 };
 
-/* ================================================================================
- * FUNCTION: getAllUsers()
- * ================================================================================
- * TUJUAN:
- * Mengambil semua users dari backend (digunakan untuk admin atau search).
- * 
- * FLOW:
- * 1. Call apiService.getAllUsers()
- * 2. Backend query semua users dari database
- * 3. Return array of users
- * 4. Jika error, return empty array (silent failure)
- * 
- * USE CASE:
- * - Admin panel: List all users
- * - Search user: Autocomplete untuk find receiver
- * 
- * RETURN:
- * - Promise<User[]> - Array of users (empty array jika error)
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: getAllUsers()
+// ================================================================================
+// TUJUAN:
+// Mengambil semua users dari backend (digunakan untuk admin atau search).
+//
+// FLOW:
+// 1. Call apiService.getAllUsers()
+// 2. Backend query semua users dari database
+// 3. Return array of users
+// 4. Jika error, return empty array (silent failure)
+//
+// USE CASE:
+// - Admin panel: List all users
+// - Search user: Autocomplete untuk find receiver
+//
+// RETURN:
+// - Promise<User[]> - Array of users (empty array jika error)
+// ================================================================================
 export const getAllUsers = async (): Promise<User[]> => {
   try {
     // STEP 1: Call apiService.getAllUsers()
@@ -430,49 +420,47 @@ export const getAllUsers = async (): Promise<User[]> => {
   }
 };
 
-/* ==================================================================================
- * 💳 TRANSACTION FUNCTIONS - OPERASI TRANSAKSI KEUANGAN
- * ==================================================================================
- * 
- * Functions untuk process payment dan get transaction history.
- * 
- * Transaction Flow:
- * 1. User initiate payment (select receiver, input amount)
- * 2. App call processPayment() atau getUserTransactions()
- * 3. Backend validate dan process transaction
- * 4. Backend return result
- * 5. App update UI dengan result
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 💳 TRANSACTION FUNCTIONS - OPERASI TRANSAKSI KEUANGAN
+// ==================================================================================
+//
+// Functions untuk process payment dan get transaction history.
+//
+// Transaction Flow:
+// 1. User initiate payment (select receiver, input amount)
+// 2. App call processPayment() atau getUserTransactions()
+// 3. Backend validate dan process transaction
+// 4. Backend return result
+// 5. App update UI dengan result
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: processPayment()
- * ================================================================================
- * TUJUAN:
- * Kirim saldo dari sender ke receiver (transfer uang antar user).
- * 
- * FLOW:
- * 1. Build payload dengan transaction data
- * 2. Send ke backend untuk processing
- * 3. Backend validate dan create transaction
- * 4. Return success/failure
- * 
- * PARAMETER:
- * - senderId: number - ID user yang mengirim uang
- * - receiverUsername: string - Username receiver (bukan ID!)
- * - amount: number - Jumlah uang yang ditransfer
- * - description: string - Deskripsi transaksi (optional, default empty)
- * 
- * RETURN:
- * - Promise<boolean> - true jika berhasil, false jika gagal
- * 
- * NOTE:
- * Function ini currently incomplete (TODO implement receiverId lookup).
- * Backend memerlukan receiverId, tapi function ini hanya punya receiverUsername.
- * Solusi: Backend harus implement endpoint untuk lookup user by username.
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: processPayment()
+// ================================================================================
+// TUJUAN:
+// Kirim saldo dari sender ke receiver (transfer uang antar user).
+//
+// FLOW:
+// 1. Build payload dengan transaction data
+// 2. Send ke backend untuk processing
+// 3. Backend validate dan create transaction
+// 4. Return success/failure
+//
+// PARAMETER:
+// - senderId: number - ID user yang mengirim uang
+// - receiverUsername: string - Username receiver (bukan ID!)
+// - amount: number - Jumlah uang yang ditransfer
+// - description: string - Deskripsi transaksi (optional, default empty)
+//
+// RETURN:
+// - Promise<boolean> - true jika berhasil, false jika gagal
+//
+// NOTE:
+// Function ini currently incomplete (TODO implement receiverId lookup).
+// Backend memerlukan receiverId, tapi function ini hanya punya receiverUsername.
+// Solusi: Backend harus implement endpoint untuk lookup user by username.
+// ================================================================================
 export const processPayment = async (
   senderId: number,
   receiverUsername: string,
@@ -512,30 +500,29 @@ export const processPayment = async (
   }
 };
 
-/* ================================================================================
- * FUNCTION: getUserTransactions()
- * ================================================================================
- * TUJUAN:
- * Mengambil semua transaksi user tertentu (send + received).
- * 
- * FLOW:
- * 1. Call apiService.getUserTransactions(userId)
- * 2. Backend query transactions from database
- * 3. Return array of transactions
- * 4. Jika error, return empty array
- * 
- * USE CASE:
- * - Display transaction history di Dashboard
- * - Calculate statistics (total spent, frequency)
- * - Fraud detection (analyze patterns)
- * 
- * PARAMETER:
- * - userId: number - ID user yang ingin diambil transaksinya
- * 
- * RETURN:
- * - Promise<Transaction[]> - Array of transactions
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: getUserTransactions()
+// ================================================================================
+// TUJUAN:
+// Mengambil semua transaksi user tertentu (send + received).
+//
+// FLOW:
+// 1. Call apiService.getUserTransactions(userId)
+// 2. Backend query transactions from database
+// 3. Return array of transactions
+// 4. Jika error, return empty array
+//
+// USE CASE:
+// - Display transaction history di Dashboard
+// - Calculate statistics (total spent, frequency)
+// - Fraud detection (analyze patterns)
+//
+// PARAMETER:
+// - userId: number - ID user yang ingin diambil transaksinya
+//
+// RETURN:
+// - Promise<Transaction[]> - Array of transactions
+// ================================================================================
 export const getUserTransactions = async (
   userId: number
 ): Promise<Transaction[]> => {
@@ -557,26 +544,25 @@ export const getUserTransactions = async (
   }
 };
 
-/* ================================================================================
- * FUNCTION: getAllTransactions()
- * ================================================================================
- * TUJUAN:
- * Mengambil SEMUA transaksi di sistem (untuk admin).
- * 
- * FLOW:
- * 1. Call apiService.getAllTransactions()
- * 2. Backend query ALL transactions (requires admin token)
- * 3. Return array of transactions
- * 
- * USE CASE:
- * - Admin panel: Monitor all transactions
- * - Audit: Check suspicious transactions
- * - Statistics: Total transaction volume
- * 
- * RETURN:
- * - Promise<Transaction[]> - Array of all transactions
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: getAllTransactions()
+// ================================================================================
+// TUJUAN:
+// Mengambil SEMUA transaksi di sistem (untuk admin).
+//
+// FLOW:
+// 1. Call apiService.getAllTransactions()
+// 2. Backend query ALL transactions (requires admin token)
+// 3. Return array of transactions
+//
+// USE CASE:
+// - Admin panel: Monitor all transactions
+// - Audit: Check suspicious transactions
+// - Statistics: Total transaction volume
+//
+// RETURN:
+// - Promise<Transaction[]> - Array of all transactions
+// ================================================================================
 export const getAllTransactions = async (): Promise<Transaction[]> => {
   try {
     // STEP 1: Call admin API endpoint
@@ -594,42 +580,40 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
   }
 };
 
-/* ==================================================================================
- * 🧮 ADMIN FUNCTIONS - OPERASI UNTUK ADMIN DASHBOARD
- * ==================================================================================
- * 
- * Functions untuk admin operations (statistics, monitoring, dll).
- * Requires admin token untuk authentication.
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🧮 ADMIN FUNCTIONS - OPERASI UNTUK ADMIN DASHBOARD
+// ==================================================================================
+//
+// Functions untuk admin operations (statistics, monitoring, dll).
+// Requires admin token untuk authentication.
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: getAdminStats()
- * ================================================================================
- * TUJUAN:
- * Mengambil statistik untuk admin dashboard.
- * 
- * FLOW:
- * 1. Call apiService.getAdminDashboard()
- * 2. Backend aggregate data dari database:
- *    - Count total users
- *    - Count total transactions
- *    - Sum total balance
- * 3. Return statistics object
- * 
- * USE CASE:
- * - Admin Dashboard: Display key metrics
- * - Monitoring: Track system health
- * 
- * RETURN:
- * - Promise<{
- *     totalUsers: number,
- *     totalTransactions: number,
- *     totalBalance: number
- *   }>
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: getAdminStats()
+// ================================================================================
+// TUJUAN:
+// Mengambil statistik untuk admin dashboard.
+//
+// FLOW:
+// 1. Call apiService.getAdminDashboard()
+// 2. Backend aggregate data dari database:
+//    - Count total users
+//    - Count total transactions
+//    - Sum total balance
+// 3. Return statistics object
+//
+// USE CASE:
+// - Admin Dashboard: Display key metrics
+// - Monitoring: Track system health
+//
+// RETURN:
+// - Promise<{
+//     totalUsers: number,
+//     totalTransactions: number,
+//     totalBalance: number
+//   }>
+// ================================================================================
 export const getAdminStats = async () => {
   try {
     // STEP 1: Call admin dashboard API
@@ -655,44 +639,42 @@ export const getAdminStats = async () => {
   }
 };
 
-/* ==================================================================================
- * 💰 BALANCE SYNC FUNCTIONS - OPERASI UNTUK SINKRONISASI BALANCE
- * ==================================================================================
- * 
- * Functions untuk update dan sync balance antara cache local dan backend.
- * 
- * Balance Sync Strategy:
- * 1. User balance disimpan di 2 tempat: Backend database + Local cache
- * 2. Setelah transaksi, balance di-update di kedua tempat
- * 3. Jika out of sync, sync from backend (source of truth)
- * 4. Local cache untuk speed, backend untuk accuracy
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 💰 BALANCE SYNC FUNCTIONS - OPERASI UNTUK SINKRONISASI BALANCE
+// ==================================================================================
+//
+// Functions untuk update dan sync balance antara cache local dan backend.
+//
+// Balance Sync Strategy:
+// 1. User balance disimpan di 2 tempat: Backend database + Local cache
+// 2. Setelah transaksi, balance di-update di kedua tempat
+// 3. Jika out of sync, sync from backend (source of truth)
+// 4. Local cache untuk speed, backend untuk accuracy
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: updateUserBalance()
- * ================================================================================
- * TUJUAN:
- * Update user balance di cache lokal (tidak hit backend).
- * 
- * FLOW:
- * 1. Load user dari cache
- * 2. Update balance property
- * 3. Save back to cache dengan timestamp
- * 
- * USE CASE:
- * - Optimistic Update: Update UI immediately tanpa wait backend
- * - Offline Mode: Update cache while offline, sync later
- * 
- * PARAMETER:
- * - userId: number - ID user yang balance-nya akan diupdate
- * - newBalance: number - Balance baru (bukan increment!)
- * 
- * RETURN:
- * - Promise<boolean> - true jika berhasil, false jika gagal
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: updateUserBalance()
+// ================================================================================
+// TUJUAN:
+// Update user balance di cache lokal (tidak hit backend).
+//
+// FLOW:
+// 1. Load user dari cache
+// 2. Update balance property
+// 3. Save back to cache dengan timestamp
+//
+// USE CASE:
+// - Optimistic Update: Update UI immediately tanpa wait backend
+// - Offline Mode: Update cache while offline, sync later
+//
+// PARAMETER:
+// - userId: number - ID user yang balance-nya akan diupdate
+// - newBalance: number - Balance baru (bukan increment!)
+//
+// RETURN:
+// - Promise<boolean> - true jika berhasil, false jika gagal
+// ================================================================================
 export const updateUserBalance = async (userId: number, newBalance: number): Promise<boolean> => {
   try {
     // STEP 1: Build cache key untuk user ini
@@ -731,31 +713,30 @@ export const updateUserBalance = async (userId: number, newBalance: number): Pro
   }
 };
 
-/* ================================================================================
- * FUNCTION: syncBalanceFromBackend()
- * ================================================================================
- * TUJUAN:
- * Sync balance dari backend (source of truth) dan update cache lokal.
- * 
- * FLOW:
- * 1. Fetch user data dari backend
- * 2. Extract balance dari response
- * 3. Update local cache dengan balance baru
- * 4. Return balance baru
- * 5. Jika backend gagal, fallback to cached balance
- * 
- * USE CASE:
- * - After Transaction: Ensure balance is synced
- * - App Startup: Load latest balance
- * - Fix Out of Sync: When cache balance != backend balance
- * 
- * PARAMETER:
- * - userId: number - ID user yang balance-nya akan di-sync
- * 
- * RETURN:
- * - Promise<number | null> - Balance baru jika berhasil, null jika gagal
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: syncBalanceFromBackend()
+// ================================================================================
+// TUJUAN:
+// Sync balance dari backend (source of truth) dan update cache lokal.
+//
+// FLOW:
+// 1. Fetch user data dari backend
+// 2. Extract balance dari response
+// 3. Update local cache dengan balance baru
+// 4. Return balance baru
+// 5. Jika backend gagal, fallback to cached balance
+//
+// USE CASE:
+// - After Transaction: Ensure balance is synced
+// - App Startup: Load latest balance
+// - Fix Out of Sync: When cache balance != backend balance
+//
+// PARAMETER:
+// - userId: number - ID user yang balance-nya akan di-sync
+//
+// RETURN:
+// - Promise<number | null> - Balance baru jika berhasil, null jika gagal
+// ================================================================================
 export const syncBalanceFromBackend = async (userId: number): Promise<number | null> => {
   try {
     console.log(`💰 Syncing balance for user ${userId}...`);
@@ -806,39 +787,37 @@ export const syncBalanceFromBackend = async (userId: number): Promise<number | n
   }
 };
 
-/* ==================================================================================
- * ⚙️ DATABASE INITIALIZATION & CLEANUP
- * ==================================================================================
- * 
- * Functions untuk initialize dan close database connection.
- * 
- * NOTE:
- * Karena mobile app menggunakan REST API (bukan direct database access),
- * functions ini hanya check backend connection status.
- * Tidak ada actual database connection yang perlu di-maintain.
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// ⚙️ DATABASE INITIALIZATION & CLEANUP
+// ==================================================================================
+//
+// Functions untuk initialize dan close database connection.
+//
+// NOTE:
+// Karena mobile app menggunakan REST API (bukan direct database access),
+// functions ini hanya check backend connection status.
+// Tidak ada actual database connection yang perlu di-maintain.
+//
+// ==================================================================================
 
-/* ================================================================================
- * FUNCTION: initDatabase()
- * ================================================================================
- * TUJUAN:
- * Initialize database connection (check backend connectivity).
- * 
- * FLOW:
- * 1. Check apakah backend reachable
- * 2. Log connection status
- * 3. Return success/failure
- * 
- * USE CASE:
- * - App Startup: Check backend availability
- * - Health Check: Periodic connection test
- * 
- * RETURN:
- * - Promise<boolean> - true jika backend connected, false jika offline
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: initDatabase()
+// ================================================================================
+// TUJUAN:
+// Initialize database connection (check backend connectivity).
+//
+// FLOW:
+// 1. Check apakah backend reachable
+// 2. Log connection status
+// 3. Return success/failure
+//
+// USE CASE:
+// - App Startup: Check backend availability
+// - Health Check: Periodic connection test
+//
+// RETURN:
+// - Promise<boolean> - true jika backend connected, false jika offline
+// ================================================================================
 export const initDatabase = async (): Promise<boolean> => {
   try {
     console.log('🔗 Connecting to backend...');
@@ -868,20 +847,19 @@ export const initDatabase = async (): Promise<boolean> => {
   }
 };
 
-/* ================================================================================
- * FUNCTION: closeDatabase()
- * ================================================================================
- * TUJUAN:
- * Close database connection (cleanup resources).
- * 
- * NOTE:
- * In mobile app with REST API, there's no persistent connection to close.
- * This function is placeholder untuk consistency with backend API.
- * 
- * RETURN:
- * - Promise<void> - No return value
- * ================================================================================
- */
+// ================================================================================
+// FUNCTION: closeDatabase()
+// ================================================================================
+// TUJUAN:
+// Close database connection (cleanup resources).
+//
+// NOTE:
+// In mobile app with REST API, there's no persistent connection to close.
+// This function is placeholder untuk consistency with backend API.
+//
+// RETURN:
+// - Promise<void> - No return value
+// ================================================================================
 export const closeDatabase = async (): Promise<void> => {
   // STEP 1: Log closure (no actual cleanup needed)
   console.log('📦 Database connection closed (cleanup complete)');

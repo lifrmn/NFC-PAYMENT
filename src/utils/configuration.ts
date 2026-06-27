@@ -1,23 +1,22 @@
 // src/utils/configuration.ts
-/* ==================================================================================
- * 🌐 CONFIGURATION FILE - API ENDPOINT CONFIGURATION
- * ==================================================================================
- * 
- * Tujuan File:
- * File ini berisi konfigurasi URL backend API yang digunakan oleh aplikasi mobile.
- * Untuk development mode, kita menggunakan Ngrok untuk tunneling local server.
- * 
- * Apa itu Ngrok?
- * Ngrok adalah tool untuk membuat tunnel dari internet ke localhost.
- * Kenapa butuh Ngrok? Karena aplikasi mobile tidak bisa akses localhost langsung.
- * 
- * Contoh:
- * - Backend berjalan di http://localhost:4000 (hanya bisa diakses dari komputer sendiri)
- * - Ngrok membuat tunnel: https://xyz.ngrok-free.dev → http://localhost:4000
- * - Mobile app bisa akses backend melalui URL Ngrok ini
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🌐 CONFIGURATION FILE - API ENDPOINT CONFIGURATION
+// ==================================================================================
+//
+// Tujuan File:
+// File ini berisi konfigurasi URL backend API yang digunakan oleh aplikasi mobile.
+// Untuk development mode, kita menggunakan Ngrok untuk tunneling local server.
+//
+// Apa itu Ngrok?
+// Ngrok adalah tool untuk membuat tunnel dari internet ke localhost.
+// Kenapa butuh Ngrok? Karena aplikasi mobile tidak bisa akses localhost langsung.
+//
+// Contoh:
+// - Backend berjalan di http://localhost:4000 (hanya bisa diakses dari komputer sendiri)
+// - Ngrok membuat tunnel: https://xyz.ngrok-free.dev → http://localhost:4000
+// - Mobile app bisa akses backend melalui URL Ngrok ini
+//
+// ==================================================================================
 
 // ==================================================================================
 // LANGKAH-LANGKAH SETUP NGROK (Mode Pengembangan)

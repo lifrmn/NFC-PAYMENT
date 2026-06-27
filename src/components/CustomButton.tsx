@@ -1,62 +1,61 @@
 // src/components/CustomButton.tsx
-/* ==================================================================================
- * 🎨 CUSTOM BUTTON COMPONENT - REUSABLE BUTTON WITH VARIANTS
-
-* ==================================================================================
- * 
- * Tujuan Component:
- * Component ini adalah reusable button dengan berbagai variant dan size.
- * Digunakan di seluruh aplikasi untuk consistency UI dan reduce code duplication.
- * 
- * Fitur:
- * 1. Variants: Primary (biru), Secondary (hijau), Link (transparan/tanpa background)
- * 2. Sizes: Small, Medium, Large (padding dan font size berbeda)
- * 3. States: Normal, Disabled, Loading (dengan spinner)
- * 4. Accessibility: accessibilityRole, accessibilityLabel, hitSlop
- * 5. Error Handling: Try-catch untuk prevent app crash jika onPress error
- * 6. Debug Logging: Console logs untuk track interaksi button
- * 
- * Props:
- * - title: string - Teks yang ditampilkan di button
- * - onPress: () => void - Function yang dipanggil saat button di-tap
- * - style: ViewStyle (opsional) - Custom style untuk override default
- * - textStyle: TextStyle (opsional) - Custom text style
- * - disabled: boolean (opsional) - Disable button (gray out, tidak bisa di-tap)
- * - loading: boolean (opsional) - Tampilkan loading spinner sebagai ganti text
- * - variant: 'primary' | 'secondary' | 'link' (default: 'primary')
- * - size: 'small' | 'medium' | 'large' (default: 'medium')
- * 
- * Contoh Penggunaan:
- * ```tsx
- * // Primary button (default)
- * <CustomButton title="Login" onPress={handleLogin} />
- * 
- * // Secondary button dengan loading state
- * <CustomButton 
- *   title="Register" 
- *   onPress={handleRegister}
- *   variant="secondary"
- *   loading={isRegistering}
- * />
- * 
- * // Link button (tanpa background, untuk aksi sekunder)
- * <CustomButton 
- *   title="Lupa Password?" 
- *   onPress={handleForgotPassword}
- *   variant="link"
- *   size="small"
- * />
- * 
- * // Disabled button
- * <CustomButton 
- *   title="Submit" 
- *   onPress={handleSubmit}
- *   disabled={!isFormValid}
- * />
- * ```
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🎨 CUSTOM BUTTON COMPONENT - REUSABLE BUTTON WITH VARIANTS
+//
+// ==================================================================================
+//
+// Tujuan Component:
+// Component ini adalah reusable button dengan berbagai variant dan size.
+// Digunakan di seluruh aplikasi untuk consistency UI dan reduce code duplication.
+//
+// Fitur:
+// 1. Variants: Primary (biru), Secondary (hijau), Link (transparan/tanpa background)
+// 2. Sizes: Small, Medium, Large (padding dan font size berbeda)
+// 3. States: Normal, Disabled, Loading (dengan spinner)
+// 4. Accessibility: accessibilityRole, accessibilityLabel, hitSlop
+// 5. Error Handling: Try-catch untuk prevent app crash jika onPress error
+// 6. Debug Logging: Console logs untuk track interaksi button
+//
+// Props:
+// - title: string - Teks yang ditampilkan di button
+// - onPress: () => void - Function yang dipanggil saat button di-tap
+// - style: ViewStyle (opsional) - Custom style untuk override default
+// - textStyle: TextStyle (opsional) - Custom text style
+// - disabled: boolean (opsional) - Disable button (gray out, tidak bisa di-tap)
+// - loading: boolean (opsional) - Tampilkan loading spinner sebagai ganti text
+// - variant: 'primary' | 'secondary' | 'link' (default: 'primary')
+// - size: 'small' | 'medium' | 'large' (default: 'medium')
+//
+// Contoh Penggunaan:
+// ```tsx
+// // Primary button (default)
+// <CustomButton title="Login" onPress={handleLogin} />
+//
+// // Secondary button dengan loading state
+// <CustomButton
+//   title="Register"
+//   onPress={handleRegister}
+//   variant="secondary"
+//   loading={isRegistering}
+// />
+//
+// // Link button (tanpa background, untuk aksi sekunder)
+// <CustomButton
+//   title="Lupa Password?"
+//   onPress={handleForgotPassword}
+//   variant="link"
+//   size="small"
+// />
+//
+// // Disabled button
+// <CustomButton
+//   title="Submit"
+//   onPress={handleSubmit}
+//   disabled={!isFormValid}
+// />
+// ```
+//
+// ==================================================================================
 
 import React from 'react';
 import {
@@ -68,17 +67,16 @@ import {
   ActivityIndicator, // Loading spinner component
 } from 'react-native';
 
-/* ==================================================================================
- * INTERFACE: CustomButtonProps
- * ==================================================================================
- * TypeScript interface untuk define props yang diterima component.
- * 
- * Interface Benefits:
- * - Type Safety: Error jika pass wrong prop type
- * - Autocomplete: IDE suggest available props
- * - Documentation: Self-documenting code
- * ==================================================================================
- */
+// ==================================================================================
+// INTERFACE: CustomButtonProps
+// ==================================================================================
+// TypeScript interface untuk define props yang diterima component.
+//
+// Interface Benefits:
+// - Type Safety: Error jika pass wrong prop type
+// - Autocomplete: IDE suggest available props
+// - Documentation: Self-documenting code
+// ==================================================================================
 interface CustomButtonProps {
   title: string;                      // Button text (REQUIRED)
   onPress: () => void;                // Callback function saat button di-tap (REQUIRED)
@@ -90,13 +88,12 @@ interface CustomButtonProps {
   size?: 'small' | 'medium' | 'large';         // Button size (default: 'medium')
 }
 
-/* ==================================================================================
- * COMPONENT: CustomButton
- * ==================================================================================
- * Functional component menggunakan React hooks pattern.
- * Export default untuk simplicity (import tanpa curly braces).
- * ==================================================================================
- */
+// ==================================================================================
+// COMPONENT: CustomButton
+// ==================================================================================
+// Functional component menggunakan React hooks pattern.
+// Export default untuk simplicity (import tanpa curly braces).
+// ==================================================================================
 export default function CustomButton({
   // Destructure props dengan default values untuk prop yang opsional
   title,               // Wajib: text yang ditampilkan di button
@@ -109,24 +106,23 @@ export default function CustomButton({
   size = 'medium',     // Opsional: default medium size
 }: CustomButtonProps) {
   
-  /* ================================================================================
-   * HANDLER: handlePress()
-   * ================================================================================
-   * TUJUAN:
-   * Wrapper untuk onPress callback dengan error handling dan logging.
-   * 
-   * FLOW:
-   * 1. Check apakah button disabled atau loading
-   * 2. Jika tidak, call onPress callback
-   * 3. Wrap dalam try-catch untuk prevent app crash
-   * 4. Log success/error untuk debugging
-   * 
-   * KENAPA PERLU WRAPPER?
-   * - Error Handling: onPress bisa throw error, kita catch untuk prevent crash
-   * - Debugging: Log semua button interactions untuk troubleshooting
-   * - Validation: Ensure onPress hanya dipanggil jika button active
-   * ================================================================================
-   */
+  // ================================================================================
+  // HANDLER: handlePress()
+  // ================================================================================
+  // TUJUAN:
+  // Wrapper untuk onPress callback dengan error handling dan logging.
+  //
+  // FLOW:
+  // 1. Check apakah button disabled atau loading
+  // 2. Jika tidak, call onPress callback
+  // 3. Wrap dalam try-catch untuk prevent app crash
+  // 4. Log success/error untuk debugging
+  //
+  // KENAPA PERLU WRAPPER?
+  // - Error Handling: onPress bisa throw error, kita catch untuk prevent crash
+  // - Debugging: Log semua button interactions untuk troubleshooting
+  // - Validation: Ensure onPress hanya dipanggil jika button active
+  // ================================================================================
   const handlePress = () => {
     // Log untuk debugging: track setiap kali button di-tap
     console.log('🔘 CustomButton pressed:', title, 'disabled:', disabled, 'loading:', loading);
@@ -153,24 +149,23 @@ export default function CustomButton({
     }
   };
 
-  /* ================================================================================
-   * STYLE COMPOSITION
-   * ================================================================================
-   * TUJUAN:
-   * Combine multiple styles berdasarkan props (variant, size, disabled).
-   * 
-   * STYLE STRATEGY:
-   * - Base Style: Always applied (baseButton)
-   * - Variant Style: primaryButton, secondaryButton, atau linkButton
-   * - Size Style: smallButton, mediumButton, atau largeButton
-   * - State Style: disabledButton jika disabled = true
-   * - Custom Style: style prop (override any defaults)
-   * 
-   * ARRAY OF STYLES:
-   * React Native merges styles dari kiri ke kanan.
-   * Style di kanan override style di kiri jika ada conflict.
-   * ================================================================================
-   */
+  // ================================================================================
+  // STYLE COMPOSITION
+  // ================================================================================
+  // TUJUAN:
+  // Combine multiple styles berdasarkan props (variant, size, disabled).
+  //
+  // STYLE STRATEGY:
+  // - Base Style: Always applied (baseButton)
+  // - Variant Style: primaryButton, secondaryButton, atau linkButton
+  // - Size Style: smallButton, mediumButton, atau largeButton
+  // - State Style: disabledButton jika disabled = true
+  // - Custom Style: style prop (override any defaults)
+  //
+  // ARRAY OF STYLES:
+  // React Native merges styles dari kiri ke kanan.
+  // Style di kanan override style di kiri jika ada conflict.
+  // ================================================================================
   // Gabungkan style berdasarkan props yang diberikan
   // Array style akan di-merge dari kiri ke kanan (kanan override kiri)
   const buttonStyle = [
@@ -190,12 +185,11 @@ export default function CustomButton({
     textStyle,                           // Custom text style dari parent (prioritas tertinggi)
   ];
 
-  /* ================================================================================
-   * RENDER
-   * ================================================================================
-   * Render TouchableOpacity dengan conditional content (loading spinner atau text).
-   * ================================================================================
-   */
+  // ================================================================================
+  // RENDER
+  // ================================================================================
+  // Render TouchableOpacity dengan conditional content (loading spinner atau text).
+  // ================================================================================
   return (
     <TouchableOpacity
       // STEP 1: Apply combined styles
@@ -240,29 +234,27 @@ export default function CustomButton({
   );
 }
 
-/* ==================================================================================
- * STYLES - STYLING DEFINITIONS DENGAN STYLESHEET API
- * ==================================================================================
- * 
- * StyleSheet.create() Benefits:
- * 1. Performance: Styles di-optimize oleh React Native
- * 2. Validation: Error jika style invalid
- * 3. Autocomplete: IDE dapat suggest valid style properties
- * 
- * Style Organization:
- * - Base Styles: Applied to all buttons
- * - Variant Styles: primaryButton, secondaryButton, linkButton
- * - Size Styles: smallButton, mediumButton, largeButton
- * - State Styles: disabledButton, disabledText
- * - Text Styles: Corresponding text styles untuk each variant/size
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// STYLES - STYLING DEFINITIONS DENGAN STYLESHEET API
+// ==================================================================================
+//
+// StyleSheet.create() Benefits:
+// 1. Performance: Styles di-optimize oleh React Native
+// 2. Validation: Error jika style invalid
+// 3. Autocomplete: IDE dapat suggest valid style properties
+//
+// Style Organization:
+// - Base Styles: Applied to all buttons
+// - Variant Styles: primaryButton, secondaryButton, linkButton
+// - Size Styles: smallButton, mediumButton, largeButton
+// - State Styles: disabledButton, disabledText
+// - Text Styles: Corresponding text styles untuk each variant/size
+//
+// ==================================================================================
 const styles = StyleSheet.create({
-  /* ================================================================================
-   * BASE BUTTON STYLE - APPLIED TO ALL BUTTONS
-   * ================================================================================
-   */
+  // ================================================================================
+  // BASE BUTTON STYLE - APPLIED TO ALL BUTTONS
+  // ================================================================================
   baseButton: {
     borderRadius: 12,                    // Rounded corners (modern design)
     alignItems: 'center',                // Center content horizontally
@@ -281,10 +273,9 @@ const styles = StyleSheet.create({
     elevation: 5,                        // Higher = more shadow
   },
   
-  /* ================================================================================
-   * VARIANT STYLES - DIFFERENT BUTTON TYPES
-   * ================================================================================
-   */
+  // ================================================================================
+  // VARIANT STYLES - DIFFERENT BUTTON TYPES
+  // ================================================================================
   
   // Primary Button: Blue background (main actions)
   // Use case: Login, Submit, Confirm
@@ -308,10 +299,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   
-  /* ================================================================================
-   * SIZE STYLES - DIFFERENT BUTTON SIZES
-   * ================================================================================
-   */
+  // ================================================================================
+  // SIZE STYLES - DIFFERENT BUTTON SIZES
+  // ================================================================================
   
   // Small Button: Less padding, compact appearance
   smallButton: {
@@ -331,10 +321,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   
-  /* ================================================================================
-   * STATE STYLES - DISABLED STATE
-   * ================================================================================
-   */
+  // ================================================================================
+  // STATE STYLES - DISABLED STATE
+  // ================================================================================
   
   // Disabled Button: Gray background, no shadow
   disabledButton: {
@@ -343,10 +332,9 @@ const styles = StyleSheet.create({
     elevation: 0,                        // Remove elevation
   },
   
-  /* ================================================================================
-   * TEXT STYLES - BUTTON TEXT STYLING
-   * ================================================================================
-   */
+  // ================================================================================
+  // TEXT STYLES - BUTTON TEXT STYLING
+  // ================================================================================
   
   // Base Text Style: Applied to all button text
   baseText: {

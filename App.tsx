@@ -277,27 +277,7 @@ export default function App() {
   // - Memastikan registry device tetap terbaru
   // - Membantu monitoring penggunaan aplikasi di lapangan
   // ================================================================================
-  // ─────────────────────────────────────────────────────────────────────────
-  // PENJELASAN POLA: const handleAppStateChange = async (...) => { ... }
-  // ─────────────────────────────────────────────────────────────────────────
-  // "const" → Deklarasi variabel TETAP (tidak bisa di-reassign).
-  //           Pilihan lebih aman dibanding "var" atau "let" untuk fungsi
-  //           karena fungsi tidak perlu diganti setelah dibuat.
-  //
-  // "async" → Menandai fungsi sebagai ASYNCHRONOUS (tidak blok antrian eksekusi).
-  //           Fungsi ini mengandung operasi I/O: baca AsyncStorage & kirim API.
-  //           Tanpa async, await di dalamnya tidak bisa digunakan.
-  //
-  // "(nextAppState: AppStateStatus) => { }" → Arrow Function (ES6).
-  //           Lebih ringkas dari "function handleAppStateChange(...)".
-  //           Mewarisi konteks "this" dari komponen React (penting untuk hooks).
-  //
-  // MENGAPA ASYNC? Karena di dalam fungsi ini:
-  //   - AsyncStorage.getItem() → operasi baca disk (perlu await)
-  //   - apiService.registerDevice() → HTTP request ke backend (perlu await)
-  //   Semua ini butuh waktu, maka harus async agar UI tidak freeze.
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => { // Fungsi async: dipanggil otomatis saat status app berubah (active/background/inactive)
     if (nextAppState === 'active') {
       console.log('📱 App aktif kembali, sync status device...');
       try {
@@ -355,29 +335,7 @@ export default function App() {
   // - Tahap 3-4 dibuat non-blocking agar aplikasi lebih tahan gangguan
   // - Tahap 5 selalu dijalankan dengan fallback ke signedOut
   // ================================================================================
-  // ─────────────────────────────────────────────────────────────────────────
-  // PENJELASAN POLA: const initializeApp = async () => { ... }
-  // ─────────────────────────────────────────────────────────────────────────
-  // "const" → Fungsi startup ini hanya dibuat sekali, tidak perlu diubah.
-  //           Deklarasi const mencegah bug akibat fungsi tidak sengaja ditimpa.
-  //
-  // "async" → Inisialisasi melibatkan 5 tahap berurutan yang SEMUANYA async:
-  //           1. initDatabase()          → buka file database SQLite di disk
-  //           2. apiService.initialize() → load token dari AsyncStorage
-  //           3. apiService.healthCheck()  → HTTP request ke backend
-  //           4. apiService.registerDevice() → HTTP request daftarkan device
-  //           5. checkAuthState()        → baca AsyncStorage + query database
-  //           Tanpa async/await, operasi-operasi ini akan berjalan bersamaan
-  //           (race condition) dan hasilnya tidak terprediksi.
-  //
-  // "() =>" → Tidak membutuhkan parameter karena membaca state sendiri.
-  //
-  // ALUR EKSEKUSI ASYNC:
-  //   App render → useEffect dipanggil → initializeApp() dijalankan
-  //   → await tahap 1 selesai → await tahap 2 selesai → dst.
-  //   → setAuthState('signedIn'/'signedOut') → UI di-render ulang
-  // ─────────────────────────────────────────────────────────────────────────
-  const initializeApp = async () => {
+  const initializeApp = async () => { // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health → device → auth)
     try {
       setError(null); // Error lama dibersihkan dulu agar startup baru dimulai dari kondisi bersih.
       console.log('🚀 Memulai inisialisasi aplikasi...');
@@ -464,30 +422,7 @@ export default function App() {
   // - Berhasil: user masuk ke Dashboard
   // - Gagal: user diarahkan ke Login
   // ================================================================================
-  // ─────────────────────────────────────────────────────────────────────────
-  // PENJELASAN POLA: const checkAuthState = async () => { ... }
-  // ─────────────────────────────────────────────────────────────────────────
-  // "const" → Fungsi cek sesi ini tidak perlu diubah setelah didefinisikan.
-  //
-  // "async" → Mengandung 2 operasi async berurutan:
-  //           1. AsyncStorage.getItem('userId') → baca storage lokal (I/O disk)
-  //           2. getUserById(id) → query database SQLite (I/O disk)
-  //           Keduanya mengembalikan Promise, sehingga HARUS di-await agar
-  //           hasil operasi 1 tersedia sebelum operasi 2 dijalankan.
-  //
-  // POLA ASYNC/AWAIT vs CALLBACK (CALLBACK HELL):
-  //   Tanpa async/await:
-  //     AsyncStorage.getItem('userId', (err, id) => {
-  //       getUserById(id, (err, user) => {
-  //         setCurrentUser(user); // Kode bertumpuk, sulit dibaca
-  //       });
-  //     });
-  //   Dengan async/await (lebih bersih):
-  //     const id = await AsyncStorage.getItem('userId');
-  //     const user = await getUserById(id); // Mudah dibaca seperti kode sinkron
-  //     setCurrentUser(user);
-  // ─────────────────────────────────────────────────────────────────────────
-  const checkAuthState = async () => {
+  const checkAuthState = async () => { // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi login
     try {
       const storedUserId = await AsyncStorage.getItem('userId'); // Mengambil ID user yang disimpan saat login sebelumnya.
       if (storedUserId) {
@@ -532,32 +467,7 @@ export default function App() {
   // - reset() dipakai agar layar login tidak tersisa di stack
   // - Tombol back tidak akan membawa user kembali ke form login
   // ================================================================================
-  // ─────────────────────────────────────────────────────────────────────────
-  // PENJELASAN POLA: const handleLogin = async (userData: {...}) => { ... }
-  // ─────────────────────────────────────────────────────────────────────────
-  // "const" → Callback login tidak perlu diganti selama komponen hidup.
-  //
-  // "async" → Mengandung operasi async:
-  //           AsyncStorage.setItem('userId', ...) → tulis ke disk (I/O)
-  //           Perlu await agar proses tulis selesai sebelum lanjut ke
-  //           setCurrentUser() dan setAuthState().
-  //
-  // "(userData: { id, name, username, balance? })" → Parameter berupa objek
-  //           dengan tipe TypeScript inline. Tanda "?" pada balance berarti
-  //           opsional (boleh tidak dikirim, default ke 0).
-  //
-  // MENGAPA PERLU ASYNC DI SINI?
-  //   Jika AsyncStorage.setItem TIDAK di-await, ada risiko:
-  //   - App langsung pindah ke Dashboard sebelum userId tersimpan
-  //   - Saat app restart, userId tidak ditemukan → sesi hilang
-  //   Dengan await, urutan dijamin: SIMPAN DULU → BARU NAVIGASI
-  //
-  // CALLBACK PATTERN:
-  //   Fungsi ini di-passing sebagai prop ke LoginScreen:
-  //   <LoginScreen onLogin={handleLogin} />
-  //   LoginScreen akan panggil: onLogin(userData) setelah login berhasil.
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleLogin = async (userData: {
+  const handleLogin = async (userData: { // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Dashboard
     id: number;
     name: string;
     username: string;
@@ -603,32 +513,7 @@ export default function App() {
   // - Resource hardware dirilis
   // - Navigasi di-reset agar user tidak bisa kembali ke area privat lewat back
   // ================================================================================
-  // ─────────────────────────────────────────────────────────────────────────
-  // PENJELASAN POLA: const handleLogout = async () => { ... }
-  // ─────────────────────────────────────────────────────────────────────────
-  // "const" → Fungsi logout statis, tidak perlu diganti.
-  //
-  // "async" → Mengandung operasi async:
-  //           AsyncStorage.removeItem('userId') → hapus data dari disk (I/O)
-  //           Perlu await agar data benar-benar terhapus dari storage
-  //           sebelum state aplikasi direset.
-  //
-  // MENGAPA URUTAN PENTING DI SINI?
-  //   SALAH (tanpa await):
-  //     AsyncStorage.removeItem('userId'); // Mulai, tapi belum selesai!
-  //     setCurrentUser(null);              // State sudah null
-  //     → Jika app restart, userId masih ada → sesi tidak bersih!
-  //
-  //   BENAR (dengan await):
-  //     await AsyncStorage.removeItem('userId'); // Tunggu sampai benar-benar hapus
-  //     setCurrentUser(null);                     // Baru reset state
-  //     → Urutan terjamin, sesi pasti bersih
-  //
-  // SECURITY NOTE:
-  //   Logout harus HAPUS data sensitif (token, userId) SEBELUM navigasi.
-  //   Jika tidak, data bisa diakses jika HP dipinjam setelah logout.
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleLogout = async () => {
+  const handleLogout = async () => { // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan ke Login
     try {
       await AsyncStorage.removeItem('userId'); // Menghapus penanda sesi dari penyimpanan lokal.
       setCurrentUser(null); // Membersihkan data user dari memory aplikasi.

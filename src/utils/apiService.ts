@@ -1,54 +1,52 @@
 // src/utils/apiService.ts
-/* ==================================================================================
- * 🚀 UNIFIED API SERVICE - HTTP CLIENT UNTUK MOBILE APP
- * ==================================================================================
- * 
- * Tujuan File:
- * File ini adalah "jembatan" antara aplikasi mobile dengan backend server.
- * Semua komunikasi HTTP (login, payment, NFC, admin) dilakukan melalui class ini.
- * 
- * Pattern yang Digunakan:
- * - Singleton Pattern: Hanya ada 1 instance APIService di seluruh aplikasi
- * - Token-Based Authentication: JWT token disimpan dan dikirim otomatis di header
- * - Auto-Retry: Jika request gagal, token auto-refresh
- * - Error Handling: Menangani Ngrok errors, timeout, network errors
- * 
- * Struktur Class:
- * 1. Initialization: Load token dari AsyncStorage saat startup
- * 2. HTTP Request Handler: Core function untuk semua API calls
- * 3. Authentication Methods: login, register, logout
- * 4. User Methods: getUserById, updateBalance, dll
- * 5. Transaction Methods: createTransaction, getTransactions
- * 6. NFC Payment Methods: processNFCPayment, validateNFCReceiver
- * 7. Fraud Detection Methods: checkFraudRisk, reportFraudulent
- * 8. Admin Methods: dashboard, blockUser, getAllUsers
- * 9. Device Methods: registerDevice, syncDeviceData
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🚀 UNIFIED API SERVICE - HTTP CLIENT UNTUK MOBILE APP
+// ==================================================================================
+//
+// Tujuan File:
+// File ini adalah "jembatan" antara aplikasi mobile dengan backend server.
+// Semua komunikasi HTTP (login, payment, NFC, admin) dilakukan melalui class ini.
+//
+// Pattern yang Digunakan:
+// - Singleton Pattern: Hanya ada 1 instance APIService di seluruh aplikasi
+// - Token-Based Authentication: JWT token disimpan dan dikirim otomatis di header
+// - Auto-Retry: Jika request gagal, token auto-refresh
+// - Error Handling: Menangani Ngrok errors, timeout, network errors
+//
+// Struktur Class:
+// 1. Initialization: Load token dari AsyncStorage saat startup
+// 2. HTTP Request Handler: Core function untuk semua API calls
+// 3. Authentication Methods: login, register, logout
+// 4. User Methods: getUserById, updateBalance, dll
+// 5. Transaction Methods: createTransaction, getTransactions
+// 6. NFC Payment Methods: processNFCPayment, validateNFCReceiver
+// 7. Fraud Detection Methods: checkFraudRisk, reportFraudulent
+// 8. Admin Methods: dashboard, blockUser, getAllUsers
+// 9. Device Methods: registerDevice, syncDeviceData
+//
+// ==================================================================================
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { API_URL, APP_SECRET } from './configuration';
 
-/* ==================================================================================
- * 🔹 APISERVICE CLASS - SINGLETON PATTERN
- * ==================================================================================
- * 
- * Apa itu Singleton Pattern?
- * Pattern di mana hanya ada 1 instance class di seluruh aplikasi.
- * 
- * Kenapa Singleton?
- * - Agar token dan userId tidak hilang saat class dipanggil dari file berbeda
- * - Menghindari multiple initialization (lebih efisien)
- * - Consistency: Semua file menggunakan connection yang sama
- * 
- * Cara Pakai:
- * const api = APIService.getInstance(); // Selalu return instance yang sama
- * 
- * ==================================================================================
- */
+// ==================================================================================
+// 🔹 APISERVICE CLASS - SINGLETON PATTERN
+// ==================================================================================
+//
+// Apa itu Singleton Pattern?
+// Pattern di mana hanya ada 1 instance class di seluruh aplikasi.
+//
+// Kenapa Singleton?
+// - Agar token dan userId tidak hilang saat class dipanggil dari file berbeda
+// - Menghindari multiple initialization (lebih efisien)
+// - Consistency: Semua file menggunakan connection yang sama
+//
+// Cara Pakai:
+// const api = APIService.getInstance(); // Selalu return instance yang sama
+//
+// ==================================================================================
 export class APIService {
   // Property static untuk menyimpan satu instance tunggal (Singleton Pattern)
   // Semua file yang memanggil getInstance() akan dapat instance yang sama
@@ -62,20 +60,19 @@ export class APIService {
   // Semua endpoint akan digabung dengan URL ini
   private baseUrl = API_URL; // Contoh: 'https://xyz.ngrok-free.dev'
 
-  /* ================================================================================
-   * METHOD: getInstance()
-   * ================================================================================
-   * TUJUAN:
-   * Mendapatkan instance tunggal dari APIService (Singleton Pattern).
-   * Jika belum ada instance, buat baru. Jika sudah ada, return yang lama.
-   * 
-   * CARA KERJA:
-   * - Check: Apakah APIService.instance sudah ada?
-   * - Jika BELUM: Buat instance baru dengan new APIService()
-   * - Jika SUDAH: Langsung return instance yang sudah ada
-   * - Result: Semua file mendapat instance yang sama (shared state)
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getInstance()
+  // ================================================================================
+  // TUJUAN:
+  // Mendapatkan instance tunggal dari APIService (Singleton Pattern).
+  // Jika belum ada instance, buat baru. Jika sudah ada, return yang lama.
+  //
+  // CARA KERJA:
+  // - Check: Apakah APIService.instance sudah ada?
+  // - Jika BELUM: Buat instance baru dengan new APIService()
+  // - Jika SUDAH: Langsung return instance yang sudah ada
+  // - Result: Semua file mendapat instance yang sama (shared state)
+  // ================================================================================
   static getInstance(): APIService {
     // Cek apakah instance sudah pernah dibuat sebelumnya
     if (!APIService.instance) {
@@ -86,23 +83,22 @@ export class APIService {
     return APIService.instance; // Return instance yang sudah ada (shared across all files)
   }
 
-  /* ================================================================================
-   * METHOD: initialize()
-   * ================================================================================
-   * TUJUAN:
-   * Inisialisasi APIService saat aplikasi startup.
-   * Load token dan userId dari AsyncStorage (persistent storage di device).
-   * 
-   * KENAPA PERLU INITIALIZE?
-   * - Token user disimpan di AsyncStorage agar tidak hilang saat app ditutup
-   * - Saat app dibuka lagi, token perlu di-load kembali dari storage
-   * - Jika token ada, user otomatis login (tidak perlu login lagi)
-   * 
-   * RETURN:
-   * - true: Initialization berhasil (token loaded atau tidak ada token)
-   * - false: Initialization gagal (error reading AsyncStorage)
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: initialize()
+  // ================================================================================
+  // TUJUAN:
+  // Inisialisasi APIService saat aplikasi startup.
+  // Load token dan userId dari AsyncStorage (persistent storage di device).
+  //
+  // KENAPA PERLU INITIALIZE?
+  // - Token user disimpan di AsyncStorage agar tidak hilang saat app ditutup
+  // - Saat app dibuka lagi, token perlu di-load kembali dari storage
+  // - Jika token ada, user otomatis login (tidak perlu login lagi)
+  //
+  // RETURN:
+  // - true: Initialization berhasil (token loaded atau tidak ada token)
+  // - false: Initialization gagal (error reading AsyncStorage)
+  // ================================================================================
   async initialize(): Promise<boolean> {
     try {
       // STEP 1: Load JWT token dari AsyncStorage (penyimpanan lokal device)
@@ -131,30 +127,29 @@ export class APIService {
     }
   }
 
-  /* ================================================================================
-   * METHOD: makeRequest() - CORE HTTP REQUEST HANDLER
-   * ================================================================================
-   * TUJUAN:
-   * Method ini adalah "mesin utama" untuk SEMUA API calls ke backend.
-   * Semua method lain (login, payment, dll) akan memanggil makeRequest() ini.
-   * 
-   * FITUR:
-   * 1. Automatic Token Injection: Token JWT otomatis ditambahkan ke header
-   * 2. Timeout Handling: Request dibatalkan jika lebih dari 15 detik (slow network)
-   * 3. Ngrok Headers: Menambahkan header khusus untuk bypass Ngrok warning page
-   * 4. Auto-Logout: Jika token invalid (401/403), auto logout user
-   * 5. Error Handling: Menangani semua error (network, timeout, HTTP errors)
-   * 6. Response Parsing: Otomatis parse JSON atau text response
-   * 
-   * PARAMETER:
-   * - endpoint: API endpoint (contoh: '/api/auth/login')
-   * - options: { method, body, headers } - configuration untuk HTTP request
-   * 
-   * RETURN:
-   * - Success: Response body (JSON object atau text)
-   * - Error: Throw exception dengan pesan error
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: makeRequest() - CORE HTTP REQUEST HANDLER
+  // ================================================================================
+  // TUJUAN:
+  // Method ini adalah "mesin utama" untuk SEMUA API calls ke backend.
+  // Semua method lain (login, payment, dll) akan memanggil makeRequest() ini.
+  //
+  // FITUR:
+  // 1. Automatic Token Injection: Token JWT otomatis ditambahkan ke header
+  // 2. Timeout Handling: Request dibatalkan jika lebih dari 15 detik (slow network)
+  // 3. Ngrok Headers: Menambahkan header khusus untuk bypass Ngrok warning page
+  // 4. Auto-Logout: Jika token invalid (401/403), auto logout user
+  // 5. Error Handling: Menangani semua error (network, timeout, HTTP errors)
+  // 6. Response Parsing: Otomatis parse JSON atau text response
+  //
+  // PARAMETER:
+  // - endpoint: API endpoint (contoh: '/api/auth/login')
+  // - options: { method, body, headers } - configuration untuk HTTP request
+  //
+  // RETURN:
+  // - Success: Response body (JSON object atau text)
+  // - Error: Throw exception dengan pesan error
+  // ================================================================================
   private async makeRequest(endpoint: string, options: any = {}): Promise<any> {
     // STEP 1: Gabungkan base URL dengan endpoint untuk membuat URL lengkap
     // Contoh: baseUrl='https://xyz.ngrok.io' + endpoint='/api/auth/login'
@@ -284,18 +279,17 @@ export class APIService {
     }
   }
 
-  /* ================================================================================
-   * HTTP METHOD SHORTCUTS - WRAPPER FUNCTIONS
-   * ================================================================================
-   * TUJUAN:
-   * Method-method ini adalah shortcut untuk makeRequest() agar lebih mudah dipakai.
-   * Instead of: makeRequest('/api/users', { method: 'GET' })
-   * We can write: get('/api/users')
-   * 
-   * Ini adalah coding pattern yang disebut "Convenience Methods" atau "Helper Methods".
-   * Makes code cleaner and more readable.
-   * ================================================================================
-   */
+  // ================================================================================
+  // HTTP METHOD SHORTCUTS - WRAPPER FUNCTIONS
+  // ================================================================================
+  // TUJUAN:
+  // Method-method ini adalah shortcut untuk makeRequest() agar lebih mudah dipakai.
+  // Instead of: makeRequest('/api/users', { method: 'GET' })
+  // We can write: get('/api/users')
+  //
+  // Ini adalah coding pattern yang disebut "Convenience Methods" atau "Helper Methods".
+  // Makes code cleaner and more readable.
+  // ================================================================================
 
   // GET Request: Untuk mengambil data dari backend (read operation)
   // HTTP GET = safe & idempotent (multiple calls tidak mengubah state)
@@ -325,44 +319,42 @@ export class APIService {
     return await this.makeRequest(endpoint, { method: 'DELETE' }); // No body needed
   }
 
-  /* ================================================================================
-   * AUTHENTICATION METHODS - LOGIN, REGISTER, LOGOUT
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk user authentication (login masuk ke aplikasi).
-   * 
-   * Authentication Flow:
-   * 1. User input username & password
-   * 2. App call api.login(credentials)
-   * 3. Backend validate credentials dan generate JWT token
-   * 4. App save token ke AsyncStorage (persistent storage)
-   * 5. All subsequent requests automatically include token in headers
-   * 6. When user logout, token deleted from storage
-   * ================================================================================
-   */
+  // ================================================================================
+  // AUTHENTICATION METHODS - LOGIN, REGISTER, LOGOUT
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk user authentication (login masuk ke aplikasi).
+  //
+  // Authentication Flow:
+  // 1. User input username & password
+  // 2. App call api.login(credentials)
+  // 3. Backend validate credentials dan generate JWT token
+  // 4. App save token ke AsyncStorage (persistent storage)
+  // 5. All subsequent requests automatically include token in headers
+  // 6. When user logout, token deleted from storage
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: login()
-   * ================================================================================
-   * TUJUAN:
-   * Login user dengan username dan password.
-   * Jika berhasil, save token ke storage dan return user object.
-   * 
-   * FLOW:
-   * 1. Send POST request ke backend /api/auth/login dengan credentials
-   * 2. Backend validate username & password di database
-   * 3. Jika valid, backend generate JWT token dan return { token, user }
-   * 4. App save token dan userId ke AsyncStorage
-   * 5. Token auto di-include di semua request berikutnya (lihat makeRequest())
-   * 
-   * PARAMETER:
-   * - credentials: { username: string, password: string }
-   * 
-   * RETURN:
-   * - Success: { token: string, user: { id, name, username, balance } }
-   * - Error: Throw exception dengan error message dari backend
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: login()
+  // ================================================================================
+  // TUJUAN:
+  // Login user dengan username dan password.
+  // Jika berhasil, save token ke storage dan return user object.
+  //
+  // FLOW:
+  // 1. Send POST request ke backend /api/auth/login dengan credentials
+  // 2. Backend validate username & password di database
+  // 3. Jika valid, backend generate JWT token dan return { token, user }
+  // 4. App save token dan userId ke AsyncStorage
+  // 5. Token auto di-include di semua request berikutnya (lihat makeRequest())
+  //
+  // PARAMETER:
+  // - credentials: { username: string, password: string }
+  //
+  // RETURN:
+  // - Success: { token: string, user: { id, name, username, balance } }
+  // - Error: Throw exception dengan error message dari backend
+  // ================================================================================
   async login(credentials: { username: string; password: string }) {
     // STEP 1: Send POST request ke backend auth endpoint
     // makeRequest() akan handle semua HTTP logic (headers, timeout, dll)
@@ -397,27 +389,26 @@ export class APIService {
     return response;
   }
 
-  /* ================================================================================
-   * METHOD: register()
-   * ================================================================================
-   * TUJUAN:
-   * Register user baru dengan name, username, dan password.
-   * 
-   * FLOW:
-   * 1. Send POST request ke backend /api/auth/register dengan user data
-   * 2. Backend validate data (username unique, password strength, dll)
-   * 3. Backend hash password dengan bcrypt
-   * 4. Backend save user ke database Prisma
-   * 5. Backend return user object (tanpa password tentu saja!)
-   * 
-   * PARAMETER:
-   * - userData: { name: string, username: string, password: string }
-   * 
-   * RETURN:
-   * - Success: { success: true, user: { id, name, username, balance } }
-   * - Error: Throw exception (contoh: "Username already exists")
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: register()
+  // ================================================================================
+  // TUJUAN:
+  // Register user baru dengan name, username, dan password.
+  //
+  // FLOW:
+  // 1. Send POST request ke backend /api/auth/register dengan user data
+  // 2. Backend validate data (username unique, password strength, dll)
+  // 3. Backend hash password dengan bcrypt
+  // 4. Backend save user ke database Prisma
+  // 5. Backend return user object (tanpa password tentu saja!)
+  //
+  // PARAMETER:
+  // - userData: { name: string, username: string, password: string }
+  //
+  // RETURN:
+  // - Success: { success: true, user: { id, name, username, balance } }
+  // - Error: Throw exception (contoh: "Username already exists")
+  // ================================================================================
   async register(userData: { name: string; username: string; password: string }) {
     // STEP 1: Send POST request ke backend register endpoint
     // Backend akan validate dan save user ke database
@@ -430,21 +421,20 @@ export class APIService {
     // Setelah register berhasil, user harus login manual (call login() method)
   }
 
-  /* ================================================================================
-   * METHOD: logout()
-   * ================================================================================
-   * TUJUAN:
-   * Logout user dan hapus semua authentication data dari storage.
-   * 
-   * FLOW:
-   * 1. Clear token dan userId dari memory (this.token = null)
-   * 2. Clear token dan userId dari AsyncStorage (persistent storage)
-   * 3. All subsequent requests akan tidak punya Authorization header
-   * 4. Backend akan reject requests dengan error 401 Unauthorized
-   * 
-   * RETURN: void (tidak return apa-apa)
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: logout()
+  // ================================================================================
+  // TUJUAN:
+  // Logout user dan hapus semua authentication data dari storage.
+  //
+  // FLOW:
+  // 1. Clear token dan userId dari memory (this.token = null)
+  // 2. Clear token dan userId dari AsyncStorage (persistent storage)
+  // 3. All subsequent requests akan tidak punya Authorization header
+  // 4. Backend akan reject requests dengan error 401 Unauthorized
+  //
+  // RETURN: void (tidak return apa-apa)
+  // ================================================================================
   async logout() {
     // STEP 1: Clear token dan userId dari memory
     // Setting ke null agar makeRequest() tidak include Authorization header
@@ -459,39 +449,37 @@ export class APIService {
     console.log('🚪 User logged out, session cleared');
   }
 
-  /* ================================================================================
-   * USER METHODS - OPERASI TERKAIT DATA USER
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk get dan update informasi user (balance, profile, dll).
-   * 
-   * User Data Flow:
-   * 1. App request user data dari backend
-   * 2. Backend query database Prisma
-   * 3. Backend return user object
-   * 4. App display di UI atau save ke local cache
-   * ================================================================================
-   */
+  // ================================================================================
+  // USER METHODS - OPERASI TERKAIT DATA USER
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk get dan update informasi user (balance, profile, dll).
+  //
+  // User Data Flow:
+  // 1. App request user data dari backend
+  // 2. Backend query database Prisma
+  // 3. Backend return user object
+  // 4. App display di UI atau save ke local cache
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: getUserById()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil data user berdasarkan ID user.
-   * Uses public endpoint (tidak perlu authentication).
-   * 
-   * USE CASE:
-   * - Ambil data penerima saat akan transfer uang
-   * - Ambil data user setelah login (untuk display di Dashboard)
-   * - Sync balance dari backend setelah transaksi
-   * 
-   * PARAMETER:
-   * - id: number - User ID yang ingin diambil datanya
-   * 
-   * RETURN:
-   * - { id, name, username, balance, createdAt }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getUserById()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil data user berdasarkan ID user.
+  // Uses public endpoint (tidak perlu authentication).
+  //
+  // USE CASE:
+  // - Ambil data penerima saat akan transfer uang
+  // - Ambil data user setelah login (untuk display di Dashboard)
+  // - Sync balance dari backend setelah transaksi
+  //
+  // PARAMETER:
+  // - id: number - User ID yang ingin diambil datanya
+  //
+  // RETURN:
+  // - { id, name, username, balance, createdAt }
+  // ================================================================================
   async getUserById(id: number) {
     // Endpoint: GET /api/users/{id}
     // Backend response format: { id, name, username, balance, ... } (raw user object)
@@ -502,22 +490,21 @@ export class APIService {
     return response?.user || response;
   }
 
-  /* ================================================================================
-   * METHOD: getCurrentUser()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil data user yang sedang login (current logged-in user).
-   * Uses authenticated endpoint (memerlukan token).
-   * 
-   * USE CASE:
-   * - Get balance user yang sedang login
-   * - Display user profile di settings page
-   * - Refresh user data setelah top-up atau payment
-   * 
-   * RETURN:
-   * - { id, name, username, balance, createdAt }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getCurrentUser()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil data user yang sedang login (current logged-in user).
+  // Uses authenticated endpoint (memerlukan token).
+  //
+  // USE CASE:
+  // - Get balance user yang sedang login
+  // - Display user profile di settings page
+  // - Refresh user data setelah top-up atau payment
+  //
+  // RETURN:
+  // - { id, name, username, balance, createdAt }
+  // ================================================================================
   async getCurrentUser() {
     // STEP 1: Call authenticated endpoint
     // Endpoint: GET /api/users/me
@@ -531,25 +518,24 @@ export class APIService {
     return response?.user || response;
   }
 
-  /* ================================================================================
-   * METHOD: updateUserBalance()
-   * ================================================================================
-   * TUJUAN:
-   * Update balance user di backend (digunakan oleh admin atau setelah transaksi).
-   * 
-   * USE CASE:
-   * - Admin top-up saldo user
-   * - Sync balance setelah NFC payment
-   * - Adjust balance jika terjadi error transaksi
-   * 
-   * PARAMETER:
-   * - userId: number - ID user yang balance-nya akan diupdate
-   * - newBalance: number - Balance baru (bukan delta/increment!)
-   * 
-   * RETURN:
-   * - { success: true, user: {...} } jika berhasil
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: updateUserBalance()
+  // ================================================================================
+  // TUJUAN:
+  // Update balance user di backend (digunakan oleh admin atau setelah transaksi).
+  //
+  // USE CASE:
+  // - Admin top-up saldo user
+  // - Sync balance setelah NFC payment
+  // - Adjust balance jika terjadi error transaksi
+  //
+  // PARAMETER:
+  // - userId: number - ID user yang balance-nya akan diupdate
+  // - newBalance: number - Balance baru (bukan delta/increment!)
+  //
+  // RETURN:
+  // - { success: true, user: {...} } jika berhasil
+  // ================================================================================
   async updateUserBalance(userId: number, newBalance: number) {
     // STEP 1: Send PUT request ke balance endpoint
     // Endpoint: PUT /api/users/{userId}/balance
@@ -560,41 +546,39 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * TRANSACTION METHODS - OPERASI TRANSAKSI KEUANGAN
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk create transaksi dan get transaction history.
-   * 
-   * Transaction Flow:
-   * 1. User initiate payment (input amount, select receiver)
-   * 2. App call createTransaction() atau processNFCPayment()
-   * 3. Backend validate (balance cukup, fraud check, dll)
-   * 4. Backend create transaction record di database
-   * 5. Backend update balance sender dan receiver (atomic transaction)
-   * 6. Backend return transaction result
-   * 7. App display success/error message ke user
-   * ================================================================================
-   */
+  // ================================================================================
+  // TRANSACTION METHODS - OPERASI TRANSAKSI KEUANGAN
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk create transaksi dan get transaction history.
+  //
+  // Transaction Flow:
+  // 1. User initiate payment (input amount, select receiver)
+  // 2. App call createTransaction() atau processNFCPayment()
+  // 3. Backend validate (balance cukup, fraud check, dll)
+  // 4. Backend create transaction record di database
+  // 5. Backend update balance sender dan receiver (atomic transaction)
+  // 6. Backend return transaction result
+  // 7. App display success/error message ke user
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: getUserTransactions()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil semua transaksi user tertentu (sent + received transactions).
-   * 
-   * USE CASE:
-   * - Display transaction history di Dashboard
-   * - Calculate statistics (total spent, frequency, dll)
-   * - Fraud detection (analyze transaction patterns)
-   * 
-   * PARAMETER:
-   * - userId: number - ID user yang ingin diambil transaksinya
-   * 
-   * RETURN:
-   * - Array of transactions: [{ id, senderId, receiverId, amount, createdAt }, ...]
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getUserTransactions()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil semua transaksi user tertentu (sent + received transactions).
+  //
+  // USE CASE:
+  // - Display transaction history di Dashboard
+  // - Calculate statistics (total spent, frequency, dll)
+  // - Fraud detection (analyze transaction patterns)
+  //
+  // PARAMETER:
+  // - userId: number - ID user yang ingin diambil transaksinya
+  //
+  // RETURN:
+  // - Array of transactions: [{ id, senderId, receiverId, amount, createdAt }, ...]
+  // ================================================================================
   async getUserTransactions(userId: number) {
     // STEP 1: Call transaction history endpoint
     // Endpoint: GET /api/transactions/user/{userId}
@@ -602,20 +586,19 @@ export class APIService {
     return await this.makeRequest(`/api/transactions/user/${userId}`);
   }
 
-  /* ================================================================================
-   * METHOD: getTransactionHistory()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil transaction history untuk current logged-in user.
-   * 
-   * USE CASE:
-   * - Display "My Transactions" page
-   * - Show recent transactions di Dashboard
-   * 
-   * RETURN:
-   * - Array of transactions dengan detail sender/receiver
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getTransactionHistory()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil transaction history untuk current logged-in user.
+  //
+  // USE CASE:
+  // - Display "My Transactions" page
+  // - Show recent transactions di Dashboard
+  //
+  // RETURN:
+  // - Array of transactions dengan detail sender/receiver
+  // ================================================================================
   async getTransactionHistory() {
     // STEP 1: Call authenticated transaction history endpoint
     // Endpoint: GET /api/transactions/history
@@ -623,37 +606,36 @@ export class APIService {
     return await this.makeRequest('/api/transactions/history');
   }
 
-  /* ================================================================================
-   * METHOD: createTransaction()
-   * ================================================================================
-   * TUJUAN:
-   * Membuat transaksi baru (transfer uang dari sender ke receiver).
-   * 
-   * FLOW:
-   * 1. App send transaction data ke backend
-   * 2. Backend validate:
-   *    - Balance sender cukup?
-   *    - Receiver exists?
-   *    - Amount valid? (> 0, not too large)
-   *    - Fraud risk acceptable?
-   * 3. Backend create transaction dengan Prisma $transaction (atomic)
-   * 4. Backend update balance sender (decrease) dan receiver (increase)
-   * 5. Backend return transaction result
-   * 
-   * PARAMETER:
-   * - transactionData: {
-   *     senderId: number,
-   *     receiverId: number,
-   *     amount: number,
-   *     description?: string,
-   *     location?: { latitude, longitude }
-   *   }
-   * 
-   * RETURN:
-   * - { success: true, transaction: {...} } jika berhasil
-   * - Throw error jika gagal (insufficient balance, fraud detected, dll)
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: createTransaction()
+  // ================================================================================
+  // TUJUAN:
+  // Membuat transaksi baru (transfer uang dari sender ke receiver).
+  //
+  // FLOW:
+  // 1. App send transaction data ke backend
+  // 2. Backend validate:
+  //    - Balance sender cukup?
+  //    - Receiver exists?
+  //    - Amount valid? (> 0, not too large)
+  //    - Fraud risk acceptable?
+  // 3. Backend create transaction dengan Prisma $transaction (atomic)
+  // 4. Backend update balance sender (decrease) dan receiver (increase)
+  // 5. Backend return transaction result
+  //
+  // PARAMETER:
+  // - transactionData: {
+  //     senderId: number,
+  //     receiverId: number,
+  //     amount: number,
+  //     description?: string,
+  //     location?: { latitude, longitude }
+  //   }
+  //
+  // RETURN:
+  // - { success: true, transaction: {...} } jika berhasil
+  // - Throw error jika gagal (insufficient balance, fraud detected, dll)
+  // ================================================================================
   async createTransaction(transactionData: {
     senderId: number;
     receiverId: number;
@@ -670,55 +652,53 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * NFC PAYMENT METHODS - OPERASI PEMBAYARAN VIA NFC
-   * ================================================================================
-   * TUJUAN:
-   * Method-method khusus untuk pembayaran menggunakan NFC (contactless payment).
-   * 
-   * NFC Payment Flow:
-   * 1. User tap phone ke kartu NFC atau phone lain
-   * 2. App read NFC data (userId, cardId, dll)
-   * 3. App validate NFC data dengan backend
-   * 4. User input amount dan confirm payment
-   * 5. App send payment data ke backend
-   * 6. Backend process payment (sama seperti regular transaction + fraud check)
-   * 7. Backend update balance dan create transaction record
-   * 8. App display success message
-   * ================================================================================
-   */
+  // ================================================================================
+  // NFC PAYMENT METHODS - OPERASI PEMBAYARAN VIA NFC
+  // ================================================================================
+  // TUJUAN:
+  // Method-method khusus untuk pembayaran menggunakan NFC (contactless payment).
+  //
+  // NFC Payment Flow:
+  // 1. User tap phone ke kartu NFC atau phone lain
+  // 2. App read NFC data (userId, cardId, dll)
+  // 3. App validate NFC data dengan backend
+  // 4. User input amount dan confirm payment
+  // 5. App send payment data ke backend
+  // 6. Backend process payment (sama seperti regular transaction + fraud check)
+  // 7. Backend update balance dan create transaction record
+  // 8. App display success message
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: processNFCPayment()
-   * ================================================================================
-   * TUJUAN:
-   * Process pembayaran via NFC (phone-to-phone atau phone-to-card).
-   * 
-   * FLOW:
-   * 1. App read NFC data dari receiver
-   * 2. User input amount
-   * 3. App call processNFCPayment()
-   * 4. Backend:
-   *    - Validate NFC data (user exists, card linked, dll)
-   *    - Run fraud detection
-   *    - Create transaction
-   *    - Update balances
-   *    - Create audit log
-   * 5. Return success/error
-   * 
-   * PARAMETER:
-   * - paymentData: {
-   *     receiverNFCData: any, // Data dari NFC tag (userId, cardId, dll)
-   *     amount: number,
-   *     description?: string,
-   *     location?: { latitude, longitude }
-   *   }
-   * 
-   * RETURN:
-   * - { success: true, transaction: {...} } jika berhasil
-   * - Throw error jika fraud detected atau validation failed
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: processNFCPayment()
+  // ================================================================================
+  // TUJUAN:
+  // Process pembayaran via NFC (phone-to-phone atau phone-to-card).
+  //
+  // FLOW:
+  // 1. App read NFC data dari receiver
+  // 2. User input amount
+  // 3. App call processNFCPayment()
+  // 4. Backend:
+  //    - Validate NFC data (user exists, card linked, dll)
+  //    - Run fraud detection
+  //    - Create transaction
+  //    - Update balances
+  //    - Create audit log
+  // 5. Return success/error
+  //
+  // PARAMETER:
+  // - paymentData: {
+  //     receiverNFCData: any, // Data dari NFC tag (userId, cardId, dll)
+  //     amount: number,
+  //     description?: string,
+  //     location?: { latitude, longitude }
+  //   }
+  //
+  // RETURN:
+  // - { success: true, transaction: {...} } jika berhasil
+  // - Throw error jika fraud detected atau validation failed
+  // ================================================================================
   async processNFCPayment(paymentData: {
     receiverNFCData: any;
     amount: number;
@@ -733,25 +713,24 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * METHOD: validateNFCReceiver()
-   * ================================================================================
-   * TUJUAN:
-   * Validate NFC data receiver sebelum payment (pre-validation).
-   * 
-   * USE CASE:
-   * - Check apakah NFC tag valid sebelum user input amount
-   * - Display receiver info (name, username) sebelum confirm payment
-   * - Prevent payment ke invalid atau blocked user
-   * 
-   * PARAMETER:
-   * - nfcData: any - Data yang dibaca dari NFC tag
-   * 
-   * RETURN:
-   * - { valid: boolean, user: {...} } jika NFC valid
-   * - Throw error jika NFC invalid atau user blocked
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: validateNFCReceiver()
+  // ================================================================================
+  // TUJUAN:
+  // Validate NFC data receiver sebelum payment (pre-validation).
+  //
+  // USE CASE:
+  // - Check apakah NFC tag valid sebelum user input amount
+  // - Display receiver info (name, username) sebelum confirm payment
+  // - Prevent payment ke invalid atau blocked user
+  //
+  // PARAMETER:
+  // - nfcData: any - Data yang dibaca dari NFC tag
+  //
+  // RETURN:
+  // - { valid: boolean, user: {...} } jika NFC valid
+  // - Throw error jika NFC invalid atau user blocked
+  // ================================================================================
   async validateNFCReceiver(nfcData: any) {
     // STEP 1: Send POST request ke NFC tap endpoint untuk validasi kartu penerima
     // Endpoint: POST /api/nfc-cards/tap (backend aktif di route ini)
@@ -761,50 +740,48 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * NFC CARD MANAGEMENT METHODS - OPERASI MANAGEMENT KARTU NFC
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk manage NFC cards (get, update, delete).
-   * 
-   * Card Management:
-   * - Get user's NFC cards
-   * - Update card status (ACTIVE, BLOCKED, LOST, EXPIRED)
-   * - Check card balance
-   * - View card transaction history
-   * ================================================================================
-   */
+  // ================================================================================
+  // NFC CARD MANAGEMENT METHODS - OPERASI MANAGEMENT KARTU NFC
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk manage NFC cards (get, update, delete).
+  //
+  // Card Management:
+  // - Get user's NFC cards
+  // - Update card status (ACTIVE, BLOCKED, LOST, EXPIRED)
+  // - Check card balance
+  // - View card transaction history
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: getUserCards()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil semua NFC cards milik user tertentu.
-   * 
-   * USE CASE:
-   * - Display "My Cards" screen
-   * - Show active cards di Dashboard
-   * - Check card status dan balance
-   * 
-   * PARAMETER:
-   * - userId: number - ID user yang akan diambil kartu-nya
-   * 
-   * RETURN:
-   * - { 
-   *     user: {...},
-   *     cards: [
-   *       {
-   *         id: number,
-   *         cardId: string,
-   *         balance: number,
-   *         cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED',
-   *         createdAt: string,
-   *         lastUsed: string
-   *       }
-   *     ]
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getUserCards()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil semua NFC cards milik user tertentu.
+  //
+  // USE CASE:
+  // - Display "My Cards" screen
+  // - Show active cards di Dashboard
+  // - Check card status dan balance
+  //
+  // PARAMETER:
+  // - userId: number - ID user yang akan diambil kartu-nya
+  //
+  // RETURN:
+  // - {
+  //     user: {...},
+  //     cards: [
+  //       {
+  //         id: number,
+  //         cardId: string,
+  //         balance: number,
+  //         cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED',
+  //         createdAt: string,
+  //         lastUsed: string
+  //       }
+  //     ]
+  //   }
+  // ================================================================================
   async getUserCards(userId: number) {
     // STEP 1: Call user cards endpoint
     // Endpoint: GET /api/users/{userId}/cards
@@ -812,25 +789,24 @@ export class APIService {
     return await this.makeRequest(`/api/users/${userId}/cards`);
   }
 
-  /* ================================================================================
-   * METHOD: updateCardStatus()
-   * ================================================================================
-   * TUJUAN:
-   * Update status kartu NFC (block, activate, mark as lost, dll).
-   * 
-   * USE CASE:
-   * - User block kartu yang hilang
-   * - User activate kartu baru
-   * - Admin suspend kartu karena fraud
-   * 
-   * PARAMETER:
-   * - cardId: string - UID kartu NFC (contoh: "04A1B2C3D4E5F6")
-   * - status: string - Status baru ('ACTIVE', 'BLOCKED', 'LOST', 'EXPIRED')
-   * 
-   * RETURN:
-   * - { success: true, message: "Card status updated", card: {...} }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: updateCardStatus()
+  // ================================================================================
+  // TUJUAN:
+  // Update status kartu NFC (block, activate, mark as lost, dll).
+  //
+  // USE CASE:
+  // - User block kartu yang hilang
+  // - User activate kartu baru
+  // - Admin suspend kartu karena fraud
+  //
+  // PARAMETER:
+  // - cardId: string - UID kartu NFC (contoh: "04A1B2C3D4E5F6")
+  // - status: string - Status baru ('ACTIVE', 'BLOCKED', 'LOST', 'EXPIRED')
+  //
+  // RETURN:
+  // - { success: true, message: "Card status updated", card: {...} }
+  // ================================================================================
   async updateCardStatus(cardId: string, status: string) {
     // STEP 1: Send PUT request ke card status endpoint
     // Endpoint: PUT /api/nfc-cards/status
@@ -841,31 +817,30 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * METHOD: getCardInfo()
-   * ================================================================================
-   * TUJUAN:
-   * Mendapatkan informasi detail kartu NFC berdasarkan cardId (UID).
-   * 
-   * USE CASE:
-   * - Check apakah kartu sudah terdaftar
-   * - Validasi kartu sebelum payment
-   * - Display card details di UI
-   * 
-   * PARAMETER:
-   * - cardId: string - UID kartu NFC
-   * 
-   * RETURN:
-   * - {
-   *     id: number,
-   *     cardId: string,
-   *     userId: number,
-   *     balance: number,
-   *     cardStatus: string,
-   *     user: { name, username }
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getCardInfo()
+  // ================================================================================
+  // TUJUAN:
+  // Mendapatkan informasi detail kartu NFC berdasarkan cardId (UID).
+  //
+  // USE CASE:
+  // - Check apakah kartu sudah terdaftar
+  // - Validasi kartu sebelum payment
+  // - Display card details di UI
+  //
+  // PARAMETER:
+  // - cardId: string - UID kartu NFC
+  //
+  // RETURN:
+  // - {
+  //     id: number,
+  //     cardId: string,
+  //     userId: number,
+  //     balance: number,
+  //     cardStatus: string,
+  //     user: { name, username }
+  //   }
+  // ================================================================================
   async getCardInfo(cardId: string) {
     // STEP 1: Call card info endpoint
     // Endpoint: GET /api/nfc-cards/info/{cardId}
@@ -873,33 +848,32 @@ export class APIService {
     return await this.makeRequest(`/api/nfc-cards/info/${cardId}`);
   }
 
-  /* ================================================================================
-   * METHOD: registerCard()
-   * ================================================================================
-   * TUJUAN:
-   * Register kartu NFC baru ke sistem dan link ke user.
-   * 
-   * USE CASE:
-   * - User register kartu NFC fisik pertama kali
-   * - Link kartu ke akun user
-   * - Initialize balance
-   * 
-   * PARAMETER:
-   * - cardData: {
-   *     cardId: string - UID kartu NFC,
-   *     userId: number - ID user pemilik,
-   *     balance?: number - Initial balance (default: 0),
-   *     deviceId?: string - Device yang melakukan registrasi
-   *   }
-   * 
-   * RETURN:
-   * - {
-   *     success: true,
-   *     message: "Card registered successfully",
-   *     card: { id, cardId, userId, balance, cardStatus }
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: registerCard()
+  // ================================================================================
+  // TUJUAN:
+  // Register kartu NFC baru ke sistem dan link ke user.
+  //
+  // USE CASE:
+  // - User register kartu NFC fisik pertama kali
+  // - Link kartu ke akun user
+  // - Initialize balance
+  //
+  // PARAMETER:
+  // - cardData: {
+  //     cardId: string - UID kartu NFC,
+  //     userId: number - ID user pemilik,
+  //     balance?: number - Initial balance (default: 0),
+  //     deviceId?: string - Device yang melakukan registrasi
+  //   }
+  //
+  // RETURN:
+  // - {
+  //     success: true,
+  //     message: "Card registered successfully",
+  //     card: { id, cardId, userId, balance, cardStatus }
+  //   }
+  // ================================================================================
   async registerCard(cardData: {
     cardId: string;
     userId: number;
@@ -915,49 +889,47 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * FRAUD DETECTION METHODS - OPERASI DETEKSI ANOMALI DAN FRAUD
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk check fraud risk dan report suspicious transactions.
-   * 
-   * Fraud Detection System:
-   * - Uses Z-Score algorithm untuk deteksi anomali statistik
-   * - Hitung Z = |X - μ| / σ berdasarkan 20 transaksi historis
-   * - Generate Z-Score dan riskLevel (NORMAL, SUSPICIOUS, ANOMALY)
-   * - Auto-block transaksi jika Z-Score > 3
-   * - Create fraud alerts untuk admin review
-   * ================================================================================
-   */
+  // ================================================================================
+  // FRAUD DETECTION METHODS - OPERASI DETEKSI ANOMALI DAN FRAUD
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk check fraud risk dan report suspicious transactions.
+  //
+  // Fraud Detection System:
+  // - Uses Z-Score algorithm untuk deteksi anomali statistik
+  // - Hitung Z = |X - μ| / σ berdasarkan 20 transaksi historis
+  // - Generate Z-Score dan riskLevel (NORMAL, SUSPICIOUS, ANOMALY)
+  // - Auto-block transaksi jika Z-Score > 3
+  // - Create fraud alerts untuk admin review
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: checkFraudRisk()
-   * ================================================================================
-   * TUJUAN:
-   * Check fraud risk untuk transaksi sebelum diproses (pre-transaction validation).
-   * 
-   * USE CASE:
-   * - Validate transaksi sebelum payment diproses
-   * - Display warning ke user jika transaksi berisiko
-   * - Block transaksi otomatis jika Z > 3 (ANOMALY)
-   * 
-   * PARAMETER:
-   * - transactionData: {
-   *     senderId: number,
-   *     receiverId: number,
-   *     amount: number,
-   *     location?: any
-   *   }
-   * 
-   * RETURN:
-   * - {
-   *     zScore: number | null,
-   *     riskLevel: 'NORMAL' | 'SUSPICIOUS' | 'ANOMALY',
-   *     decision: 'ALLOW' | 'REVIEW' | 'BLOCK',
-   *     reasons: string[]
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: checkFraudRisk()
+  // ================================================================================
+  // TUJUAN:
+  // Check fraud risk untuk transaksi sebelum diproses (pre-transaction validation).
+  //
+  // USE CASE:
+  // - Validate transaksi sebelum payment diproses
+  // - Display warning ke user jika transaksi berisiko
+  // - Block transaksi otomatis jika Z > 3 (ANOMALY)
+  //
+  // PARAMETER:
+  // - transactionData: {
+  //     senderId: number,
+  //     receiverId: number,
+  //     amount: number,
+  //     location?: any
+  //   }
+  //
+  // RETURN:
+  // - {
+  //     zScore: number | null,
+  //     riskLevel: 'NORMAL' | 'SUSPICIOUS' | 'ANOMALY',
+  //     decision: 'ALLOW' | 'REVIEW' | 'BLOCK',
+  //     reasons: string[]
+  //   }
+  // ================================================================================
   async checkFraudRisk(transactionData: {
     senderId: number;
     receiverId: number;
@@ -973,25 +945,24 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * METHOD: reportFraudulent()
-   * ================================================================================
-   * TUJUAN:
-   * Report transaksi sebagai fraudulent (user-reported fraud).
-   * 
-   * USE CASE:
-   * - User tidak recognize transaksi (kemungkinan account compromised)
-   * - User menerima uang dari sumber mencurigakan
-   * - Admin review transaksi dan mark as fraudulent
-   * 
-   * PARAMETER:
-   * - transactionId: number - ID transaksi yang dilaporkan
-   * - reason: string - Alasan report (contoh: "Unauthorized transaction")
-   * 
-   * RETURN:
-   * - { success: true, message: "Fraud report submitted" }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: reportFraudulent()
+  // ================================================================================
+  // TUJUAN:
+  // Report transaksi sebagai fraudulent (user-reported fraud).
+  //
+  // USE CASE:
+  // - User tidak recognize transaksi (kemungkinan account compromised)
+  // - User menerima uang dari sumber mencurigakan
+  // - Admin review transaksi dan mark as fraudulent
+  //
+  // PARAMETER:
+  // - transactionId: number - ID transaksi yang dilaporkan
+  // - reason: string - Alasan report (contoh: "Unauthorized transaction")
+  //
+  // RETURN:
+  // - { success: true, message: "Fraud report submitted" }
+  // ================================================================================
   async reportFraudulent(transactionId: number, reason: string) {
     // STEP 1: Send POST request ke fraud report endpoint
     // Endpoint: POST /api/fraud/report
@@ -1002,39 +973,37 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * ADMIN METHODS - OPERASI UNTUK ADMIN DASHBOARD
-   * ================================================================================
-   * TUJUAN:
-   * Method-method khusus untuk admin operations (memerlukan admin role).
-   * 
-   * Admin Capabilities:
-   * - View dashboard statistics (total users, transactions, balance)
-   * - View all users dan all transactions
-   * - Block/unblock users
-   * - Top-up user balance
-   * - Clear fraud alerts
-   * - Monitor system health
-   * ================================================================================
-   */
+  // ================================================================================
+  // ADMIN METHODS - OPERASI UNTUK ADMIN DASHBOARD
+  // ================================================================================
+  // TUJUAN:
+  // Method-method khusus untuk admin operations (memerlukan admin role).
+  //
+  // Admin Capabilities:
+  // - View dashboard statistics (total users, transactions, balance)
+  // - View all users dan all transactions
+  // - Block/unblock users
+  // - Top-up user balance
+  // - Clear fraud alerts
+  // - Monitor system health
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: getAdminDashboard()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil statistik dashboard untuk admin page.
-   * 
-   * RETURN:
-   * - {
-   *     totalUsers: number,
-   *     totalTransactions: number,
-   *     totalBalance: number,
-   *     activeUsers: number,
-   *     recentTransactions: Transaction[],
-   *     fraudAlerts: FraudAlert[]
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getAdminDashboard()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil statistik dashboard untuk admin page.
+  //
+  // RETURN:
+  // - {
+  //     totalUsers: number,
+  //     totalTransactions: number,
+  //     totalBalance: number,
+  //     activeUsers: number,
+  //     recentTransactions: Transaction[],
+  //     fraudAlerts: FraudAlert[]
+  //   }
+  // ================================================================================
   async getAdminDashboard() {
     // STEP 1: Call admin dashboard endpoint
     // Endpoint: GET /api/admin/dashboard
@@ -1042,16 +1011,15 @@ export class APIService {
     return await this.makeRequest('/api/admin/dashboard');
   }
 
-  /* ================================================================================
-   * METHOD: getAllUsers()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil semua users untuk admin management.
-   * 
-   * RETURN:
-   * - Array of users dengan balance dan status
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getAllUsers()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil semua users untuk admin management.
+  //
+  // RETURN:
+  // - Array of users dengan balance dan status
+  // ================================================================================
   async getAllUsers() {
     // STEP 1: Call admin users endpoint
     // Endpoint: GET /api/admin/users
@@ -1059,16 +1027,15 @@ export class APIService {
     return await this.makeRequest('/api/admin/users');
   }
 
-  /* ================================================================================
-   * METHOD: getAllTransactions()
-   * ================================================================================
-   * TUJUAN:
-   * Mengambil semua transactions untuk monitoring dan audit.
-   * 
-   * RETURN:
-   * - Array of all transactions with sender/receiver details
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getAllTransactions()
+  // ================================================================================
+  // TUJUAN:
+  // Mengambil semua transactions untuk monitoring dan audit.
+  //
+  // RETURN:
+  // - Array of all transactions with sender/receiver details
+  // ================================================================================
   async getAllTransactions() {
     // STEP 1: Call admin transactions endpoint
     // Endpoint: GET /api/admin/transactions
@@ -1076,20 +1043,19 @@ export class APIService {
     return await this.makeRequest('/api/admin/transactions');
   }
 
-  /* ================================================================================
-   * METHOD: blockUser()
-   * ================================================================================
-   * TUJUAN:
-   * Block user (suspend account) karena fraud atau violation.
-   * 
-   * PARAMETER:
-   * - userId: number - ID user yang akan diblock
-   * - reason: string - Alasan block (untuk audit log)
-   * 
-   * RETURN:
-   * - { success: true, message: "User blocked" }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: blockUser()
+  // ================================================================================
+  // TUJUAN:
+  // Block user (suspend account) karena fraud atau violation.
+  //
+  // PARAMETER:
+  // - userId: number - ID user yang akan diblock
+  // - reason: string - Alasan block (untuk audit log)
+  //
+  // RETURN:
+  // - { success: true, message: "User blocked" }
+  // ================================================================================
   async blockUser(userId: number, reason: string) {
     // STEP 1: Send PUT request ke block endpoint
     // Endpoint: PUT /api/admin/users/{userId}/block
@@ -1100,19 +1066,18 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * METHOD: unblockUser()
-   * ================================================================================
-   * TUJUAN:
-   * Unblock user yang sebelumnya diblock.
-   * 
-   * PARAMETER:
-   * - userId: number - ID user yang akan di-unblock
-   * 
-   * RETURN:
-   * - { success: true, message: "User unblocked" }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: unblockUser()
+  // ================================================================================
+  // TUJUAN:
+  // Unblock user yang sebelumnya diblock.
+  //
+  // PARAMETER:
+  // - userId: number - ID user yang akan di-unblock
+  //
+  // RETURN:
+  // - { success: true, message: "User unblocked" }
+  // ================================================================================
   async unblockUser(userId: number) {
     // STEP 1: Send PUT request ke unblock endpoint
     // Endpoint: PUT /api/admin/users/{userId}/unblock
@@ -1122,37 +1087,35 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * DEVICE METHODS - OPERASI UNTUK DEVICE MANAGEMENT
-   * ================================================================================
-   * TUJUAN:
-   * Method-method untuk register dan sync device information.
-   * 
-   * Device Tracking:
-   * - Track device yang digunakan untuk setiap transaksi
-   * - Detect suspicious login dari device baru
-   * - Sync data antar devices (multi-device support)
-   * ================================================================================
-   */
+  // ================================================================================
+  // DEVICE METHODS - OPERASI UNTUK DEVICE MANAGEMENT
+  // ================================================================================
+  // TUJUAN:
+  // Method-method untuk register dan sync device information.
+  //
+  // Device Tracking:
+  // - Track device yang digunakan untuk setiap transaksi
+  // - Detect suspicious login dari device baru
+  // - Sync data antar devices (multi-device support)
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: registerDevice()
-   * ================================================================================
-   * TUJUAN:
-   * Register device baru ke backend (first-time device setup).
-   * 
-   * PARAMETER:
-   * - deviceInfo: {
-   *     deviceId: string,
-   *     deviceName: string,
-   *     platform: string, // 'ios' | 'android'
-   *     appVersion: string
-   *   }
-   * 
-   * RETURN:
-   * - { success: true, device: {...} }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: registerDevice()
+  // ================================================================================
+  // TUJUAN:
+  // Register device baru ke backend (first-time device setup).
+  //
+  // PARAMETER:
+  // - deviceInfo: {
+  //     deviceId: string,
+  //     deviceName: string,
+  //     platform: string, // 'ios' | 'android'
+  //     appVersion: string
+  //   }
+  //
+  // RETURN:
+  // - { success: true, device: {...} }
+  // ================================================================================
   async registerDevice(deviceInfo: {
     deviceId: string;
     deviceName: string;
@@ -1168,21 +1131,20 @@ export class APIService {
     });
   }
 
-  /* ================================================================================
-   * METHOD: syncDeviceData()
-   * ================================================================================
-   * TUJUAN:
-   * Sync data dari backend ke device (pull latest data).
-   * 
-   * USE CASE:
-   * - Sync balance after offline mode
-   * - Update transaction history
-   * - Get latest fraud alerts
-   * 
-   * RETURN:
-   * - { balance, transactions, settings }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: syncDeviceData()
+  // ================================================================================
+  // TUJUAN:
+  // Sync data dari backend ke device (pull latest data).
+  //
+  // USE CASE:
+  // - Sync balance after offline mode
+  // - Update transaction history
+  // - Get latest fraud alerts
+  //
+  // RETURN:
+  // - { balance, transactions, settings }
+  // ================================================================================
   async syncDeviceData() {
     // STEP 1: Get device ID dari storage atau generate baru
     const deviceId = await this.getDeviceId();
@@ -1193,30 +1155,28 @@ export class APIService {
     return await this.makeRequest(`/api/devices/${deviceId}/sync`);
   }
 
-  /* ================================================================================
-   * UTILITY METHODS - HELPER FUNCTIONS
-   * ================================================================================
-   * TUJUAN:
-   * Method-method utility untuk health check, connection status, dll.
-   * ================================================================================
-   */
+  // ================================================================================
+  // UTILITY METHODS - HELPER FUNCTIONS
+  // ================================================================================
+  // TUJUAN:
+  // Method-method utility untuk health check, connection status, dll.
+  // ================================================================================
 
-  /* ================================================================================
-   * METHOD: healthCheck()
-   * ================================================================================
-   * TUJUAN:
-   * Check apakah backend server online dan responsive.
-   * 
-   * USE CASE:
-   * - Check connection saat app startup
-   * - Periodic health check untuk monitoring
-   * - Display "Server Offline" message jika backend down
-   * 
-   * RETURN:
-   * - { status: 'ok', timestamp: Date } jika server online
-   * - Throw error jika server offline atau unreachable
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: healthCheck()
+  // ================================================================================
+  // TUJUAN:
+  // Check apakah backend server online dan responsive.
+  //
+  // USE CASE:
+  // - Check connection saat app startup
+  // - Periodic health check untuk monitoring
+  // - Display "Server Offline" message jika backend down
+  //
+  // RETURN:
+  // - { status: 'ok', timestamp: Date } jika server online
+  // - Throw error jika server offline atau unreachable
+  // ================================================================================
   async healthCheck() {
     // STEP 1: Call health check endpoint
     // Endpoint: GET /api/health
@@ -1225,25 +1185,24 @@ export class APIService {
     return await this.makeRequest('/api/health');
   }
 
-  /* ================================================================================
-   * METHOD: getConnectionStatus()
-   * ================================================================================
-   * TUJUAN:
-   * Get current connection status (URL, auth state, userId).
-   * 
-   * USE CASE:
-   * - Display connection info di settings page
-   * - Debug connection issues
-   * - Check apakah user authenticated
-   * 
-   * RETURN:
-   * - {
-   *     url: string,
-   *     authenticated: boolean,
-   *     userId: string | null
-   *   }
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getConnectionStatus()
+  // ================================================================================
+  // TUJUAN:
+  // Get current connection status (URL, auth state, userId).
+  //
+  // USE CASE:
+  // - Display connection info di settings page
+  // - Debug connection issues
+  // - Check apakah user authenticated
+  //
+  // RETURN:
+  // - {
+  //     url: string,
+  //     authenticated: boolean,
+  //     userId: string | null
+  //   }
+  // ================================================================================
   getConnectionStatus() {
     // STEP 1: Return current connection state
     // Ini adalah synchronous method (tidak hit backend)
@@ -1254,21 +1213,20 @@ export class APIService {
     };
   }
 
-  /* ================================================================================
-   * METHOD: getDeviceId() - PRIVATE HELPER
-   * ================================================================================
-   * TUJUAN:
-   * Get atau generate unique device ID untuk tracking.
-   * 
-   * FLOW:
-   * 1. Check apakah device ID sudah ada di AsyncStorage
-   * 2. Jika sudah ada, return yang lama
-   * 3. Jika belum, generate ID baru dan save ke storage
-   * 
-   * RETURN:
-   * - string: Unique device ID (contoh: "ios_ABC123...")
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: getDeviceId() - PRIVATE HELPER
+  // ================================================================================
+  // TUJUAN:
+  // Get atau generate unique device ID untuk tracking.
+  //
+  // FLOW:
+  // 1. Check apakah device ID sudah ada di AsyncStorage
+  // 2. Jika sudah ada, return yang lama
+  // 3. Jika belum, generate ID baru dan save ke storage
+  //
+  // RETURN:
+  // - string: Unique device ID (contoh: "ios_ABC123...")
+  // ================================================================================
   private async getDeviceId(): Promise<string> {
     try {
       // STEP 1: Check apakah device ID sudah tersimpan
@@ -1297,20 +1255,19 @@ export class APIService {
     }
   }
 
-  /* ================================================================================
-   * METHOD: destroy()
-   * ================================================================================
-   * TUJUAN:
-   * Cleanup method untuk destroy instance (logout dan clear semua data).
-   * 
-   * USE CASE:
-   * - App shutdown atau force logout
-   * - Clear all cached data
-   * - Reset APIService ke state awal
-   * 
-   * RETURN: void
-   * ================================================================================
-   */
+  // ================================================================================
+  // METHOD: destroy()
+  // ================================================================================
+  // TUJUAN:
+  // Cleanup method untuk destroy instance (logout dan clear semua data).
+  //
+  // USE CASE:
+  // - App shutdown atau force logout
+  // - Clear all cached data
+  // - Reset APIService ke state awal
+  //
+  // RETURN: void
+  // ================================================================================
   destroy(): void {
     // STEP 1: Clear token dan userId dari memory
     this.token = null;
@@ -1320,32 +1277,31 @@ export class APIService {
   }
 }
 
-/* ==================================================================================
- * EXPORT SINGLETON INSTANCE
- * ==================================================================================
- * TUJUAN:
- * Export instance tunggal APIService agar bisa digunakan di file lain.
- * 
- * PATTERN:
- * - Create singleton instance saat module di-import
- * - Export instance (bukan class) agar caller tidak perlu getInstance()
- * - Legacy exports untuk backward compatibility
- * 
- * USAGE EXAMPLES:
- * ```typescript
- * import { apiService } from './apiService';
- * 
- * // Login
- * const result = await apiService.login({ username, password });
- * 
- * // Get user
- * const user = await apiService.getUserById(123);
- * 
- * // Process payment
- * await apiService.processNFCPayment({ receiverNFCData, amount });
- * ```
- * ==================================================================================
- */
+// ==================================================================================
+// EXPORT SINGLETON INSTANCE
+// ==================================================================================
+// TUJUAN:
+// Export instance tunggal APIService agar bisa digunakan di file lain.
+//
+// PATTERN:
+// - Create singleton instance saat module di-import
+// - Export instance (bukan class) agar caller tidak perlu getInstance()
+// - Legacy exports untuk backward compatibility
+//
+// USAGE EXAMPLES:
+// ```typescript
+// import { apiService } from './apiService';
+//
+// // Login
+// const result = await apiService.login({ username, password });
+//
+// // Get user
+// const user = await apiService.getUserById(123);
+//
+// // Process payment
+// await apiService.processNFCPayment({ receiverNFCData, amount });
+// ```
+// ==================================================================================
 
 // Export singleton instance (recommended usage)
 // Instance ini sudah di-initialize dan ready to use
@@ -1358,11 +1314,10 @@ export const apiService = APIService.getInstance();
 export const adminConnector = apiService;
 export const backendAPI = apiService;
 
-/* ==================================================================================
- * AUTO-INITIALIZATION
- * ==================================================================================
- * Initialize APIService saat module pertama kali di-import.
- * Ini akan load token dari AsyncStorage jika ada.
- * ==================================================================================
- */
+// ==================================================================================
+// AUTO-INITIALIZATION
+// ==================================================================================
+// Initialize APIService saat module pertama kali di-import.
+// Ini akan load token dari AsyncStorage jika ada.
+// ==================================================================================
 apiService.initialize();

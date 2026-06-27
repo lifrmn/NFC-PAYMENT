@@ -1,96 +1,94 @@
 // src/screens/RegisterCardScreen.tsx
-/* ==================================================================================
- * 📋 SCREEN: RegisterCardScreen
- * ==================================================================================
- *
- * Purpose:
- * Screen untuk mendaftarkan kartu NFC fisik ke akun user.
- * User menempelkan kartu NFC fisik (NTag215) ke HP → sistem baca UID → daftar ke backend.
- *
- * User Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │ 1. User tap "➕ Daftar Kartu" di DashboardScreen/MyCardsScreen     │
- * │ 2. RegisterCardScreen muncul                                        │
- * │ 3. System check NFC:                                                │
- * │    - Tidak didukung perangkat: Tampilkan pesan error "NFC Tidak    │
- * │      Didukung"                                                      │
- * │    - Didukung tapi tidak aktif: Tampilkan instruksi aktifkan NFC  │
- * │    - Didukung & aktif: Tampilkan tombol "Scan Kartu"              │
- * │ 4. User tap tombol "Scan Kartu NFC"                                 │
- * │ 5. Alert muncul: "Tempelkan kartu NFC Anda ke perangkat"           │
- * │ 6. User tempelkan kartu NFC fisik ke HP                            │
- * │ 7. System baca UID kartu                                            │
- * │ 8. System cek apakah kartu sudah terdaftar:                        │
- * │    - Sudah di akun ini: Tampilkan info kartu                       │
- * │    - Sudah di akun lain: Tampilkan error "kartu milik orang lain"  │
- * │    - Belum terdaftar (404): Lanjut ke step 9                       │
- * │ 9. System daftarkan kartu ke backend (balance awal = 0)            │
- * │ 10. Berhasil: Alert sukses → kembali ke screen sebelumnya          │
- * └─────────────────────────────────────────────────────────────────────┘
- *
- * Features:
- * 1. Deteksi Kemampuan NFC:
- *    - Cek apakah perangkat mendukung NFC (hardware check)
- *    - Cek apakah NFC diaktifkan user (settings check)
- *    - Tampilkan screen berbeda untuk tiap kondisi
- *
- * 2. Scan Kartu NFC Fisik:
- *    - Baca UID kartu NTag215 via NFCService.readPhysicalCard()
- *    - Validasi kartu berhasil dibaca
- *    - Cleanup listener NFC setelah selesai
- *
- * 3. Validasi Kepemilikan Kartu:
- *    - Cek apakah kartu sudah terdaftar (GET /api/nfc-cards/info/:cardId)
- *    - Handle 3 skenario: milik sendiri, milik orang lain, belum terdaftar
- *    - Hanya lanjutkan registrasi jika kartu belum pernah didaftarkan
- *
- * 4. Registrasi Kartu:
- *    - Kirim ke backend: POST /api/nfc-cards/register
- *    - Payload: cardId, userId, balance (0), deviceId
- *    - Tampilkan alert sukses dengan UID kartu
- *
- * 5. Status Tracking:
- *    - registrationStatus: 'idle' | 'scanning' | 'success' | 'error'
- *    - UI berubah sesuai status untuk feedback yang jelas ke user
- *
- * State Management:
- * - nfcSupported: boolean       - Apakah hardware NFC ada
- * - nfcEnabled: boolean         - Apakah NFC diaktifkan
- * - loading: boolean            - Sedang proses registrasi API
- * - scanning: boolean           - Sedang scan kartu NFC
- * - scannedCardId: string       - UID kartu yang berhasil di-scan
- * - registrationStatus: string  - Status registrasi (idle/scanning/success/error)
- *
- * Props:
- * - user: any              - Data user yang login
- * - onBack: () => void     - Callback kembali ke screen sebelumnya
- * - onSuccess?: () => void - Callback opsional setelah registrasi berhasil
- *
- * ==================================================================================
- */
+// ==================================================================================
+// 📋 SCREEN: RegisterCardScreen
+// ==================================================================================
+//
+// Purpose:
+// Screen untuk mendaftarkan kartu NFC fisik ke akun user.
+// User menempelkan kartu NFC fisik (NTag215) ke HP → sistem baca UID → daftar ke backend.
+//
+// User Flow:
+// ┌─────────────────────────────────────────────────────────────────────┐
+// │ 1. User tap "➕ Daftar Kartu" di DashboardScreen/MyCardsScreen     │
+// │ 2. RegisterCardScreen muncul                                        │
+// │ 3. System check NFC:                                                │
+// │    - Tidak didukung perangkat: Tampilkan pesan error "NFC Tidak    │
+// │      Didukung"                                                      │
+// │    - Didukung tapi tidak aktif: Tampilkan instruksi aktifkan NFC  │
+// │    - Didukung & aktif: Tampilkan tombol "Scan Kartu"              │
+// │ 4. User tap tombol "Scan Kartu NFC"                                 │
+// │ 5. Alert muncul: "Tempelkan kartu NFC Anda ke perangkat"           │
+// │ 6. User tempelkan kartu NFC fisik ke HP                            │
+// │ 7. System baca UID kartu                                            │
+// │ 8. System cek apakah kartu sudah terdaftar:                        │
+// │    - Sudah di akun ini: Tampilkan info kartu                       │
+// │    - Sudah di akun lain: Tampilkan error "kartu milik orang lain"  │
+// │    - Belum terdaftar (404): Lanjut ke step 9                       │
+// │ 9. System daftarkan kartu ke backend (balance awal = 0)            │
+// │ 10. Berhasil: Alert sukses → kembali ke screen sebelumnya          │
+// └─────────────────────────────────────────────────────────────────────┘
+//
+// Features:
+// 1. Deteksi Kemampuan NFC:
+//    - Cek apakah perangkat mendukung NFC (hardware check)
+//    - Cek apakah NFC diaktifkan user (settings check)
+//    - Tampilkan screen berbeda untuk tiap kondisi
+//
+// 2. Scan Kartu NFC Fisik:
+//    - Baca UID kartu NTag215 via NFCService.readPhysicalCard()
+//    - Validasi kartu berhasil dibaca
+//    - Cleanup listener NFC setelah selesai
+//
+// 3. Validasi Kepemilikan Kartu:
+//    - Cek apakah kartu sudah terdaftar (GET /api/nfc-cards/info/:cardId)
+//    - Handle 3 skenario: milik sendiri, milik orang lain, belum terdaftar
+//    - Hanya lanjutkan registrasi jika kartu belum pernah didaftarkan
+//
+// 4. Registrasi Kartu:
+//    - Kirim ke backend: POST /api/nfc-cards/register
+//    - Payload: cardId, userId, balance (0), deviceId
+//    - Tampilkan alert sukses dengan UID kartu
+//
+// 5. Status Tracking:
+//    - registrationStatus: 'idle' | 'scanning' | 'success' | 'error'
+//    - UI berubah sesuai status untuk feedback yang jelas ke user
+//
+// State Management:
+// - nfcSupported: boolean       - Apakah hardware NFC ada
+// - nfcEnabled: boolean         - Apakah NFC diaktifkan
+// - loading: boolean            - Sedang proses registrasi API
+// - scanning: boolean           - Sedang scan kartu NFC
+// - scannedCardId: string       - UID kartu yang berhasil di-scan
+// - registrationStatus: string  - Status registrasi (idle/scanning/success/error)
+//
+// Props:
+// - user: any              - Data user yang login
+// - onBack: () => void     - Callback kembali ke screen sebelumnya
+// - onSuccess?: () => void - Callback opsional setelah registrasi berhasil
+//
+// ==================================================================================
 
-/* ==================================================================================
- * IMPORTS
- * ==================================================================================
- * React & Hooks:
- * - useState: State management (6 state variables)
- * - useEffect: Init NFC saat mount + cleanup saat unmount
- *
- * React Native Core:
- * - View, Text: Layout & teks
- * - TouchableOpacity: Tombol interaktif
- * - StyleSheet: Styling type-safe
- * - Alert: Dialog notifikasi & konfirmasi
- * - ActivityIndicator: Spinner loading
- *
- * Safe Area:
- * - SafeAreaView: Hindari area notch/status bar
- *
- * Utils:
- * - NFCService: Utilitas NFC (init, read physical card, cleanup)
- * - apiService: HTTP client (getCardInfo, registerCard)
- * ==================================================================================
- */
+// ==================================================================================
+// IMPORTS
+// ==================================================================================
+// React & Hooks:
+// - useState: State management (6 state variables)
+// - useEffect: Init NFC saat mount + cleanup saat unmount
+//
+// React Native Core:
+// - View, Text: Layout & teks
+// - TouchableOpacity: Tombol interaktif
+// - StyleSheet: Styling type-safe
+// - Alert: Dialog notifikasi & konfirmasi
+// - ActivityIndicator: Spinner loading
+//
+// Safe Area:
+// - SafeAreaView: Hindari area notch/status bar
+//
+// Utils:
+// - NFCService: Utilitas NFC (init, read physical card, cleanup)
+// - apiService: HTTP client (getCardInfo, registerCard)
+// ==================================================================================
 import React, { useState, useEffect } from 'react';
 import {
   View,
