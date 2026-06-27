@@ -277,20 +277,23 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
         <Text style={styles.headerTitle}>Daftar Kartu</Text>
         <View style={styles.headerSpacer} />
       </View>
-      <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
-        style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-        refreshControl={ // refreshControl prop untuk menambahkan fitur pull-to-refresh; menerima komponen RefreshControl sebagai nilainya
-          // RefreshControl: mengontrol pull-to-refresh behavior
-          // refreshing: apakah sedang refresh, onRefresh: handler saat ditarik
+      {/* ScrollView: View yang bisa discroll jika konten melebihi tinggi layar */}
+      {/* style={} menerapkan objek style yang sudah didefinisikan di StyleSheet */}
+      {/* refreshControl prop untuk menambahkan fitur pull-to-refresh */}
+      {/* showsVerticalScrollIndicator={false} menyembunyikan scrollbar vertikal */}
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false} // showsVerticalScrollIndicator: jika false menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
           <Text style={styles.pageSubtitle}>
             Kelola kartu NFC yang terdaftar di akun Anda.
           </Text>
-          {cards.length === 0 ? ( // ternary JSX: jika array cards kosong tampilkan empty state, jika ada kartu tampilkan daftar kartu
+          {/* ternary JSX: jika array cards kosong tampilkan empty state, jika ada tampilkan daftar */}
+          {cards.length === 0 ? (
             // Tampilkan pesan kosong jika user belum punya kartu
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🎫</Text>
@@ -298,42 +301,52 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
               <Text style={styles.emptyText}>
                 Daftarkan kartu NFC Anda untuk mulai melakukan transaksi
               </Text>
-              <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                style={styles.addButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                onPress={onRegisterNew || (() => {})} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+              {/* TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan */}
+              {/* onPress dipanggil saat user menekan elemen; menghubungkan event ke handler */}
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={onRegisterNew || (() => {})}
               >
                 <Text style={styles.addButtonIcon}>➕</Text>
                 <Text style={styles.addButtonText}>Tambah Kartu</Text>
               </TouchableOpacity>
             </View>
-          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
+          ) : (
+            // bagian else dari ternary: tampilan saat ada kartu
             <>
-              {cards.map((card, index) => ( // .map() iterasi array cards untuk merender kartu NFC; index digunakan untuk label 'Kartu 1', 'Kartu 2', dll
+              {/* .map() iterasi array cards; index untuk label 'Kartu 1', 'Kartu 2', dll */}
+              {cards.map((card, index) => (
                 <View key={card.id || index} style={styles.cardItem}>
                   <View style={styles.cardHeader}>
                     <View style={styles.cardBadge}>
                       <Text style={styles.cardBadgeText}>
+                        {/* ternary: kartu pertama (index 0) diberi label 'Kartu Utama'; kartu berikutnya diberi nomor urut */}
                         {index === 0 ? 'Kartu Utama' : `Kartu ${index + 1}`}
                       </Text>
                     </View>
-                    <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
-                      style={[ // style={} prop untuk menerapkan styling ke elemen React Native
-                        styles.statusBadge, // statusBadge memberikan style dasar badge; warna ditentukan secara dinamis via prop style
-                        { backgroundColor: `${getStatusColor(card.cardStatus)}20` }, // backgroundColor dinamis: menggunakan warna dari getStatusColor + '20' untuk opacity 12% (format hex RGBA)
+                    {/* View dengan style array untuk menggabungkan style statis dan dinamis */}
+                    {/* backgroundColor dinamis: warna dari getStatusColor + '20' untuk opacity 12% (format hex RGBA) */}
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: `${getStatusColor(card.cardStatus)}20` },
                       ]}
                     >
-                      <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
-                        style={[ // style={} prop untuk menerapkan styling ke elemen React Native
-                          styles.statusDot, // statusDot memberikan style untuk titik indikator status di dalam badge
-                          { backgroundColor: getStatusColor(card.cardStatus) }, // backgroundColor titik indikator menggunakan warna penuh dari getStatusColor (tanpa transparansi)
+                      {/* statusDot: titik indikator dengan warna penuh dari getStatusColor */}
+                      <View
+                        style={[
+                          styles.statusDot,
+                          { backgroundColor: getStatusColor(card.cardStatus) },
                         ]}
                       />
+                      {/* Text dengan color dinamis sesuai status kartu */}
                       <Text
                         style={[
                           styles.statusText,
                           { color: getStatusColor(card.cardStatus) },
                         ]}
                       >
+                        {/* getStatusText: konversi enum status ke teks human-readable */}
                         {getStatusText(card.cardStatus)}
                       </Text>
                     </View>
@@ -372,11 +385,13 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                       <View style={styles.cardRow}>
                         <Text style={styles.cardLabel}>Saldo</Text>
                         <Text style={styles.cardBalance}>
+                          {/* .toLocaleString('id-ID') memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan) */}
                           Rp{(card.balance ?? 0).toLocaleString('id-ID')}
                         </Text>
                       </View>
 
-                      {card.lastUsed && ( // conditional rendering: menampilkan info terakhir digunakan hanya jika card.lastUsed tidak null/undefined
+                      {/* conditional rendering: tampilkan info terakhir digunakan hanya jika card.lastUsed tidak null/undefined */}
+                      {card.lastUsed && (
                         <View style={styles.cardRow}>
                           <Text style={styles.cardLabel}>Terakhir Digunakan</Text>
                           <Text style={styles.cardValue}>{formatDate(card.lastUsed)}</Text>
@@ -390,23 +405,28 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                     </View>
 
                     <View style={styles.cardActions}>
-                      {card.cardStatus === 'ACTIVE' ? ( // ternary rendering: tombol berbeda ditampilkan berdasarkan status kartu (ACTIVE/BLOCKED/lainnya)
-                        <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                          style={styles.blockButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                          onPress={() => handleCardAction(card, 'BLOCK')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+                      {/* ternary rendering: tombol berbeda berdasarkan status kartu */}
+                      {card.cardStatus === 'ACTIVE' ? (
+                        // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                        // onPress menghubungkan event tap ke fungsi handleCardAction
+                        <TouchableOpacity
+                          style={styles.blockButton}
+                          onPress={() => handleCardAction(card, 'BLOCK')}
                         >
                           <Text style={styles.blockButtonIcon}>🚫</Text>
                           <Text style={styles.blockButtonText}>Blokir Kartu</Text>
                         </TouchableOpacity>
-                      ) : card.cardStatus === 'BLOCKED' ? ( // nested ternary: jika status BLOCKED tampilkan tombol unblock; selain itu tampilkan null
-                        <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                          style={styles.activateButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                          onPress={() => handleCardAction(card, 'ACTIVATE')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+                      ) : card.cardStatus === 'BLOCKED' ? (
+                        // nested ternary: jika BLOCKED tampilkan tombol aktivasi
+                        <TouchableOpacity
+                          style={styles.activateButton}
+                          onPress={() => handleCardAction(card, 'ACTIVATE')}
                         >
                           <Text style={styles.activateButtonIcon}>✅</Text>
                           <Text style={styles.activateButtonText}>Aktifkan Kartu</Text>
                         </TouchableOpacity>
-                      ) : null} // jika tidak ada case yang cocok return null; tidak menampilkan apapun untuk status selain ACTIVE dan BLOCKED
+                      ) : null}
+                      {/* null jika status selain ACTIVE/BLOCKED - tidak menampilkan tombol */}
                     </View>
                   </View>
                 </View>
