@@ -75,7 +75,7 @@ export class APIService {
   // ================================================================================
   static getInstance(): APIService {
     // Cek apakah instance sudah pernah dibuat sebelumnya
-    if (!APIService.instance) {
+    if (!APIService.instance) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       // Jika belum ada, buat instance baru dengan constructor
       APIService.instance = new APIService(); // Hanya dijalankan sekali di awal
       console.log('✅ APIService instance created (Singleton)'); // Log pertama kali dibuat
@@ -100,7 +100,7 @@ export class APIService {
   // - false: Initialization gagal (error reading AsyncStorage)
   // ================================================================================
   async initialize(): Promise<boolean> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Load JWT token dari AsyncStorage (penyimpanan lokal device)
       // Token ini disimpan saat user login berhasil
       // AsyncStorage.getItem() return Promise<string | null>
@@ -120,7 +120,7 @@ export class APIService {
       // STEP 4: Return true untuk menandakan initialization berhasil
       return true; // Always return true jika tidak ada error
       
-    } catch (error) {
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // Error handling jika AsyncStorage gagal (jarang terjadi)
       console.error('❌ API Service initialization failed:', error); // Log error detail
       return false; // Return false untuk menandakan gagal
@@ -158,7 +158,7 @@ export class APIService {
     const sep = endpoint.startsWith('/') ? '' : '/';
     const fullUrl = `${this.baseUrl}${sep}${endpoint}`; // Build URL lengkap
     
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 2: Setup timeout dengan AbortController agar request tidak hang selamanya
       // AbortController = Web API untuk membatalkan fetch request yang sedang berjalan
       const controller = new AbortController(); // Buat controller untuk kontrol request
@@ -212,7 +212,7 @@ export class APIService {
 
       // STEP 8: Handle error responses (status bukan 2xx)
       // response.ok = true jika status 200-299, false jika 400+ (error)
-      if (!response.ok) {
+      if (!response.ok) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // SUBSTEP 8a: Baca body respons sebagai text (mungkin berisi pesan error)
         const errorText = await response.text().catch(() => ''); // Fallback string kosong jika gagal
         
@@ -225,7 +225,7 @@ export class APIService {
         
         // SUBSTEP 8c: Parse error text sebagai JSON jika memungkinkan
         let errorData: any;
-        try {
+        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           errorData = JSON.parse(errorText); // Coba parse JSON
         } catch {
           errorData = { error: errorText }; // Jika bukan JSON, wrap dalam object
@@ -236,9 +236,9 @@ export class APIService {
         const isCardCheck = endpoint.includes('/api/nfc-cards/info');
         const is404 = response.status === 404;
         
-        if (!(isCardCheck && is404)) {
+        if (!(isCardCheck && is404)) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
           // Log sebagai error untuk kasus lain
-          console.error(`❌ API Request failed: API Error ${response.status}: ${JSON.stringify(errorData)}`);
+          console.error(`❌ API Request failed: API Error ${response.status}: ${JSON.stringify(errorData)}`); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         }
         // Untuk card check 404, tidak perlu log error karena itu expected behavior
         
@@ -259,7 +259,7 @@ export class APIService {
         if (result?.token) {
           this.token = result.token; // Save ke memory (untuk request berikutnya)
           await AsyncStorage.setItem('token', result.token); // Save ke storage (persistent)
-          console.log('🔑 New token saved');
+          console.log('🔑 New token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         }
         
         return result; // Return parsed JSON
@@ -268,11 +268,11 @@ export class APIService {
       // SUBSTEP 9c: Jika bukan JSON, return sebagai plain text
       return await response.text();
       
-    } catch (error: any) {
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       // STEP 10: Handle semua errors (network error, timeout, dll)
       // error.name === 'AbortError': Request timeout (lebih dari 15 detik)
       // error.message: Error message lainnya (network down, DNS error, dll)
-      console.error('❌ API Request failed:', error.message);
+      console.error('❌ API Request failed:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       
       // Re-throw error agar caller bisa handle (misal tampilkan error ke user)
       throw error;
@@ -358,7 +358,7 @@ export class APIService {
   async login(credentials: { username: string; password: string }) {
     // STEP 1: Send POST request ke backend auth endpoint
     // makeRequest() akan handle semua HTTP logic (headers, timeout, dll)
-    const response = await this.makeRequest('/api/auth/login', {
+    const response = await this.makeRequest('/api/auth/login', { // const response: menyimpan response dari HTTP request; await menunggu response diterima
       method: 'POST',
       body: credentials, // { username: "john", password: "secret123" }
     });
@@ -371,17 +371,17 @@ export class APIService {
       
       // SUBSTEP 2b: Save userId ke memory
       // userId.toString() convert number → string (AsyncStorage hanya terima string)
-      this.userId = response.user.id.toString();
+      this.userId = response.user.id.toString(); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       
       // SUBSTEP 2c: Save token ke AsyncStorage (persistent storage)
       // Persistent = data tidak hilang saat app ditutup
       // Saat app dibuka lagi, token di-load dari storage (lihat initialize())
-      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('token', response.token); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
       // SUBSTEP 2d: Save userId ke AsyncStorage
-      await AsyncStorage.setItem('userId', response.user.id.toString());
+      await AsyncStorage.setItem('userId', response.user.id.toString()); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
-      console.log('✅ Login successful, token saved');
+      console.log('✅ Login successful, token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
     
     // STEP 3: Return full response object
@@ -446,7 +446,7 @@ export class APIService {
     // Alternative: await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId');
     await AsyncStorage.multiRemove(['token', 'userId']);
     
-    console.log('🚪 User logged out, session cleared');
+    console.log('🚪 User logged out, session cleared'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   }
 
   // ================================================================================
@@ -483,7 +483,7 @@ export class APIService {
   async getUserById(id: number) {
     // Endpoint: GET /api/users/{id}
     // Backend response format: { id, name, username, balance, ... } (raw user object)
-    const response = await this.makeRequest(`/api/users/${id}`);
+    const response = await this.makeRequest(`/api/users/${id}`); // const response: menyimpan response dari HTTP request; await menunggu response diterima
     
     // Backend GET /:id returns raw user object (not wrapped in { user: {...} })
     // Fallback ke response.user jika format berbeda
@@ -510,11 +510,11 @@ export class APIService {
     // Endpoint: GET /api/users/me
     // Token akan auto di-include di header (lihat makeRequest())
     // Backend akan decode token → extract userId → query database
-    const response = await this.makeRequest('/api/users/me');
+    const response = await this.makeRequest('/api/users/me'); // const response: menyimpan response dari HTTP request; await menunggu response diterima
     
     // STEP 2: Extract user object
     // Backend response format: { success: true, user: {...} }
-    console.log('📥 getCurrentUser raw response:', response);
+    console.log('📥 getCurrentUser raw response:', response); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     return response?.user || response;
   }
 
@@ -1228,30 +1228,30 @@ export class APIService {
   // - string: Unique device ID (contoh: "ios_ABC123...")
   // ================================================================================
   private async getDeviceId(): Promise<string> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Check apakah device ID sudah tersimpan
-      let deviceId = await AsyncStorage.getItem('deviceId');
+      let deviceId = await AsyncStorage.getItem('deviceId'); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
       
       // STEP 2: Jika belum ada, generate device ID baru
-      if (!deviceId) {
+      if (!deviceId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // Generate format: {platform}_{expoDeviceId atau random}
         // Platform.OS = 'ios' atau 'android'
         // Constants.deviceId = unique ID dari Expo
         // Math.random().toString(36) = generate random string
-        deviceId = Platform.OS + '_' + Constants.deviceId || Math.random().toString(36);
+        deviceId = Platform.OS + '_' + Constants.deviceId || Math.random().toString(36); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
         
         // Save ke AsyncStorage agar persistent
-        await AsyncStorage.setItem('deviceId', deviceId);
-        console.log('📱 New device ID generated:', deviceId);
+        await AsyncStorage.setItem('deviceId', deviceId); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
+        console.log('📱 New device ID generated:', deviceId); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       }
       
       return deviceId;
       
-    } catch (error) {
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // STEP 3: Fallback jika error (generate temporary ID)
       // Format: {platform}_unknown_{timestamp}
-      console.error('❌ Error getting device ID:', error);
-      return Platform.OS + '_unknown_' + Date.now();
+      console.error('❌ Error getting device ID:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+      return Platform.OS + '_unknown_' + Date.now(); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
     }
   }
 
@@ -1273,7 +1273,7 @@ export class APIService {
     this.token = null;
     this.userId = null;
     
-    console.log('🧹 API Service destroyed and cleaned up');
+    console.log('🧹 API Service destroyed and cleaned up'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   }
 }
 

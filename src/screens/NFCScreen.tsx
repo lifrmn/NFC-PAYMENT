@@ -111,7 +111,7 @@
 // - apiService: HTTP client untuk getUserById (balance refresh)
 // ==================================================================================
 import React, { useState, useEffect } from 'react'; // import digunakan untuk mengambil module; React adalah library utama React Native; useState membuat state lokal; useEffect menjalankan kode saat komponen mount atau update
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah komponen container dasar React Native — setara div di HTML
   Text, // Text menampilkan teks
   TextInput, // TextInput adalah input teks — di sini digunakan untuk input nominal pembayaran dengan keyboard numerik
@@ -119,7 +119,7 @@ import {
   Alert, // Alert menampilkan dialog popup native untuk konfirmasi dan error
   ScrollView, // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar
   ActivityIndicator // ActivityIndicator adalah spinner loading yang ditampilkan saat proses payment berlangsung
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
 import { NFCService } from '../utils/nfc'; // import NFCService dari utils/nfc.ts — service yang menangani inisialisasi hardware NFC, pembacaan kartu, dan cleanup resource
 import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari hooks/usePayment.ts — hook yang menyediakan logika inti pembayaran NFC (processTapToPayTransfer)
@@ -247,8 +247,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // - Called as onSuccess callback dari processTapToPayTransfer
   // - Update balance immediately after payment success
   // ================================================================================
-  const fetchBalance = async () => {
-    try {
+  const fetchBalance = async () => { // fetchBalance async: mengambil saldo terkini dari backend; async karena HTTP request
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Panggil API untuk mendapatkan data user terbaru (termasuk balance)
       const response = await apiService.getUserById(user.id); // Request ke backend
       
@@ -261,17 +261,17 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
       // FORMAT 2: { balance: 100000 } - direct object
       else if (typeof response === 'object' && typeof response.balance === 'number') {
         setCurrentBalance(response.balance); // Update state
-        console.log('✅ Balance refreshed (fallback):', response.balance);
+        console.log('✅ Balance refreshed (fallback):', response.balance); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       } 
       // FORMAT TIDAK DIKENALI: log warning tapi tidak throw error
       else {
-        console.warn('⚠️ Balance refresh: unexpected response structure', response);
+        console.warn('⚠️ Balance refresh: unexpected response structure', response); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
       }
-    } catch (error: any) {
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       // Jika gagal refresh balance, tidak tampilkan alert ke user (silent fail)
       // Alasan: balance akan ter-update otomatis saat kembali ke Dashboard
       // Tidak perlu ganggu user dengan error yang tidak kritis
-      console.error('❌ Failed to refresh balance:', error?.message || error);
+      console.error('❌ Failed to refresh balance:', error?.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     }
   };
 
@@ -310,15 +310,15 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ================================================================================
   const handleSendMoney = async () => { // const membuat variabel tetap; async karena proses pembayaran NFC melibatkan hardware dan HTTP request
     if (!user?.id) { // optional chaining (?.) aman jika user null; ! berarti tidak ada user ID yang valid
-      Alert.alert('Error', 'User tidak valid. Silakan login ulang.');
+      Alert.alert('Error', 'User tidak valid. Silakan login ulang.'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // return menghentikan fungsi lebih awal
     }
 
     const amountNum = parseFloat(amount); // parseFloat() mengubah string ke bilangan desimal; contoh: '50000' -> 50000
     
     if (!amountNum || amountNum <= 0) { // !amountNum berarti NaN/0/null/undefined; <= 0 berarti angka negatif atau nol tidak valid
-      Alert.alert('Error', 'Masukkan jumlah yang valid');
-      return;
+      Alert.alert('Error', 'Masukkan jumlah yang valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
     // CATATAN: Tidak ada batasan minimum — sistem Z-Score Anomaly Detection akan mendeteksi jumlah abnormal
@@ -448,7 +448,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
         <View style={styles.userCard}> {/* View kartu putih dengan shadow */}
           <Text style={styles.userName}>👤 {user?.name}</Text> {/* optional chaining (?.) aman jika user null; menampilkan nama merchant */}
           <Text style={styles.userBalance}>
-            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'} {/* toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia; || '0' fallback jika null */}
+            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'} {/* toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia; || '0' fallback jika null */} // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
           </Text>
         </View>
 
@@ -468,27 +468,27 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
         <View style={styles.inputCard}>
           <Text style={styles.inputLabel}>💰 Jumlah Pembayaran:</Text>
           
-          <TextInput
-            style={styles.input}
-            placeholder="Contoh: 50000" {/* placeholder teks abu-abu saat input kosong */}
-            keyboardType="numeric" {/* keyboardType="numeric" menampilkan keyboard angka saja */}
-            value={amount} {/* value={amount} controlled component — nilai input sinkron dengan state */}
-            onChangeText={setAmount} {/* onChangeText={setAmount} memperbarui state setiap user mengetik */}
-            editable={!isProcessing} {/* editable={!isProcessing} menonaktifkan input saat proses pembayaran berlangsung */}
+          <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+            style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+            placeholder="Contoh: 50000" {/* placeholder teks abu-abu saat input kosong */} // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+            keyboardType="numeric" {/* keyboardType="numeric" menampilkan keyboard angka saja */} // keyboardType: menentukan jenis keyboard yang muncul; email-address, numeric, dll
+            value={amount} {/* value={amount} controlled component — nilai input sinkron dengan state */} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
+            onChangeText={setAmount} {/* onChangeText={setAmount} memperbarui state setiap user mengetik */} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
+            editable={!isProcessing} {/* editable={!isProcessing} menonaktifkan input saat proses pembayaran berlangsung */} // editable: jika false TextInput tidak bisa diedit oleh user; untuk tampilan read-only
           />
           
           <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text> {/* teks petunjuk di bawah input */}
         </View>
 
         {/* Tombol Terima Pembayaran */}
-        <TouchableOpacity
-          style={[
+        <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+          style={[ // style={} prop untuk menerapkan styling ke elemen React Native
             styles.actionButton,
             styles.sendButton, {/* sendButton memberikan warna hijau pada tombol */}
             (!amount || isProcessing) && styles.disabledButton {/* conditional style: && menambahkan style disabled jika kondisi benar */}
           ]}
-          onPress={handleSendMoney} {/* onPress memanggil handleSendMoney saat tombol ditekan */}
-          disabled={!amount || isProcessing} {/* disabled menonaktifkan tombol jika amount kosong atau sedang processing */}
+          onPress={handleSendMoney} {/* onPress memanggil handleSendMoney saat tombol ditekan */} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+          disabled={!amount || isProcessing} {/* disabled menonaktifkan tombol jika amount kosong atau sedang processing */} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
           {isProcessing ? ( {/* ternary operator: jika isProcessing=true tampilkan spinner, jika false tampilkan teks normal */}
             <> {/* Fragment <> mengelompokkan beberapa elemen tanpa div tambahan */}

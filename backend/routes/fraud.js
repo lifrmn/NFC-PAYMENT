@@ -132,8 +132,8 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   di dalam riskFactors JSON (key: "amount") → diekstrak saat response
 // - Field `userName` dan `userEmail` di-flatten dari relasi user (JOIN)
 // ============================================================
-router.get('/alerts', async (req, res) => {
-  try {
+router.get('/alerts', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // Ambil query parameters dengan nilai default jika tidak diberikan
     const { limit = 50, offset = 0, status, riskLevel } = req.query;
     
@@ -147,7 +147,7 @@ router.get('/alerts', async (req, res) => {
       where: whereClause,
       include: {
         // JOIN ke tabel User: ambil hanya field yang diperlukan (bukan password dll)
-        user: {
+        user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
           select: { id: true, name: true, username: true }
         }
       },
@@ -169,11 +169,11 @@ router.get('/alerts', async (req, res) => {
 
       // Parse reasons: DB menyimpan sebagai string JSON → ubah ke array JavaScript
       // Contoh DB: '["Transaksi mencurigakan"]' → ['Transaksi mencurigakan']
-      try { parsedReasons = JSON.parse(alert.reasons); } catch { parsedReasons = [alert.reasons]; }
+      try { parsedReasons = JSON.parse(alert.reasons); } catch { parsedReasons = [alert.reasons]; } // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
 
       // Parse riskFactors: DB menyimpan sebagai string JSON → ubah ke object JavaScript
       // Contoh DB: '{"mean":10000,"stdDev":1200,"amount":50000}' → object
-      try { parsedRiskFactors = JSON.parse(alert.riskFactors); } catch { parsedRiskFactors = {}; }
+      try { parsedRiskFactors = JSON.parse(alert.riskFactors); } catch { parsedRiskFactors = {}; } // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
 
       // Ekstrak amount dari riskFactors (tidak ada kolom amount tersendiri di DB)
       // Operator ?? = nullish coalescing: pakai null jika amount undefined/null
@@ -190,8 +190,8 @@ router.get('/alerts', async (req, res) => {
     });
 
     res.json(normalized); // Kirim response JSON ke client
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan peringatan fraud:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan peringatan fraud' });
   }
 });
@@ -245,12 +245,12 @@ router.get('/alerts', async (req, res) => {
 // ============================================================
 
 // Buat peringatan fraud (dari aplikasi mobile)
-router.post('/alert', async (req, res) => {
-  try {
+router.post('/alert', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { device, fraudDetection } = req.body;
     
     // Validasi: pastikan data fraud ada
-    if (!fraudDetection) {
+    if (!fraudDetection) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ error: 'Data deteksi fraud diperlukan' });
     }
 
@@ -280,14 +280,14 @@ router.post('/alert', async (req, res) => {
         alert: {
           ...alert,
           // Parse kembali ke array/object sebelum dikirim ke dashboard
-          reasons: JSON.parse(alert.reasons),
-          riskFactors: JSON.parse(alert.riskFactors)
+          reasons: JSON.parse(alert.reasons), // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
+          riskFactors: JSON.parse(alert.riskFactors) // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
         }
       });
     }
 
     // Log ke console untuk monitoring server
-    console.log(`🚨 PERINGATAN FRAUD: risiko ${fraudDetection.riskLevel} (Z=${fraudDetection.riskScore}) dari perangkat ${device?.deviceId?.slice(-8) || 'unknown'}`);
+    console.log(`🚨 PERINGATAN FRAUD: risiko ${fraudDetection.riskLevel} (Z=${fraudDetection.riskScore}) dari perangkat ${device?.deviceId?.slice(-8) || 'unknown'}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     res.json({
       success: true,
@@ -295,8 +295,8 @@ router.post('/alert', async (req, res) => {
       alertId: alert.id // Kembalikan ID alert yang baru dibuat
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan membuat peringatan fraud:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan membuat peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memproses peringatan fraud' });
   }
 });
@@ -346,8 +346,8 @@ router.post('/alert', async (req, res) => {
 // ============================================================
 
 // Perbarui status peringatan fraud
-router.put('/alerts/:id/status', async (req, res) => {
-  try {
+router.put('/alerts/:id/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params;
     const { status, adminPassword } = req.body;
 
@@ -358,7 +358,7 @@ router.put('/alerts/:id/status', async (req, res) => {
     }
 
     // Validasi status harus salah satu dari enum yang valid
-    if (!['NEW', 'REVIEWED', 'RESOLVED'].includes(status)) {
+    if (!['NEW', 'REVIEWED', 'RESOLVED'].includes(status)) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ error: 'Status tidak valid' });
     }
 
@@ -367,7 +367,7 @@ router.put('/alerts/:id/status', async (req, res) => {
       where: { id: parseInt(id) }, // Cari by ID (konversi string → integer)
       data: { status },            // Hanya update field status
       include: {
-        user: {
+        user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
           select: { id: true, name: true, username: true }
         }
       }
@@ -378,7 +378,7 @@ router.put('/alerts/:id/status', async (req, res) => {
     await prisma.adminLog.create({
       data: {
         action: 'FRAUD_ALERT_UPDATE',
-        details: JSON.stringify({
+        details: JSON.stringify({ // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
           alertId: alert.id,
           newStatus: status,
           riskLevel: alert.riskLevel
@@ -398,8 +398,8 @@ router.put('/alerts/:id/status', async (req, res) => {
       alert
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan memperbarui peringatan fraud:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan memperbarui peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui peringatan fraud' });
   }
 });
@@ -445,29 +445,29 @@ router.put('/alerts/:id/status', async (req, res) => {
 // ============================================================
 
 // Dapatkan statistik fraud
-router.get('/stats', async (req, res) => {
-  try {
+router.get('/stats', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { period = '7d' } = req.query;
     
     // Hitung batas waktu berdasarkan period yang dipilih
     let dateFilter;
-    const now = new Date();
+    const now = new Date(); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
     
     switch (period) {
       case '1d':
         // 24 jam terakhir (24 * 60 menit * 60 detik * 1000 ms)
-        dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
         break;
       case '7d':
         // 7 hari terakhir
-        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
         break;
       case '30d':
         // 30 hari terakhir
-        dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
         break;
       default:
-        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
     }
 
     // Jalankan 4 query database secara PARALEL (lebih cepat dari serial)
@@ -528,8 +528,8 @@ router.get('/stats', async (req, res) => {
       lastAlert: recentAlerts[0]?.createdAt || null // Waktu alert paling baru
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan statistik fraud:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan statistik fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan statistik fraud' });
   }
 });
@@ -584,17 +584,17 @@ router.get('/stats', async (req, res) => {
 //   /analyze → Untuk admin (response detail, ada field variance, historySize, dll)
 //   /check   → Untuk mobile app (response ringkas, hanya field yang dibutuhkan)
 // ============================================================
-router.post('/analyze', async (req, res) => {
-  try {
+router.post('/analyze', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { senderId, amount } = req.body;
 
     // Validasi input wajib
-    if (!senderId || !amount) {
+    if (!senderId || !amount) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ error: 'senderId dan amount wajib diisi' });
     }
 
     // Validasi amount harus angka positif (tidak bisa transaksi negatif atau nol)
-    const amountNum = parseFloat(amount);
+    const amountNum = parseFloat(amount); // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
     if (isNaN(amountNum) || amountNum <= 0) {
       return res.status(400).json({ error: 'amount harus angka positif' });
     }
@@ -603,7 +603,7 @@ router.post('/analyze', async (req, res) => {
     // Hanya transaksi yang sudah selesai (status: 'completed')
     // Diurutkan terbaru dulu, ambil 20 → ini yang jadi data statistik μ dan σ
     const historicalTxs = await prisma.transaction.findMany({
-      where: { senderId: parseInt(senderId), status: 'completed' },
+      where: { senderId: parseInt(senderId), status: 'completed' }, // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
       orderBy: { createdAt: 'desc' },
       take: 20,                                    // Maksimal 20 data historis
       select: { amount: true, createdAt: true }    // Hanya ambil field yang diperlukan
@@ -642,8 +642,8 @@ router.post('/analyze', async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan menganalisa transaksi:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan menganalisa transaksi:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal menganalisa transaksi' });
   }
 });
@@ -687,23 +687,23 @@ router.post('/analyze', async (req, res) => {
 //   /check  → TIDAK ada: variance, historySize (field dipersingkat untuk mobile)
 //   /analyze → ADA semua field (lebih lengkap untuk debugging admin)
 // ============================================================
-router.post('/check', async (req, res) => {
-  try {
+router.post('/check', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { senderId, amount } = req.body;
 
     // Validasi input
-    if (!senderId || !amount) {
+    if (!senderId || !amount) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ error: 'senderId dan amount wajib diisi' });
     }
 
-    const amountNum = parseFloat(amount);
+    const amountNum = parseFloat(amount); // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
     if (isNaN(amountNum) || amountNum <= 0) {
       return res.status(400).json({ error: 'amount harus angka positif' });
     }
 
     // Ambil 20 transaksi historis completed milik sender (sama dengan /analyze)
     const historicalTxs = await prisma.transaction.findMany({
-      where: { senderId: parseInt(senderId), status: 'completed' },
+      where: { senderId: parseInt(senderId), status: 'completed' }, // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
       orderBy: { createdAt: 'desc' },
       take: 20,
       select: { amount: true, createdAt: true }
@@ -726,10 +726,10 @@ router.post('/check', async (req, res) => {
       thresholds: analysis.thresholds  // Batas Z-Score { suspicious:2, anomaly:3 }
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan fraud check:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan fraud check:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal melakukan fraud check' });
   }
 });
 
-module.exports = router;
+module.exports = router; // module.exports mengekspor router agar bisa di-import di server.js menggunakan require()

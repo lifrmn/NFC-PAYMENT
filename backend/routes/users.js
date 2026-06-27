@@ -95,7 +95,7 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
 // Contoh: GET /username/john harus cocok di sini, bukan di /:id dengan id="username".
 // ============================================================
 router.get('/username/:username', async (req, res) => { // GET /username/:username → cari user berdasarkan username
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil username dari URL parameter
     const { username } = req.params; // Destructure: ambil value username dari URL params
     
@@ -115,8 +115,8 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
     }
 
     res.json(user); // Kirim data user sebagai JSON response
-  } catch (error) {
-    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
   }
 });
@@ -127,15 +127,15 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
 // URL PARAMETER:
 // - id: integer (contoh: /api/users/5)
 // ============================================================
-router.get('/:id', async (req, res) => {
-  try {
+router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil parameter 'id' dari URL
     // Contoh: jika URL = /api/users/5, maka id = "5"
     const { id } = req.params;
     
     // STEP 2: Query database untuk cari user berdasarkan ID
     // parseInt(id) mengubah string "5" menjadi number 5
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({ // const user: menyimpan data user yang diambil dari database secara async
       where: { id: parseInt(id) },  // WHERE id = 5
       select: {                      // SELECT (pilih field yang mau diambil)
         id: true,                    // ID pengguna
@@ -150,14 +150,14 @@ router.get('/:id', async (req, res) => {
     });
 
     // STEP 3: Validasi - jika user tidak ditemukan
-    if (!user) {
+    if (!user) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
     }
 
     // STEP 4: Return data user ke client
     res.json(user);
-  } catch (error) {
-    console.error('❌ Gagal mendapatkan data pengguna:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
   }
 });
@@ -190,7 +190,7 @@ router.get('/:id', async (req, res) => {
 // }
 // ============================================================
 router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua kartu NFC milik user
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL param
     
     // STEP 1: Cek apakah pengguna ada di database
@@ -224,8 +224,8 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
       success: true, // Flag sukses
       cards: cards  // Array kartu milik user
     });
-  } catch (error) {
-    console.error('\u274c Gagal mendapatkan kartu pengguna:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c Gagal mendapatkan kartu pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ 
       success: false,
       error: 'Gagal mendapatkan kartu pengguna' 
@@ -269,7 +269,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
   body('amount').isNumeric().withMessage('Jumlah harus berupa angka'), // amount harus berupa angka
   body('adminPassword').notEmpty().withMessage('Password admin diperlukan') // adminPassword wajib ada
 ], async (req, res) => {
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi dari middleware di atas
     if (!errors.isEmpty()) { // Jika ada error validasi
       return res.status(400).json({ errors: errors.array() }); // Return 400 dengan detail error
@@ -328,8 +328,8 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
       user // Data user dengan saldo baru
     });
 
-  } catch (error) {
-    console.error('\u274c Gagal memperbarui saldo:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c Gagal memperbarui saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui saldo' });
   }
 });
@@ -369,7 +369,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 // ]
 // ============================================================
 router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions → riwayat transaksi user
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL param
     const { limit = 10, offset = 0 } = req.query; // Pagination: default 10 data, mulai dari awal
 
@@ -396,8 +396,8 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
     });
 
     res.json(transactions); // Kirim array transaksi sebagai JSON
-  } catch (error) {
-    console.error('Get user transactions error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('Get user transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to get transactions' });
   }
 });
@@ -406,7 +406,7 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
 router.put('/:id', [ // PUT /:id → update profil user (nama)
   body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter') // Nama opsional, min 2 char
 ], async (req, res) => {
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi
     if (!errors.isEmpty()) { // Jika ada error
       return res.status(400).json({ errors: errors.array() }); // Return detail error
@@ -436,15 +436,15 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
       user // Data user dengan nama baru
     });
 
-  } catch (error) {
-    console.error('\u274c Gagal memperbarui profil:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c Gagal memperbarui profil:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui profil' });
   }
 });
 
 // Nonaktifkan pengguna (khusus admin)
 router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → blokir akun user
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL
     const { adminPassword } = req.body; // Ambil admin password dari request body
 
@@ -487,8 +487,8 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
       user // Data user dengan isActive = false
     });
 
-  } catch (error) {
-    console.error('\u274c Gagal menonaktifkan pengguna:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c Gagal menonaktifkan pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal menonaktifkan pengguna' });
   }
 });
@@ -535,11 +535,11 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 // }
 // ============================================================
 router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user permanen beserta semua data terkait
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL
     const userId = parseInt(id); // Konversi string → integer untuk query Prisma
 
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Check if user exists
     const user = await prisma.user.findUnique({ // Cari user yang akan dihapus
@@ -552,17 +552,17 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     if (!user) { // Jika user tidak ditemukan
-      console.log(`\u274c [Backend] User ${userId} not found`);
+      console.log(`\u274c [Backend] User ${userId} not found`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return res.status(404).json({ error: 'User tidak ditemukan' }); // Return 404
     }
 
-    console.log(`\u2705 [Backend] User found: ${user.username}`);
+    console.log(`\u2705 [Backend] User found: ${user.username}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // CASCADE DELETE: Hapus semua record terkait terlebih dahulu
     // URUTAN PENTING: Hapus dari tabel anak ke tabel induk
     
     // 1. Hapus transaksi NFC (anak dari NFCCard)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     const userCards = await prisma.nFCCard.findMany({ // Ambil semua kartu NFC milik user
       where: { userId: userId }, // Filter: hanya kartu user ini
       select: { cardId: true } // Hanya perlu cardId untuk delete transaksinya
@@ -573,17 +573,17 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
       await prisma.nFCTransaction.deleteMany({ // Hapus semua transaksi dari semua kartu user
         where: { cardId: { in: cardIds } } // Filter: cardId ada di array cardIds
       });
-      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`);
+      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
     
     // 2. Hapus kartu NFC pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.nFCCard.deleteMany({ // Hapus semua kartu NFC milik user
       where: { userId: userId } // Filter: hanya kartu user ini
     });
 
     // 3. Hapus transaksi pengguna (yang dikirim dan diterima)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.transaction.deleteMany({ // Hapus semua transaksi yang melibatkan user
       where: {
         OR: [ // User bisa sebagai sender ATAU receiver
@@ -594,25 +594,25 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 4. Hapus peringatan fraud pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.fraudAlert.deleteMany({ // Hapus semua fraud alert milik user
       where: { userId: userId } // Filter: hanya fraud alert user ini
     });
 
     // 5. Hapus sesi pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.userSession.deleteMany({ // Hapus semua sesi login user
       where: { userId: userId } // Filter: hanya sesi user ini
     });
 
     // 6. Hapus pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`);
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.user.delete({ // Hapus record user dari tabel User
       where: { id: userId } // Identifikasi berdasarkan ID
     });
 
     // 7. Catat aksi admin
-    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`);
+    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.adminLog.create({ // Simpan log aksi delete ke tabel AdminLog
       data: {
         action: 'USER_DELETE', // Jenis aksi: hapus user
@@ -631,7 +631,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
       req.io.to('admin-room').emit('user-deleted', { userId: user.id }); // Notifikasi ke admin dashboard
     }
 
-    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`);
+    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     res.json({ // Return response sukses
       success: true, // Flag sukses
@@ -643,10 +643,10 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
       }
     });
 
-  } catch (error) {
-    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error);
-    console.error('\u274c [Backend] Detail kesalahan:', error.message);
-    console.error('\u274c [Backend] Stack trace:', error.stack);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c [Backend] Detail kesalahan:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c [Backend] Stack trace:', error.stack); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ // Return 500 dengan detail error untuk debugging
       error: 'Gagal menghapus pengguna',
       details: error.message 

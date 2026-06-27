@@ -34,7 +34,7 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 // Response:
 // - user: object (id, name, username, balance)
 // - token: string (JWT token untuk autentikasi)
-router.post(
+router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
   '/register', // Endpoint path: POST /api/auth/register — router.post mendaftarkan endpoint yang merespons method HTTP POST pada path '/register'
   [
     // Validasi input menggunakan express-validator middleware
@@ -106,7 +106,7 @@ router.post(
       // STEP 9: Emit event 'user-registered' ke admin dashboard (via Socket.IO)
       if (req.io) { // if mengecek apakah req.io tersedia (Socket.IO di-attach ke req di server.js); mencegah error jika Socket.IO belum tersetup
         req.io.to('admin-room').emit('user-registered', { // req.io.to('admin-room') mengirim event ke semua socket yang bergabung di room 'admin-room'; .emit(eventName, data) mengirim event real-time beserta datanya
-          user: {
+          user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
             id: user.id,
             name: user.name,
             username: user.username,
@@ -126,8 +126,8 @@ router.post(
         },
         token, // JWT token (shorthand ES6: token: token) — client harus simpan ini di AsyncStorage untuk request berikutnya
       });
-    } catch (error) {
-      console.error('❌ Kesalahan registrasi:', error);
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.error('❌ Kesalahan registrasi:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Gagal mendaftarkan pengguna' });
     }
   }
@@ -147,7 +147,7 @@ router.post(
 // Response:
 // - user: object (id, name, username, balance)
 // - token: string (JWT token untuk autentikasi)
-router.post(
+router.post( // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
   '/login',
   [
     // STEP 1: Validasi input
@@ -163,7 +163,7 @@ router.post(
       // STEP 2: Cek hasil validasi
       const errors = validationResult(req); // const membuat variabel tetap; validationResult(req) mengumpulkan semua error dari validasi express-validator yang sudah dijalankan
       if (!errors.isEmpty()) { // if mengecek apakah ada error; !errors.isEmpty() = "jika TIDAK kosong" = "jika ada error"
-        console.log('❌ Validation errors:', errors.array());
+        console.log('❌ Validation errors:', errors.array()); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         return res.status(400).json({ errors: errors.array() }); // return menghentikan eksekusi; status 400 = Bad Request karena input tidak valid
       }
 
@@ -173,7 +173,7 @@ router.post(
       // STEP 4: Cari user berdasarkan username
       const user = await prisma.user.findUnique({ where: { username } }); // const membuat variabel tetap; await menunggu query database selesai; prisma.user.findUnique mencari tepat satu record di tabel User berdasarkan field username yang bersifat unique; { where: { username } } adalah shorthand ES6
       if (!user) { // if mengecek apakah user null/undefined (tidak ditemukan di database); tanda ! membalik nilai boolean
-        console.log('❌ User tidak ditemukan:', username);
+        console.log('❌ User tidak ditemukan:', username); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         return res.status(401).json({ error: 'Username atau password salah' }); // return menghentikan; 401 Unauthorized — sengaja pesan samar "username atau password salah" agar hacker tidak tahu mana yang benar
       }
 
@@ -183,7 +183,7 @@ router.post(
       // bcrypt.compare() akan hash password input dan compare dengan hash di database
       const validPassword = await bcrypt.compare(password, user.password); // const membuat variabel tetap; await menunggu bcrypt selesai; bcrypt.compare(plainText, hash) membandingkan password yang diketik user dengan hash yang tersimpan di database — mengembalikan true jika cocok, false jika tidak; AMAN karena bcrypt tidak perlu decode hash
       if (!validPassword) { // if mengecek apakah password tidak cocok; tanda ! membalik nilai boolean
-        console.log('❌ Password tidak valid untuk user:', username);
+        console.log('❌ Password tidak valid untuk user:', username); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         return res.status(401).json({ error: 'Username atau password salah' }); // 401 Unauthorized — pesan sama agar tidak memberikan petunjuk kepada hacker
       }
 
@@ -223,7 +223,7 @@ router.post(
       // STEP 8: Emit login event ke admin dashboard (via Socket.IO)
       if (req.io) { // if mengecek apakah Socket.IO tersedia di req; diset di server.js via middleware app.use
         req.io.to('admin-room').emit('user-login', { // .to('admin-room') mengirim ke room admin saja; .emit(event, data) mengirim event real-time dengan data
-          user: {
+          user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
             id: user.id,
             name: user.name,
             username: user.username,
@@ -243,8 +243,8 @@ router.post(
         },
         token, // JWT token (shorthand ES6) — mobile app harus simpan ke AsyncStorage untuk request berikutnya
       });
-    } catch (error) {
-      console.error('❌ Kesalahan login:', error);
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.error('❌ Kesalahan login:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Gagal melakukan login' });
     }
   }

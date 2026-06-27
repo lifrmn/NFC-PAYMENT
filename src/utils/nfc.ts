@@ -161,7 +161,7 @@ export class NFCService {
   // Inisialisasi NFC service saat aplikasi pertama kali jalan
   // Return: true jika NFC berhasil diinit, false jika tidak support/error
   static async initNFC(): Promise<boolean> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Cek apakah running di Expo Go atau development mode
       // Expo Go tidak support native module NFC, jadi return false
       // __DEV__ adalah flag bawaan React Native untuk mode development
@@ -173,13 +173,13 @@ export class NFCService {
       // STEP 2: Periksa apakah device memiliki hardware NFC
       // Tidak semua smartphone punya chip NFC (terutama HP budget)
       const supported = await NfcManager.isSupported().catch(() => false); // Fallback false jika error
-      if (!supported) {
+      if (!supported) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         console.log('📱 NFC not supported on this device - using manual payment mode'); // Log info
         return false; // Device tidak punya NFC chip
       }
 
       // STEP 3: Coba start NFC manager service
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // Inisialisasi NFC service dari react-native-nfc-manager
         await NfcManager.start(); // Aktivasi hardware NFC
         
@@ -187,7 +187,7 @@ export class NFCService {
         // User bisa punya hardware tapi NFC-nya dimatikan manual
         const enabled = await NfcManager.isEnabled().catch(() => false); // Fallback false
         
-        if (!enabled) {
+        if (!enabled) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
           console.log('⚠️ NFC is disabled in device settings'); // Log peringatan
           return false; // NFC ada tapi tidak aktif
         }
@@ -201,7 +201,7 @@ export class NFCService {
         return false; // Gagal start NFC service
       }
       
-    } catch (error: any) {
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       // Catch error umum yang tidak terduga
       console.log('❌ Error Inisialisasi NFC:', error?.message || 'Tidak tersedia dalam development mode'); // Log error
       return false; // Return false = init gagal
@@ -215,12 +215,12 @@ export class NFCService {
   // Digunakan sebelum melakukan operasi NFC (read/write)
   // Return: true jika enabled, false jika disabled
   static async checkNFCEnabled(): Promise<boolean> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Query status NFC dari device operating system
       // isEnabled() check apakah NFC toggle ON di pengaturan
       const enabled = await NfcManager.isEnabled(); // Await karena operasi async
       return !!enabled;  // Convert ke boolean dengan double negation (!!, untuk safety)
-    } catch (error) {
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // Jika ada error (misal device tidak support NFC), return false
       console.log('Error Cek NFC:', error); // Log error untuk debugging
       return false; // Default: anggap disabled
@@ -237,7 +237,7 @@ export class NFCService {
   // Input: NFCData (userId, username, action, amount)
   // Output: true jika berhasil write, false jika gagal
   static async writeNFCData(data: NFCData): Promise<boolean> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Request akses ke NFC technology (NDEF format)
       // NDEF = NFC Data Exchange Format (standar format data NFC)
       await NfcManager.requestTechnology(NfcTech.Ndef);
@@ -246,30 +246,30 @@ export class NFCService {
       // - Convert object jadi JSON string
       // - Wrap dalam text record NDEF
       // - Encode jadi bytes untuk ditulis ke tag
-      const bytes = Ndef.encodeMessage([Ndef.textRecord(JSON.stringify(data))]);
+      const bytes = Ndef.encodeMessage([Ndef.textRecord(JSON.stringify(data))]); // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
 
       // STEP 3: Cek apakah encoding berhasil
       if (bytes) {
         // STEP 4: Tulis bytes ke NFC tag
         // User harus menempelkan HP ke tag NFC saat proses ini
         await NfcManager.ndefHandler.writeNdefMessage(bytes);
-        console.log('✅ NFC Data written:', data);
-        return true;
+        console.log('✅ NFC Data written:', data); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+        return true; // return true mengembalikan nilai berhasil ke pemanggil fungsi
       }
       
       // Kalau bytes kosong, berarti encoding gagal
-      console.warn('⚠️ NFC encodeMessage returned empty bytes');
-      return false;
+      console.warn('⚠️ NFC encodeMessage returned empty bytes'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
+      return false; // return false mengembalikan nilai gagal ke pemanggil fungsi
       
-    } catch (error) {
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // Error bisa terjadi karena:
       // - Tag tidak compatible (read-only tag)
       // - Tag tidak ditempel cukup lama
       // - Tag rusak
-      console.log('Error Tulis NFC:', error);
-      return false;
+      console.log('Error Tulis NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+      return false; // return false mengembalikan nilai gagal ke pemanggil fungsi
       
-    } finally {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       // STEP 5: Selalu cancel technology request setelah selesai
       // Ini penting untuk release NFC resource
       await NfcManager.cancelTechnologyRequest();
@@ -285,17 +285,17 @@ export class NFCService {
   // 
   // Output: NFCData jika berhasil read, null jika gagal/kosong
   static async readNFCData(): Promise<NFCData | null> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Cek apakah ada request yang sedang aktif
       if (this.isRequestActive) {
-        console.log('⚠️ Request NFC sedang berlangsung');
-        return null;
+        console.log('⚠️ Request NFC sedang berlangsung'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+        return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       }
 
       this.isRequestActive = true;
 
       // STEP 1: Cancel request sebelumnya jika ada
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan jika tidak ada request untuk di-cancel
@@ -312,17 +312,17 @@ export class NFCService {
 
       // STEP 4: Validasi tag
       // Cek apakah tag ada dan punya NDEF message
-      if (!tag || !tag.ndefMessage) {
-        console.warn('⚠️ No NFC tag data found');
-        return null;
+      if (!tag || !tag.ndefMessage) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+        console.warn('⚠️ No NFC tag data found'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
+        return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       }
 
       // STEP 5: Ambil NDEF record pertama
       // NDEF message bisa punya multiple records, kita ambil yang pertama
       const ndefRecord = tag.ndefMessage[0];
-      if (!ndefRecord || !ndefRecord.payload) {
-        console.warn('⚠️ Empty NFC payload');
-        return null;
+      if (!ndefRecord || !ndefRecord.payload) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+        console.warn('⚠️ Empty NFC payload'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
+        return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       }
 
       // STEP 6: Decode payload
@@ -337,22 +337,22 @@ export class NFCService {
       const text = String.fromCharCode(...payload.slice(3));
       
       // STEP 7: Parse JSON string jadi object
-      const data: NFCData = JSON.parse(text);
+      const data: NFCData = JSON.parse(text); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
 
-      console.log('✅ NFC Tag Read:', data);
+      console.log('✅ NFC Tag Read:', data); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return data;
       
-    } catch (error) {
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // Error bisa terjadi karena:
       // - Tag tidak punya data NDEF
       // - Data rusak/tidak valid JSON
       // - Tag tidak ditempel cukup lama
-      console.log('Error Baca NFC:', error);
-      return null;
+      console.log('Error Baca NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+      return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       
-    } finally {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       // STEP 7: Selalu cancel technology request
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (cancelError) {
         // Abaikan error cancel
@@ -374,17 +374,17 @@ export class NFCService {
     onTagDetected: (data: NFCData | null) => void,
     onError?: (error: any) => void
   ): Promise<void> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Define function untuk scan tag
       const scanForTag = async () => {
-        try {
+        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           // Coba baca NFC tag
-          const data = await this.readNFCData();
+          const data = await this.readNFCData(); // const data: menyimpan data yang diambil secara async dari API atau database
           
           // Kalau ada data, panggil callback
           if (data) onTagDetected(data);
-        } catch (error) {
-          console.log('Error membaca data NFC:', error);
+        } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+          console.log('Error membaca data NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         }
       };
 
@@ -397,10 +397,10 @@ export class NFCService {
       // Simpan di class property (hack dengan type any)
       (this as any)._scanInterval = interval;
       
-      console.log('✅ Scanning NFC dimulai...');
+      console.log('✅ Scanning NFC dimulai...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
-    } catch (error) {
-      console.log('Error Scanning NFC:', error);
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('Error Scanning NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
       // Cleanup: Clear interval jika ada error untuk mencegah memory leak
       if ((this as any)._scanInterval) {
@@ -419,8 +419,8 @@ export class NFCService {
   // Stop continuous NFC scanning
   // Dipanggil saat user keluar dari screen atau transaksi selesai
   static async stopNFCScanning(): Promise<void> {
-    try {
-      console.log('🛑 Stopping NFC scanning...');
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+      console.log('🛑 Stopping NFC scanning...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
       // STEP 1: Cek apakah ada interval yang jalan
       if ((this as any)._scanInterval) {
@@ -430,25 +430,25 @@ export class NFCService {
         // STEP 3: Reset interval ID
         (this as any)._scanInterval = null;
         
-        console.log('✅ NFC scan interval cleared');
+        console.log('✅ NFC scan interval cleared'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       }
       
       // STEP 4: Cancel technology request (release NFC resource)
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
-        console.log('✅ Request teknologi NFC dibatalkan');
+        console.log('✅ Request teknologi NFC dibatalkan'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       } catch (cancelError) {
         // Abaikan error cancel (mungkin tidak ada yang aktif)
-        console.log('ℹ️ Tidak ada request NFC aktif untuk dibatalkan');
+        console.log('ℹ️ Tidak ada request NFC aktif untuk dibatalkan'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       }
 
       // STEP 5: Reset flag request active
       this.isRequestActive = false;
       
-      console.log('✅ Scanning NFC berhasil dihentikan');
+      console.log('✅ Scanning NFC berhasil dihentikan'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
-    } catch (error) {
-      console.log('⚠️ Error Hentikan Scanning NFC:', error);
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('⚠️ Error Hentikan Scanning NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // Paksa reset flag meski ada error
       this.isRequestActive = false;
     }
@@ -461,14 +461,14 @@ export class NFCService {
   // P2P = Komunikasi Phone-to-Phone (tanpa tag fisik)
   // CATATAN: Fitur ini advanced, untuk skripsi mungkin tidak perlu dipakai
   static async enableP2P(): Promise<void> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Request 2 teknologi sekaligus:
       // - Ndef: Untuk pertukaran data
       // - IsoDep: Untuk protokol komunikasi
       await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.IsoDep]);
-      console.log('✅ Mode P2P diaktifkan.');
-    } catch (error) {
-      console.log('Error Aktifkan P2P:', error);
+      console.log('✅ Mode P2P diaktifkan.'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('Error Aktifkan P2P:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
   }
 
@@ -480,16 +480,16 @@ export class NFCService {
   // 
   // Output: NFCCardInfo dengan UID dan detail kartu
   static async readPhysicalCard(): Promise<NFCCardInfo | null> { // static berarti dipanggil langsung NFCService.readPhysicalCard() tanpa new; async menandai fungsi asynchronous; Promise<NFCCardInfo | null> return type — info kartu atau null jika gagal
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       if (this.isRequestActive) { // if memeriksa flag; isRequestActive=true berarti sudah ada pembacaan NFC yang sedang berjalan
-        console.log('\u26a0\ufe0f Request NFC sedang berlangsung');
+        console.log('\u26a0\ufe0f Request NFC sedang berlangsung'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         return null; // return null menghentikan fungsi dan mencegah scan bersamaan
       }
 
       this.isRequestActive = true; // set flag menjadi true — mengunci agar tidak ada scan lain yang bisa masuk
 
       // Cancel request sebelumnya jika ada
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan
@@ -507,7 +507,7 @@ export class NFCService {
       ]) as any;
 
       if (!tag || !tag.id) { // ! membalik boolean; !tag berarti null; !tag.id berarti tidak ada UID — kartu tidak terdeteksi
-        console.warn('⚠️ No NFC card detected');
+        console.warn('⚠️ No NFC card detected'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
         return null; // return null memberitahu pemanggil bahwa tidak ada kartu
       }
 
@@ -537,15 +537,15 @@ export class NFCService {
         manufacturer // shorthand property: nama produsen kartu
       };
 
-      console.log('✅ Kartu Fisik Terbaca:', cardInfo);
+      console.log('✅ Kartu Fisik Terbaca:', cardInfo); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return cardInfo; // mengembalikan info kartu ke pemanggil
       
-    } catch (error) {
-      console.log('Error Baca Kartu Fisik:', error);
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('Error Baca Kartu Fisik:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return null; // return null memberitahu pemanggil bahwa pembacaan gagal
       
     } finally { // finally selalu dijalankan setelah try/catch — cocok untuk melepas resource hardware
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest(); // melepaskan izin akses hardware NFC agar bisa digunakan kembali
       } catch (e) {
         // abaikan error cancel
@@ -565,15 +565,15 @@ export class NFCService {
     cardInfo: NFCCardInfo;
     nfcData: NFCData | null;
   } | null> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       if (this.isRequestActive) {
-        console.log('⚠️ Request NFC sedang berlangsung');
-        return null;
+        console.log('⚠️ Request NFC sedang berlangsung'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+        return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       }
 
       this.isRequestActive = true;
 
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan
@@ -586,14 +586,14 @@ export class NFCService {
       
       const tag = await NfcManager.getTag();
 
-      if (!tag || !tag.id) {
-        console.warn('⚠️ No NFC card detected');
-        return null;
+      if (!tag || !tag.id) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+        console.warn('⚠️ No NFC card detected'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
+        return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       }
 
       // Ekstrak info kartu (UID, type, dll)
       const uidBytes = tag.id as any;
-      const cardId = Array.isArray(uidBytes) ? this.bytesToHexString(uidBytes) : String(uidBytes);
+      const cardId = Array.isArray(uidBytes) ? this.bytesToHexString(uidBytes) : String(uidBytes); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       const techTypes = tag.techTypes || [];
 
       let cardType = 'Tidak Diketahui';
@@ -620,12 +620,12 @@ export class NFCService {
       // Coba baca NDEF data
       let nfcData: NFCData | null = null;
       if (tag.ndefMessage && tag.ndefMessage.length > 0) {
-        try {
+        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           const ndefRecord = tag.ndefMessage[0];
           if (ndefRecord && ndefRecord.payload) {
             const payload = ndefRecord.payload;
             const text = String.fromCharCode(...payload.slice(3));
-            nfcData = JSON.parse(text);
+            nfcData = JSON.parse(text); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
             
             // Tambahkan card ID ke data
             if (nfcData) {
@@ -634,19 +634,19 @@ export class NFCService {
             }
           }
         } catch (parseError) {
-          console.warn('⚠️ Tidak bisa parse NDEF data:', parseError);
+          console.warn('⚠️ Tidak bisa parse NDEF data:', parseError); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
         }
       }
 
-      console.log('✅ Kartu Fisik dengan Data:', { cardInfo, nfcData });
+      console.log('✅ Kartu Fisik dengan Data:', { cardInfo, nfcData }); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return { cardInfo, nfcData };
       
-    } catch (error) {
-      console.log('Error Baca Kartu Fisik:', error);
-      return null;
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('Error Baca Kartu Fisik:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+      return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
       
-    } finally {
-      try {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan
@@ -668,7 +668,7 @@ export class NFCService {
     cardId?: string;
     message?: string;
   }> {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       if (this.isRequestActive) {
         return {
           success: false,
@@ -678,7 +678,7 @@ export class NFCService {
 
       this.isRequestActive = true;
 
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan
@@ -691,7 +691,7 @@ export class NFCService {
       
       // Ambil tag untuk mendapat UID
       const tag = await NfcManager.getTag();
-      const cardId = tag?.id ? (Array.isArray(tag.id) ? this.bytesToHexString(tag.id) : String(tag.id)) : undefined;
+      const cardId = tag?.id ? (Array.isArray(tag.id) ? this.bytesToHexString(tag.id) : String(tag.id)) : undefined; // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
 
       // Tambahkan info kartu ke data
       const dataToWrite = {
@@ -702,12 +702,12 @@ export class NFCService {
 
       // Encode dan tulis
       const bytes = Ndef.encodeMessage([
-        Ndef.textRecord(JSON.stringify(dataToWrite))
+        Ndef.textRecord(JSON.stringify(dataToWrite)) // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
       ]);
 
       if (bytes) {
         await NfcManager.ndefHandler.writeNdefMessage(bytes);
-        console.log('✅ Kartu Fisik Berhasil Ditulis:', dataToWrite);
+        console.log('✅ Kartu Fisik Berhasil Ditulis:', dataToWrite); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         
         return {
           success: true,
@@ -721,15 +721,15 @@ export class NFCService {
         message: 'Gagal encode data'
       };
       
-    } catch (error: any) {
-      console.log('Error Tulis Kartu Fisik:', error);
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
+      console.log('Error Tulis Kartu Fisik:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return {
         success: false,
         message: error?.message || 'Gagal menulis ke kartu'
       };
       
-    } finally {
-      try {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         await NfcManager.cancelTechnologyRequest();
       } catch (e) {
         // Abaikan
@@ -743,9 +743,9 @@ export class NFCService {
   // =========================================================================
   // Convert array of bytes ke hex string
   // Contoh: [0x04, 0xE1, 0x2A] => "04E12A"
-  private static bytesToHexString(bytes: number[]): string {
+  private static bytesToHexString(bytes: number[]): string { // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
     return bytes
-      .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
+      .map(byte => byte.toString(16).padStart(2, '0').toUpperCase()) // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       .join('');
   }
 
@@ -756,7 +756,7 @@ export class NFCService {
   // Dipanggil saat aplikasi unmount atau user logout
   // Penting untuk prevent memory leak!
   static cleanup(): void {
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Stop scanning interval jika masih jalan
       if ((this as any)._scanInterval) {
         clearInterval((this as any)._scanInterval);
@@ -764,7 +764,7 @@ export class NFCService {
       }
       
       // STEP 2: Cancel technology request (release NFC resource)
-      try {
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         NfcManager.cancelTechnologyRequest();
       } catch (cancelError) {
         // Abaikan error cancel
@@ -773,9 +773,9 @@ export class NFCService {
       // Reset flag request active
       this.isRequestActive = false;
       
-      console.log('🧹 Resource NFC berhasil dibersihkan.');
-    } catch (error) {
-      console.log('Error Cleanup NFC:', error);
+      console.log('🧹 Resource NFC berhasil dibersihkan.'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+      console.log('Error Cleanup NFC:', error); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
   }
 }

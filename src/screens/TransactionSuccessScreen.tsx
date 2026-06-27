@@ -13,12 +13,12 @@
 // - onViewDetails: Callback opsional untuk tombol "Lihat Detail"
 // ==================================================================================
 import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan di balik layar setiap kali ada elemen JSX seperti <View>
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View,              // View adalah komponen container dasar React Native \u2014 setara div di HTML; digunakan untuk layout dan pembungkus elemen
   Text,              // Text menampilkan konten teks \u2014 semua teks wajib dibungkus Text di React Native
   TouchableOpacity,  // TouchableOpacity adalah tombol interaktif dengan efek transparan saat ditekan \u2014 digunakan untuk tombol "Selesai" dan "Lihat Detail"
   ScrollView         // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar \u2014 penting karena detail transaksi bisa panjang
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator Android
 import styles from './TransactionSuccessScreen.styles'; // import stylesheet dari file terpisah agar kode komponen tetap ringkas dan mudah dibaca
 
@@ -96,7 +96,7 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
   };
 
   // Render UI komponen sukses transaksi
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}> {/* Wrapper aman untuk area perangkat */}
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}> {/* Kontainer scrollable tanpa scrollbar */}
         <View style={styles.content}> {/* Kontainer konten utama */}
@@ -193,20 +193,20 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
               {/* Baris Risk Level: badge level risiko berwarna */}
               <View style={styles.riskLevelRow}> {/* Baris level risiko */}
                 <Text style={styles.riskLevelLabel}>Risk Level:</Text> {/* Label "Risk Level:" */}
-                <View
-                  style={[
+                <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
+                  style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                     styles.riskLevelBadge,
                     { backgroundColor: `${getRiskColor(transaction.riskLevel)}20` }, // Warna latar badge dengan opacity 20%
                   ]}
                 >
-                  <View
-                    style={[
+                  <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
+                    style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                       styles.riskLevelDot,
                       { backgroundColor: getRiskColor(transaction.riskLevel) }, // Titik indikator warna penuh
                     ]}
                   />
-                  <Text
-                    style={[
+                  <Text // Text: komponen untuk menampilkan teks di layar; setara dengan p/span di HTML
+                    style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                       styles.riskLevelText,
                       { color: getRiskColor(transaction.riskLevel) }, // Teks berwarna sesuai level risiko
                     ]}

@@ -77,4 +77,4 @@ const errorHandler = (err, req, res, next) => {
 };
 
 // Export errorHandler agar bisa diimport di server.js
-module.exports = { errorHandler };
+module.exports = { errorHandler }; // module.exports mengekspor objek/fungsi dari file ini agar bisa digunakan file lain

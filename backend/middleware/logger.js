@@ -18,7 +18,7 @@
 // Usage: app.use(requestLogger) <- ditaruh setelah express.json()
 const requestLogger = (req, res, next) => {
   // STEP 1: Catat waktu mulai request (timestamp dalam milliseconds)
-  const start = Date.now();
+  const start = Date.now(); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
   
   // STEP 2: Listen event 'finish' dari response object
   // Event 'finish' dipanggil saat response selesai dikirim ke client
@@ -33,7 +33,7 @@ const requestLogger = (req, res, next) => {
     // STEP 2.3: Log ke console dengan format custom
     // Format: METHOD URL - STATUS - DURATION - IP
     // Contoh: GET /api/users/me - 200 - 45ms - ::1
-    console.log(`${method} ${url} - ${statusCode} - ${duration}ms - ${ip}`);
+    console.log(`${method} ${url} - ${statusCode} - ${duration}ms - ${ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   });
   
   // STEP 3: Lanjut ke middleware/route handler berikutnya
@@ -41,4 +41,4 @@ const requestLogger = (req, res, next) => {
 };
 
 // Export requestLogger agar bisa diimport di server.js
-module.exports = { requestLogger };
+module.exports = { requestLogger }; // module.exports mengekspor objek/fungsi dari file ini agar bisa digunakan file lain

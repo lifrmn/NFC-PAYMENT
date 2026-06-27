@@ -71,7 +71,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
 
       // Hitung mean parsial hanya jika ada data (n > 0), jika tidak kembalikan 0
       // Operator ternary: kondisi ? nilai_jika_benar : nilai_jika_salah
-      mean: n > 0 ? parseFloat((amounts.reduce((s, x) => s + x, 0) / n).toFixed(2)) : 0,
+      mean: n > 0 ? parseFloat((amounts.reduce((s, x) => s + x, 0) / n).toFixed(2)) : 0, // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
 
       variance: 0,      // Variance tidak dihitung, tidak cukup data
       stdDev: 0,        // Standar deviasi tidak dihitung, tidak cukup data
@@ -167,13 +167,13 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
     if (currentAmount === mean) {
       // X sama persis dengan μ → tidak ada penyimpangan → Z = 0 → transaksi normal
       zScore = 0;
-    } else {
+    } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
       // X berbeda dari μ → ada penyimpangan, tapi σ = 0 sehingga Z tidak bisa dihitung
       // Secara statistik: distribusi degenerasi tidak dapat menoleransi penyimpangan apapun
       zScore = null;            // null menandakan Z tidak terdefinisi secara matematis
       zScoreIsUndefined = true; // Aktifkan flag → langkah 6 akan paksa BLOCK
     }
-  } else {
+  } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
     // σ > 0 → kondisi normal, Z bisa dihitung dengan rumus standar
     // Math.abs() → nilai absolut agar Z selalu positif (tidak peduli di atas/bawah mean)
     zScore = Math.abs(currentAmount - mean) / stdDev;
@@ -208,13 +208,13 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
 
   // Math.round() → bulatkan ke bilangan bulat terdekat sebelum diformat sebagai string
   // .toLocaleString('id-ID') → format angka dengan titik ribuan gaya Indonesia
-  const meanFormatted = Math.round(mean).toLocaleString('id-ID');
+  const meanFormatted = Math.round(mean).toLocaleString('id-ID'); // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
 
   // .toFixed(2) → format angka dengan 2 desimal (standar tampilan nilai statistik)
   const stdFormatted = stdDev.toFixed(2);
 
   // Format amount transaksi baru untuk pesan yang mudah dibaca manusia
-  const currentFormatted = currentAmount.toLocaleString('id-ID');
+  const currentFormatted = currentAmount.toLocaleString('id-ID'); // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
 
   if (zScoreIsUndefined) {
     // Kasus σ=0 & X≠μ: jelaskan edge case matematis ke admin
@@ -224,26 +224,26 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
       'Keputusan BLOCK berdasarkan logika statistik: distribusi degenerasi tidak dapat menoleransi penyimpangan apapun',
       'Threshold yang berlaku tetap Z > 3; edge case ini bukan threshold baru'
     );
-  } else if (decision === 'ALLOW') {
+  } else if (decision === 'ALLOW') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
     // Kasus normal: Z ≤ 2, transaksi wajar
     reasons.push(
       'Transaksi dalam batas normal (Z = ' + zFormatted + ' <= 2)',
       'Nominal Rp' + currentFormatted + ' tidak menyimpang signifikan dari baseline (mu = Rp' + meanFormatted + ', sigma = Rp' + stdFormatted + ')'
     );
-  } else if (decision === 'REVIEW') {
+  } else if (decision === 'REVIEW') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
     // Kasus mencurigakan: 2 < Z ≤ 3, perlu perhatian admin
     reasons.push(
       'Transaksi mencurigakan - perlu review admin (2 < Z = ' + zFormatted + ' <= 3)',
       'Nominal Rp' + currentFormatted + ' menyimpang antara 2-sigma dan 3-sigma dari baseline (mu = Rp' + meanFormatted + ', sigma = Rp' + stdFormatted + ')',
       // Math.abs() → pastikan deviasi selalu positif meski transaksi di bawah mean
-      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)'
+      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)' // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
     );
-  } else {
+  } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
     // Kasus anomali: Z > 3, transaksi diblokir
     reasons.push(
       'Transaksi anomali - DIBLOKIR (Z = ' + zFormatted + ' > 3)',
       'Nominal Rp' + currentFormatted + ' menyimpang melampaui 3-sigma dari baseline (mu = Rp' + meanFormatted + ', sigma = Rp' + stdFormatted + ')',
-      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)',
+      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)', // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
       'Indikasi kuat anomali transaksi - saldo tidak berubah, fraud alert dibuat'
     );
   }
@@ -263,15 +263,15 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) {
   return {
     // parseFloat(zScore.toFixed(6)) → bulatkan ke 6 desimal lalu konversi ke number
     // Ternary: jika Z tidak terdefinisi kembalikan null, jika tidak kembalikan nilainya
-    zScore: zScoreIsUndefined ? null : parseFloat(zScore.toFixed(6)),
+    zScore: zScoreIsUndefined ? null : parseFloat(zScore.toFixed(6)), // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
 
     decision,    // Keputusan akhir: ALLOW / REVIEW / BLOCK
     riskLevel,   // Label UI: NORMAL / SUSPICIOUS / ANOMALY
 
     // parseFloat(x.toFixed(2)) → bulatkan ke 2 desimal, kembalikan sebagai tipe number (bukan string)
-    mean: parseFloat(mean.toFixed(2)),
-    variance: parseFloat(variance.toFixed(2)),
-    stdDev: parseFloat(stdDev.toFixed(2)),
+    mean: parseFloat(mean.toFixed(2)), // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
+    variance: parseFloat(variance.toFixed(2)), // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
+    stdDev: parseFloat(stdDev.toFixed(2)), // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
 
     n,             // Jumlah data historis yang dipakai dalam perhitungan
     historyCount: n, // Alias n — field tambahan untuk konsistensi format response API

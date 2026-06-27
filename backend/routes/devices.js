@@ -59,8 +59,8 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   "device": { ... }
 // }
 // ============================================================
-router.post('/register', async (req, res) => {
-  try {
+router.post('/register', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId, deviceName, platform, appVersion } = req.body; // Destructuring data perangkat dari request body
     
     if (!deviceId) { // Validasi: deviceId wajib ada
@@ -92,7 +92,7 @@ router.post('/register', async (req, res) => {
       }
     });
 
-    console.log(`📱 Device registered: ${deviceId} (${platform})`);
+    console.log(`📱 Device registered: ${deviceId} (${platform})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     res.json({
       success: true,
@@ -100,8 +100,8 @@ router.post('/register', async (req, res) => {
       device: deviceRecord // Kembalikan data perangkat yang baru didaftarkan
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan pendaftaran perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan pendaftaran perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ 
       error: 'Gagal mendaftarkan perangkat',
       details: error.message // Detail error untuk debugging
@@ -110,8 +110,8 @@ router.post('/register', async (req, res) => {
 });
 
 // Sinkronkan data perangkat (kompatibel dengan aplikasi mobile yang ada)
-router.post('/sync-device', authenticateDevice, async (req, res) => {
-  try {
+router.post('/sync-device', authenticateDevice, async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { device, users, recentTransactions, stats } = req.body; // Destructuring data sync dari request body
     
     if (!device || !device.deviceId) { // Validasi: data device dan deviceId wajib ada
@@ -189,7 +189,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => {
       }
     }
 
-    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`);
+    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Periksa pembaruan saldo yang tertunda
     const pendingUpdates = await prisma.adminLog.findMany({ // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
@@ -219,15 +219,15 @@ router.post('/sync-device', authenticateDevice, async (req, res) => {
       timestamp: now.toISOString() // Waktu sync dalam format ISO
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan sinkronisasi perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan sinkronisasi perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal menyinkronkan perangkat' });
   }
 });
 
 // Dapatkan semua perangkat
-router.get('/', async (req, res) => {
-  try {
+router.get('/', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const devices = await prisma.device.findMany({ // Ambil semua record Device dari database
       orderBy: {
         lastSeen: 'desc' // Urutkan dari yang paling baru sync
@@ -242,15 +242,15 @@ router.get('/', async (req, res) => {
     }));
 
     res.json(devicesWithStatus); // Kirim array devices dengan status online
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan perangkat' });
   }
 });
 
 // Dapatkan perangkat berdasarkan ID
-router.get('/:deviceId', async (req, res) => {
-  try {
+router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     
     const device = await prisma.device.findUnique({ // Cari satu device berdasarkan deviceId
@@ -299,15 +299,15 @@ router.get('/:deviceId', async (req, res) => {
       recentTransactions: transactions // 10 transaksi terbaru
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan perangkat' });
   }
 });
 
 // Perbarui status perangkat
-router.put('/:deviceId/status', async (req, res) => {
-  try {
+router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     const { isOnline } = req.body; // Ambil status online/offline dari request body
 
@@ -329,15 +329,15 @@ router.put('/:deviceId/status', async (req, res) => {
       device // Kembalikan data device yang sudah diupdate
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan memperbarui status perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan memperbarui status perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui status perangkat' });
   }
 });
 
 // Hapus perangkat (khusus admin)
-router.delete('/:deviceId', async (req, res) => {
-  try {
+router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarkan endpoint HTTP DELETE; untuk menghapus data
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     const { adminPassword } = req.body; // Ambil password admin dari request body
 
@@ -369,15 +369,15 @@ router.delete('/:deviceId', async (req, res) => {
       message: 'Perangkat berhasil dihapus' // Konfirmasi penghapusan
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan menghapus perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan menghapus perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal menghapus perangkat' });
   }
 });
 
 // Dapatkan statistik perangkat
-router.get('/stats/summary', async (req, res) => {
-  try {
+router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([ // Jalankan 4 query secara paralel
       prisma.device.count(), // Hitung total semua device
       prisma.device.count({ // Hitung device yang sedang online (sync dalam 5 menit terakhir)
@@ -404,8 +404,8 @@ router.get('/stats/summary', async (req, res) => {
       totalBalance: totalBalance._sum.balance || 0 // Total saldo (fallback 0 jika null)
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan statistik perangkat' });
   }
 });

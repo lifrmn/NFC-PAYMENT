@@ -120,21 +120,21 @@ router.get('/dashboard', async (req, res) => { // router.get mendaftarkan endpoi
       timestamp: new Date().toISOString() // Waktu response generated
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('❌ Kesalahan mendapatkan statistik dashboard:', error); // Log error
     res.status(500).json({ error: 'Gagal mendapatkan statistik dashboard' });
   }
 });
 
 // Perbarui saldo pengguna (aksi admin)
-router.post('/balance-update', [
+router.post('/balance-update', [ // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
   body('deviceId').notEmpty().withMessage('ID Perangkat diperlukan'),
   body('amount').isFloat({ min: 0 }).withMessage('Jumlah harus positif'),
   body('adminPassword').notEmpty().withMessage('Password admin diperlukan')
 ], async (req, res) => {
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty()) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -159,7 +159,7 @@ router.post('/balance-update', [
       where: { deviceId }
     });
 
-    if (!device) {
+    if (!device) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(404).json({ error: 'Perangkat tidak ditemukan' });
     }
 
@@ -168,7 +168,7 @@ router.post('/balance-update', [
       where: { deviceId, isActive: true }
     });
 
-    if (users.length === 0) {
+    if (users.length === 0) { // memeriksa apakah array kosong — jika kosong tidak ada data yang perlu ditampilkan
       return res.status(404).json({ error: 'Tidak ada pengguna aktif untuk perangkat ini' });
     }
 
@@ -188,7 +188,7 @@ router.post('/balance-update', [
     await prisma.adminLog.create({
       data: {
         action: 'BALANCE_UPDATE',
-        details: JSON.stringify({
+        details: JSON.stringify({ // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
           deviceId,
           amount,
           usersAffected: users.length,
@@ -210,7 +210,7 @@ router.post('/balance-update', [
       }
     });
 
-    console.log(`💰 Admin menambahkan Rp ${amount.toLocaleString('id-ID')} ke perangkat ${deviceId.substring(0, 8)}... untuk ${users.length} pengguna`);
+    console.log(`💰 Admin menambahkan Rp ${amount.toLocaleString('id-ID')} ke perangkat ${deviceId.substring(0, 8)}... untuk ${users.length} pengguna`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Kirim pembaruan real-time
     if (req.io) {
@@ -239,15 +239,15 @@ router.post('/balance-update', [
       }
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan pembaruan saldo:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan pembaruan saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui saldo' });
   }
 });
 
 // Dapatkan log admin
-router.get('/logs', async (req, res) => {
-  try {
+router.get('/logs', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { limit = 50, offset = 0, action } = req.query;
     
     const whereClause = {};
@@ -256,20 +256,20 @@ router.get('/logs', async (req, res) => {
     const logs = await prisma.adminLog.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit),
-      skip: parseInt(offset)
+      take: parseInt(limit), // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
+      skip: parseInt(offset) // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
     });
 
     res.json(logs);
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan log admin:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan log admin:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan log admin' });
   }
 });
 
 // Manajemen pengaturan sistem
-router.get('/settings', async (req, res) => {
-  try {
+router.get('/settings', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const settings = await prisma.systemSettings.findMany();
     
     const settingsObject = settings.reduce((acc, setting) => {
@@ -278,14 +278,14 @@ router.get('/settings', async (req, res) => {
       // Parse nilai berdasarkan tipe
       switch (setting.type) {
         case 'number':
-          value = parseFloat(setting.value);
+          value = parseFloat(setting.value); // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
           break;
         case 'boolean':
           value = setting.value === 'true';
           break;
         case 'json':
-          try {
-            value = JSON.parse(setting.value);
+          try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+            value = JSON.parse(setting.value); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
           } catch (e) {
             value = setting.value;
           }
@@ -299,20 +299,20 @@ router.get('/settings', async (req, res) => {
     }, {});
 
     res.json(settingsObject);
-  } catch (error) {
-    console.error('❌ Kesalahan mendapatkan pengaturan:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan mendapatkan pengaturan:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal mendapatkan pengaturan' });
   }
 });
 
 // Perbarui pengaturan sistem
-router.put('/settings/:key', [
+router.put('/settings/:key', [ // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
   body('value').notEmpty().withMessage('Nilai diperlukan'),
   body('adminPassword').notEmpty().withMessage('Password admin diperlukan')
 ], async (req, res) => {
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    if (!errors.isEmpty()) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -326,15 +326,15 @@ router.put('/settings/:key', [
 
     const setting = await prisma.systemSettings.upsert({
       where: { key },
-      update: { value: String(value), type },
-      create: { key, value: String(value), type }
+      update: { value: String(value), type }, // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
+      create: { key, value: String(value), type } // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
     });
 
     // Catat aksi admin
     await prisma.adminLog.create({
       data: {
         action: 'SETTING_UPDATE',
-        details: JSON.stringify({
+        details: JSON.stringify({ // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
           key,
           newValue: value,
           type
@@ -354,15 +354,15 @@ router.put('/settings/:key', [
       setting
     });
 
-  } catch (error) {
-    console.error('❌ Kesalahan memperbarui pengaturan:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Kesalahan memperbarui pengaturan:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Gagal memperbarui pengaturan' });
   }
 });
 
 // Bersihkan perangkat tidak aktif
-router.post('/cleanup-devices', async (req, res) => {
-  try {
+router.post('/cleanup-devices', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { adminPassword } = req.body;
 
     // Verifikasi password admin
@@ -371,7 +371,7 @@ router.post('/cleanup-devices', async (req, res) => {
     }
 
     // Hapus perangkat tidak aktif lebih dari 1 hari (86400 detik)
-    const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
     
     const deletedDevices = await prisma.device.deleteMany({
       where: {
@@ -385,7 +385,7 @@ router.post('/cleanup-devices', async (req, res) => {
     await prisma.adminLog.create({
       data: {
         action: 'DEVICES_CLEANUP',
-        details: JSON.stringify({
+        details: JSON.stringify({ // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
           deletedCount: deletedDevices.count,
           cutoffTime
         }),
@@ -399,8 +399,8 @@ router.post('/cleanup-devices', async (req, res) => {
       deletedCount: deletedDevices.count
     });
 
-  } catch (error) {
-    console.error('Cleanup devices error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('Cleanup devices error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to cleanup devices' });
   }
 });
@@ -410,9 +410,9 @@ router.post('/cleanup-devices', async (req, res) => {
 // ===============================================================
 // Endpoint PUBLIC (bypass auth) untuk admin dashboard ambil semua user
 // Usage: GET /api/admin/users
-router.get('/users', async (req, res) => {
-  try {
-    console.log('📋 Admin request: Get all users (bypass auth)');
+router.get('/users', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+    console.log('📋 Admin request: Get all users (bypass auth)'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 1: Query semua user dari database
     const users = await prisma.user.findMany({
@@ -432,7 +432,7 @@ router.get('/users', async (req, res) => {
     });
 
     // STEP 2: Log jumlah user ke console
-    console.log(`✅ Found ${users.length} users in database`);
+    console.log(`✅ Found ${users.length} users in database`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // STEP 3: Return response dengan array users
     res.json({
@@ -441,8 +441,8 @@ router.get('/users', async (req, res) => {
       total: users.length
     });
 
-  } catch (error) {
-    console.error('❌ Get admin users error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Get admin users error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to get users' });
   }
 });
@@ -453,15 +453,15 @@ router.get('/users', async (req, res) => {
 // Endpoint untuk top-up saldo ke semua user aktif sekaligus
 // Usage: POST /api/admin/bulk-topup
 // Body: { amount: 50000 }
-router.post('/bulk-topup', async (req, res) => {
-  try {
+router.post('/bulk-topup', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil amount dari request body
     const { amount } = req.body;
     
-    console.log(`💰 Admin bulk topup request: ${amount} to all users`);
+    console.log(`💰 Admin bulk topup request: ${amount} to all users`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 2: Validasi amount (wajib ada dan > 0)
-    if (!amount || amount <= 0) {
+    if (!amount || amount <= 0) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       return res.status(400).json({ error: 'Valid amount required' });
     }
     
@@ -479,7 +479,7 @@ router.post('/bulk-topup', async (req, res) => {
     });
     
     // STEP 4: Log hasil ke console
-    console.log(`✅ Bulk topup success: ${updateResult.count} users updated with ${amount}`);
+    console.log(`✅ Bulk topup success: ${updateResult.count} users updated with ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 5: Hitung total amount yang ditambahkan
     const totalAmount = updateResult.count * amount; // Total = jumlah user * amount
@@ -493,8 +493,8 @@ router.post('/bulk-topup', async (req, res) => {
       totalAmount: totalAmount // Total amount semua user
     });
     
-  } catch (error) {
-    console.error('❌ Bulk topup error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Bulk topup error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to perform bulk topup' });
   }
 });
@@ -505,8 +505,8 @@ router.post('/bulk-topup', async (req, res) => {
 // Endpoint untuk reset balance user ke nilai tertentu (bukan increment)
 // Usage: POST /api/admin/reset-balance
 // Body: { userId: 123, newBalance: 1000000, password: 'admin123' }
-router.post('/reset-balance', async (req, res) => {
-  try {
+router.post('/reset-balance', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil data dari request body
     const { userId, newBalance, password } = req.body;
     
@@ -516,23 +516,23 @@ router.post('/reset-balance', async (req, res) => {
     }
     
     // STEP 3: Update balance user ke newBalance (bukan increment, tapi SET)
-    const user = await prisma.user.update({
+    const user = await prisma.user.update({ // const user: menyimpan data user yang diambil dari database secara async
       where: { id: parseInt(userId) }, // WHERE id = userId
       data: { balance: parseInt(newBalance) } // SET balance = newBalance
     });
     
     // STEP 4: Log action ke console
-    console.log(`💰 Reset balance: ${user.username} -> Rp ${parseInt(newBalance).toLocaleString('id-ID')}`);
+    console.log(`💰 Reset balance: ${user.username} -> Rp ${parseInt(newBalance).toLocaleString('id-ID')}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 5: Return response sukses
     res.json({
       success: true,
       message: `Balance reset for ${user.username}`,
-      user: user
+      user: user // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
     });
     
-  } catch (error) {
-    console.error('❌ Reset balance error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Reset balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to reset balance' });
   }
 });
@@ -544,8 +544,8 @@ router.post('/reset-balance', async (req, res) => {
 // User yang diblokir tidak bisa login dan transaksi
 // Usage: POST /api/admin/block-user
 // Body: { userId: 123, password: 'admin123' }
-router.post('/block-user', async (req, res) => {
-  try {
+router.post('/block-user', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil data dari request body
     const { userId, password } = req.body;
     
@@ -555,23 +555,23 @@ router.post('/block-user', async (req, res) => {
     }
     
     // STEP 3: Update user - set isActive = false
-    const user = await prisma.user.update({
+    const user = await prisma.user.update({ // const user: menyimpan data user yang diambil dari database secara async
       where: { id: parseInt(userId) }, // WHERE id = userId
       data: { isActive: false } // SET isActive = false (user diblokir)
     });
     
     // STEP 4: Log action ke console
-    console.log(`🚫 User blocked: ${userId} (${user.username})`);
+    console.log(`🚫 User blocked: ${userId} (${user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 5: Return response sukses
     res.json({
       success: true,
       message: `User ${user.username} has been blocked`,
-      user: user
+      user: user // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
     });
     
-  } catch (error) {
-    console.error('❌ Block user error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Block user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to block user' });
   }
 });
@@ -583,8 +583,8 @@ router.post('/block-user', async (req, res) => {
 // User yang di-unblock bisa login dan transaksi lagi
 // Usage: POST /api/admin/unblock-user
 // Body: { userId: 123, password: 'admin123' }
-router.post('/unblock-user', async (req, res) => {
-  try {
+router.post('/unblock-user', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil data dari request body
     const { userId, password } = req.body;
     
@@ -594,23 +594,23 @@ router.post('/unblock-user', async (req, res) => {
     }
     
     // STEP 3: Update user - set isActive = true
-    const user = await prisma.user.update({
+    const user = await prisma.user.update({ // const user: menyimpan data user yang diambil dari database secara async
       where: { id: parseInt(userId) }, // WHERE id = userId
       data: { isActive: true } // SET isActive = true (user di-unblock)
     });
     
     // STEP 4: Log action ke console
-    console.log(`✅ User unblocked: ${userId} (${user.username})`);
+    console.log(`✅ User unblocked: ${userId} (${user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 5: Return response sukses
     res.json({
       success: true,
       message: `User ${user.username} has been unblocked`,
-      user: user
+      user: user // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
     });
     
-  } catch (error) {
-    console.error('❌ Unblock user error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Unblock user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to unblock user' });
   }
 });
@@ -621,8 +621,8 @@ router.post('/unblock-user', async (req, res) => {
 // Endpoint untuk hapus semua fraud alerts dari database
 // Berguna untuk cleanup setelah review fraud alerts
 // Usage: POST /api/admin/clear-fraud-alerts
-router.post('/clear-fraud-alerts', async (req, res) => {
-  try {
+router.post('/clear-fraud-alerts', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Count fraud alerts sebelum deletion (untuk info berapa yang dihapus)
     const alertCount = await prisma.fraudAlert.count();
     
@@ -631,7 +631,7 @@ router.post('/clear-fraud-alerts', async (req, res) => {
     await prisma.fraudAlert.deleteMany({});
     
     // STEP 3: Log action ke console
-    console.log(`🗑️ Cleared ${alertCount} fraud alerts`);
+    console.log(`🗑️ Cleared ${alertCount} fraud alerts`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 4: Return response sukses
     res.json({
@@ -640,11 +640,11 @@ router.post('/clear-fraud-alerts', async (req, res) => {
       clearedCount: alertCount // Jumlah fraud alerts yang dihapus
     });
     
-  } catch (error) {
-    console.error('❌ Clear fraud alerts error:', error);
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+    console.error('❌ Clear fraud alerts error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ error: 'Failed to clear fraud alerts' });
   }
 });
 
 // STEP: Export router agar bisa diimport di server.js
-module.exports = router;
+module.exports = router; // module.exports mengekspor router agar bisa di-import di server.js menggunakan require()

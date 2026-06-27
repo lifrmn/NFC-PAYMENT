@@ -102,7 +102,7 @@
 // - apiService: HTTP client untuk backend API registration (from apiService.ts)
 // ==================================================================================
 import React, { useState } from 'react'; // import React (wajib untuk JSX) dan useState hook untuk membuat state lokal (name, username, password, confirmPassword, loading)
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah komponen container dasar React Native — setara div di HTML
   Text, // Text menampilkan teks
   TextInput, // TextInput adalah input teks — digunakan untuk semua field form (nama, username, password, konfirmasi)
@@ -111,7 +111,7 @@ import {
   KeyboardAvoidingView, // KeyboardAvoidingView menggeser layout secara otomatis saat keyboard muncul agar form tidak tertutup keyboard
   Platform, // Platform.OS mengembalikan 'android' atau 'ios' — digunakan karena perilaku keyboard berbeda di tiap platform
   ScrollView // ScrollView memungkinkan form bisa di-scroll saat konten melebihi tinggi layar atau keyboard muncul
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan UI tidak tertutup notch, status bar, atau home indicator
 import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage adalah penyimpanan key-value persisten — digunakan untuk menyimpan token dan userId setelah registrasi berhasil
 import CustomButton from '../components/CustomButton'; // import komponen CustomButton dari file lokal — tombol reusable dengan loading state dan variant warna
@@ -145,7 +145,7 @@ interface RegisterScreenProps { // interface adalah blueprint TypeScript untuk m
 // @param onRegisterSuccess - Callback saat registration berhasil
 // @param onNavigateToLogin - Callback untuk navigate ke LoginScreen
 // ==================================================================================
-export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: RegisterScreenProps) {
+export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: RegisterScreenProps) { // export default function: mendefinisikan dan mengekspor komponen React fungsional utama file ini
   // STATE 1: name - Input nama lengkap user (contoh: "Budi Santoso")
   // Controlled component, nilai selalu sinkron dengan state
   const [name, setName] = useState(''); // const membuat variabel tetap; useState('') membuat state string kosong; name menyimpan teks nama yang diketik user; setName adalah fungsi untuk memperbarui state name
@@ -199,12 +199,12 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
   // - Data integrity: Ensure complete data
   // - Reduce backend load: Client-side validation first
   // ================================================================================
-  const handleRegister = async () => {
+  const handleRegister = async () => { // handleRegister async: memproses pendaftaran user baru; async karena request API
     // VALIDATION 1: All fields not empty
     // Check semua fields dengan trim() untuk remove whitespace
     // Guard clause pattern: return early if invalid
-    if (!name.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()) {
-      Alert.alert('Error', 'Semua field harus diisi');
+    if (!name.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+      Alert.alert('Error', 'Semua field harus diisi'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: empty fields
     }
     
@@ -212,7 +212,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // Prevent username terlalu pendek
     // Example invalid: "ab", "x"
     if (username.length < 3) {
-      Alert.alert('Error', 'Username minimal 3 karakter');
+      Alert.alert('Error', 'Username minimal 3 karakter'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: username too short
     }
     
@@ -220,7 +220,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // Security requirement: prevent weak passwords
     // Example invalid: "12345", "abc"
     if (password.length < 6) {
-      Alert.alert('Error', 'Password minimal 6 karakter');
+      Alert.alert('Error', 'Password minimal 6 karakter'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: password too short
     }
     
@@ -228,37 +228,37 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     // Prevent typo errors saat input password
     // User harus ketik password yang sama 2x
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Password dan konfirmasi password tidak sama');
+      Alert.alert('Error', 'Password dan konfirmasi password tidak sama'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // Early return: password mismatch
     }
 
     // Semua validasi passed, proceed dengan registration
     // Set loading state untuk disable button & show spinner
-    setLoading(true);
+    setLoading(true); // setLoading(true) menampilkan spinner; dilakukan sebelum operasi async yang memerlukan waktu
 
-    try {
-      console.log('📝 Attempting registration for:', username);
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+      console.log('📝 Attempting registration for:', username); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
       // Kirim data registrasi ke backend
-      const response = await apiService.register({ name, username, password });
+      const response = await apiService.register({ name, username, password }); // const response: menyimpan response dari HTTP request; await menunggu response diterima
 
       if (response?.user) {
-        if (response.token) await AsyncStorage.setItem('token', response.token);
-        if (response.user?.id) await AsyncStorage.setItem('userId', response.user.id.toString());
-        Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [
+        if (response.token) await AsyncStorage.setItem('token', response.token); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
+        if (response.user?.id) await AsyncStorage.setItem('userId', response.user.id.toString()); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
+        Alert.alert('Berhasil', 'Akun berhasil dibuat! Silakan login.', [ // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
           { text: 'OK', onPress: onRegisterSuccess },
         ]);
-        return;
-      } else if (response?.message) {
-        Alert.alert('Gagal', response.message);
-        return;
+        return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
+      } else if (response?.message) { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
+        Alert.alert('Gagal', response.message); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
+        return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
       }
-      Alert.alert('Gagal', 'Registrasi gagal. Coba lagi.');
+      Alert.alert('Gagal', 'Registrasi gagal. Coba lagi.'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
 
     } catch (error) { // catch menangkap semua error yang tidak tertangani di blok try
       // GLOBAL ERROR HANDLER
-      console.error('\u274c Register error:', error);
-      Alert.alert('Error', 'Terjadi kesalahan saat membuat akun');
+      console.error('\u274c Register error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+      Alert.alert('Error', 'Terjadi kesalahan saat membuat akun'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
     } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk reset state
       // FINALLY BLOCK: Always executed
       setLoading(false); // setLoading(false) mengaktifkan kembali tombol Daftar setelah proses selesai apapun hasilnya
@@ -311,7 +311,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
     <SafeAreaView style={styles.container}> {/* SafeAreaView memastikan konten tidak tertutup notch/status bar */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Platform.OS mengembalikan 'ios' atau 'android'; ternary operator memilih behavior yang tepat agar keyboard tidak menutupi input
-        style={styles.keyboardView}
+        style={styles.keyboardView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
         {/* ScrollView: memungkinkan form di-scroll saat keyboard muncul atau layar kecil */}
         <ScrollView contentContainerStyle={styles.scrollContainer}> {/* contentContainerStyle={flexGrow:1} memastikan konten bisa mengisi ruang penuh */}
@@ -322,20 +322,20 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
 
             <View style={styles.form}> {/* View adalah container yang mengelompokkan semua field form */}
               {/* Input Nama: autoCapitalize="words" mengkapitalisasi setiap kata otomatis */}
-              <TextInput
-                style={styles.input}
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Nama Lengkap" // placeholder teks abu-abu yang tampil saat field kosong
-                placeholderTextColor="#95a5a6"
+                placeholderTextColor="#95a5a6" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
                 value={name} // value={name} membuat TextInput menjadi controlled component — nilainya selalu sinkron dengan state
                 onChangeText={setName} // onChangeText dipanggil setiap karakter berubah; setName memperbarui state name
                 autoCapitalize="words" // autoCapitalize="words" otomatis mengkapitalisasi huruf pertama tiap kata
               />
               
               {/* Input Username: autoCapitalize="none" agar username tidak dikapitalisasi otomatis */}
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="#95a5a6"
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                placeholder="Username" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+                placeholderTextColor="#95a5a6" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
                 value={username} // value={username} sinkron dengan state username
                 onChangeText={setUsername} // setUsername dipanggil setiap perubahan karakter
                 autoCapitalize="none" // autoCapitalize="none" menonaktifkan kapitalisasi otomatis untuk username
@@ -343,25 +343,25 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
               />
               
               {/* Input Password: secureTextEntry menyembunyikan teks menjadi titik-titik */}
-              <TextInput
-                style={styles.input}
-                placeholder="Password (min. 6 karakter)"
-                placeholderTextColor="#95a5a6"
-                value={password}
-                onChangeText={setPassword}
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                placeholder="Password (min. 6 karakter)" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+                placeholderTextColor="#95a5a6" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
+                value={password} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
+                onChangeText={setPassword} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
                 secureTextEntry // secureTextEntry (tanpa ={true}) secara default bernilai true — menyembunyikan karakter password
-                autoComplete="password"
+                autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
               
               {/* Input Konfirmasi Password: harus sama dengan password */}
-              <TextInput
-                style={styles.input}
-                placeholder="Konfirmasi Password"
-                placeholderTextColor="#95a5a6"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                placeholder="Konfirmasi Password" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+                placeholderTextColor="#95a5a6" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
+                value={confirmPassword} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
+                onChangeText={setConfirmPassword} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
                 secureTextEntry // sama dengan field password — menyembunyikan karakter
-                autoComplete="password"
+                autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
 
               {/* Tombol Daftar: CustomButton dengan variant hijau; berubah menjadi disabled saat loading */}
@@ -371,13 +371,13 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 disabled={loading} // disabled={loading} menonaktifkan tombol saat sedang memproses untuk mencegah double submit
                 loading={loading} // loading={true} menampilkan ActivityIndicator spinner di dalam tombol
                 variant="secondary" // variant="secondary" membuat tombol berwarna hijau (berbeda dari login yang biru)
-                size="large"
-                style={styles.registerButton}
+                size="large" // size prop: menentukan ukuran komponen (large, small, atau angka)
+                style={styles.registerButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               />
 
               {/* Link ke LoginScreen: untuk user yang sudah punya akun */}
-              <TouchableOpacity
-                style={styles.loginLinkContainer}
+              <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                style={styles.loginLinkContainer} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 onPress={handleNavigateToLogin} // onPress memanggil handleNavigateToLogin yang memanggil callback onNavigateToLogin dari App.tsx
                 activeOpacity={0.7} // activeOpacity=0.7 membuat tombol menjadi 70% transparan saat ditekan — umpan balik visual
               >

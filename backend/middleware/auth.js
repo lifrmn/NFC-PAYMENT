@@ -46,7 +46,7 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
     console.log('Token:', token ? 'Present' : 'Missing'); // Cek ada token atau tidak
 
     // STEP 3: Validasi token wajib ada (jika tidak pakai app key)
-    if (!token) {
+    if (!token) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       console.log('❌ No token provided'); // Log untuk debug
       return res.status(401).json({ error: 'Access token required' }); // return menghentikan; res.status(401) mengatur HTTP status 401 Unauthorized; .json() mengirim pesan error dalam format JSON
     }
@@ -61,7 +61,7 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
       console.log('✅ Token verified for user:', decoded.userId); // decoded.userId adalah field yang dimasukkan saat jwt.sign di auth.js
     } catch (jwtError) { // catch menangkap error spesifik dari jwt.verify
       // Handle JWT-specific errors dengan pesan yang lebih jelas
-      console.error('❌ JWT verification failed:', jwtError.message);
+      console.error('❌ JWT verification failed:', jwtError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       
       if (jwtError.name === 'TokenExpiredError') { // if mengecek tipe error; .name adalah property dari Error object; TokenExpiredError terjadi ketika token melewati waktu exp
         return res.status(401).json({ 
@@ -122,7 +122,7 @@ const authenticateToken = async (req, res, next) => { // const membuat variabel 
     req.token = token; // req.token menyimpan token ke objek request agar route handler bisa akses token jika diperlukan
     next(); // next() memanggil middleware atau route handler berikutnya — request dilanjutkan karena sudah terautentikasi
     
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // STEP 8: Handle error (unexpected errors)
     console.error('❌ Auth middleware error:', error); // Log error untuk debug
     return res.status(500).json({ 
@@ -199,7 +199,7 @@ const authenticateDevice = (req, res, next) => {
   
   // STEP 5: Validasi user agent (harus dari Android app)
   // Android app pakai okhttp library untuk HTTP request
-  if (!userAgent || !userAgent.includes('okhttp')) {
+  if (!userAgent || !userAgent.includes('okhttp')) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
     return res.status(401).json({ error: 'Invalid user agent' }); // 401 Unauthorized (bukan dari Android app)
   }
   

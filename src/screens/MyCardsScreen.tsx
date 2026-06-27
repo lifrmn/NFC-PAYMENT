@@ -92,7 +92,7 @@
 // - apiService: HTTP client (getUserCards, updateCardStatus)
 // ==================================================================================
 import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk state cards/loading/refreshing; useEffect untuk auto-load data kartu saat screen pertama kali dibuka
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah container dasar React Native — setara div di HTML
   Text, // Text menampilkan teks statis maupun dinamis
   TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan saat ditekan — digunakan untuk tombol blokir, aktifkan, tambah kartu
@@ -100,7 +100,7 @@ import {
   Alert, // Alert menampilkan dialog popup native — digunakan untuk konfirmasi blokir kartu dan pesan error
   RefreshControl, // RefreshControl adalah komponen khusus pull-to-refresh yang dipasang di dalam ScrollView
   ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat loading data kartu pertama kali
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
 import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil API getUserCards (ambil kartu) dan updateCardStatus (blokir/aktifkan kartu)
 import styles from './MyCardsScreen.styles'; // import stylesheet dari file terpisah agar komponen tetap bersih
@@ -125,7 +125,7 @@ interface NFCCard { // interface mendefinisikan struktur objek kartu NFC yang di
   lastUsed?: string;                                   // Tanggal terakhir digunakan (opsional)
 }
 
-export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsScreenProps) {
+export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsScreenProps) { // export default function: mendefinisikan dan mengekspor komponen React fungsional utama file ini
   // STATE 1: cards - Array kartu NFC milik user
   // Awalnya kosong, diisi setelah fetch dari backend
   const [cards, setCards] = useState<NFCCard[]>([]); // const membuat variabel tetap; useState<NFCCard[]>([]) membuat state array bertipe NFCCard; [] nilai awal array kosong; setCards memperbarui daftar kartu
@@ -145,34 +145,34 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   // Kebijakan: max 1 kartu per user (.slice(0, 1))
   const loadCards = async () => {
     // Guard: pastikan user valid sebelum request API
-    if (!user || !user.id) {
-      console.log('⚠️ No valid user');
-      return;
+    if (!user || !user.id) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+      console.log('⚠️ No valid user'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
     setLoading(true); // Tampilkan loading spinner
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Panggil API: GET /api/nfc-cards/user/:userId
-      const response = await apiService.getUserCards(user.id);
+      const response = await apiService.getUserCards(user.id); // const response: menyimpan response dari HTTP request; await menunggu response diterima
       
       // Handle berbagai format response dari backend
       if (response && Array.isArray(response.cards)) {
         // Format: { cards: [...] } - ambil hanya 1 kartu (kebijakan 1 user = 1 card)
         setCards(response.cards.slice(0, 1));
-      } else if (Array.isArray(response)) {
+      } else if (Array.isArray(response)) { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
         // Format: [...] - array langsung, ambil hanya 1 kartu
         setCards(response.slice(0, 1));
-      } else {
+      } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         setCards([]); // Format tidak dikenal, set kosong
       }
-    } catch (error: any) {
-      console.error('Error loading cards:', error);
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
+      console.error('Error loading cards:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       if (error.message?.includes('404')) {
         setCards([]); // 404 = user belum punya kartu, bukan error sebenarnya
-      } else {
+      } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         Alert.alert('Error', 'Gagal memuat data kartu'); // Error lain: tampilkan pesan
       }
-    } finally {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       setLoading(false); // Sembunyikan loading spinner bagaimanapun hasilnya
     }
   };
@@ -199,11 +199,11 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
         {
           text: 'Ya',
           onPress: async () => { // async arrow function sebagai callback tombol 'Ya'
-            try {
+            try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
               await apiService.updateCardStatus(card.cardId, newStatus); // await menunggu HTTP PUT /api/nfc-cards/:cardId/status mengubah status kartu di backend
               Alert.alert('Berhasil', `Kartu berhasil di${actionText}`); // template literal menyisipkan actionText ke pesan
               loadCards(); // memanggil loadCards() untuk me-refresh tampilan daftar kartu setelah status berubah
-            } catch (error: any) {
+            } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
               Alert.alert('Error', error.message || `Gagal ${actionText} kartu`); // || menampilkan pesan fallback jika error.message tidak ada
             }
           },
@@ -266,7 +266,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   }
 
   // ── RENDER UTAMA: Daftar Kartu ──
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
       {/* Header dengan tombol kembali dan judul halaman */}
       <View style={styles.header}>
@@ -278,14 +278,14 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
       </View>
 
       {/* ScrollView dengan pull-to-refresh */}
-      <ScrollView
-        style={styles.scrollView}
+      <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
+        style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
         refreshControl={
           // RefreshControl: mengontrol pull-to-refresh behavior
           // refreshing: apakah sedang refresh, onRefresh: handler saat ditarik
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={false} // showsVerticalScrollIndicator: jika false menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
       >
         <View style={styles.content}>
           <Text style={styles.pageSubtitle}>
@@ -301,9 +301,9 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
               <Text style={styles.emptyText}>
                 Daftarkan kartu NFC Anda untuk mulai melakukan transaksi
               </Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={onRegisterNew || (() => {})}
+              <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                style={styles.addButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                onPress={onRegisterNew || (() => {})} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               >
                 <Text style={styles.addButtonIcon}>➕</Text>
                 <Text style={styles.addButtonText}>Tambah Kartu</Text>
@@ -319,20 +319,20 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                         {index === 0 ? 'Kartu Utama' : `Kartu ${index + 1}`}
                       </Text>
                     </View>
-                    <View
-                      style={[
+                    <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
+                      style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                         styles.statusBadge,
                         { backgroundColor: `${getStatusColor(card.cardStatus)}20` },
                       ]}
                     >
-                      <View
-                        style={[
+                      <View // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
+                        style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                           styles.statusDot,
                           { backgroundColor: getStatusColor(card.cardStatus) },
                         ]}
                       />
-                      <Text
-                        style={[
+                      <Text // Text: komponen untuk menampilkan teks di layar; setara dengan p/span di HTML
+                        style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                           styles.statusText,
                           { color: getStatusColor(card.cardStatus) },
                         ]}
@@ -375,7 +375,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                       <View style={styles.cardRow}>
                         <Text style={styles.cardLabel}>Saldo</Text>
                         <Text style={styles.cardBalance}>
-                          Rp{card.balance?.toLocaleString('id-ID') || 0}
+                          Rp{card.balance?.toLocaleString('id-ID') || 0} // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
                         </Text>
                       </View>
 
@@ -394,17 +394,17 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
                     <View style={styles.cardActions}>
                       {card.cardStatus === 'ACTIVE' ? (
-                        <TouchableOpacity
-                          style={styles.blockButton}
-                          onPress={() => handleCardAction(card, 'BLOCK')}
+                        <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                          style={styles.blockButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                          onPress={() => handleCardAction(card, 'BLOCK')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
                         >
                           <Text style={styles.blockButtonIcon}>🚫</Text>
                           <Text style={styles.blockButtonText}>Blokir Kartu</Text>
                         </TouchableOpacity>
                       ) : card.cardStatus === 'BLOCKED' ? (
-                        <TouchableOpacity
-                          style={styles.activateButton}
-                          onPress={() => handleCardAction(card, 'ACTIVATE')}
+                        <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                          style={styles.activateButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                          onPress={() => handleCardAction(card, 'ACTIVATE')} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
                         >
                           <Text style={styles.activateButtonIcon}>✅</Text>
                           <Text style={styles.activateButtonText}>Aktifkan Kartu</Text>

@@ -100,7 +100,7 @@
 // - apiService: HTTP client untuk update/get saldo user
 // ==================================================================================
 import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 5 state variable (nfcEnabled, amount, balance, merchant, scanning); useEffect untuk init NFC saat mount dan cleanup saat unmount
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah container dasar React Native \u2014 setara div di HTML
   Text, // Text menampilkan teks
   TextInput, // TextInput adalah input teks dengan keyboard numerik \u2014 digunakan bersama keypad kustom untuk input nominal pembayaran
@@ -108,7 +108,7 @@ import {
   Alert, // Alert menampilkan dialog popup native \u2014 untuk pesan error dan konfirmasi pembayaran
   ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan saat NFC processing berlangsung
   Modal // Modal adalah overlay layar penuh \u2014 digunakan untuk menampilkan tampilan scan NFC di atas screen utama
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
 import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts \u2014 menyediakan initNFC, readPhysicalCard, dan cleanup untuk hardware NFC
 import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari file usePayment.ts \u2014 menyediakan processTapToPayTransfer dan isProcessing untuk alur pembayaran NFC
@@ -169,14 +169,14 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // Fungsi: Ambil saldo terbaru user dari backend API
   // Dipanggil setelah transaksi berhasil untuk refresh tampilan saldo
   const fetchBalance = async () => { // async karena melakukan HTTP request ke backend API
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const resp = await apiService.getUserById(user.id); // await menunggu respons GET /api/users/:id dari backend
       const bal = resp?.user?.balance ?? resp?.balance; // optional chaining (?.) untuk akses property aman; ?? (nullish coalescing) menggunakan nilai kanan hanya jika kiri null/undefined
       if (typeof bal === 'number') { // typeof === 'number' memastikan tipe data angka sebelum di-set ke state
         setCurrentBalance(bal); // setCurrentBalance memperbarui state saldo dengan nilai terbaru dari backend
       }
     } catch (error: any) { // catch menangkap error; : any agar TypeScript tidak strict tentang tipe error
-      console.error('❌ Failed to refresh balance:', error?.message || error);
+      console.error('❌ Failed to refresh balance:', error?.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     }
   };
 
@@ -184,15 +184,15 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // Validasi input → buka modal scan → proses pembayaran via usePayment hook
   const handleStartScan = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
     if (!user?.id) { // optional chaining (?.) aman jika user null; ! membalik boolean — stop jika tidak ada user valid
-      Alert.alert('Error', 'User tidak valid');
-      return;
+      Alert.alert('Error', 'User tidak valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
     const raw = amount.replace(/[^0-9]/g, ''); // .replace() mengganti teks; regex /[^0-9]/g mencocokkan semua karakter non-angka; 'g' = global (semua kemunculan); hasilnya hanya digit
     const amountNum = parseFloat(raw); // parseFloat() mengubah string ke bilangan desimal
     if (!amountNum || amountNum <= 0) { // !amountNum berarti NaN/0/null; amountNum <= 0 berarti angka tidak valid
-      Alert.alert('Error', 'Masukkan jumlah yang valid');
-      return;
+      Alert.alert('Error', 'Masukkan jumlah yang valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
     setScanning(true); // setScanning(true) menampilkan Modal overlay scan NFC
@@ -217,8 +217,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ============================================================
   // Jika NFC belum diaktifkan user, tampilkan screen instruksi
   // User harus ke Settings → aktifkan NFC → kembali ke app
-  if (!nfcEnabled) {
-    return (
+  if (!nfcEnabled) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
       <SafeAreaView style={styles.container}>
         {/* Header navigasi dengan tombol kembali */}
         <View style={styles.header}>
@@ -255,7 +255,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ============================================================
   // RENDER UTAMA: Form Pembayaran NFC (NFC aktif)
   // ============================================================
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
       {/* Header dengan tombol kembali dan judul halaman */}
       <View style={styles.header}>
@@ -291,12 +291,12 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           <Text style={styles.sectionLabel}>Nominal Pembayaran</Text>
           <View style={styles.amountContainer}>
             <Text style={styles.currencySymbol}>Rp</Text>{/* Prefix mata uang */}
-            <TextInput
-              style={styles.amountInput}
+            <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
+              style={styles.amountInput} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               value={amount}           // Nilai dari state (format: "50.000")
               onChangeText={handleAmountChange} // Handler format otomatis
-              placeholder="0"
-              placeholderTextColor="#cbd5e1"
+              placeholder="0" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
+              placeholderTextColor="#cbd5e1" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
               keyboardType="numeric"  // Tampilkan keyboard numerik native
             />
           </View>
@@ -314,16 +314,16 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           ].map((row, rowIndex) => (
             <View key={rowIndex} style={styles.keypadRow}>
               {row.map((key) => (
-                <TouchableOpacity
+                <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                   key={key}
-                  style={styles.keypadButton}
-                  onPress={() => {
+                  style={styles.keypadButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                  onPress={() => { // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
                     if (key === '⌫') {
                       // Hapus 1 karakter terakhir dari input
                       setAmount(amount.slice(0, -1));
-                    } else if (key === '.') {
+                    } else if (key === '.') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
                       // Ignore decimal for now (tidak support pecahan)
-                    } else {
+                    } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
                       // Tambahkan digit ke input dan format ulang
                       handleAmountChange(amount + key);
                     }
@@ -348,10 +348,10 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
         {/* ── Tombol Aksi: Lanjutkan Scan ── */}
         {/* Disabled jika: nominal kosong ATAU sedang memproses pembayaran */}
         {/* Menampilkan spinner saat isProcessing = true */}
-        <TouchableOpacity 
-          style={[styles.scanButton, (!amount || isProcessing) && styles.scanButtonDisabled]}
-          onPress={handleStartScan}
-          disabled={!amount || isProcessing}
+        <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+          style={[styles.scanButton, (!amount || isProcessing) && styles.scanButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
+          onPress={handleStartScan} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+          disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
           {isProcessing ? (
             <ActivityIndicator color="#fff" /> // Spinner saat proses berlangsung
@@ -400,9 +400,9 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
                 </Text>
               </View>
 
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => setScanning(false)}
+              <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
+                style={styles.cancelButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
+                onPress={() => setScanning(false)} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               >
                 <Text style={styles.cancelButtonText}>Batalkan</Text>
               </TouchableOpacity>

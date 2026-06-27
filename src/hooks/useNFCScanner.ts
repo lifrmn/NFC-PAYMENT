@@ -48,7 +48,7 @@
 import { useState } from 'react'; // import mengambil module; { useState } destructuring mengambil hook useState dari library react; useState digunakan untuk membuat state lokal isScanning dan lastScannedCard di dalam hook kustom ini
 import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog popup native saat kartu tidak terdaftar, tidak aktif, atau scan gagal
 import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts — menyediakan method untuk membaca UID kartu NFC dari hardware perangkat Android
-import { apiService } from '../utils/apiService';
+import { apiService } from '../utils/apiService'; // import apiService dari file apiService.ts — digunakan untuk HTTP GET validasi kartu ke backend dan POST log tap analytics
 
 // ==================================================================================
 // HOOK: useNFCScanner

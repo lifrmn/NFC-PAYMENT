@@ -58,14 +58,14 @@
 // ==================================================================================
 
 import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan otomatis saat ada elemen JSX seperti <TouchableOpacity>
-import {
+import { // import dari react-native: mengambil beberapa komponen UI sekaligus dalam satu pernyataan import
   TouchableOpacity,  // TouchableOpacity adalah tombol interaktif dengan efek transparansi saat ditekan \u2014 digunakan sebagai wrapper utama CustomButton
   Text,              // Text menampilkan label teks di dalam tombol
   StyleSheet,        // StyleSheet.create() adalah API React Native untuk mendefinisikan style dengan validasi tipe dan optimasi performa
   ViewStyle,         // ViewStyle adalah tipe TypeScript khusus untuk styling View \u2014 digunakan di prop style agar type-safe
   TextStyle,         // TextStyle adalah tipe TypeScript khusus untuk styling Text \u2014 digunakan di prop textStyle
   ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan menggantikan teks label saat state loading=true
-} from 'react-native';
+} from 'react-native'; // penutup import block — semua komponen di atas diambil dari library react-native
 
 // ==================================================================================
 // INTERFACE: CustomButtonProps
@@ -77,7 +77,7 @@ import {
 // - Autocomplete: IDE suggest available props
 // - Documentation: Self-documenting code
 // ==================================================================================
-interface CustomButtonProps {
+interface CustomButtonProps { // interface TypeScript mendefinisikan struktur props yang harus/boleh diberikan ke komponen CustomButton
   title: string;                      // Button text (REQUIRED)
   onPress: () => void;                // Callback function saat button di-tap (REQUIRED)
   style?: ViewStyle;                  // Custom container style (optional)
@@ -94,7 +94,7 @@ interface CustomButtonProps {
 // Functional component menggunakan React hooks pattern.
 // Export default untuk simplicity (import tanpa curly braces).
 // ==================================================================================
-export default function CustomButton({
+export default function CustomButton({ // export default: komponen diekspor sebagai default sehingga bisa diimport tanpa kurung kurawal; function mendefinisikan komponen React fungsional
   // Destructure props dengan default values untuk prop yang opsional
   title,               // Wajib: text yang ditampilkan di button
   onPress,             // Wajib: callback saat button di-tap
@@ -104,7 +104,7 @@ export default function CustomButton({
   loading = false,     // Opsional: default false (tidak loading)
   variant = 'primary', // Opsional: default biru (primary)
   size = 'medium',     // Opsional: default medium size
-}: CustomButtonProps) {
+}: CustomButtonProps) { // penutup destructuring — TypeScript memvalidasi semua props sesuai interface CustomButtonProps
   
   // ================================================================================
   // HANDLER: handlePress()
@@ -123,26 +123,26 @@ export default function CustomButton({
   // - Debugging: Log semua button interactions untuk troubleshooting
   // - Validation: Ensure onPress hanya dipanggil jika button active
   // ================================================================================
-  const handlePress = () => {
+  const handlePress = () => { // arrow function tanpa async — handler tekan tombol; membungkus onPress dengan validasi dan error handling
     // Log untuk debugging: track setiap kali button di-tap
     console.log('🔘 CustomButton pressed:', title, 'disabled:', disabled, 'loading:', loading);
     
     // Validasi: button hanya bisa di-press jika tidak disabled, tidak loading, dan punya callback
     // Triple check untuk keamanan: disabled, loading, dan onPress defined
-    if (!disabled && !loading && onPress) {
-      try {
+    if (!disabled && !loading && onPress) { // ! membalik boolean; tiga kondisi harus terpenuhi: tidak disabled, tidak loading, dan onPress ada
+      try { // try membungkus pemanggilan onPress; mencegah error dari parent component menyebabkan crash
         // Panggil callback yang diberikan oleh parent component
-        onPress(); // Execute function
+        onPress(); // memanggil fungsi callback yang diberikan komponen induk saat tombol ini dibuat
         
         // Log sukses untuk memastikan callback berhasil dipanggil
-        console.log('✅ CustomButton onPress called successfully for:', title);
+        console.log('✅ CustomButton onPress called successfully for:', title); // console.log mencetak pesan sukses ke terminal untuk keperluan debugging
         
-      } catch (error) {
+      } catch (error) { // catch menangkap error jika onPress melempar exception — mencegah aplikasi crash
         // Tangkap error untuk mencegah app crash
         // Error bisa terjadi jika onPress throw exception
-        console.error('❌ CustomButton onPress error for:', title, error);
+        console.error('❌ CustomButton onPress error for:', title, error); // console.error mencetak error dengan detail ke terminal
       }
-    } else {
+    } else { // else: blok yang dijalankan ketika tombol disabled, loading, atau onPress tidak ada
       // Log mengapa button tidak merespons (untuk debugging)
       // Membantu troubleshoot masalah "button tidak berfungsi"
       console.log('⚠️ CustomButton press blocked - disabled:', disabled, 'loading:', loading, 'onPress:', !!onPress);
@@ -168,7 +168,7 @@ export default function CustomButton({
   // ================================================================================
   // Gabungkan style berdasarkan props yang diberikan
   // Array style akan di-merge dari kiri ke kanan (kanan override kiri)
-  const buttonStyle = [
+  const buttonStyle = [ // array style di-merge React Native dari kiri ke kanan; kanan override kiri jika ada konflik
     styles.baseButton,                   // Style dasar: border radius, shadow
     styles[`${variant}Button`],          // Style variant: warna background
     styles[`${size}Button`],             // Style size: padding
@@ -177,7 +177,7 @@ export default function CustomButton({
   ];
 
   // Gabungkan style text dengan pola yang sama
-  const buttonTextStyle = [
+  const buttonTextStyle = [ // array style teks; digabung dari kiri ke kanan; style terakhir punya prioritas tertinggi
     styles.baseText,                     // Style dasar text: font weight, align
     styles[`${variant}Text`],            // Warna text sesuai variant
     styles[`${size}Text`],               // Ukuran font sesuai size
@@ -190,8 +190,8 @@ export default function CustomButton({
   // ================================================================================
   // Render TouchableOpacity dengan conditional content (loading spinner atau text).
   // ================================================================================
-  return (
-    <TouchableOpacity
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender ke layar
+    <TouchableOpacity // TouchableOpacity: komponen wrapper yang merespons sentuhan dan memberi efek transparansi saat ditekan
       // STEP 1: Apply combined styles
       style={buttonStyle}
       
@@ -251,7 +251,7 @@ export default function CustomButton({
 // - Text Styles: Corresponding text styles untuk each variant/size
 //
 // ==================================================================================
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({ // StyleSheet.create() membuat objek style yang dioptimalkan React Native; lebih cepat dari objek biasa
   // ================================================================================
   // BASE BUTTON STYLE - APPLIED TO ALL BUTTONS
   // ================================================================================
