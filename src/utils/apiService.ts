@@ -1256,6 +1256,28 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   }
 
   // ================================================================================
+  // METHOD: topUpCard()
+  // ================================================================================
+  // TUJUAN:
+  // Top-up saldo kartu NFC milik user.
+  // Endpoint: POST /api/nfc-cards/topup
+  //
+  // PARAMETER:
+  // - cardId: string        - UID kartu NFC yang akan di-top-up
+  // - amount: number        - Nominal top-up dalam Rupiah (harus > 0)
+  // - adminPassword: string - Password admin untuk otorisasi
+  //
+  // RETURN:
+  // - { success: true, card: { cardId, balance, previousBalance } }
+  // ================================================================================
+  async topUpCard(cardId: string, amount: number, adminPassword: string) {
+    return await this.makeRequest('/api/nfc-cards/topup', {
+      method: 'POST',
+      body: { cardId, amount, adminPassword },
+    });
+  }
+
+  // ================================================================================
   // METHOD: destroy()
   // ================================================================================
   // TUJUAN:

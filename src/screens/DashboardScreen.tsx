@@ -19,6 +19,7 @@ interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk 
   onNavigateToNFC: () => void; // props onNavigateToNFC adalah callback untuk navigasi ke screen pembayaran NFC
   onNavigateToRegisterCard?: () => void; // props opsional (tanda ?) — callback untuk navigasi ke screen pendaftaran kartu NFC; tanda ? berarti boleh tidak dikirim
   onNavigateToMyCards?: () => void; // props opsional — callback untuk navigasi ke screen daftar kartu milik user
+  onNavigateToTopUp?: () => void; // props opsional — callback untuk navigasi ke screen top-up saldo kartu NFC
 }
 
 export default function DashboardScreen({ // export default mengekspor komponen ini sebagai ekspor utama file sehingga bisa diimport tanpa kurung kurawal; function DashboardScreen adalah komponen React fungsional yang menerima props dalam bentuk destructuring
@@ -26,7 +27,8 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   onLogout, // props onLogout: fungsi yang dipanggil saat user logout
   onNavigateToNFC, // props onNavigateToNFC: fungsi untuk pindah ke screen NFC payment
   onNavigateToRegisterCard, // props opsional untuk pindah ke screen daftar kartu baru
-  onNavigateToMyCards // props opsional untuk pindah ke screen daftar kartu saya
+  onNavigateToMyCards, // props opsional untuk pindah ke screen daftar kartu saya
+  onNavigateToTopUp, // props opsional untuk pindah ke screen top-up saldo
 }: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
   const [currentUser, setCurrentUser] = useState(user || null); // const membuat variabel tetap; useState(initialValue) membuat state lokal — currentUser menyimpan data user terkini; setCurrentUser fungsi untuk memperbarui state; user || null menggunakan nilai user jika ada, null jika tidak
   const [transactions, setTransactions] = useState<any[]>([]); // useState dengan tipe generik <any[]> berarti state berisi array; transactions menyimpan daftar transaksi; setTransactions untuk memperbarui; [] adalah nilai awal array kosong
@@ -176,11 +178,11 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   };
 
   const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up
-    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      '💰 Top Up Saldo', // judul Alert informasi fitur top-up; 💰 emoji sebagai indikator topik keuangan
-      'Fitur top-up akan segera hadir!\n\nMetode top-up yang tersedia:\n• Transfer Bank\n• Virtual Account\n• E-Wallet', // pesan informasi kepada user bahwa fitur top-up masih dalam pengembangan
-      [{ text: 'OK' }] // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
-    );
+    if (onNavigateToTopUp) {
+      onNavigateToTopUp(); // navigasi ke TopUpScreen jika callback tersedia
+    } else {
+      Alert.alert('Top Up', 'Fitur top-up belum tersedia di layar ini.', [{ text: 'OK' }]);
+    }
   };
 
   if (!currentUser) { // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undefined; tampilkan loading screen jika data user belum ada

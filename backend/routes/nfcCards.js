@@ -1136,6 +1136,15 @@ router.post('/topup', async (req, res) => { // router.post() mendaftarkan endpoi
       });
       // balance sekarang = balance lama + amountNum
 
+      // STEP 5a-bis: Sync User.balance agar mobile app ikut tampil saldo terbaru
+      // User.balance adalah yang ditampilkan di aplikasi mobile (Dashboard)
+      if (card.userId) { // hanya update user balance jika kartu terhubung ke user
+        await tx.user.update({
+          where: { id: card.userId },
+          data: { balance: { increment: amountNum } } // tambah saldo user sama dengan nominal topup kartu
+        });
+      }
+
       // STEP 5b: Log top-up transaction ke NFCTransaction table
       await tx.nFCTransaction.create({ // tx.nFCTransaction.create(): mencatat transaksi topup dalam transaction atomik; tersimpan bersama update saldo
         data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
@@ -1179,7 +1188,7 @@ router.post('/topup', async (req, res) => { // router.post() mendaftarkan endpoi
       message: 'Card topped up successfully', // pesan sukses topup kartu; dikirim setelah semua operasi dalam transaction berhasil
       card: { // objek card berisi data kartu setelah topup
         cardId: updatedCard.cardId, // ID kartu yang di-topup
-        balance: updatedCard.balance,        // New balance
+        balance: updatedCard.balance,        // New balance kartu
         previousBalance: card.balance        // Old balance (untuk comparison)
       }
     });

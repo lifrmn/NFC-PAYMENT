@@ -148,6 +148,12 @@ AUTO REFRESH (REALTIME):
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" onclick="switchTab('topup')" id="nav-topup">
+                        <span class="nav-icon">💰</span>
+                        Top Up Saldo
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" onclick="switchTab('pengaturan')" id="nav-pengaturan"> <!-- switchTab('pengaturan') berpindah ke tab pengaturan sistem -->
                         <span class="nav-icon">⚙️</span>
                         Pengaturan
@@ -555,10 +561,11 @@ AUTO REFRESH (REALTIME):
                                     <th>Status</th>
                                     <th>Kartu NFC</th>
                                     <th>Bergabung</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="pengguna-table-body">
-                                <tr><td colspan="7" class="table-loading-muted">Memuat data...</td></tr>
+                                <tr><td colspan="8" class="table-loading-muted">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -593,10 +600,11 @@ AUTO REFRESH (REALTIME):
                                     <th>Status</th>
                                     <th>Terakhir Digunakan</th>
                                     <th>Terdaftar</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="perangkat-table-body">
-                                <tr><td colspan="6" class="table-loading-muted">Memuat data...</td></tr>
+                                <tr><td colspan="7" class="table-loading-muted">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -624,7 +632,82 @@ AUTO REFRESH (REALTIME):
             </div>
 
             <!-- ========================================
-                 TAB 7: PENGATURAN
+                 TAB 7: TOP UP SALDO
+                 ======================================== -->
+            <div id="tab-topup" class="tab-content">
+                <div class="header">
+                    <div class="header-title">
+                        <h1>Top Up Saldo</h1>
+                        <p>Tambah saldo kartu NFC pengguna</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-export btn-refresh" onclick="loadNFCCards(); loadUsers(); renderTopupTab();">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Form Top Up -->
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">Form Top Up Kartu NFC</h2></div>
+                    <div class="topup-form">
+                        <div class="topup-form-row">
+                            <div class="topup-field">
+                                <label for="topup-card-select">Pilih Kartu NFC</label>
+                                <select id="topup-card-select" class="topup-input">
+                                    <option value="">-- Pilih Kartu --</option>
+                                </select>
+                            </div>
+                            <div class="topup-field">
+                                <label for="topup-amount">Nominal Top Up</label>
+                                <input type="number" id="topup-amount" class="topup-input" placeholder="Contoh: 50000" min="1000" step="1000" />
+                            </div>
+                            <div class="topup-field">
+                                <label for="topup-admin-pass">Password Admin</label>
+                                <input type="password" id="topup-admin-pass" class="topup-input" placeholder="Password admin" />
+                            </div>
+                        </div>
+                        <div class="topup-presets">
+                            <span class="topup-preset-label">Nominal cepat:</span>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(10000)">Rp 10.000</button>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(25000)">Rp 25.000</button>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(50000)">Rp 50.000</button>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(100000)">Rp 100.000</button>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(200000)">Rp 200.000</button>
+                            <button class="topup-preset-btn" onclick="setTopupAmount(500000)">Rp 500.000</button>
+                        </div>
+                        <div class="topup-actions">
+                            <button class="btn-topup-submit" onclick="doTopup()">💰 Top Up Sekarang</button>
+                        </div>
+                        <div id="topup-result" class="topup-result" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- Tabel Riwayat Kartu NFC -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Daftar Kartu NFC</h2>
+                        <span id="topup-card-count" class="count-muted"></span>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Card ID</th>
+                                    <th>Pemilik</th>
+                                    <th>Saldo</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topup-cards-tbody">
+                                <tr><td colspan="5" class="table-loading-muted">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+                 TAB 8: PENGATURAN
                  ======================================== -->
             <div id="tab-pengaturan" class="tab-content">
                 <div class="header">
@@ -770,6 +853,7 @@ AUTO REFRESH (REALTIME):
             if (tabName === 'pengguna') renderPenggunaTab();
             if (tabName === 'perangkat') renderPerangkatTab();
             if (tabName === 'laporan') renderLaporanTab();
+            if (tabName === 'topup') renderTopupTab();
             
             // Update URL hash
             window.location.hash = tabName;
@@ -779,7 +863,7 @@ AUTO REFRESH (REALTIME):
          * Initialize URL hash routing
          * Support browser back/forward buttons
          */
-        var VALID_TABS = ['dashboard','fraud-alert','transaksi','pengguna','perangkat','laporan','pengaturan'];
+        var VALID_TABS = ['dashboard','fraud-alert','transaksi','pengguna','perangkat','laporan','topup','pengaturan'];
 
         function initRouting() {
             var hash = window.location.hash.replace('#', '');
@@ -829,21 +913,26 @@ AUTO REFRESH (REALTIME):
             const count = document.getElementById('pengguna-count');
             if (!tbody) return;
             if (allUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Belum ada pengguna</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Belum ada pengguna</td></tr>';
                 return;
             }
             if (count) count.textContent = allUsers.length + ' pengguna';
             tbody.innerHTML = allUsers.map(u => {
                 const cardCount = nfcCards.filter(c => c.userId === u.id).length;
-                const statusClass = u.isActive !== false ? 'success' : 'failed';
+                const isActive = u.isActive !== false;
+                const statusClass = isActive ? 'success' : 'failed';
+                const blockBtn = isActive
+                    ? `<button class="btn-action btn-action-danger" onclick="blockUser(${u.id}, '${u.username}')">🚫 Blokir</button>`
+                    : `<button class="btn-action btn-action-success" onclick="unblockUser(${u.id}, '${u.username}')">✅ Aktifkan</button>`;
                 return `<tr>
                     <td class="td-id-muted">#${u.id}</td>
                     <td><div class="user-cell"><div class="user-icon">👤</div><div class="user-info-cell"><h4>${u.name || '-'}</h4></div></div></td>
                     <td class="td-small">${u.username || '-'}</td>
                     <td class="td-strong">${formatCurrency(u.balance || 0)}</td>
-                    <td><span class="status-badge ${statusClass}">${u.isActive !== false ? 'Aktif' : 'Nonaktif'}</span></td>
+                    <td><span class="status-badge ${statusClass}">${isActive ? 'Aktif' : 'Nonaktif'}</span></td>
                     <td class="td-center">${cardCount} kartu</td>
                     <td class="td-date-muted">${formatDate(u.createdAt)}</td>
+                    <td>${blockBtn}</td>
                 </tr>`;
             }).join('');
         }
@@ -853,22 +942,278 @@ AUTO REFRESH (REALTIME):
             const count = document.getElementById('perangkat-count');
             if (!tbody) return;
             if (nfcCards.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="table-loading-muted">Belum ada kartu NFC</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Belum ada kartu NFC</td></tr>';
                 return;
             }
             if (count) count.textContent = nfcCards.length + ' kartu';
             tbody.innerHTML = nfcCards.map(c => {
                 const owner = allUsers.find(u => u.id === c.userId);
-                const statusClass = c.cardStatus === 'ACTIVE' ? 'success' : 'failed';
+                const isActive = c.cardStatus === 'ACTIVE';
+                const statusClass = isActive ? 'success' : 'failed';
+                const toggleBtn = isActive
+                    ? `<button class="btn-action btn-action-danger" onclick="toggleCardStatus('${c.cardId}', 'BLOCKED')">🔒 Blokir</button>`
+                    : `<button class="btn-action btn-action-success" onclick="toggleCardStatus('${c.cardId}', 'ACTIVE')">🔓 Aktifkan</button>`;
                 return `<tr>
                     <td class="td-mono">${c.cardId || c.id}</td>
                     <td>${owner ? owner.name : (c.userId ? '#' + c.userId : '-')}</td>
                     <td class="td-strong">${formatCurrency(c.balance || 0)}</td>
-                    <td><span class="status-badge ${statusClass}">${c.cardStatus === 'ACTIVE' ? 'Aktif' : (c.cardStatus || 'Nonaktif')}</span></td>
+                    <td><span class="status-badge ${statusClass}">${isActive ? 'Aktif' : (c.cardStatus || 'Nonaktif')}</span></td>
                     <td class="td-date-muted">${c.lastUsed ? formatDate(c.lastUsed) : '-'}</td>
                     <td class="td-date-muted">${formatDate(c.createdAt)}</td>
+                    <td>${toggleBtn}</td>
                 </tr>`;
             }).join('');
+        }
+
+        // =================================================================
+        // ADMIN ACTION FUNCTIONS — terhubung ke backend utama port 4000
+        // =================================================================
+
+        // Password admin yang di-cache agar tidak ditanya berulang kali dalam satu sesi
+        var _cachedAdminPass = '';
+
+        /**
+         * Minta password admin dari user (cache di memori sesi)
+         * Jika sudah ada di cache, langsung return tanpa prompt
+         */
+        function getAdminPassword(forcePrompt) {
+            if (!forcePrompt && _cachedAdminPass) return _cachedAdminPass;
+            const pass = window.prompt('🔐 Masukkan Password Admin:');
+            if (pass) _cachedAdminPass = pass;
+            return pass;
+        }
+
+        /**
+         * Blokir user → POST /api/admin/block-user
+         * Headers: x-app-key, x-admin-password
+         */
+        async function blockUser(userId, username) {
+            if (!window.confirm(`Blokir user "${username}" (#${userId})?\nUser tidak bisa login dan transaksi.`)) return;
+            const pass = getAdminPassword();
+            if (!pass) return;
+            try {
+                const res = await fetch(API_BASE + '/admin/block-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-app-key': 'NFC2025SecureApp',
+                        'x-admin-password': pass
+                    },
+                    body: JSON.stringify({ userId, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(`✅ User "${username}" berhasil diblokir.`);
+                    await loadUsers();
+                    renderPenggunaTab();
+                } else {
+                    if (res.status === 401) _cachedAdminPass = '';
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        /**
+         * Aktifkan kembali user → POST /api/admin/unblock-user
+         */
+        async function unblockUser(userId, username) {
+            if (!window.confirm(`Aktifkan kembali user "${username}" (#${userId})?`)) return;
+            const pass = getAdminPassword();
+            if (!pass) return;
+            try {
+                const res = await fetch(API_BASE + '/admin/unblock-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-app-key': 'NFC2025SecureApp',
+                        'x-admin-password': pass
+                    },
+                    body: JSON.stringify({ userId, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(`✅ User "${username}" berhasil diaktifkan kembali.`);
+                    await loadUsers();
+                    renderPenggunaTab();
+                } else {
+                    if (res.status === 401) _cachedAdminPass = '';
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        /**
+         * Blokir / Aktifkan kartu NFC → PUT /api/nfc-cards/status
+         * @param {string} cardId - Card UID
+         * @param {string} newStatus - 'ACTIVE' | 'BLOCKED'
+         */
+        async function toggleCardStatus(cardId, newStatus) {
+            const label = newStatus === 'BLOCKED' ? 'blokir' : 'aktifkan';
+            if (!window.confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} kartu "${cardId}"?`)) return;
+            const pass = getAdminPassword();
+            if (!pass) return;
+            try {
+                const res = await fetch(API_BASE + '/nfc-cards/status', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-app-key': 'NFC2025SecureApp'
+                    },
+                    body: JSON.stringify({ cardId, status: newStatus, adminPassword: pass })
+                });
+                const data = await res.json();
+                if (res.ok && (data.success || data.card)) {
+                    alert(`✅ Kartu "${cardId}" berhasil di-${label}.`);
+                    await loadNFCCards();
+                    renderPerangkatTab();
+                    if (currentTab === 'topup') renderTopupTab();
+                } else {
+                    if (res.status === 401) _cachedAdminPass = '';
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                }
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        // =================================================================
+        // TOP UP TAB FUNCTIONS
+        // =================================================================
+
+        /**
+         * Render Tab Top Up: isi dropdown kartu & tabel daftar kartu
+         */
+        function renderTopupTab() {
+            // --- isi dropdown pilih kartu ---
+            const sel = document.getElementById('topup-card-select');
+            if (sel) {
+                const current = sel.value;
+                sel.innerHTML = '<option value="">-- Pilih Kartu --</option>';
+                nfcCards.forEach(c => {
+                    const owner = allUsers.find(u => u.id === c.userId);
+                    const label = owner
+                        ? `${c.cardId} — ${owner.name} (${formatCurrency(c.balance || 0)})`
+                        : `${c.cardId} (${formatCurrency(c.balance || 0)})`;
+                    const opt = document.createElement('option');
+                    opt.value = c.cardId;
+                    opt.textContent = label;
+                    if (c.cardId === current) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+            }
+
+            // --- tabel daftar kartu ---
+            const tbody = document.getElementById('topup-cards-tbody');
+            const countEl = document.getElementById('topup-card-count');
+            if (!tbody) return;
+            if (nfcCards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="table-loading-muted">Belum ada kartu NFC terdaftar</td></tr>';
+                if (countEl) countEl.textContent = '';
+                return;
+            }
+            if (countEl) countEl.textContent = nfcCards.length + ' kartu';
+            tbody.innerHTML = nfcCards.map(c => {
+                const owner = allUsers.find(u => u.id === c.userId);
+                const statusClass = c.cardStatus === 'ACTIVE' ? 'success' : 'failed';
+                return `<tr>
+                    <td class="td-mono">${c.cardId}</td>
+                    <td>${owner ? owner.name : (c.userId ? '#' + c.userId : '-')}</td>
+                    <td class="td-strong">${formatCurrency(c.balance || 0)}</td>
+                    <td><span class="status-badge ${statusClass}">${c.cardStatus === 'ACTIVE' ? 'Aktif' : (c.cardStatus || 'Nonaktif')}</span></td>
+                    <td><button class="btn-topup-quick" onclick="quickTopup('${c.cardId}')">+ Top Up</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        /**
+         * Set nominal amount dari tombol preset
+         */
+        function setTopupAmount(amount) {
+            const input = document.getElementById('topup-amount');
+            if (input) input.value = amount;
+        }
+
+        /**
+         * Isi cardId dari tabel ke dropdown dan scroll ke form
+         */
+        function quickTopup(cardId) {
+            const sel = document.getElementById('topup-card-select');
+            if (sel) sel.value = cardId;
+            const formEl = document.querySelector('.topup-form');
+            if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Eksekusi top-up: POST /api/nfc-cards/topup ke simple-admin server
+         */
+        async function doTopup() {
+            const cardId    = document.getElementById('topup-card-select').value.trim();
+            const amount    = parseFloat(document.getElementById('topup-amount').value);
+            const adminPass = document.getElementById('topup-admin-pass').value.trim();
+            const resultEl  = document.getElementById('topup-result');
+            const btn       = document.querySelector('.btn-topup-submit');
+
+            // Validasi input
+            if (!cardId) {
+                showTopupResult('error', '❌ Pilih kartu NFC terlebih dahulu.');
+                return;
+            }
+            if (!amount || isNaN(amount) || amount <= 0) {
+                showTopupResult('error', '❌ Masukkan nominal top-up yang valid.');
+                return;
+            }
+            if (!adminPass) {
+                showTopupResult('error', '❌ Masukkan password admin.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Memproses...';
+            if (resultEl) resultEl.style.display = 'none';
+
+            try {
+                const res = await fetch(API_BASE + '/nfc-cards/topup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-app-key': 'NFC2025SecureApp'
+                    },
+                    body: JSON.stringify({ cardId, amount, adminPassword: adminPass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const card = data.card || {};
+                    showTopupResult('success',
+                        `✅ Top Up berhasil! Kartu <strong>${cardId}</strong> berhasil ditambahkan ` +
+                        `<strong>${formatCurrency(amount)}</strong>. ` +
+                        `Saldo kartu baru: <strong>${formatCurrency(card.balance || 0)}</strong>` +
+                        `<br><small style="opacity:.75">Saldo user di aplikasi mobile otomatis ikut diperbarui.</small>`
+                    );
+                    // Reset form & refresh data
+                    document.getElementById('topup-amount').value = '';
+                    await loadNFCCards();
+                    renderTopupTab();
+                } else {
+                    showTopupResult('error', '❌ Gagal: ' + (data.error || data.message || 'Terjadi kesalahan'));
+                }
+            } catch (err) {
+                showTopupResult('error', '❌ Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💰 Top Up Sekarang';
+            }
+        }
+
+        function showTopupResult(type, message) {
+            const el = document.getElementById('topup-result');
+            if (!el) return;
+            el.className = 'topup-result ' + type;
+            el.innerHTML = message;
+            el.style.display = 'block';
         }
 
         function renderLaporanTab() {
@@ -1387,6 +1732,9 @@ Time: ${formatDate(alert.createdAt)}
                     break;
                 case 'laporan':
                     renderLaporanTab();
+                    break;
+                case 'topup':
+                    renderTopupTab();
                     break;
             }
         }

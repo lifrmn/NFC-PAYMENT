@@ -787,3 +787,172 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     background: #FEF3C7;    /* Kuning muda untuk badge HIGH (risiko tinggi) */
     color: #92400E;         /* Oranye/cokelat untuk teks HIGH */
 }
+
+/* ========================================
+   TOP UP FORM
+   Form tambah saldo kartu NFC
+   ======================================== */
+.topup-form {
+    padding: 8px 0;
+}
+
+.topup-form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.topup-field {
+    flex: 1;
+    min-width: 200px;
+}
+
+.topup-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.topup-input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    background: #fff;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.topup-input:focus {
+    border-color: #3B82F6;
+}
+
+.topup-presets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.topup-preset-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.topup-preset-btn {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.topup-preset-btn:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+}
+
+.topup-actions {
+    margin-bottom: 16px;
+}
+
+.btn-topup-submit {
+    background: #10B981;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-topup-submit:hover {
+    background: #059669;
+}
+
+.btn-topup-submit:disabled {
+    background: #9CA3AF;
+    cursor: not-allowed;
+}
+
+.topup-result {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.topup-result.success {
+    background: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #6EE7B7;
+}
+
+.topup-result.error {
+    background: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+}
+
+.btn-topup-quick {
+    background: #3B82F6;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-topup-quick:hover {
+    background: #2563EB;
+}
+
+/* ========================================
+   ACTION BUTTONS IN TABLES
+   Tombol aksi di dalam baris tabel
+   ======================================== */
+.btn-action {
+    border: none;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.btn-action-danger {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.btn-action-danger:hover {
+    background: #FECACA;
+}
+
+.btn-action-success {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.btn-action-success:hover {
+    background: #A7F3D0;
+}

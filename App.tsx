@@ -134,6 +134,7 @@ import DashboardScreen from './src/screens/DashboardScreen'; // Layar pusat menu
 import NFCScreen from './src/screens/NFCScreen'; // Layar proses pembayaran via NFC
 import RegisterCardScreen from './src/screens/RegisterCardScreen'; // Layar pendaftaran kartu NFC baru
 import MyCardsScreen from './src/screens/MyCardsScreen'; // Layar daftar dan manajemen kartu NFC milik user
+import TopUpScreen from './src/screens/TopUpScreen'; // Layar top-up saldo kartu NFC
 
 // ==================================================================================
 // IMPORT: Kumpulan Utilitas
@@ -164,6 +165,7 @@ export type RootStackParamList = { // Definisi semua route yang ada di navigatio
   NFC: undefined; // Screen pembayaran NFC — tidak butuh parameter tambahan
   RegisterCard: undefined; // Screen daftarkan kartu — tidak butuh parameter tambahan
   MyCards: undefined; // Screen daftar kartu — tidak butuh parameter tambahan
+  TopUp: undefined; // Screen top-up saldo kartu NFC
 };
 
 export type NavigationProp = StackNavigationProp<RootStackParamList>; // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
@@ -187,7 +189,7 @@ const Stack = createStackNavigator<RootStackParamList>(); // const membuat varia
 // - email: Email opsional hasil turunan dari username
 // ==================================================================================
 type AuthState = 'loading' | 'signedIn' | 'signedOut'; // Tiga kondisi: sedang memuat, sudah login, belum login
-type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards'; // Enum nama screen internal (huruf kecil, beda dari nama route)
+type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards' | 'topUp'; // Enum nama screen internal (huruf kecil, beda dari nama route)
 
 interface AppUser { // Struktur data user yang beredar di level komponen App
   id: number; // Primary key user dari database backend
@@ -572,6 +574,8 @@ export default function App() {
           ? 'RegisterCard'
           : screen === 'myCards'
           ? 'MyCards'
+          : screen === 'topUp'
+          ? 'TopUp'
           : 'Login'; // Jika tidak cocok dengan semua kondisi di atas, fallback ke Login.
       
       console.log(`🧭 Navigating from current to: ${targetScreen} (screen param: ${screen})`);
@@ -654,6 +658,7 @@ export default function App() {
                 onNavigateToNFC={() => navigateToScreen('nfc')} // Masuk ke alur pembayaran NFC.
                 onNavigateToRegisterCard={() => navigateToScreen('registerCard')} // Masuk ke form pendaftaran kartu baru.
                 onNavigateToMyCards={() => navigateToScreen('myCards')} // Melihat daftar kartu yang sudah terhubung.
+                onNavigateToTopUp={() => navigateToScreen('topUp')} // Masuk ke screen top-up saldo kartu NFC.
               />
             )}
           </Stack.Screen>
@@ -683,6 +688,16 @@ export default function App() {
                 user={currentUser} // Screen kartu butuh user untuk memuat data kartu yang sesuai.
                 onBack={() => navigateToScreen('dashboard')} // Kembali ke pusat menu utama.
                 onRegisterNew={() => navigateToScreen('registerCard')} // Shortcut tambah kartu baru dari daftar kartu.
+              />
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen name="TopUp" options={{ headerShown: false }}>
+            {() => (
+              <TopUpScreen
+                user={currentUser} // TopUpScreen butuh user untuk load kartu NFC miliknya.
+                onBack={() => navigateToScreen('dashboard')} // Kembali ke dashboard setelah selesai.
+                onSuccess={() => navigateToScreen('dashboard')} // Refresh dashboard setelah top-up berhasil.
               />
             )}
           </Stack.Screen>

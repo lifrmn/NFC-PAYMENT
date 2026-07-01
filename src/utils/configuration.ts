@@ -54,6 +54,10 @@ export const API_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev';
 // Ini matching dengan APP_SECRET di backend .env
 export const APP_SECRET = 'NFC2025SecureApp'; // export const mengekspor konstanta ini; APP_SECRET adalah kunci rahasia yang cocok dengan konfigurasi di backend .env; digunakan sebagai x-app-key header untuk autentikasi device
 
+// Admin password untuk operasi top-up kartu NFC (development only)
+// Matching dengan ADMIN_PASSWORD di backend .env (default: 'admin123')
+export const ADMIN_PASSWORD = 'admin123';
+
 // INSTRUKSI UPDATE URL (UNTUK DEVELOPMENT):
 // 1. Buka terminal, jalankan: ngrok http 4000
 // 2. Copy URL yang muncul (contoh: https://abc-123-xyz.ngrok-free.dev)
