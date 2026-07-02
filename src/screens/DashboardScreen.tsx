@@ -1,5 +1,5 @@
 // src/screens/DashboardScreen.tsx
-import React, { useState, useEffect, useRef } from 'react'; // import digunakan untuk mengambil module dari library; React adalah library utama; useState membuat state lokal komponen; useEffect menjalankan efek samping saat komponen mount/update; useRef membuat referensi mutable yang tidak memicu re-render
+import React, { useState, useEffect, useRef } from 'react';
 import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah komponen container dasar React Native — setara dengan <div> di HTML web
   Text, // Text adalah komponen untuk menampilkan teks di React Native — setara dengan <p> atau <span>
@@ -10,7 +10,7 @@ import { // import beberapa komponen atau fungsi sekaligus dari satu modul mengg
 } from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library eksternal; SafeAreaView adalah wrapper yang otomatis memberi padding agar konten tidak tertutup notch, status bar, atau home indicator
 import { useFocusEffect } from '@react-navigation/native'; // import useFocusEffect dari React Navigation; hook ini menjalankan callback setiap kali screen ini mendapat fokus (misalnya setelah kembali dari screen lain)
-import { getUserById, getUserTransactions, syncBalanceFromBackend } from '../utils/database'; // import tiga fungsi dari file database.ts: getUserById ambil data user dari lokal, getUserTransactions ambil riwayat transaksi, syncBalanceFromBackend sinkronisasi saldo dari backend
+import { getUserById, getUserTransactions } from '../utils/database'; // import dua fungsi dari database.ts: getUserById ambil data user segar dari backend, getUserTransactions ambil riwayat transaksi
 import styles from './DashboardScreen.styles'; // import stylesheet dari file terpisah — memisahkan logika dan tampilan agar kode lebih rapi
 
 interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan tipe data objek; DashboardScreenProps mendefinisikan props (parameter) yang WAJIB dan opsional diterima komponen DashboardScreen
@@ -30,55 +30,51 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   onNavigateToMyCards, // props opsional untuk pindah ke screen daftar kartu saya
   onNavigateToTopUp, // props opsional untuk pindah ke screen top-up saldo
 }: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
-  const [currentUser, setCurrentUser] = useState(user || null); // const membuat variabel tetap; useState(initialValue) membuat state lokal — currentUser menyimpan data user terkini; setCurrentUser fungsi untuk memperbarui state; user || null menggunakan nilai user jika ada, null jika tidak
-  const [transactions, setTransactions] = useState<any[]>([]); // useState dengan tipe generik <any[]> berarti state berisi array; transactions menyimpan daftar transaksi; setTransactions untuk memperbarui; [] adalah nilai awal array kosong
-  const [loading, setLoading] = useState(false); // useState(false) membuat state boolean loading; false berarti tidak sedang loading; setLoading(true) dipanggil saat refresh mulai, setLoading(false) saat selesai
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // useState tipe Date atau null; menyimpan waktu terakhir sinkronisasi saldo berhasil; null berarti belum pernah sync
-  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // useState dengan union type — hanya bisa berisi salah satu dari tiga string tersebut; 'never' berarti belum pernah mencoba sync
+  const [currentUser, setCurrentUser] = useState(user || null);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never');
+  // Timestamp refresh terakhir — mencegah burst API call saat navigasi cepat antar screen
+  const lastRefreshRef = useRef<number>(0);
 
-  const refreshData = async () => { // const membuat variabel tetap; async menandai fungsi ini asynchronous sehingga bisa menggunakan await; arrow function () => {...} mendefinisikan body fungsi
-    if (!user || !user.id) { // ! adalah operator NOT; !user berarti user null/undefined; || berarti ATAU — cek minimal satu kondisi
-      console.log('\u26a0\ufe0f No valid user for refresh data'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return; // return menghentikan eksekusi fungsi lebih awal jika tidak ada user valid
+  const refreshData = async () => {
+    if (!user || !user.id) return;
+
+    // Cooldown 10 detik: cegah refresh berulang saat navigasi cepat antar screen
+    const now = Date.now();
+    if (now - lastRefreshRef.current < 10000) {
+      console.log('⏱️ Refresh skipped — cooldown aktif (10s)');
+      return;
     }
+    lastRefreshRef.current = now;
     
-    setLoading(true); // setLoading(true) mengubah state loading menjadi true — memicu tampilan spinner RefreshControl di UI
-    try { // try memulai blok percobaan — jika ada error di dalam, eksekusi loncat ke blok catch
-      const updatedUser = await getUserById(user.id); // const membuat variabel tetap; await menunggu Promise selesai; getUserById(user.id) mengambil data user terbaru dari database lokal SQLite
-      if (updatedUser) { // if memeriksa apakah data user berhasil ditemukan (tidak null/undefined)
-        setCurrentUser(updatedUser); // setCurrentUser memperbarui state dengan data user terbaru
-        console.log('\ud83d\udcbe Loaded user from local DB'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    setLoading(true);
+    try {
+      // getUserById selalu fetch dari backend (sudah diperbaiki) → saldo selalu fresh
+      const updatedUser = await getUserById(user.id);
+      if (updatedUser) {
+        setCurrentUser(updatedUser); // langsung pakai balance dari backend, tidak perlu sync terpisah
+        setLastSyncTime(new Date());
+        setSyncStatus('success');
+        console.log(`✅ Updated user balance from backend: ${updatedUser.balance}`);
       }
 
-      const userTransactions = await getUserTransactions(user.id); // await getUserTransactions mengambil riwayat transaksi user dari database lokal
-      setTransactions(userTransactions || []); // setTransactions memperbarui state; || [] adalah fallback — jika getUserTransactions mengembalikan null/undefined, gunakan array kosong
+      // Ambil riwayat transaksi (1 API call terpisah)
+      const userTransactions = await getUserTransactions(user.id);
+      setTransactions(userTransactions || []);
 
-      try { // try bersarang — sync saldo dari backend dipisah agar kegagalan sync tidak membatalkan refresh data lokal
-        console.log('\ud83d\udcb0 Syncing balance from backend...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        const syncedBalance = await syncBalanceFromBackend(user.id); // await syncBalanceFromBackend menghubungi API backend via HTTP untuk mendapatkan saldo terkini
-        
-        if (syncedBalance !== null && typeof syncedBalance === 'number' && updatedUser) { // !== null memastikan bukan null; typeof === 'number' memastikan tipe data angka; && berarti AND — semua kondisi harus benar
-          setCurrentUser({ ...updatedUser, balance: syncedBalance }); // spread operator {...updatedUser} menyalin semua property ke objek baru; kemudian override property balance dengan nilai terbaru dari backend
-          setLastSyncTime(new Date()); // new Date() membuat objek Date berisi waktu sekarang — dicatat sebagai waktu sync terakhir
-          setSyncStatus('success'); // setSyncStatus mengubah status menjadi 'success' agar UI menampilkan indikator berhasil
-          console.log(`\u2705 Updated user balance from backend: ${syncedBalance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        }
-      } catch (syncError: any) { // catch menangkap error dari try bersarang; : any adalah type annotation — syncError bisa berupa tipe apa saja
-        setSyncStatus('failed'); // status sync diubah ke 'failed' — UI menampilkan indikator kegagalan
-        if (syncError.message?.includes('429')) { // optional chaining (?.) aman jika message tidak ada; includes('429') cek error HTTP 429 (Too Many Requests / rate limit dari backend)
-          console.log('⏱️ Rate limited, using cached balance'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
-          console.warn('⚠️ Balance sync failed, using local data:', syncError.message); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
-        }
+      // ✅ syncBalanceFromBackend dihapus dari sini — sudah tercakup dalam getUserById
+      // Sebelumnya: getUserById + syncBalanceFromBackend = 2 panggilan ke /api/users/:id
+      // Sesudahnya: hanya getUserById = 1 panggilan → menghemat 50% API call, mencegah 429
+
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      if (!currentUser || !currentUser.id) {
+        Alert.alert('Error', 'Gagal memuat data terbaru');
       }
-      
-    } catch (error) { // catch luar menangkap error dari getUserById atau getUserTransactions
-      console.error('Error refreshing data:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      if (!currentUser || !currentUser.id) { // hanya tampilkan alert jika belum ada data sama sekali di state (belum pernah berhasil load)
-        Alert.alert('Error', 'Gagal memuat data terbaru'); // Alert.alert menampilkan dialog native dengan judul 'Error' dan pesan
-      }
-    } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk cleanup/reset state
-      setLoading(false); // setLoading(false) menghentikan spinner loading apapun hasilnya
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -94,7 +90,7 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     const dataRefreshInterval = setInterval(() => { // setInterval menjalankan fungsi secara berulang setiap interval tertentu; const membuat variabel tetap
       console.log('\ud83d\udd04 Auto-refreshing balance and transactions...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       refreshDataRef.current(); // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure yang terjadi jika langsung pakai refreshData di dalam setInterval
-    }, 60000); // 60000 milidetik = 60 detik; angka kedua setInterval adalah jarak waktu antar eksekusi
+    }, 60000); // ✅ DIPERBAIKI: Interval dinaikkan 15s → 60s. Sebelumnya 15s × 3 API call = 180 req/15mnt — melebihi rate limit backend, menyebabkan error 429.
     
     return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen di-unmount
       clearInterval(dataRefreshInterval); // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setInterval — mencegah memory leak

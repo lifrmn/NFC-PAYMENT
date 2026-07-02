@@ -99,7 +99,9 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>\n<View style={styles.successIcon}>
+        <View style={styles.content}>
+          {/* ✅ DIPERBAIKI: Literal \n dihapus — \n di antara elemen JSX dianggap teks oleh React Native */}
+          <View style={styles.successIcon}>
             <View style={styles.checkmarkCircle}>
               <Text style={styles.checkmark}>✓</Text>
             </View>
@@ -112,7 +114,9 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
             <Text style={styles.amountLabel}>Nominal</Text>
             <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text>
           </View>
-          <View style={styles.detailsCard}>\n<View style={styles.detailSection}>
+          <View style={styles.detailsCard}>
+            {/* ✅ DIPERBAIKI: Literal \n dihapus — penghapusan mencegah error 'Text strings must be rendered within a <Text>' */}
+            <View style={styles.detailSection}>
               <View style={styles.detailHeader}>
                 <Text style={styles.detailHeaderIcon}>👤</Text>
                 <Text style={styles.detailHeaderText}>Dari (Pengirim)</Text>
@@ -128,7 +132,9 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
               </View>
             </View>
 
-            <View style={styles.divider} />\n<View style={styles.detailSection}>
+            <View style={styles.divider} />
+            {/* ✅ DIPERBAIKI: Literal \n setelah self-closing tag dihapus — React Native tidak bisa render string mentah di luar <Text> */}
+            <View style={styles.detailSection}>
               <View style={styles.detailHeader}>
                 <Text style={styles.detailHeaderIcon}>👥</Text>
                 <Text style={styles.detailHeaderText}>Ke (Penerima)</Text>
@@ -151,7 +157,9 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
                 <Text style={styles.riskTitle}>Z-Score Anomaly Detection</Text>
               </View>
             </View>
-            <View style={styles.riskContent}>\n<View style={styles.riskScoreRow}>
+            <View style={styles.riskContent}>
+              {/* ✅ DIPERBAIKI: Literal \n dihapus — komentar JSX pakai {/* */} bukan // agar tidak menjadi teks */}
+              <View style={styles.riskScoreRow}>
                 <Text style={styles.riskScoreLabel}>Z-Score:</Text>
                 <Text style={styles.riskScoreValue}>
                   {transaction.riskScore === null || transaction.riskScore === undefined // memeriksa apakah riskScore null atau undefined sebelum menampilkan; mencegah tampilan 'null' di UI

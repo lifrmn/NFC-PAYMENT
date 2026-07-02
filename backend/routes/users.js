@@ -143,21 +143,24 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
       return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
     }
 
-    // Auto-sync: jika user.balance berbeda dengan total saldo kartu NFC aktifnya,
-    // perbarui user.balance agar mobile app selalu menampilkan saldo yang akurat
+    // ✅ DIPERBAIKI: Auto-sync user.balance dari NFC card balance.
+    // Masalah sebelumnya: admin top-up menambah saldo kartu (NFCCard.balance) tapi
+    // user.balance di tabel User tidak selalu ikut update → mobile app tampilkan Rp 0.
+    // Solusi: setiap GET /api/users/:id, cek kartu aktif user, update user.balance jika berbeda.
     const cards = await prisma.nFCCard.findMany({
-      where: { userId: parseInt(id), cardStatus: 'ACTIVE' },
-      select: { balance: true }
+      where: { userId: parseInt(id), cardStatus: 'ACTIVE' }, // ambil semua kartu aktif milik user ini
+      select: { balance: true } // hanya butuh field balance, tidak perlu data lain
     });
+    // Jumlahkan semua saldo kartu aktif user sebagai saldo efektif
     const cardBalance = cards.reduce((sum, c) => sum + (c.balance || 0), 0);
 
     if (cardBalance > 0 && cardBalance !== user.balance) {
-      // Update user.balance agar sinkron dengan kartu NFC aktif
+      // Saldo kartu berbeda dari saldo user → perbarui user.balance agar sinkron
       await prisma.user.update({
         where: { id: parseInt(id) },
-        data: { balance: cardBalance }
+        data: { balance: cardBalance } // set user.balance = total saldo kartu aktif
       });
-      user.balance = cardBalance; // update local copy untuk response
+      user.balance = cardBalance; // perbarui nilai lokal sebelum dikirim ke mobile app
       console.log(`🔄 Auto-synced user ${id} balance: ${user.balance} → ${cardBalance}`);
     }
 

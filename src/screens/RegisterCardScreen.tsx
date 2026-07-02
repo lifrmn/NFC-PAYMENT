@@ -316,6 +316,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
       </View>
 
       <View style={styles.content}>
+        {/* ✅ DIPERBAIKI: Literal \n antara <View> dihapus — sebelumnya ada \n<View...> yang menjadi teks liar di JSX */}
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logo}>
@@ -369,7 +370,8 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
               <View style={[styles.nfcWave, styles.nfcWave3]} />
             </View>
 
-            {scannedCardId ? ( // ternary: jika sudah ada scannedCardId tampilkan UID kartu, jika belum tampilkan instruksi scan
+            {/* Tampilkan UID kartu jika sudah terscan, sembunyikan jika belum */}
+            {scannedCardId ? (
               <View style={styles.cardIdContainer}>
                 <Text style={styles.cardIdLabel}>UID Kartu</Text>
                 <View style={styles.cardIdBox}>
@@ -380,7 +382,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : null} // jika tidak ada case yang cocok return null; tidak menampilkan apapun untuk status selain ACTIVE dan BLOCKED
+            ) : null}
 
             <View style={styles.infoBox}>
               <Text style={styles.infoIcon}>ℹ️</Text>

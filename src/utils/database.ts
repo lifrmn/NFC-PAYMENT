@@ -322,35 +322,40 @@ export const restoreSession = async (): Promise<User | null> => { // restoreSess
 // RETURN:
 // - Promise<User | null> - User object jika found, null jika not found
 // ================================================================================
-export const getUserById = async (id: number): Promise<User | null> => { // getUserById: fungsi async untuk mengambil data user berdasarkan ID; dipanggil saat perlu update tampilan profil
-  const cacheKey = `user_${id}`; // template literal: membuat key cache unik berdasarkan ID, contoh: 'user_123'
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    // STEP 1: Selalu fetch dari backend dulu agar balance selalu fresh
-    const res = await apiService.getUserById(id); // await memanggil HTTP GET ke backend; id diteruskan sebagai parameter untuk mencari user berdasarkan ID
+// ✅ DIPERBAIKI: getUserById sekarang SELALU fetch dari backend terlebih dahulu.
+// Sebelumnya: return cached data → saldo lama (0) ditampilkan meski backend sudah update (misalnya setelah top-up).
+// Sesudahnya : fetch backend → simpan cache → fallback ke cache hanya jika backend gagal (network error/429).
+export const getUserById = async (id: number): Promise<User | null> => {
+  const cacheKey = `user_${id}`; // key unik per user untuk AsyncStorage, format: 'user_5'
+  try {
+    // ✅ Langsung fetch dari backend — bukan dari cache — agar saldo selalu terbaru
+    const res = await apiService.getUserById(id); // HTTP GET /api/users/:id ke backend
 
-    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null); // ternary operator: jika respons membungkus user dalam properti 'user', ambil itu; jika respons adalah objek user langsung, gunakan langsung
-    if (userObj) { // memeriksa apakah objek user berhasil dibuat dari data respons; null berarti ID tidak valid atau user tidak ditemukan
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(userObj)); // simpan ke cache dengan data terbaru dari backend
-      console.log(`✅ Loaded user from backend: ${userObj.username}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return userObj; // mengembalikan objek User yang sudah diformat; caller mendapat data user yang konsisten
+    // Handle dua format response: { user: {...} } atau langsung objek user { id, name, balance, ... }
+    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null);
+    if (userObj) {
+      // Simpan ke cache agar tersedia saat offline/error berikutnya
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(userObj));
+      console.log(`✅ Loaded user from backend: ${userObj.username}`);
+      return userObj; // kembalikan data segar dari backend
     }
 
-    return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
+    return null;
 
-  } catch (err) { // catch (err): menangkap error dari blok try untuk ditampilkan atau dicatat ke log
-    // STEP 2: Backend gagal (429, network, dll) — fallback ke cache
-    console.error('❌ getUserById error:', err); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-      const cachedUser = await AsyncStorage.getItem(cacheKey); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
-      if (cachedUser) { // memeriksa apakah data user ada di cache lokal; jika ada, gunakan cache untuk menghindari request jaringan yang tidak perlu
-        const user = JSON.parse(cachedUser); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
-        console.log(`💾 Fallback: loaded user from cache after backend error`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        return user; // Return cached data as fallback
+  } catch (err) {
+    // ✅ Backend gagal (misal: 429 rate limit, network error) → gunakan cache sebagai fallback
+    console.error('❌ getUserById error:', err);
+    try {
+      const cachedUser = await AsyncStorage.getItem(cacheKey); // baca cache lokal
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser); // parse string JSON → objek JS
+        console.log(`💾 Fallback: loaded user from cache after backend error`);
+        return user; // tampilkan data cache daripada layar kosong
       }
-    } catch (cacheError) { // catch cacheError: menangkap error saat membaca cache; cache error tidak kritis; fallback ke request API normal
-      console.error('❌ Cache fallback error:', cacheError); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    } catch (cacheError) {
+      console.error('❌ Cache fallback error:', cacheError);
     }
-    return null; // No cache, no backend → cannot get user
+    return null; // tidak ada backend, tidak ada cache → return null
   }
 };
 
