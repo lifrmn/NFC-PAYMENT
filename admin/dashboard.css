@@ -628,6 +628,12 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     flex-shrink: 0;             /* Ikon tidak menyusut jika konten panjang */
 }
 
+.activity-icon.blue   { background: #EFF6FF; }
+.activity-icon.green  { background: #F0FDF4; }
+.activity-icon.red    { background: #FEF2F2; }
+.activity-icon.purple { background: #FAF5FF; }
+.activity-icon.yellow { background: #FEF9C3; }
+
 .activity-content {
     flex: 1;    /* Konten teks mengisi sisa ruang setelah ikon */
 }

@@ -43,7 +43,7 @@ const prisma = new PrismaClient(); // Buat Prisma client untuk akses database
 const PORT = Number(process.env.PORT || 4000); // Port server dari .env, default 4000
 const HOST = process.env.HOST || '0.0.0.0'; // Host binding: 0.0.0.0 = listen all interfaces
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000); // Rate limit window: 15 menit (ms)
-const MAX_REQS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 100); // Max request: 100 per window
+const MAX_REQS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 500); // Max request: 500 per window
 
 // Daftar origin yang diizinkan (dari .env). Format: comma-separated URLs.
 // Contoh .env: ALLOWED_ORIGINS=http://localhost:3000,https://ngrok-url.app

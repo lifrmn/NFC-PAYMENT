@@ -332,6 +332,28 @@ const styles = StyleSheet.create({
     fontWeight: '600', // Ketebalan font
   },
 
+  // ── Tombol "Hapus Kartu" (abu / destructive) ──
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+
+  deleteButtonIcon: { fontSize: 16 },
+
+  deleteButtonText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   // ── Banner kebijakan 1 kartu per user (latar kuning) ──
   policyInfo: {
     flexDirection: 'row', // Arah susunan elemen anak (row/column)

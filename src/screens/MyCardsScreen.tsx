@@ -185,6 +185,34 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     setRefreshing(false); // setRefreshing(false) mematikan spinner setelah data selesai dimuat
   };
 
+  // Fungsi: Handler hapus kartu (permanent delete, lalu bisa daftar kartu baru)
+  const handleDeleteCard = (card: NFCCard) => {
+    Alert.alert(
+      '⚠️ Hapus Kartu',
+      `Kartu ${card.cardId} akan dihapus permanen dari akun Anda.\n\nSetelah dihapus, Anda dapat mendaftarkan kartu NFC baru.\n\nLanjutkan?`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.deleteCard(card.cardId);
+              Alert.alert(
+                'Berhasil',
+                'Kartu berhasil dihapus. Anda sekarang dapat mendaftarkan kartu NFC baru.',
+                [{ text: 'OK', onPress: () => onRegisterNew && onRegisterNew() }]
+              );
+              loadCards();
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Gagal menghapus kartu');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Fungsi: Handler aksi kartu (BLOCK atau ACTIVATE)
   // Tampilkan konfirmasi dulu sebelum eksekusi perubahan status
   const handleCardAction = async (card: NFCCard, action: 'BLOCK' | 'ACTIVATE') => { // async karena memanggil API; parameter card bertipe NFCCard; action bertipe union string literal 'BLOCK' | 'ACTIVATE'
@@ -426,6 +454,14 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                           <Text style={styles.activateButtonText}>Aktifkan Kartu</Text>
                         </TouchableOpacity>
                       ) : null}
+                      {/* Tombol Hapus Kartu — selalu tampil agar user bisa ganti kartu */}
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => handleDeleteCard(card)}
+                      >
+                        <Text style={styles.deleteButtonIcon}>🗑️</Text>
+                        <Text style={styles.deleteButtonText}>Hapus Kartu</Text>
+                      </TouchableOpacity>
                       {/* null jika status selain ACTIVE/BLOCKED - tidak menampilkan tombol */}
                     </View>
                   </View>

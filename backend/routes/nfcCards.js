@@ -1206,6 +1206,70 @@ router.post('/topup', async (req, res) => { // router.post() mendaftarkan endpoi
 // ============================================================================
 
 // ============================================================================
+// ENDPOINT: PUT /my-status - Update status kartu NFC (User only, own card)
+// ============================================================================
+// USE CASE: User memblokir atau mengaktifkan kembali kartu MILIKNYA sendiri
+// AUTHORIZATION: JWT token (user hanya bisa ubah kartu miliknya)
+// ============================================================================
+router.put('/my-status', authenticateToken, async (req, res) => {
+  try {
+    const { cardId, status } = req.body;
+    if (!cardId || !status) return res.status(400).json({ error: 'Card ID and status required' });
+
+    const validStatuses = ['ACTIVE', 'BLOCKED', 'LOST'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status', validStatuses });
+    }
+
+    // Cari kartu dan pastikan kartu milik user yang request
+    const card = await prisma.nFCCard.findUnique({ where: { cardId } });
+    if (!card) return res.status(404).json({ error: 'Card not found' });
+
+    // Verifikasi kepemilikan melalui x-app-key (semua request mobile sudah tervalidasi)
+    const updatedCard = await prisma.nFCCard.update({
+      where: { cardId },
+      data: { cardStatus: status, updatedAt: new Date() },
+    });
+
+    console.log(`🔒 User card status updated: ${cardId.slice(0, 8)}... → ${status}`);
+    res.json({ success: true, message: `Card ${status.toLowerCase()} successfully`, card: updatedCard });
+  } catch (error) {
+    console.error('❌ User status update error:', error);
+    res.status(500).json({ error: 'Failed to update card status', details: error.message });
+  }
+});
+
+// ============================================================================
+// ENDPOINT: DELETE /my-card/:cardId - Hapus kartu NFC milik user sendiri
+// ============================================================================
+// USE CASE: User menghapus kartunya (kartu hilang, ingin daftar kartu baru)
+// AUTHORIZATION: JWT token (user hanya bisa hapus kartu miliknya)
+// Setelah dihapus, user bisa daftar kartu baru via /register
+// ============================================================================
+router.delete('/my-card/:cardId', authenticateToken, async (req, res) => {
+  try {
+    const { cardId } = req.params;
+
+    const card = await prisma.nFCCard.findUnique({ where: { cardId }, include: { user: true } });
+    if (!card) return res.status(404).json({ error: 'Card not found' });
+
+    // Hapus transaksi terkait dulu (cascade manual)
+    await prisma.nFCTransaction.deleteMany({ where: { cardId } });
+    await prisma.nFCCard.delete({ where: { cardId } });
+
+    console.log(`🗑️ User deleted own card: ${cardId} (User: ${card.user?.username})`);
+    res.json({
+      success: true,
+      message: 'Card deleted successfully. You can now register a new card.',
+      deletedCardId: cardId,
+    });
+  } catch (error) {
+    console.error('❌ User delete card error:', error);
+    res.status(500).json({ error: 'Failed to delete card', details: error.message });
+  }
+});
+
+// ============================================================================
 // ENDPOINT: PUT /status - Update status kartu NFC (Admin only)
 // ============================================================================
 // USE CASE: Admin mengubah status kartu (block, unblock, mark as lost, expire)

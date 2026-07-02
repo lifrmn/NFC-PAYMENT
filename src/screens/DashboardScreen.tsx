@@ -94,7 +94,7 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     const dataRefreshInterval = setInterval(() => { // setInterval menjalankan fungsi secara berulang setiap interval tertentu; const membuat variabel tetap
       console.log('\ud83d\udd04 Auto-refreshing balance and transactions...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       refreshDataRef.current(); // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure yang terjadi jika langsung pakai refreshData di dalam setInterval
-    }, 15000); // 15000 milidetik = 15 detik; angka kedua setInterval adalah jarak waktu antar eksekusi
+    }, 60000); // 60000 milidetik = 60 detik; angka kedua setInterval adalah jarak waktu antar eksekusi
     
     return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen di-unmount
       clearInterval(dataRefreshInterval); // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setInterval — mencegah memory leak

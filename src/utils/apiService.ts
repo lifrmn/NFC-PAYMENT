@@ -808,12 +808,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - { success: true, message: "Card status updated", card: {...} }
   // ================================================================================
   async updateCardStatus(cardId: string, status: string) { // async updateCardStatus: mengubah status kartu NFC (ACTIVE/BLOCKED/LOST); dipanggil dari halaman manajemen kartu
-    // STEP 1: Send PUT request ke card status endpoint
-    // Endpoint: PUT /api/nfc-cards/status
-    // Backend akan update cardStatus di database
-    return await this.makeRequest('/api/nfc-cards/status', { // PUT ke /api/nfc-cards/status untuk mengupdate status kartu di database
-      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
-      body: { cardId, status }, // body: mengirim { cardId, status } ke backend; shorthand property ES6 untuk cardId dan status
+    // Gunakan endpoint user (/my-status) — tidak perlu admin password, cukup JWT token
+    return await this.makeRequest('/api/nfc-cards/my-status', {
+      method: 'PUT',
+      body: { cardId, status },
+    });
+  }
+
+  async deleteCard(cardId: string) { // hapus kartu NFC milik user sendiri; dipanggil dari MyCardsScreen saat user ingin ganti kartu
+    return await this.makeRequest(`/api/nfc-cards/my-card/${cardId}`, {
+      method: 'DELETE',
     });
   }
 

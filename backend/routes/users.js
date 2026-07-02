@@ -129,36 +129,42 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
 // ============================================================
 router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
   try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    // STEP 1: Ambil parameter 'id' dari URL
-    // Contoh: jika URL = /api/users/5, maka id = "5"
-    const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis; id berasal dari route pattern seperti /users/:id
+    const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis
     
-    // STEP 2: Query database untuk cari user berdasarkan ID
-    // parseInt(id) mengubah string "5" menjadi number 5
     const user = await prisma.user.findUnique({ // const user: menyimpan data user yang diambil dari database secara async
-      where: { id: parseInt(id) },  // WHERE id = 5
-      select: {                      // SELECT (pilih field yang mau diambil)
-        id: true,                    // ID pengguna
-        name: true,                  // Nama lengkap
-        username: true,              // Username
-        balance: true,               // Saldo
-        deviceId: true,              // Device ID
-        isActive: true,              // Status aktif/blokir
-        createdAt: true,             // Tanggal registrasi
-        updatedAt: true              // Tanggal update terakhir
+      where: { id: parseInt(id) },
+      select: {
+        id: true, name: true, username: true, balance: true,
+        deviceId: true, isActive: true, createdAt: true, updatedAt: true
       }
     });
 
-    // STEP 3: Validasi - jika user tidak ditemukan
     if (!user) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
     }
 
-    // STEP 4: Return data user ke client
-    res.json(user); // res.json(user) mengirim data user sebagai JSON response dengan status 200 OK; objek user dikirim langsung ke frontend
+    // Auto-sync: jika user.balance berbeda dengan total saldo kartu NFC aktifnya,
+    // perbarui user.balance agar mobile app selalu menampilkan saldo yang akurat
+    const cards = await prisma.nFCCard.findMany({
+      where: { userId: parseInt(id), cardStatus: 'ACTIVE' },
+      select: { balance: true }
+    });
+    const cardBalance = cards.reduce((sum, c) => sum + (c.balance || 0), 0);
+
+    if (cardBalance > 0 && cardBalance !== user.balance) {
+      // Update user.balance agar sinkron dengan kartu NFC aktif
+      await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: { balance: cardBalance }
+      });
+      user.balance = cardBalance; // update local copy untuk response
+      console.log(`🔄 Auto-synced user ${id} balance: ${user.balance} → ${cardBalance}`);
+    }
+
+    res.json(user); // res.json(user) mengirim data user sebagai JSON response
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    console.error('❌ Gagal mendapatkan data pengguna:', error);
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
   }
 });
 

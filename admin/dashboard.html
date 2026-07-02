@@ -319,40 +319,10 @@ AUTO REFRESH (REALTIME):
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Activity Feed</h3>
+                        <span id="activity-feed-count" style="font-size:12px;color:#64748b;"></span>
                     </div>
-                    <div class="activity-list">
-                        <div class="activity-item">
-                            <div class="activity-icon blue">👤</div>
-                            <div class="activity-content">
-                                <div class="activity-title">Pengguna baru terdaftar</div>
-                                <div class="activity-desc">Alief Ryanto bergabung ke sistem</div>
-                                <div class="activity-time">5m ago</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon green">💳</div>
-                            <div class="activity-content">
-                                <div class="activity-title">Transaksi berhasil</div>
-                                <div class="activity-desc">Pembayaran Rp 52.000 ke Alief Ryanto (Z=1,4142 — ALLOW)</div>
-                                <div class="activity-time">15m ago</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon red">🚨</div>
-                            <div class="activity-content">
-                                <div class="activity-title">Fraud terdeteksi</div>
-                                <div class="activity-desc">Transaksi diblokir — Z-Score=5,0332 melebihi threshold Z&gt;3 (ANOMALY)</div>
-                                <div class="activity-time">1h ago</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-icon purple">🎫</div>
-                            <div class="activity-content">
-                                <div class="activity-title">Kartu NFC aktif</div>
-                                <div class="activity-desc">Kartu baru terdaftar untuk user #123</div>
-                                <div class="activity-time">2h ago</div>
-                            </div>
-                        </div>
+                    <div id="activity-feed-list" class="activity-list">
+                        <div style="text-align:center;padding:24px;color:#94a3b8;">Memuat aktivitas...</div>
                     </div>
                 </div>
             </div>
@@ -502,13 +472,23 @@ AUTO REFRESH (REALTIME):
                         <p>Semua riwayat transaksi pengguna secara real-time</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-export btn-refresh" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export btn-refresh btn-gap-right" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export" onclick="exportCSV('transaksi')">📥 Export CSV</button>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Semua Transaksi</h2>
                         <span id="transaksi-count" class="count-muted"></span>
+                    </div>
+                    <div style="padding:0 0 12px 0;display:flex;gap:8px;">
+                        <input id="transaksi-search" type="text" placeholder="🔍 Cari nama pengirim/penerima..." oninput="renderTransaksiTab()" style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;" />
+                        <select id="transaksi-filter-risk" onchange="renderTransaksiTab()" style="padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;">
+                            <option value="">Semua Risiko</option>
+                            <option value="NORMAL">NORMAL</option>
+                            <option value="SUSPICIOUS">SUSPICIOUS</option>
+                            <option value="ANOMALY">ANOMALY</option>
+                        </select>
                     </div>
                     <div class="table-container">
                         <table>
@@ -542,13 +522,17 @@ AUTO REFRESH (REALTIME):
                         <p>Manajemen akun pengguna sistem NFC Payment</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-export btn-refresh" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export btn-refresh btn-gap-right" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export" onclick="exportCSV('pengguna')">📥 Export CSV</button>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">Daftar Pengguna</h2>
                         <span id="pengguna-count" class="count-muted"></span>
+                    </div>
+                    <div style="padding:0 0 12px 0;">
+                        <input id="pengguna-search" type="text" placeholder="🔍 Cari nama / username..." oninput="renderPenggunaTab()" style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;" />
                     </div>
                     <div class="table-container">
                         <table>
@@ -582,7 +566,8 @@ AUTO REFRESH (REALTIME):
                         <p>Manajemen kartu NFC yang terdaftar</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-export btn-refresh" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export btn-refresh btn-gap-right" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export" onclick="exportCSV('perangkat')">📥 Export CSV</button>
                     </div>
                 </div>
                 <div class="card">
@@ -621,7 +606,9 @@ AUTO REFRESH (REALTIME):
                         <p>Ringkasan statistik sistem NFC Payment</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-export btn-refresh" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export btn-refresh btn-gap-right" onclick="refreshAllData()">🔄 Refresh</button>
+                        <button class="btn-export btn-gap-right" onclick="exportCSV('transaksi')">📥 Export Transaksi</button>
+                        <button class="btn-export" onclick="exportCSV('fraud')">📥 Export Fraud</button>
                     </div>
                 </div>
                 <div class="stats-grid" id="laporan-stats"></div>
@@ -715,12 +702,16 @@ AUTO REFRESH (REALTIME):
                         <h1>Pengaturan</h1>
                         <p>Konfigurasi sistem NFC Payment</p>
                     </div>
+                    <div class="header-actions">
+                        <button class="btn-export btn-refresh" onclick="testBackendConnection()">🔌 Test Koneksi</button>
+                    </div>
                 </div>
                 <div class="card">
                     <div class="card-header"><h2 class="card-title">Konfigurasi Backend</h2></div>
                     <table>
                         <tbody>
-                            <tr><td class="settings-key settings-key-wide">Backend URL</td><td><code>http://localhost:4000</code></td></tr>
+                            <tr><td class="settings-key settings-key-wide">Backend URL</td><td><code id="setting-backend-url">http://localhost:4000</code></td></tr>
+                            <tr><td class="settings-key">Status Koneksi</td><td><span id="setting-conn-status">Belum dicek</span></td></tr>
                             <tr><td class="settings-key">Algoritma Fraud</td><td>Z-Score Based Anomaly Detection</td></tr>
                             <tr><td class="settings-key">Rumus Z-Score</td><td>Z = |X − μ| / σ</td></tr>
                             <tr><td class="settings-key">History Transaksi (n)</td><td>20 transaksi terakhir</td></tr>
@@ -732,9 +723,45 @@ AUTO REFRESH (REALTIME):
                         </tbody>
                     </table>
                 </div>
+                <div class="card" style="margin-top:16px;">
+                    <div class="card-header"><h2 class="card-title">Aksi Admin</h2></div>
+                    <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;">
+                            <div><strong>Clear Semua Fraud Alerts</strong><br><small style="color:#64748b;">Hapus semua riwayat fraud alert dari sistem</small></div>
+                            <button class="btn-action btn-action-danger" onclick="clearAllFraudAlerts()">🗑️ Clear Alerts</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;">
+                            <div><strong>Export Semua Data</strong><br><small style="color:#64748b;">Download semua transaksi sebagai CSV</small></div>
+                            <button class="btn-export" onclick="exportCSV('transaksi')">📥 Export Transaksi CSV</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;">
+                            <div><strong>Export Fraud Alerts</strong><br><small style="color:#64748b;">Download semua fraud alert sebagai CSV</small></div>
+                            <button class="btn-export" onclick="exportCSV('fraud')">📥 Export Fraud CSV</button>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;">
+                            <div><strong>Ganti Password Admin</strong><br><small style="color:#64748b;">Reset cache password sesi ini</small></div>
+                            <button class="btn-export" onclick="resetAdminPassword()">🔐 Ganti Password</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="pengaturan-result" style="display:none;margin-top:12px;"></div>
             </div>
 
         </main>
+    </div>
+
+    <!-- Modal Detail Fraud Alert -->
+    <div id="fraud-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 style="font-size:18px;font-weight:700;color:#1e293b;">Detail Fraud Alert</h2>
+                <button onclick="closeAlertModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;">✕</button>
+            </div>
+            <div id="fraud-detail-body" style="display:flex;flex-direction:column;gap:10px;"></div>
+            <div style="margin-top:20px;display:flex;justify-content:flex-end;">
+                <button onclick="closeAlertModal()" style="padding:10px 24px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Tutup</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -887,12 +914,24 @@ AUTO REFRESH (REALTIME):
             const tbody = document.getElementById('transaksi-table-body');
             const count = document.getElementById('transaksi-count');
             if (!tbody) return;
-            if (allTransactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Belum ada transaksi</td></tr>';
+
+            const search = (document.getElementById('transaksi-search')?.value || '').toLowerCase();
+            const riskFilter = document.getElementById('transaksi-filter-risk')?.value || '';
+
+            let data = allTransactions.slice().reverse();
+            if (search) data = data.filter(tx =>
+                (tx.sender?.name || '').toLowerCase().includes(search) ||
+                (tx.receiver?.name || '').toLowerCase().includes(search)
+            );
+            if (riskFilter) data = data.filter(tx => (tx.fraudRiskLevel || 'NORMAL') === riskFilter);
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada transaksi ditemukan</td></tr>';
+                if (count) count.textContent = '0 transaksi';
                 return;
             }
-            if (count) count.textContent = allTransactions.length + ' transaksi';
-            tbody.innerHTML = allTransactions.slice().reverse().map(tx => {
+            if (count) count.textContent = data.length + ' transaksi';
+            tbody.innerHTML = data.map(tx => {
                 const statusClass = (tx.status === 'completed' || tx.status === 'SUCCESS') ? 'success' : (tx.status === 'failed' || tx.status === 'FAILED') ? 'failed' : 'pending';
                 const riskClass = getRiskBadgeClass(tx.fraudRiskLevel || 'NORMAL');
                 return `<tr>
@@ -912,12 +951,21 @@ AUTO REFRESH (REALTIME):
             const tbody = document.getElementById('pengguna-table-body');
             const count = document.getElementById('pengguna-count');
             if (!tbody) return;
-            if (allUsers.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Belum ada pengguna</td></tr>';
+
+            const search = (document.getElementById('pengguna-search')?.value || '').toLowerCase();
+            let data = allUsers;
+            if (search) data = data.filter(u =>
+                (u.name || '').toLowerCase().includes(search) ||
+                (u.username || '').toLowerCase().includes(search)
+            );
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada pengguna ditemukan</td></tr>';
+                if (count) count.textContent = '0 pengguna';
                 return;
             }
-            if (count) count.textContent = allUsers.length + ' pengguna';
-            tbody.innerHTML = allUsers.map(u => {
+            if (count) count.textContent = data.length + ' pengguna';
+            tbody.innerHTML = data.map(u => {
                 const cardCount = nfcCards.filter(c => c.userId === u.id).length;
                 const isActive = u.isActive !== false;
                 const statusClass = isActive ? 'success' : 'failed';
@@ -951,8 +999,8 @@ AUTO REFRESH (REALTIME):
                 const isActive = c.cardStatus === 'ACTIVE';
                 const statusClass = isActive ? 'success' : 'failed';
                 const toggleBtn = isActive
-                    ? `<button class="btn-action btn-action-danger" onclick="toggleCardStatus('${c.cardId}', 'BLOCKED')">🔒 Blokir</button>`
-                    : `<button class="btn-action btn-action-success" onclick="toggleCardStatus('${c.cardId}', 'ACTIVE')">🔓 Aktifkan</button>`;
+                    ? `<button class="btn-action btn-action-danger" onclick="toggleCardStatus('${c.cardId}', 'BLOCKED')" style="margin-right:4px">🔒 Blokir</button>`
+                    : `<button class="btn-action btn-action-success" onclick="toggleCardStatus('${c.cardId}', 'ACTIVE')" style="margin-right:4px">🔓 Aktifkan</button>`;
                 return `<tr>
                     <td class="td-mono">${c.cardId || c.id}</td>
                     <td>${owner ? owner.name : (c.userId ? '#' + c.userId : '-')}</td>
@@ -960,7 +1008,7 @@ AUTO REFRESH (REALTIME):
                     <td><span class="status-badge ${statusClass}">${isActive ? 'Aktif' : (c.cardStatus || 'Nonaktif')}</span></td>
                     <td class="td-date-muted">${c.lastUsed ? formatDate(c.lastUsed) : '-'}</td>
                     <td class="td-date-muted">${formatDate(c.createdAt)}</td>
-                    <td>${toggleBtn}</td>
+                    <td>${toggleBtn}<button class="btn-action btn-action-danger" style="background:#fef2f2;color:#ef4444;" onclick="deleteCardAdmin('${c.cardId}', '${owner ? owner.name : 'user'}')">🗑️ Hapus</button></td>
                 </tr>`;
             }).join('');
         }
@@ -1254,6 +1302,7 @@ AUTO REFRESH (REALTIME):
                 if (!res.ok) throw new Error('Failed to load users');
                 allUsers = await res.json();
                 updateStats();
+                renderActivityFeed();
                 // Re-render pengguna tab jika sedang aktif
                 if (currentTab === 'pengguna') renderPenggunaTab();
                 console.log('✅ Users loaded:', allUsers.length);
@@ -1281,6 +1330,7 @@ AUTO REFRESH (REALTIME):
                 var data = await res.json();
                 // Handle response format: { cards: [...] } atau array langsung
                 nfcCards = Array.isArray(data) ? data : (data.cards || []);
+                renderActivityFeed();
                 // Re-render perangkat tab jika sedang aktif
                 if (currentTab === 'perangkat') renderPerangkatTab();
                 // Re-render pengguna tab juga karena menampilkan jumlah kartu per user
@@ -1308,6 +1358,7 @@ AUTO REFRESH (REALTIME):
                 if (!res.ok) throw new Error('Failed to load transactions');
                 allTransactions = await res.json();
                 renderTransactions();
+                renderActivityFeed();
                 // Re-render transaksi tab jika sedang aktif
                 if (currentTab === 'transaksi') renderTransaksiTab();
                 // Update laporan tab juga
@@ -1349,6 +1400,7 @@ AUTO REFRESH (REALTIME):
             }
             updateFraudStats();
             renderFraudTable();
+            renderActivityFeed();
             // Re-render laporan tab jika sedang aktif
             if (currentTab === 'laporan') renderLaporanTab();
         }
@@ -1360,6 +1412,93 @@ AUTO REFRESH (REALTIME):
         /**
          * Update 4 stat cards numbers (Dashboard tab)
          */
+        /**
+         * Render Activity Feed — real data dari transactions, users, fraud alerts, nfc cards
+         * Menampilkan 15 event terbaru secara kronologis
+         */
+        function renderActivityFeed() {
+            const container = document.getElementById('activity-feed-list');
+            if (!container) return;
+
+            const events = [];
+
+            // 1. Transaksi
+            allTransactions.forEach(t => {
+                const isAnomaly = t.riskLevel === 'ANOMALY' || t.decision === 'BLOCK';
+                const isSuspicious = t.riskLevel === 'SUSPICIOUS';
+                const zLabel = (t.zScore !== undefined && t.zScore !== null)
+                    ? ` (Z=${parseFloat(t.zScore).toFixed(4)} — ${t.decision || 'ALLOW'})`
+                    : '';
+                const senderName = t.sender?.name || t.senderName || ('User #' + (t.senderId || t.id));
+                const receiverName = t.receiver?.name || t.receiverName || ('User #' + (t.receiverId || '?'));
+                events.push({
+                    date: new Date(t.createdAt),
+                    icon: isAnomaly ? '🚨' : isSuspicious ? '⚠️' : '💳',
+                    iconClass: isAnomaly ? 'red' : isSuspicious ? 'yellow' : 'green',
+                    title: isAnomaly ? 'Transaksi diblokir (Fraud)' : isSuspicious ? 'Transaksi mencurigakan' : 'Transaksi berhasil',
+                    desc: `${formatCurrency(t.amount)} dari ${senderName} ke ${receiverName}${zLabel}`,
+                });
+            });
+
+            // 2. Registrasi user baru
+            allUsers.forEach(u => {
+                events.push({
+                    date: new Date(u.createdAt),
+                    icon: '👤',
+                    iconClass: 'blue',
+                    title: 'Pengguna baru terdaftar',
+                    desc: `${u.name} (@${u.username}) bergabung ke sistem`,
+                });
+            });
+
+            // 3. Fraud alerts (yang belum ada dari transaksi — riskLevel != NORMAL)
+            fraudAlerts.filter(a => a.riskLevel !== 'NORMAL').forEach(a => {
+                const z = (a.zScore !== undefined && a.zScore !== null) ? parseFloat(a.zScore).toFixed(4) : '?';
+                events.push({
+                    date: new Date(a.createdAt || a.timestamp),
+                    icon: a.riskLevel === 'ANOMALY' ? '🚨' : '⚠️',
+                    iconClass: a.riskLevel === 'ANOMALY' ? 'red' : 'yellow',
+                    title: a.riskLevel === 'ANOMALY' ? 'Fraud terdeteksi (ANOMALY)' : 'Aktivitas mencurigakan',
+                    desc: `Z-Score=${z} — ${a.decision || a.riskLevel}`,
+                });
+            });
+
+            // 4. Kartu NFC baru terdaftar
+            nfcCards.forEach(c => {
+                const ownerName = c.user?.name || c.user?.username || ('User #' + c.userId);
+                events.push({
+                    date: new Date(c.createdAt || c.registeredAt),
+                    icon: c.cardStatus === 'BLOCKED' ? '🚫' : '🎫',
+                    iconClass: c.cardStatus === 'BLOCKED' ? 'red' : 'purple',
+                    title: c.cardStatus === 'BLOCKED' ? 'Kartu NFC diblokir' : 'Kartu NFC terdaftar',
+                    desc: `Kartu ${c.cardId} milik ${ownerName} — Status: ${c.cardStatus}`,
+                });
+            });
+
+            // Sort terbaru dulu
+            events.sort((a, b) => b.date - a.date);
+
+            const top = events.slice(0, 15);
+            const countEl = document.getElementById('activity-feed-count');
+            if (countEl) countEl.textContent = `${top.length} aktivitas terbaru`;
+
+            if (top.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:32px;color:#94a3b8;"><div style="font-size:32px;margin-bottom:8px;">📭</div><div>Belum ada aktivitas</div></div>';
+                return;
+            }
+
+            container.innerHTML = top.map(ev => `
+                <div class="activity-item">
+                    <div class="activity-icon ${ev.iconClass}">${ev.icon}</div>
+                    <div class="activity-content">
+                        <div class="activity-title">${ev.title}</div>
+                        <div class="activity-desc">${ev.desc}</div>
+                        <div class="activity-time">${formatRelativeTime(ev.date)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function updateStats() {
             const totalUsers = allUsers.length;
             const activeCards = nfcCards.filter(c => c.cardStatus === 'ACTIVE').length;
@@ -1634,32 +1773,189 @@ AUTO REFRESH (REALTIME):
         }
 
         /**
-         * Show alert details popup
+         * Show alert details popup — delegated to modal below
+         */
+        function showAlertDetails_old_removed() { /* removed — modal version defined below */ }
+
+        /**
+         * Show alert details — modal popup (bukan window.alert)
          */
         function showAlertDetails(alertId) {
             const alert = fraudAlerts.find(a => a.id === alertId);
             if (!alert) return;
+            const body = document.getElementById('fraud-detail-body');
+            const riskClass = getRiskBadgeClass(alert.riskLevel);
+            const decClass = getDecisionBadgeClass(alert.decision);
+            body.innerHTML = [
+                ['ID', '#' + alert.id],
+                ['User', alert.userName || '-'],
+                ['Jumlah', formatCurrency(alert.amount)],
+                ['Z-Score', alert.riskScore === -1 ? 'tidak terdefinisi (σ=0)' : parseFloat(alert.riskScore || 0).toFixed(4)],
+                ['Risk Level', `<span class="risk-badge ${riskClass}">${alert.riskLevel}</span>`],
+                ['Keputusan', `<span class="risk-badge ${decClass}">${getDecisionText(alert.decision)}</span>`],
+                ['Alasan', Array.isArray(alert.reasons) ? alert.reasons.join(', ') : (alert.reasons || '-')],
+                ['Waktu', formatDate(alert.createdAt)],
+            ].map(([k, v]) => `
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+                    <span style="color:#64748b;font-size:13px;">${k}</span>
+                    <span style="font-weight:600;font-size:13px;text-align:right;max-width:60%;">${v}</span>
+                </div>
+            `).join('');
+            const modal = document.getElementById('fraud-detail-modal');
+            modal.style.display = 'flex';
+        }
 
-            window.alert(`
-Fraud Alert Details:
-━━━━━━━━━━━━━━━━━━━━━
-ID: ${alert.id}
-User: ${alert.userName}
-Email: ${alert.userEmail}
-Amount: ${formatCurrency(alert.amount)}
-Z-Score: ${alert.riskScore === -1 ? 'tidak terdefinisi (\u03c3=0, edge case)' : parseFloat(alert.riskScore).toFixed(4)}
-Risk Level: ${alert.riskLevel}
-Decision: ${getDecisionText(alert.decision)}
-Reasons: ${Array.isArray(alert.reasons) ? alert.reasons.join(', ') : alert.reasons}
-Time: ${formatDate(alert.createdAt)}
-            `);
+        function closeAlertModal() {
+            document.getElementById('fraud-detail-modal').style.display = 'none';
         }
 
         /**
-         * Export report (placeholder)
+         * Export data as CSV file download
+         * @param {'transaksi'|'pengguna'|'perangkat'|'fraud'} type
+         */
+        function exportCSV(type) {
+            let rows = [], filename = 'export.csv';
+            if (type === 'transaksi') {
+                filename = 'transaksi_' + new Date().toISOString().slice(0,10) + '.csv';
+                rows = [['ID','Pengirim','Penerima','Jumlah','Tipe','Status','Risiko','Waktu']];
+                allTransactions.forEach(t => rows.push([
+                    t.id, t.sender?.name || '', t.receiver?.name || '', t.amount,
+                    t.type || '', t.status || '', t.fraudRiskLevel || 'NORMAL',
+                    new Date(t.createdAt).toLocaleString('id-ID')
+                ]));
+            } else if (type === 'pengguna') {
+                filename = 'pengguna_' + new Date().toISOString().slice(0,10) + '.csv';
+                rows = [['ID','Nama','Username','Saldo','Status','Jumlah Kartu','Bergabung']];
+                allUsers.forEach(u => {
+                    const cardCount = nfcCards.filter(c => c.userId === u.id).length;
+                    rows.push([u.id, u.name, u.username, u.balance || 0,
+                        u.isActive !== false ? 'Aktif' : 'Nonaktif', cardCount,
+                        new Date(u.createdAt).toLocaleString('id-ID')]);
+                });
+            } else if (type === 'perangkat') {
+                filename = 'kartu_nfc_' + new Date().toISOString().slice(0,10) + '.csv';
+                rows = [['Card ID','Pemilik','Saldo','Status','Terakhir Digunakan','Terdaftar']];
+                nfcCards.forEach(c => {
+                    const owner = allUsers.find(u => u.id === c.userId);
+                    rows.push([c.cardId, owner ? owner.name : '', c.balance || 0, c.cardStatus,
+                        c.lastUsed ? new Date(c.lastUsed).toLocaleString('id-ID') : '-',
+                        new Date(c.createdAt).toLocaleString('id-ID')]);
+                });
+            } else if (type === 'fraud') {
+                filename = 'fraud_alerts_' + new Date().toISOString().slice(0,10) + '.csv';
+                rows = [['ID','User','Jumlah','Z-Score','Risk Level','Keputusan','Alasan','Waktu']];
+                fraudAlerts.forEach(a => rows.push([
+                    a.id, a.userName || '', a.amount || 0,
+                    a.riskScore === -1 ? 'edge-case' : (a.riskScore || 0),
+                    a.riskLevel, a.decision,
+                    Array.isArray(a.reasons) ? a.reasons.join('; ') : (a.reasons || ''),
+                    new Date(a.createdAt).toLocaleString('id-ID')
+                ]));
+            }
+            if (rows.length <= 1) { alert('Tidak ada data untuk diekspor.'); return; }
+            const csv = rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename;
+            a.click(); URL.revokeObjectURL(url);
+        }
+
+        /**
+         * Hapus kartu NFC dari admin (dengan password admin)
+         */
+        async function deleteCardAdmin(cardId, ownerName) {
+            if (!window.confirm(`Hapus kartu "${cardId}" milik ${ownerName}?\nData transaksi kartu ini juga akan dihapus!`)) return;
+            const pass = getAdminPassword();
+            if (!pass) return;
+            try {
+                const res = await fetch(API_BASE + '/nfc-cards/' + cardId, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' },
+                    body: JSON.stringify({ adminPassword: pass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(`✅ Kartu "${cardId}" berhasil dihapus.`);
+                    await loadNFCCards();
+                    renderPerangkatTab();
+                    if (currentTab === 'topup') renderTopupTab();
+                } else {
+                    if (res.status === 401 || res.status === 403) _cachedAdminPass = '';
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                }
+            } catch (err) { alert('❌ Error: ' + err.message); }
+        }
+
+        /**
+         * Test koneksi ke backend
+         */
+        async function testBackendConnection() {
+            const statusEl = document.getElementById('setting-conn-status');
+            const resultEl = document.getElementById('pengaturan-result');
+            if (statusEl) statusEl.innerHTML = '<span style="color:#f59e0b;">⏳ Memeriksa...</span>';
+            try {
+                const res = await fetch(API_BASE.replace('/api', '/health'));
+                const ok = res.ok;
+                if (statusEl) statusEl.innerHTML = ok
+                    ? '<span style="color:#10b981;">✅ Terhubung</span>'
+                    : '<span style="color:#ef4444;">❌ Gagal</span>';
+                if (resultEl) {
+                    resultEl.style.display = 'block';
+                    resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;margin-top:12px;background:' + (ok ? '#f0fdf4;color:#166534;' : '#fef2f2;color:#991b1b;');
+                    resultEl.textContent = ok ? '✅ Backend berjalan normal di ' + API_BASE : '❌ Tidak dapat terhubung ke backend. Pastikan server berjalan.';
+                }
+            } catch (err) {
+                if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;">❌ Gagal</span>';
+                if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = '❌ Error: ' + err.message; }
+            }
+        }
+
+        /**
+         * Clear semua fraud alerts dari backend
+         */
+        async function clearAllFraudAlerts() {
+            if (!window.confirm('Hapus semua fraud alerts?\nAksi ini tidak dapat dibatalkan.')) return;
+            const pass = getAdminPassword();
+            if (!pass) return;
+            try {
+                const res = await fetch(API_BASE + '/admin/clear-fraud-alerts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' },
+                    body: JSON.stringify({ password: pass })
+                });
+                const data = await res.json();
+                const resultEl = document.getElementById('pengaturan-result');
+                if (res.ok && (data.success || data.message)) {
+                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;'; resultEl.textContent = '✅ Semua fraud alerts berhasil dihapus.'; }
+                    await loadFraudAlerts();
+                } else {
+                    if (res.status === 401) _cachedAdminPass = '';
+                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Gagal: ' + (data.error || 'Terjadi kesalahan'); }
+                }
+            } catch (err) {
+                const resultEl = document.getElementById('pengaturan-result');
+                if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Error: ' + err.message; }
+            }
+        }
+
+        /**
+         * Reset cached admin password
+         */
+        function resetAdminPassword() {
+            _cachedAdminPass = '';
+            const newPass = getAdminPassword(true);
+            const resultEl = document.getElementById('pengaturan-result');
+            if (newPass && resultEl) {
+                resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;';
+                resultEl.textContent = '✅ Password admin berhasil diperbarui untuk sesi ini.';
+            }
+        }
+
+        /**
+         * Export report (Fraud Alert tab) — real CSV download
          */
         function exportReport() {
-            alert('📥 Fungsi export laporan akan segera tersedia!\n\nFitur ini akan mengekspor data fraud alert ke format CSV/Excel.');
+            exportCSV('fraud');
         }
 
         // =================================================================
@@ -1716,6 +2012,7 @@ Time: ${formatDate(alert.createdAt)}
                     updateStats();
                     renderTransactions();
                     updateFraudStats();
+                    renderActivityFeed();
                     break;
                 case 'fraud-alert':
                     updateFraudStats();

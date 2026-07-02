@@ -315,7 +315,8 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.content}>\n<View style={styles.heroSection}>
+      <View style={styles.content}>
+        <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <View style={styles.logo}>
               <Text style={styles.logoIcon}>💳</Text>

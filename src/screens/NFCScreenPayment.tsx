@@ -258,7 +258,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.content}>\n<View style={styles.section}>
+      <View style={styles.content}>
+        <View style={styles.section}>
           <Text style={styles.sectionLabel}>Penerima</Text>
           <View style={styles.merchantCard}>
             <View style={styles.merchantIcon}>
@@ -272,7 +273,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               <Text style={styles.chevron}>→</Text>
             </TouchableOpacity>
           </View>
-        </View>\n<View style={styles.section}>
+        </View>
+        <View style={styles.section}>
           <Text style={styles.sectionLabel}>Nominal Pembayaran</Text>
           <View style={styles.amountContainer}>
             <Text style={styles.currencySymbol}>Rp</Text>
@@ -285,7 +287,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               keyboardType="numeric"  // Tampilkan keyboard numerik native
             />
           </View>
-        </View>\n
+        </View>
+
         <View style={styles.keypad}>
           {[
             ['1', '2', '3'], // baris keypad atas: angka 1, 2, 3; membuat keypad numerik 4x3 seperti kalkulator atau PIN pad
@@ -323,7 +326,8 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               ))}
             </View>
           ))}
-        </View>\n
+        </View>
+
         <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
           style={[styles.scanButton, (!amount || isProcessing) && styles.scanButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
           onPress={handleStartScan} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
@@ -334,11 +338,13 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             <Text style={styles.scanButtonText}>Lanjutkan Scan</Text>
           )}
-        </TouchableOpacity>\n<View style={styles.securityInfo}>
+        </TouchableOpacity>
+        <View style={styles.securityInfo}>
           <Text style={styles.securityIcon}>🛡️</Text>
           <Text style={styles.securityText}>Transaksi aman dengan deteksi fraud</Text>
         </View>
-      </View>\n
+      </View>
+
       <Modal visible={scanning} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
