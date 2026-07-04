@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16, // Jarak dalam atas dan bawah
     backgroundColor: '#fff', // Warna latar belakang
     borderBottomWidth: 1, // Ketebalan border bawah
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#f1f5f9', // warna garis bawah header abu sangat muda
   },
 
   // ── Tombol kembali (lingkaran abu) ──

@@ -219,26 +219,26 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // User harus ke Settings → aktifkan NFC → kembali ke app
   if (!nfcEnabled) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
     return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+      <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch */}
+        <View style={styles.header}> {/* View header: tombol kembali dan judul */}
+          <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali */}
+            <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pembayaran NFC</Text>
-          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Pembayaran NFC</Text> {/* judul screen */}
+          <View style={styles.headerSpacer} /> {/* spacer keseimbangan */}
         </View>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorIcon}>📡</Text>
-          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
-          <Text style={styles.errorText}>Aktifkan NFC untuk melakukan pembayaran</Text>
-          <View style={styles.instructionCard}>
-            <Text style={styles.instructionTitle}>Cara Mengaktifkan NFC:</Text>
-            <Text style={styles.instructionItem}>1. Buka Pengaturan</Text>
-            <Text style={styles.instructionItem}>2. Pilih Koneksi / Wireless & Networks</Text>
-            <Text style={styles.instructionItem}>3. Aktifkan NFC</Text>
+        <View style={styles.centerContent}> {/* View konten tengah layar NFC disabled */}
+          <Text style={styles.errorIcon}>📡</Text> {/* ikon sinyal NFC error */}
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text> {/* judul error */}
+          <Text style={styles.errorText}>Aktifkan NFC untuk melakukan pembayaran</Text> {/* pesan error */}
+          <View style={styles.instructionCard}> {/* View kartu instruksi */}
+            <Text style={styles.instructionTitle}>Cara Mengaktifkan NFC:</Text> {/* judul instruksi */}
+            <Text style={styles.instructionItem}>1. Buka Pengaturan</Text> {/* langkah 1 */}
+            <Text style={styles.instructionItem}>2. Pilih Koneksi / Wireless &amp; Networks</Text> {/* langkah 2 */}
+            <Text style={styles.instructionItem}>3. Aktifkan NFC</Text> {/* langkah 3 */}
           </View>
-          <TouchableOpacity style={styles.retryButton} onPress={checkNFC}>
-            <Text style={styles.retryButtonText}>Coba Lagi</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={checkNFC}> {/* tombol coba lagi: memanggil checkNFC() ulang */}
+            <Text style={styles.retryButtonText}>Coba Lagi</Text> {/* label tombol */}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -249,35 +249,35 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // RENDER UTAMA: Form Pembayaran NFC (NFC aktif)
   // ============================================================
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
+      <View style={styles.header}> {/* View header: tombol kembali dan judul */}
+        <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali ke DashboardScreen */}
+          <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Pembayaran NFC</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Pembayaran NFC</Text> {/* judul screen */}
+        <View style={styles.headerSpacer} /> {/* spacer keseimbangan layout */}
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Penerima</Text>
-          <View style={styles.merchantCard}>
-            <View style={styles.merchantIcon}>
-              <Text style={styles.merchantIconText}>🏪</Text>
+      <View style={styles.content}> {/* View konten utama: info merchant, input nominal, keypad */}
+        <View style={styles.section}> {/* View section info penerima */}
+          <Text style={styles.sectionLabel}>Penerima</Text> {/* label section */}
+          <View style={styles.merchantCard}> {/* View kartu info merchant */}
+            <View style={styles.merchantIcon}> {/* View container ikon merchant */}
+              <Text style={styles.merchantIconText}>🏪</Text> {/* ikon toko merchant */}
             </View>
-            <View style={styles.merchantInfo}>
-              <Text style={styles.merchantName}>{merchant.name}</Text>
-              <Text style={styles.merchantType}>{merchant.type}</Text>
+            <View style={styles.merchantInfo}> {/* View kolom nama dan tipe merchant */}
+              <Text style={styles.merchantName}>{merchant.name}</Text> {/* nama merchant/penerima */}
+              <Text style={styles.merchantType}>{merchant.type}</Text> {/* tipe merchant (Toko Retail) */}
             </View>
-            <TouchableOpacity>
-              <Text style={styles.chevron}>→</Text>
+            <TouchableOpacity> {/* tombol placeholder untuk navigasi detail merchant */}
+              <Text style={styles.chevron}>→</Text> {/* ikon panah kanan */}
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Nominal Pembayaran</Text>
-          <View style={styles.amountContainer}>
-            <Text style={styles.currencySymbol}>Rp</Text>
+        <View style={styles.section}> {/* View section input nominal */}
+          <Text style={styles.sectionLabel}>Nominal Pembayaran</Text> {/* label section */}
+          <View style={styles.amountContainer}> {/* View baris: prefix Rp + input nominal */}
+            <Text style={styles.currencySymbol}>Rp</Text> {/* prefix mata uang Rupiah */}
             <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
               style={styles.amountInput} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               value={amount}           // Nilai dari state (format: "50.000")
@@ -367,23 +367,23 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
               <Text style={styles.transactionAmount}>Nominal Transaksi</Text>
               <Text style={styles.transactionAmountValue}>Rp{amount}</Text>
 
-              <View style={styles.infoBox}>
-                <Text style={styles.infoIcon}>ℹ️</Text>
-                <Text style={styles.infoText}>
+              <View style={styles.infoBox}> {/* View kotak info panduan NFC */}
+                <Text style={styles.infoIcon}>ℹ️</Text> {/* ikon informasi */}
+                <Text style={styles.infoText}> {/* teks panduan jarak kartu */}
                   Pastikan kartu mendukung NFC dan dalam jarak dekat dengan perangkat.
                 </Text>
               </View>
 
               <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                 style={styles.cancelButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                onPress={() => setScanning(false)} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
+                onPress={() => setScanning(false)} // onPress dipanggil saat user menekan elemen; menutup modal scan
               >
-                <Text style={styles.cancelButtonText}>Batalkan</Text>
+                <Text style={styles.cancelButtonText}>Batalkan</Text> {/* label tombol batalkan */}
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </Modal>
+      </Modal> {/* penutup Modal scan NFC */}
     </SafeAreaView>
   );
 }

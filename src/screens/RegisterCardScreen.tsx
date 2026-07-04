@@ -306,16 +306,16 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
   // ── RENDER UTAMA: Form Registrasi Kartu ──
   // Ditampilkan jika NFC didukung dan aktif
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch */}
+      <View style={styles.header}> {/* View header: tombol kembali dan judul */}
+        <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali */}
+          <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Registrasi Kartu NFC</Text> {/* judul screen */}
+        <View style={styles.headerSpacer} /> {/* spacer keseimbangan */}
       </View>
 
-      <View style={styles.content}>
+      <View style={styles.content}> {/* View konten utama screen */}
         {/* ✅ DIPERBAIKI: Literal \n antara <View> dihapus — sebelumnya ada \n<View...> yang menjadi teks liar di JSX */}
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
