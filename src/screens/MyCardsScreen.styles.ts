@@ -334,24 +334,24 @@ const styles = StyleSheet.create({
 
   // ── Tombol "Hapus Kartu" (abu / destructive) ──
   deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    flexDirection: 'row', // ikon dan teks berjajar horizontal
+    alignItems: 'center', // rata tengah vertikal
+    justifyContent: 'center', // rata tengah horizontal
+    backgroundColor: '#F8FAFC', // latar abu sangat muda untuk aksi destruktif ringan
+    paddingVertical: 12, // padding atas-bawah tombol hapus
+    borderRadius: 12, // sudut membulat
+    gap: 8, // jarak antara ikon dan teks
+    marginTop: 8, // jarak dari tombol di atasnya
+    borderWidth: 1, // border tipis agar berbeda dari tombol solid
+    borderColor: '#CBD5E1', // border abu-abu muda
   },
 
-  deleteButtonIcon: { fontSize: 16 },
+  deleteButtonIcon: { fontSize: 16 }, // emoji ikon hapus di tombol hapus kartu
 
-  deleteButtonText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
+  deleteButtonText: { // teks di tombol hapus kartu
+    color: '#64748B', // abu-abu sedang untuk aksi destruktif yang tidak terlalu mencolok
+    fontSize: 14, // ukuran teks tombol hapus
+    fontWeight: '600', // semi-bold agar terbaca jelas
   },
 
   // ── Banner kebijakan 1 kartu per user (latar kuning) ──

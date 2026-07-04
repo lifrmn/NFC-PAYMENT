@@ -382,12 +382,12 @@ router.post('/cleanup-devices', async (req, res) => { // router.post() mendaftar
     });
 
     // Catat aksi admin
-    await prisma.adminLog.create({
-      data: {
-        action: 'DEVICES_CLEANUP',
-        details: JSON.stringify({
-          deletedCount: deletedDevices.count,
-          cutoffTime
+    await prisma.adminLog.create({ // await prisma.adminLog.create(): mencatat aksi cleanup device ke tabel AdminLog untuk audit trail
+      data: { // data: { } berisi field yang akan diisi saat create
+        action: 'DEVICES_CLEANUP', // label aksi audit: cleanup device tidak aktif
+        details: JSON.stringify({ // JSON.stringify() mengubah objek menjadi string JSON untuk disimpan di database
+          deletedCount: deletedDevices.count, // jumlah device yang berhasil dihapus; disimpan di log untuk referensi audit
+          cutoffTime // waktu batas device dianggap tidak aktif; shorthand ES6
         }),
         ipAddress: req.ip, // req.ip: IP admin yang meminta cleanup device
         userAgent: req.headers['user-agent'] // user-agent browser admin; dicatat untuk keamanan
