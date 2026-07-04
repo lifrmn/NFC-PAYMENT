@@ -809,15 +809,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // ================================================================================
   async updateCardStatus(cardId: string, status: string) { // async updateCardStatus: mengubah status kartu NFC (ACTIVE/BLOCKED/LOST); dipanggil dari halaman manajemen kartu
     // Gunakan endpoint user (/my-status) — tidak perlu admin password, cukup JWT token
-    return await this.makeRequest('/api/nfc-cards/my-status', {
-      method: 'PUT',
-      body: { cardId, status },
+    return await this.makeRequest('/api/nfc-cards/my-status', { // PUT ke endpoint my-status yang dilindungi JWT; user hanya bisa update kartu miliknya sendiri
+      method: 'PUT', // method 'PUT': HTTP method untuk mengubah data yang sudah ada; setara UPDATE di database
+      body: { cardId, status }, // body: mengirim cardId dan status baru sebagai JSON; shorthand ES6 setara { cardId: cardId, status: status }
     });
   }
 
-  async deleteCard(cardId: string) { // hapus kartu NFC milik user sendiri; dipanggil dari MyCardsScreen saat user ingin ganti kartu
-    return await this.makeRequest(`/api/nfc-cards/my-card/${cardId}`, {
-      method: 'DELETE',
+  async deleteCard(cardId: string) { // async deleteCard: menghapus kartu NFC milik user sendiri; dipanggil dari MyCardsScreen saat user ingin ganti kartu
+    return await this.makeRequest(`/api/nfc-cards/my-card/${cardId}`, { // DELETE ke endpoint my-card/:cardId; backend akan hapus kartu berdasarkan UID yang diberikan
+      method: 'DELETE', // method 'DELETE': HTTP method untuk menghapus resource; backend akan hapus record kartu dari database
     });
   }
 
@@ -1274,10 +1274,10 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, card: { cardId, balance, previousBalance } }
   // ================================================================================
-  async topUpCard(cardId: string, amount: number, adminPassword: string) {
-    return await this.makeRequest('/api/nfc-cards/topup', {
-      method: 'POST',
-      body: { cardId, amount, adminPassword },
+  async topUpCard(cardId: string, amount: number, adminPassword: string) { // async topUpCard: menambahkan saldo ke kartu NFC; memerlukan password admin untuk otorisasi
+    return await this.makeRequest('/api/nfc-cards/topup', { // POST ke /api/nfc-cards/topup untuk proses penambahan saldo kartu NFC
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data top-up ke server
+      body: { cardId, amount, adminPassword }, // body: mengirim cardId, jumlah top-up, dan password admin sebagai JSON; backend akan validasi dan update saldo kartu
     });
   }
 

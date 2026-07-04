@@ -97,67 +97,67 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
 
   // Render UI komponen sukses transaksi
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}> {/* ScrollView: konten bisa di-scroll; menampilkan scrollbar vertikal disembunyikan */}
+        <View style={styles.content}> {/* View konten utama dengan padding */}
           {/* ✅ DIPERBAIKI: Literal \n dihapus — \n di antara elemen JSX dianggap teks oleh React Native */}
-          <View style={styles.successIcon}>
-            <View style={styles.checkmarkCircle}>
-              <Text style={styles.checkmark}>✓</Text>
+          <View style={styles.successIcon}> {/* View container ikon centang sukses di tengah atas */}
+            <View style={styles.checkmarkCircle}> {/* View lingkaran hijau berisi centang */}
+              <Text style={styles.checkmark}>✓</Text> {/* teks centang putih di tengah lingkaran */}
             </View>
           </View>
-          <Text style={styles.title}>Transaksi Berhasil</Text>
-          <Text style={styles.subtitle}>
+          <Text style={styles.title}>Transaksi Berhasil</Text> {/* judul utama layar sukses */}
+          <Text style={styles.subtitle}> {/* teks deskripsi singkat di bawah judul */}
             Pembayaran NFC telah berhasil diproses
           </Text>
-          <View style={styles.amountCard}>
-            <Text style={styles.amountLabel}>Nominal</Text>
-            <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text>
+          <View style={styles.amountCard}> {/* View kartu putih menampilkan nominal transaksi */}
+            <Text style={styles.amountLabel}>Nominal</Text> {/* label teks "Nominal" */}
+            <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text> {/* angka nominal diformat Rupiah */}
           </View>
-          <View style={styles.detailsCard}>
+          <View style={styles.detailsCard}> {/* View kartu putih berisi detail pengirim dan penerima */}
             {/* ✅ DIPERBAIKI: Literal \n dihapus — penghapusan mencegah error 'Text strings must be rendered within a <Text>' */}
-            <View style={styles.detailSection}>
-              <View style={styles.detailHeader}>
-                <Text style={styles.detailHeaderIcon}>👤</Text>
-                <Text style={styles.detailHeaderText}>Dari (Pengirim)</Text>
+            <View style={styles.detailSection}> {/* View section detail pengirim */}
+              <View style={styles.detailHeader}> {/* View header section berisi ikon dan label */}
+                <Text style={styles.detailHeaderIcon}>👤</Text> {/* ikon user pengirim */}
+                <Text style={styles.detailHeaderText}>Dari (Pengirim)</Text> {/* label header pengirim */}
               </View>
-              <View style={styles.detailContent}>
-                <Text style={styles.detailName}>{transaction.senderName}</Text>
-                <Text style={styles.detailLabel}>Kartu Pengirim</Text>
-                <Text style={styles.detailValue}>{maskCardId(transaction.senderCardId)}</Text>
-                <Text style={styles.detailLabel}>Saldo Pengirim</Text>
-                <Text style={[styles.detailValue, styles.balanceValue]}>
+              <View style={styles.detailContent}> {/* View kolom detail pengirim */}
+                <Text style={styles.detailName}>{transaction.senderName}</Text> {/* nama pengirim */}
+                <Text style={styles.detailLabel}>Kartu Pengirim</Text> {/* label kartu pengirim */}
+                <Text style={styles.detailValue}>{maskCardId(transaction.senderCardId)}</Text> {/* UID kartu pengirim yang di-mask */}
+                <Text style={styles.detailLabel}>Saldo Pengirim</Text> {/* label saldo pengirim */}
+                <Text style={[styles.detailValue, styles.balanceValue]}> {/* saldo pengirim setelah transaksi */}
                   {formatCurrency(transaction.senderBalance)}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.divider} /> {/* View garis pemisah antara section pengirim dan penerima */}
             {/* ✅ DIPERBAIKI: Literal \n setelah self-closing tag dihapus — React Native tidak bisa render string mentah di luar <Text> */}
-            <View style={styles.detailSection}>
-              <View style={styles.detailHeader}>
-                <Text style={styles.detailHeaderIcon}>👥</Text>
-                <Text style={styles.detailHeaderText}>Ke (Penerima)</Text>
+            <View style={styles.detailSection}> {/* View section detail penerima */}
+              <View style={styles.detailHeader}> {/* View header section penerima */}
+                <Text style={styles.detailHeaderIcon}>👥</Text> {/* ikon user penerima */}
+                <Text style={styles.detailHeaderText}>Ke (Penerima)</Text> {/* label header penerima */}
               </View>
-              <View style={styles.detailContent}>
-                <Text style={styles.detailName}>{transaction.receiverName}</Text>
-                <Text style={styles.detailLabel}>Kartu Penerima</Text>
-                <Text style={styles.detailValue}>{maskCardId(transaction.receiverCardId)}</Text>
-                <Text style={styles.detailLabel}>Penerima bertambah</Text>
-                <Text style={[styles.detailValue, styles.positiveAmount]}>
+              <View style={styles.detailContent}> {/* View kolom detail penerima */}
+                <Text style={styles.detailName}>{transaction.receiverName}</Text> {/* nama penerima */}
+                <Text style={styles.detailLabel}>Kartu Penerima</Text> {/* label kartu penerima */}
+                <Text style={styles.detailValue}>{maskCardId(transaction.receiverCardId)}</Text> {/* UID kartu penerima yang di-mask */}
+                <Text style={styles.detailLabel}>Penerima bertambah</Text> {/* label saldo tambah penerima */}
+                <Text style={[styles.detailValue, styles.positiveAmount]}> {/* jumlah yang diterima; warna hijau */}
                   +{formatCurrency(transaction.amount)}
                 </Text>
               </View>
             </View>
           </View>
-          <View style={styles.riskCard}>
-            <View style={styles.riskHeader}>
-              <Text style={styles.riskIcon}>🛡️</Text>
-              <View style={styles.riskHeaderText}>
-                <Text style={styles.riskTitle}>Z-Score Anomaly Detection</Text>
+          <View style={styles.riskCard}> {/* View kartu hasil Z-Score Anomaly Detection */}
+            <View style={styles.riskHeader}> {/* View header kartu risiko: ikon perisai + judul */}
+              <Text style={styles.riskIcon}>🛡️</Text> {/* ikon perisai keamanan */}
+              <View style={styles.riskHeaderText}> {/* View teks header risiko */}
+                <Text style={styles.riskTitle}>Z-Score Anomaly Detection</Text> {/* judul section deteksi fraud */}
               </View>
             </View>
-            <View style={styles.riskContent}>
+            <View style={styles.riskContent}> {/* View konten detail Z-Score */}
               {/* ✅ DIPERBAIKI: Literal \n dihapus — komentar JSX pakai {/* */} bukan // agar tidak menjadi teks */}
               <View style={styles.riskScoreRow}>
                 <Text style={styles.riskScoreLabel}>Z-Score:</Text>
@@ -195,7 +195,7 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
                       { color: getRiskColor(transaction.riskLevel) }, // Teks berwarna sesuai level risiko
                     ]}
                   >
-                    {getRiskLabel(transaction.riskLevel)}
+                    {getRiskLabel(transaction.riskLevel)} {/* teks level risiko dikonversi dari kode ke bahasa Indonesia */}
                   </Text>
                 </View>
               </View>
@@ -211,8 +211,8 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
               </TouchableOpacity>
             )}
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </View> {/* penutup View styles.content */}
+      </ScrollView> {/* penutup ScrollView */}
+    </SafeAreaView> {/* penutup SafeAreaView */}
   );
 }
