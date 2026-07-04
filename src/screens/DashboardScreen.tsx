@@ -30,51 +30,51 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   onNavigateToMyCards, // props opsional untuk pindah ke screen daftar kartu saya
   onNavigateToTopUp, // props opsional untuk pindah ke screen top-up saldo
 }: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
-  const [currentUser, setCurrentUser] = useState(user || null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never');
+  const [currentUser, setCurrentUser] = useState(user || null); // state: data user aktif; diinisialisasi dari props user; diperbarui setiap refresh dari backend
+  const [transactions, setTransactions] = useState<any[]>([]); // state: array riwayat transaksi user; <any[]> adalah tipe TypeScript array of any; [] inisialisasi array kosong
+  const [loading, setLoading] = useState(false); // state: flag loading saat refreshData berjalan; true = tombol dinonaktifkan dan spinner ditampilkan
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // state: waktu terakhir data berhasil disinkronkan; null = belum pernah sync; <Date | null> = bisa Date atau null
+  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // state: status sinkronisasi data; union type tiga nilai; 'never' = belum pernah dicoba
   // Timestamp refresh terakhir — mencegah burst API call saat navigasi cepat antar screen
   const lastRefreshRef = useRef<number>(0);
 
   const refreshData = async () => {
-    if (!user || !user.id) return;
+    if (!user || !user.id) return; // guard: hentikan jika tidak ada user atau user.id tidak valid
 
     // Cooldown 10 detik: cegah refresh berulang saat navigasi cepat antar screen
-    const now = Date.now();
-    if (now - lastRefreshRef.current < 10000) {
-      console.log('⏱️ Refresh skipped — cooldown aktif (10s)');
-      return;
+    const now = Date.now(); // ambil timestamp sekarang dalam milliseconds
+    if (now - lastRefreshRef.current < 10000) { // cek apakah belum 10 detik sejak refresh terakhir
+      console.log('⏱️ Refresh skipped — cooldown aktif (10s)'); // log pesan cooldown ke console
+      return; // hentikan eksekusi karena masih dalam periode cooldown
     }
-    lastRefreshRef.current = now;
+    lastRefreshRef.current = now; // simpan timestamp refresh ini ke ref untuk cooldown berikutnya
     
-    setLoading(true);
+    setLoading(true); // aktifkan state loading: spinner tampil, tombol dinonaktifkan
     try {
       // getUserById selalu fetch dari backend (sudah diperbaiki) → saldo selalu fresh
-      const updatedUser = await getUserById(user.id);
-      if (updatedUser) {
+      const updatedUser = await getUserById(user.id); // await: tunggu data user terbaru dari backend via API
+      if (updatedUser) { // hanya perbarui state jika data valid diterima dari server
         setCurrentUser(updatedUser); // langsung pakai balance dari backend, tidak perlu sync terpisah
-        setLastSyncTime(new Date());
-        setSyncStatus('success');
-        console.log(`✅ Updated user balance from backend: ${updatedUser.balance}`);
+        setLastSyncTime(new Date()); // simpan waktu sync berhasil sebagai objek Date
+        setSyncStatus('success'); // tandai status sync berhasil
+        console.log(`✅ Updated user balance from backend: ${updatedUser.balance}`); // log saldo terbaru
       }
 
       // Ambil riwayat transaksi (1 API call terpisah)
-      const userTransactions = await getUserTransactions(user.id);
-      setTransactions(userTransactions || []);
+      const userTransactions = await getUserTransactions(user.id); // await: tunggu array riwayat transaksi dari backend
+      setTransactions(userTransactions || []); // simpan ke state; || [] sebagai fallback jika null
 
       // ✅ syncBalanceFromBackend dihapus dari sini — sudah tercakup dalam getUserById
       // Sebelumnya: getUserById + syncBalanceFromBackend = 2 panggilan ke /api/users/:id
       // Sesudahnya: hanya getUserById = 1 panggilan → menghemat 50% API call, mencegah 429
 
     } catch (error) {
-      console.error('Error refreshing data:', error);
-      if (!currentUser || !currentUser.id) {
-        Alert.alert('Error', 'Gagal memuat data terbaru');
+      console.error('Error refreshing data:', error); // log error ke console untuk debugging
+      if (!currentUser || !currentUser.id) { // hanya tampilkan alert jika belum ada data sama sekali
+        Alert.alert('Error', 'Gagal memuat data terbaru'); // tampilkan alert error ke user
       }
     } finally {
-      setLoading(false);
+      setLoading(false); // matikan loading state: spinner disembunyikan, tombol diaktifkan kembali
     }
   };
 
@@ -173,155 +173,155 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     );
   };
 
-  const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up
-    if (onNavigateToTopUp) {
+  const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up di balance card
+    if (onNavigateToTopUp) { // cek apakah callback onNavigateToTopUp disediakan oleh parent (App.tsx)
       onNavigateToTopUp(); // navigasi ke TopUpScreen jika callback tersedia
     } else {
-      Alert.alert('Top Up', 'Fitur top-up belum tersedia di layar ini.', [{ text: 'OK' }]);
+      Alert.alert('Top Up', 'Fitur top-up belum tersedia di layar ini.', [{ text: 'OK' }]); // tampilkan pesan jika navigasi belum dikonfigurasi
     }
   };
 
   if (!currentUser) { // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undefined; tampilkan loading screen jika data user belum ada
-    return ( // return di luar JSX utama — mengembalikan UI alternatif (early return pattern)
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading user data...</Text>
+    return ( // early return: mengembalikan UI loading sebelum data user tersedia
+      <SafeAreaView style={styles.container}> {/* SafeAreaView memberi padding aman dari notch */}
+        <View style={styles.loadingContainer}> {/* View container untuk layout loading */}
+          <Text style={styles.loadingText}>Loading user data...</Text> {/* teks placeholder saat data user sedang dimuat */}
         </View>
       </SafeAreaView>
     );
   }
 
   return ( // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() adalah yang akan dirender ke layar
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: wrapper aman dari notch dan status bar */}
       <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
         style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />}
-        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />} // RefreshControl: komponen pull-to-refresh; refreshing={loading} = animasi aktif saat loading; onRefresh={refreshData} = fungsi yang dipanggil saat user tarik ke bawah
+        showsVerticalScrollIndicator={false} // menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Halo, {currentUser?.name || 'User'}</Text>
-            <Text style={styles.greetingSubtext}>Selamat datang kembali!</Text>
+        <View style={styles.header}> {/* View header: berisi sapaan dan tombol notifikasi */}
+          <View> {/* View kiri: sapaan nama user */}
+            <Text style={styles.greeting}>Halo, {currentUser?.name || 'User'}</Text> {/* Text sapaan dengan nama user; optional chaining ?. mencegah error jika name undefined */}
+            <Text style={styles.greetingSubtext}>Selamat datang kembali!</Text> {/* Text subjudul sapaan */}
           </View>
-          <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
-            <View style={styles.notificationDot} />
-            <Text style={styles.notificationIcon}>🔔</Text>
+          <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}> {/* TouchableOpacity tombol notifikasi kanan atas; onPress memanggil handleNotification */}
+            <View style={styles.notificationDot} /> {/* View titik merah indikator notifikasi baru */}
+            <Text style={styles.notificationIcon}>🔔</Text> {/* Text ikon lonceng notifikasi */}
           </TouchableOpacity>
         </View>
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceHeader}>
-            <Text style={styles.saldoLabel}>Saldo</Text>
-            <View style={styles.walletIcon}>
-              <Text style={styles.walletIconText}>💳)))</Text>
-              <View style={styles.walletShield}>
-                <Text style={styles.walletShieldIcon}>✓</Text>
+        <View style={styles.balanceCard}> {/* View kartu saldo utama dengan gradient biru */}
+          <View style={styles.balanceHeader}> {/* View baris atas kartu saldo: label dan ikon kartu */}
+            <Text style={styles.saldoLabel}>Saldo</Text> {/* Text label 'Saldo' di atas angka saldo */}
+            <View style={styles.walletIcon}> {/* View ikon dompet NFC di pojok kanan */}
+              <Text style={styles.walletIconText}>💳)))</Text> {/* Text emoji kartu dengan simbol gelombang NFC */}
+              <View style={styles.walletShield}> {/* View lingkaran shield centang hijau */}
+                <Text style={styles.walletShieldIcon}>✓</Text> {/* Text tanda centang dalam shield */}
               </View>
             </View>
           </View>
-          <Text style={styles.balanceAmount}>{formatCurrency(currentUser?.balance || 0)}</Text>
-          <View style={styles.balanceActions}>
-            <TouchableOpacity style={styles.topUpButton} onPress={handleTopUp}>
-              <Text style={styles.topUpIcon}>➕</Text>
-              <Text style={styles.topUpText}> Top Up</Text>
+          <Text style={styles.balanceAmount}>{formatCurrency(currentUser?.balance || 0)}</Text> {/* Text angka saldo diformat sebagai Rupiah; || 0 sebagai fallback jika balance undefined */}
+          <View style={styles.balanceActions}> {/* View baris tombol aksi: Top Up dan Riwayat Saldo */}
+            <TouchableOpacity style={styles.topUpButton} onPress={handleTopUp}> {/* tombol Top Up; onPress memanggil handleTopUp() */}
+              <Text style={styles.topUpIcon}>➕</Text> {/* Text ikon plus untuk Top Up */}
+              <Text style={styles.topUpText}> Top Up</Text> {/* Text label tombol Top Up */}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.historyButton} onPress={handleBalanceHistory}>
-              <Text style={styles.historyText}>Riwayat Saldo  →</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.menuSection}>
-          <Text style={styles.menuTitle}>Menu Cepat</Text>
-          <View style={styles.menuGrid}>
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToNFC}>
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>💸</Text>
-              </View>
-              <Text style={styles.menuLabel}>Bayar NFC</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToRegisterCard || (() => {})}>
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>🎫</Text>
-              </View>
-              <Text style={styles.menuLabel}>Registrasi Kartu</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToMyCards || (() => {})}>
-              <View style={styles.menuIconContainer}>
-                <Text style={styles.menuIcon}>💳</Text>
-              </View>
-              <Text style={styles.menuLabel}>Daftar Kartu</Text>
+            <TouchableOpacity style={styles.historyButton} onPress={handleBalanceHistory}> {/* tombol Riwayat Saldo; onPress memanggil handleBalanceHistory() */}
+              <Text style={styles.historyText}>Riwayat Saldo  →</Text> {/* Text label tombol Riwayat dengan panah kanan */}
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.transactionSection}>
-          <View style={styles.transactionHeader}>
-            <Text style={styles.transactionTitle}>Transaksi Terbaru</Text>
-            <TouchableOpacity onPress={handleSeeAllTransactions}>
-              <Text style={styles.seeAllText}>Lihat Semua  →</Text>
+        <View style={styles.menuSection}> {/* View section Menu Cepat */}
+          <Text style={styles.menuTitle}>Menu Cepat</Text> {/* Text judul section Menu Cepat */}
+          <View style={styles.menuGrid}> {/* View grid 3 kolom untuk ikon menu cepat */}
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToNFC}> {/* tombol menu Bayar NFC; onPress memanggil callback navigasi ke NFCScreen */}
+              <View style={styles.menuIconContainer}> {/* View lingkaran background ikon menu */}
+                <Text style={styles.menuIcon}>💸</Text> {/* Text emoji ikon uang terbang untuk menu bayar */}
+              </View>
+              <Text style={styles.menuLabel}>Bayar NFC</Text> {/* Text label menu */}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToRegisterCard || (() => {})}> {/* tombol menu Registrasi Kartu; || (() => {}) fallback jika callback tidak tersedia */}
+              <View style={styles.menuIconContainer}> {/* View lingkaran ikon */}
+                <Text style={styles.menuIcon}>🎫</Text> {/* Text emoji tiket untuk menu registrasi kartu */}
+              </View>
+              <Text style={styles.menuLabel}>Registrasi Kartu</Text> {/* Text label menu */}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToMyCards || (() => {})}> {/* tombol menu Daftar Kartu; fallback empty function jika callback tidak tersedia */}
+              <View style={styles.menuIconContainer}> {/* View lingkaran ikon */}
+                <Text style={styles.menuIcon}>💳</Text> {/* Text emoji kartu kredit untuk menu daftar kartu */}
+              </View>
+              <Text style={styles.menuLabel}>Daftar Kartu</Text> {/* Text label menu */}
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.transactionSection}> {/* View section Transaksi Terbaru */}
+          <View style={styles.transactionHeader}> {/* View baris header section: judul dan link 'Lihat Semua' */}
+            <Text style={styles.transactionTitle}>Transaksi Terbaru</Text> {/* Text judul section Transaksi Terbaru */}
+            <TouchableOpacity onPress={handleSeeAllTransactions}> {/* tombol 'Lihat Semua'; onPress memanggil handleSeeAllTransactions() */}
+              <Text style={styles.seeAllText}>Lihat Semua  →</Text> {/* Text link dengan panah kanan */}
             </TouchableOpacity>
           </View>
 
-          {transactions.length === 0 ? ( // Tampilkan empty state jika tidak ada transaksi
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyText}>Belum ada transaksi</Text>
+          {transactions.length === 0 ? ( // ternary operator: tampilkan empty state jika tidak ada transaksi
+            <View style={styles.emptyState}> {/* View container empty state */}
+              <Text style={styles.emptyIcon}>📭</Text> {/* Text emoji kotak pos kosong */}
+              <Text style={styles.emptyText}>Belum ada transaksi</Text> {/* Text pesan empty state */}
             </View>
           ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
-            transactions.slice(0, 4).map((transaction) => { // Tampilkan maksimal 4 transaksi terakhir
+            transactions.slice(0, 4).map((transaction) => { // .slice(0,4) ambil 4 transaksi terakhir; .map() render satu item per transaksi
               if (!currentUser?.id) return null; // Abaikan jika user tidak valid
               const isReceiver = transaction.receiverId === currentUser.id; // Cek apakah user adalah penerima dana
               const otherUser = isReceiver ? transaction.sender : transaction.receiver; // Ambil info pihak lain dalam transaksi
               if (!otherUser) return null; // Abaikan jika data pihak lain tidak tersedia
               
               return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-                <TouchableOpacity key={transaction.id} style={styles.transactionItem}>
-                  <View style={styles.transactionIconContainer}>
+                <TouchableOpacity key={transaction.id} style={styles.transactionItem}> {/* key={id} diperlukan React untuk identifikasi unik tiap item dalam list */}
+                  <View style={styles.transactionIconContainer}> {/* View lingkaran ikon transaksi */}
                     <Text style={styles.transactionIcon}>
-                      {isReceiver ? '💵' : '💸'}
+                      {isReceiver ? '💵' : '💸'} {/* emoji uang masuk (hijau) jika penerima, uang keluar (merah) jika pengirim */}
                     </Text>
                   </View>
-                  <View style={styles.transactionInfo}>
+                  <View style={styles.transactionInfo}> {/* View kolom info transaksi: nama, jenis, tanggal */}
                     <Text style={styles.transactionName}>
-                      {otherUser?.name || 'Unknown'}
+                      {otherUser?.name || 'Unknown'} {/* nama pihak lain dalam transaksi; fallback 'Unknown' */}
                     </Text>
                     <Text style={styles.transactionType}>
-                      {'Pembayaran NFC'}
+                      {'Pembayaran NFC'} {/* jenis transaksi; selalu 'Pembayaran NFC' untuk transaksi NFC */}
                     </Text>
                     <Text style={styles.transactionDate}>
-                      {formatDate(transaction.createdAt || new Date().toISOString())}
+                      {formatDate(transaction.createdAt || new Date().toISOString())} {/* tanggal transaksi diformat; fallback ke sekarang */}
                     </Text>
                   </View>
-                  <Text style={[styles.transactionAmount, isReceiver ? styles.positiveAmount : styles.negativeAmount]}>
-                    {isReceiver ? '+' : '-'}{formatCurrency(transaction.amount || 0)}
+                  <Text style={[styles.transactionAmount, isReceiver ? styles.positiveAmount : styles.negativeAmount]}> {/* Text jumlah; array style menggabungkan dua style: base + kondisional */}
+                    {isReceiver ? '+' : '-'}{formatCurrency(transaction.amount || 0)} {/* tanda + jika penerima, - jika pengirim; diikuti jumlah terformat */}
                   </Text>
-                  <Text style={styles.transactionArrow}>→</Text>
+                  <Text style={styles.transactionArrow}>→</Text> {/* Text panah kanan dekoratif di ujung item */}
                 </TouchableOpacity>
               );
             })
           )}
         </View>
       </ScrollView>
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIconActive}>🏠</Text>
-          <Text style={styles.navLabelActive}>Beranda</Text>
+      <View style={styles.bottomNav}> {/* View bottom navigation bar di bawah layar */}
+        <TouchableOpacity style={styles.navItem}> {/* tombol nav Beranda (aktif) */}
+          <Text style={styles.navIconActive}>🏠</Text> {/* ikon rumah aktif */}
+          <Text style={styles.navLabelActive}>Beranda</Text> {/* label aktif Beranda */}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={onNavigateToMyCards || (() => {})}>
-          <Text style={styles.navIcon}>💳</Text>
-          <Text style={styles.navLabel}>Kartu</Text>
+        <TouchableOpacity style={styles.navItem} onPress={onNavigateToMyCards || (() => {})}> {/* tombol nav Kartu; navigasi ke MyCardsScreen */}
+          <Text style={styles.navIcon}>💳</Text> {/* ikon kartu */}
+          <Text style={styles.navLabel}>Kartu</Text> {/* label Kartu */}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItemCenter} onPress={onNavigateToNFC}>
-          <View style={styles.centerButton}>
-            <Text style={styles.centerButtonIcon}>💸</Text>
+        <TouchableOpacity style={styles.navItemCenter} onPress={onNavigateToNFC}> {/* tombol tengah (menonjol) untuk Bayar NFC */}
+          <View style={styles.centerButton}> {/* View lingkaran biru tombol tengah */}
+            <Text style={styles.centerButtonIcon}>💸</Text> {/* ikon uang untuk tombol Bayar */}
           </View>
-          <Text style={styles.navLabel}>Bayar</Text>
+          <Text style={styles.navLabel}>Bayar</Text> {/* label Bayar */}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>📊</Text>
-          <Text style={styles.navLabel}>Riwayat</Text>
+        <TouchableOpacity style={styles.navItem}> {/* tombol nav Riwayat */}
+          <Text style={styles.navIcon}>📊</Text> {/* ikon grafik batang untuk Riwayat */}
+          <Text style={styles.navLabel}>Riwayat</Text> {/* label Riwayat */}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={handleLogout}>
-          <Text style={styles.navIcon}>👤</Text>
-          <Text style={styles.navLabel}>Akun</Text>
+        <TouchableOpacity style={styles.navItem} onPress={handleLogout}> {/* tombol nav Akun; onPress memanggil handleLogout() */}
+          <Text style={styles.navIcon}>👤</Text> {/* ikon orang untuk Akun */}
+          <Text style={styles.navLabel}>Akun</Text> {/* label Akun */}
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -353,26 +353,26 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // ================================================================================
   if (!nfcEnabled) { // if memeriksa kondisi; !nfcEnabled berarti NFC tidak aktif atau tidak didukung; early return menampilkan layar instruksi sebagai pengganti form pembayaran
     return ( // return mengembalikan UI alternatif — early return pattern
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorIcon}>📲</Text>
+      <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
+        <View style={styles.centerContent}> {/* View: container konten yang ditengahkan secara vertikal dan horizontal */}
+          <Text style={styles.errorIcon}>📲</Text> {/* Text: ikon emoji smartphone dengan gelombang sinyal */}
           
-          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text>
+          <Text style={styles.errorTitle}>NFC Tidak Aktif</Text> {/* Text: judul pesan error NFC tidak aktif */}
           
-          <Text style={styles.infoText}>
+          <Text style={styles.infoText}> {/* Text: kalimat penjelasan langkah mengaktifkan NFC */}
             Untuk menggunakan pembayaran NFC, aktifkan NFC di HP Anda:
           </Text>
-          <View style={styles.instructionBox}>
-            <Text style={styles.instructionText}>
-              1. Buka Pengaturan HP{'\n'}
-              2. Cari menu "Koneksi Perangkat" atau "NFC"{'\n'}
-              3. Aktifkan toggle NFC{'\n'}
+          <View style={styles.instructionBox}> {/* View: kotak instruksi berwarna dengan langkah-langkah aktivasi NFC */}
+            <Text style={styles.instructionText}> {/* Text: daftar langkah mengaktifkan NFC yang dipisahkan \n */}
+              1. Buka Pengaturan HP{'{\n}'}
+              2. Cari menu "Koneksi Perangkat" atau "NFC"{'{\n}'}
+              3. Aktifkan toggle NFC{'{\n}'}
               4. Kembali ke aplikasi ini
             </Text>
           </View>
           
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backButtonText}>Kembali</Text>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}> {/* TouchableOpacity tombol Kembali; onPress memanggil onBack dari props untuk kembali ke DashboardScreen */}
+            <Text style={styles.backButtonText}>Kembali</Text> {/* Text label tombol Kembali */}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -427,34 +427,34 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   //    - onPress: handleSendMoney
   // ================================================================================
   return ( // return JSX utama — form pembayaran yang tampil saat NFC aktif
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backText}>← Kembali</Text>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: container aman dari area notch */}
+      <View style={styles.header}> {/* View header: baris atas berisi tombol kembali, judul, dan spacer */}
+        <TouchableOpacity onPress={onBack}> {/* TouchableOpacity tombol kembali; onPress memanggil onBack untuk kembali ke Dashboard */}
+          <Text style={styles.backText}>← Kembali</Text> {/* Text panah kiri dengan teks Kembali */}
         </TouchableOpacity>
         
-        <Text style={styles.title}>💳 NFC Payment</Text>
-        <View style={styles.headerSpacerLarge} />
+        <Text style={styles.title}>💳 NFC Payment</Text> {/* Text judul screen ditengah header */}
+        <View style={styles.headerSpacerLarge} /> {/* View spacer transparan untuk menyeimbangkan layout header */}
       </View>
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.userCard}>
-          <Text style={styles.userName}>👤 {user?.name}</Text>
-          <Text style={styles.userBalance}>
-            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'}
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}> {/* ScrollView konten utama; contentContainerStyle untuk padding dalam container */}
+        <View style={styles.userCard}> {/* View kartu info merchant: nama dan saldo */}
+          <Text style={styles.userName}>👤 {user?.name}</Text> {/* Text nama user/merchant dengan ikon; optional chaining (?.) aman jika user null */}
+          <Text style={styles.userBalance}> {/* Text saldo merchant saat ini */}
+            Balance: Rp {currentBalance?.toLocaleString('id-ID') || '0'} {/* toLocaleString format angka dengan titik ribuan; || '0' fallback */}
           </Text>
         </View>
-        <View style={styles.instructionCard}>
-          <Text style={styles.instructionTitle}>📖 Cara Terima Pembayaran:</Text>
-          <Text style={styles.instructionText}>
-            1. Masukkan jumlah pembayaran{'\n'}
-            2. Tekan tombol "Terima Pembayaran"{'\n'}
-            3. Pembeli tempelkan kartu NFC ke HP Anda{'\n'}
-            4. Saldo Anda otomatis bertambah! ✅{'\n'}
+        <View style={styles.instructionCard}> {/* View kartu instruksi biru berisi panduan langkah-langkah pembayaran */}
+          <Text style={styles.instructionTitle}>📖 Cara Terima Pembayaran:</Text> {/* Text judul kartu instruksi */}
+          <Text style={styles.instructionText}> {/* Text daftar langkah cara menerima pembayaran NFC */}
+            1. Masukkan jumlah pembayaran{'{\n}'}
+            2. Tekan tombol "Terima Pembayaran"{'{\n}'}
+            3. Pembeli tempelkan kartu NFC ke HP Anda{'{\n}'}
+            4. Saldo Anda otomatis bertambah! ✅{'{\n}'}
             5. Saldo pembeli otomatis berkurang! ✅
           </Text>
         </View>
-        <View style={styles.inputCard}>
-          <Text style={styles.inputLabel}>💰 Jumlah Pembayaran:</Text>
+        <View style={styles.inputCard}> {/* View kartu input nominal pembayaran */}
+          <Text style={styles.inputLabel}>💰 Jumlah Pembayaran:</Text> {/* Text label kolom input nominal */}
           
           <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
             style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
@@ -465,7 +465,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
             editable={!isProcessing} // editable: jika false TextInput tidak bisa diedit oleh user; untuk tampilan read-only
           />
           
-          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text>
+          <Text style={styles.inputHint}>Masukkan jumlah (contoh: 19456)</Text> {/* Text hint di bawah input sebagai panduan format input */}
         </View>
         <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
           style={[ // style={} prop untuk menerapkan styling ke elemen React Native
@@ -477,14 +477,14 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
           {isProcessing ? ( // ternary operator: jika isProcessing=true tampilkan spinner, jika false tampilkan teks normal
-            <>
-              <ActivityIndicator color="white" />
-              <Text style={styles.actionButtonText}>  Processing...</Text>
+            <> {/* Fragment: wrapper tanpa elemen DOM tambahan; diperlukan saat render multiple children */}
+              <ActivityIndicator color="white" /> {/* ActivityIndicator: spinner animasi loading putih */}
+              <Text style={styles.actionButtonText}>  Processing...</Text> {/* Text teks sedang memproses */}
             </>
           ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
-            <>
-              <Text style={styles.actionButtonText}>💵 Terima Pembayaran</Text>
-              <Text style={styles.actionButtonSubtext}>
+            <> {/* Fragment untuk membungkus dua Text tanpa View tambahan */}
+              <Text style={styles.actionButtonText}>💵 Terima Pembayaran</Text> {/* Text teks utama tombol */}
+              <Text style={styles.actionButtonSubtext}> {/* Text teks kecil di bawah judul tombol */}
                 Pembeli akan tap kartu ke HP Anda
               </Text>
             </>

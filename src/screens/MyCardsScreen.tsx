@@ -186,26 +186,26 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   };
 
   // Fungsi: Handler hapus kartu (permanent delete, lalu bisa daftar kartu baru)
-  const handleDeleteCard = (card: NFCCard) => {
-    Alert.alert(
-      '⚠️ Hapus Kartu',
-      `Kartu ${card.cardId} akan dihapus permanen dari akun Anda.\n\nSetelah dihapus, Anda dapat mendaftarkan kartu NFC baru.\n\nLanjutkan?`,
+  const handleDeleteCard = (card: NFCCard) => { // arrow function menerima objek kartu NFCCard; menampilkan konfirmasi sebelum hapus permanen
+    Alert.alert( // Alert.alert() menampilkan dialog konfirmasi sebelum menghapus kartu secara permanen
+      '⚠️ Hapus Kartu', // judul dialog hapus kartu
+      `Kartu ${card.cardId} akan dihapus permanen dari akun Anda.\n\nSetelah dihapus, Anda dapat mendaftarkan kartu NFC baru.\n\nLanjutkan?`, // pesan konfirmasi dengan template literal menyisipkan cardId
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' }, // tombol batal; style: 'cancel' memberi tampilan khusus tombol batal
         {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiService.deleteCard(card.cardId);
-              Alert.alert(
-                'Berhasil',
-                'Kartu berhasil dihapus. Anda sekarang dapat mendaftarkan kartu NFC baru.',
-                [{ text: 'OK', onPress: () => onRegisterNew && onRegisterNew() }]
+          text: 'Hapus', // teks tombol konfirmasi hapus
+          style: 'destructive', // style: 'destructive' menampilkan teks merah di iOS sebagai peringatan aksi berbahaya
+          onPress: async () => { // async callback dipanggil saat user menekan Hapus
+            try { // try: membungkus operasi yang berisiko error
+              await apiService.deleteCard(card.cardId); // await HTTP DELETE ke backend untuk hapus kartu berdasarkan cardId
+              Alert.alert( // Alert.alert() menampilkan dialog sukses setelah kartu berhasil dihapus
+                'Berhasil', // judul dialog sukses
+                'Kartu berhasil dihapus. Anda sekarang dapat mendaftarkan kartu NFC baru.', // pesan informasi setelah hapus berhasil
+                [{ text: 'OK', onPress: () => onRegisterNew && onRegisterNew() }] // callback setelah OK: navigasi ke screen daftar kartu baru jika callback tersedia
               );
-              loadCards();
-            } catch (error: any) {
-              Alert.alert('Error', error.message || 'Gagal menghapus kartu');
+              loadCards(); // muat ulang daftar kartu setelah hapus
+            } catch (error: any) { // catch menangkap error dari deleteCard
+              Alert.alert('Error', error.message || 'Gagal menghapus kartu'); // tampilkan pesan error; || fallback jika message tidak ada
             }
           },
         },
@@ -263,14 +263,14 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     }
   };
 
-  const formatDate = (dateString: string | undefined | null) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
+  const formatDate = (dateString: string | undefined | null) => { // arrow function: format string tanggal ISO menjadi teks tanggal Indonesia; menerima string, undefined, atau null
+    if (!dateString) return '-'; // guard: kembalikan '-' jika dateString kosong/null/undefined
+    const date = new Date(dateString); // konversi string tanggal ISO ke objek Date JavaScript
+    if (isNaN(date.getTime())) return '-'; // getTime() mengembalikan NaN jika string bukan tanggal valid; kembalikan '-' untuk data rusak
+    return date.toLocaleDateString('id-ID', { // toLocaleDateString() memformat objek Date ke string tanggal sesuai locale Indonesia
+      day: '2-digit', // hari 2 digit: 01, 15, 31
+      month: 'short', // bulan singkat: Jan, Feb, Mar
+      year: 'numeric', // tahun penuh: 2025
     });
   };
 
@@ -279,17 +279,17 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   // (bukan saat pull-to-refresh, karena pull-to-refresh punya spinner sendiri)
   if (loading && cards.length === 0) { // if memeriksa dua kondisi sekaligus dengan &&; loading=true DAN belum ada data kartu — tampilkan full-screen spinner
     return ( // early return menampilkan UI loading alternatif
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backIcon}>←</Text>
+      <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch */}
+        <View style={styles.header}> {/* View header loading screen */}
+          <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali */}
+            <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Daftar Kartu</Text>
-          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Daftar Kartu</Text> {/* judul header */}
+          <View style={styles.headerSpacer} /> {/* spacer untuk keseimbangan */}
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Memuat kartu...</Text>
+        <View style={styles.loadingContainer}> {/* View container spinner */}
+          <ActivityIndicator size="large" color="#3B82F6" /> {/* spinner biru besar */}
+          <Text style={styles.loadingText}>Memuat kartu...</Text> {/* teks loading */}
         </View>
       </SafeAreaView>
     );
@@ -297,13 +297,13 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // ── RENDER UTAMA: Daftar Kartu ──
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
+      <View style={styles.header}> {/* View header: baris atas berisi tombol kembali dan judul */}
+        <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali ke DashboardScreen */}
+          <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daftar Kartu</Text>
-        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Daftar Kartu</Text> {/* judul screen */}
+        <View style={styles.headerSpacer} /> {/* spacer untuk keseimbangan layout */}
       </View>
       {/* ScrollView: View yang bisa discroll jika konten melebihi tinggi layar */}
       {/* style={} menerapkan objek style yang sudah didefinisikan di StyleSheet */}
@@ -468,11 +468,11 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                 </View>
               ))}
 
-              <View style={styles.policyInfo}>
-                <Text style={styles.policyIcon}>📌</Text>
-                <View style={styles.policyTextContainer}>
-                  <Text style={styles.policyTitle}>Kebijakan Kartu</Text>
-                  <Text style={styles.policyText}>
+              <View style={styles.policyInfo}> {/* View kotak info kebijakan kartu */}
+                <Text style={styles.policyIcon}>📌</Text> {/* ikon pin kebijakan */}
+                <View style={styles.policyTextContainer}> {/* View kolom teks kebijakan */}
+                  <Text style={styles.policyTitle}>Kebijakan Kartu</Text> {/* judul kebijakan */}
+                  <Text style={styles.policyText}> {/* teks penjelasan kebijakan 1 user = 1 kartu */}
                     Saat ini sistem menerapkan kebijakan 1 USER = 1 CARD untuk keamanan.
                     Pastikan kartu Anda selalu aman.
                   </Text>
@@ -481,9 +481,9 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
             </>
           )}
 
-          <View style={styles.securityInfo}>
-            <Text style={styles.securityIcon}>🛡️</Text>
-            <Text style={styles.securityText}>
+          <View style={styles.securityInfo}> {/* View kotak info keamanan di bawah */}
+            <Text style={styles.securityIcon}>🛡️</Text> {/* ikon perisai keamanan */}
+            <Text style={styles.securityText}> {/* teks panduan keamanan penggunaan kartu NFC */}
               Gunakan kartu NFC untuk pembayaran cepat dan aman. Pastikan kartu Anda
               selalu aman.
             </Text>
