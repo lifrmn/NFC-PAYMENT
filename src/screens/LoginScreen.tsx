@@ -301,29 +301,29 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   // - Prevent input tertutup keyboard
   // ================================================================================
   return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}> {/* SafeAreaView: padding aman dari notch dan status bar perangkat */}
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // behavior: menentukan cara KeyboardAvoidingView bereaksi; "padding" untuk iOS, "height" untuk Android
         style={styles.container} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Text style={styles.logoIcon}>💳</Text>
-                <Text style={styles.logoWave}>)))</Text>
+        <View style={styles.content}> {/* View konten utama: header logo dan card form */}
+          <View style={styles.header}> {/* View header: logo, judul, dan subtitle */}
+            <View style={styles.logoContainer}> {/* View container logo: lingkaran biru + badge shield */}
+              <View style={styles.logo}> {/* View logo utama biru */}
+                <Text style={styles.logoIcon}>💳</Text> {/* emoji kartu kredit */}
+                <Text style={styles.logoWave}>)))</Text> {/* simbol gelombang NFC */}
               </View>
-              <View style={styles.logoShield}>
-                <Text style={styles.shieldIcon}>🛡️</Text>
+              <View style={styles.logoShield}> {/* View badge shield perisai */}
+                <Text style={styles.shieldIcon}>🛡️</Text> {/* emoji perisai keamanan */}
               </View>
             </View>
-            <Text style={styles.title}>Dompet Digital NFC</Text>
-            <Text style={styles.subtitle}>Pembayaran NFC aman dengan deteksi fraud</Text>
+            <Text style={styles.title}>Dompet Digital NFC</Text> {/* judul aplikasi besar */}
+            <Text style={styles.subtitle}>Pembayaran NFC aman dengan deteksi fraud</Text> {/* subtitle deskripsi singkat */}
           </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Masuk</Text>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputIcon}>👤</Text>
+          <View style={styles.card}> {/* View kartu putih berisi form login */}
+            <Text style={styles.cardTitle}>Masuk</Text> {/* judul form login */}
+            <View style={styles.inputContainer}> {/* View baris: ikon + input username */}
+              <Text style={styles.inputIcon}>👤</Text> {/* ikon user di depan input */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Masukkan username" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
@@ -334,8 +334,8 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
                 autoComplete="username" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputIcon}>🔒</Text>
+            <View style={styles.inputContainer}> {/* View baris: ikon + input password */}
+              <Text style={styles.inputIcon}>🔒</Text> {/* ikon kunci di depan input */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Masukkan kata sandi" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
@@ -346,8 +346,8 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
                 autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Lupa kata sandi?</Text>
+            <TouchableOpacity style={styles.forgotPassword}> {/* tombol lupa password (placeholder belum ada handler) */}
+              <Text style={styles.forgotPasswordText}>Lupa kata sandi?</Text> {/* teks link lupa password */}
             </TouchableOpacity>
             <TouchableOpacity  // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
               style={[styles.loginButton, loading && styles.loginButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
@@ -355,18 +355,18 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
               disabled={loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
             >
               {loading ? ( // ternary JSX: jika state loading=true tampilkan spinner ActivityIndicator, jika false tampilkan elemen normal
-                <View style={styles.processingRow}>
-                  <Text style={styles.loginButtonText}>Memproses </Text>
+                <View style={styles.processingRow}> {/* View baris spinner dan teks */}
+                  <Text style={styles.loginButtonText}>Memproses </Text> {/* teks memproses saat loading */}
                 </View>
               ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={styles.loginButtonText}>Login</Text> // teks tombol login normal
               )}
             </TouchableOpacity>
           </View>
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Belum punya akun?</Text>
-            <TouchableOpacity onPress={handleNavigateToRegister}>
-              <Text style={styles.registerLink}>  Daftar Akun  →</Text>
+          <View style={styles.registerContainer}> {/* View baris link registrasi di bawah card */}
+            <Text style={styles.registerText}>Belum punya akun?</Text> {/* teks pertanyaan */}
+            <TouchableOpacity onPress={handleNavigateToRegister}> {/* tombol navigasi ke screen Register */}
+              <Text style={styles.registerLink}>  Daftar Akun  →</Text> {/* link teks register */}
             </TouchableOpacity>
           </View>
         </View>

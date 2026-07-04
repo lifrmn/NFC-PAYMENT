@@ -308,17 +308,17 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
   // - autoCapitalize="words" untuk name input (capitalize each word)
   // ================================================================================
   return ( // return mengembalikan JSX yang akan dirender ke layar
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // Platform.OS mengembalikan 'ios' atau 'android'; ternary operator memilih behavior yang tepat agar keyboard tidak menutupi input
         style={styles.keyboardView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.content}>
-            <Text style={styles.title}>Daftar Akun</Text>
-            <Text style={styles.subtitle}>Buat akun baru untuk menggunakan NFC Payment</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}> {/* ScrollView: memungkinkan form di-scroll; contentContainerStyle untuk padding dalam */}
+          <View style={styles.content}> {/* View konten utama: judul dan form */}
+            <Text style={styles.title}>Daftar Akun</Text> {/* judul halaman registrasi */}
+            <Text style={styles.subtitle}>Buat akun baru untuk menggunakan NFC Payment</Text> {/* subtitle deskripsi */}
 
-            <View style={styles.form}>
+            <View style={styles.form}> {/* View wrapper form: menampung semua input dan tombol */}
               <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
                 style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 placeholder="Nama Lengkap" // placeholder teks abu-abu yang tampil saat field kosong
@@ -354,7 +354,7 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 secureTextEntry // sama dengan field password — menyembunyikan karakter
                 autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
-              <CustomButton
+              <CustomButton // komponen CustomButton reusable: menampilkan tombol dengan loading state dan berbagai variant
                 title={loading ? 'Membuat Akun...' : 'Daftar'} // ternary operator: jika loading=true tampilkan 'Membuat Akun...', jika false tampilkan 'Daftar'
                 onPress={handleRegister} // onPress memanggil handleRegister saat tombol ditekan
                 disabled={loading} // disabled={loading} menonaktifkan tombol saat sedang memproses untuk mencegah double submit
@@ -363,12 +363,12 @@ export default function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }:
                 size="large" // size prop: menentukan ukuran komponen (large, small, atau angka)
                 style={styles.registerButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               />
-              <TouchableOpacity
-                style={styles.loginLinkContainer}
-                onPress={handleNavigateToLogin}
-                activeOpacity={0.7}
+              <TouchableOpacity // tombol link navigasi ke halaman login
+                style={styles.loginLinkContainer} // style link container
+                onPress={handleNavigateToLogin} // memanggil callback untuk kembali ke LoginScreen
+                activeOpacity={0.7} // opacity saat ditekan: 70% transparan
               >
-                <Text style={styles.loginLinkText}>Sudah punya akun? Masuk di sini</Text>
+                <Text style={styles.loginLinkText}>Sudah punya akun? Masuk di sini</Text> {/* teks link */}
               </TouchableOpacity>
             </View>
           </View>

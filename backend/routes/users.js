@@ -132,36 +132,36 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
     const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis
     
     const user = await prisma.user.findUnique({ // const user: menyimpan data user yang diambil dari database secara async
-      where: { id: parseInt(id) },
-      select: {
-        id: true, name: true, username: true, balance: true,
-        deviceId: true, isActive: true, createdAt: true, updatedAt: true
+      where: { id: parseInt(id) }, // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karena req.params selalu string
+      select: { // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif seperti password
+        id: true, name: true, username: true, balance: true, // field dasar profil user
+        deviceId: true, isActive: true, createdAt: true, updatedAt: true // field tambahan untuk monitoring
       }
     });
 
     if (!user) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // 404 Not Found jika user tidak ada di database
     }
 
     // ✅ DIPERBAIKI: Auto-sync user.balance dari NFC card balance.
     // Masalah sebelumnya: admin top-up menambah saldo kartu (NFCCard.balance) tapi
     // user.balance di tabel User tidak selalu ikut update → mobile app tampilkan Rp 0.
     // Solusi: setiap GET /api/users/:id, cek kartu aktif user, update user.balance jika berbeda.
-    const cards = await prisma.nFCCard.findMany({
+    const cards = await prisma.nFCCard.findMany({ // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk pengecekan saldo
       where: { userId: parseInt(id), cardStatus: 'ACTIVE' }, // ambil semua kartu aktif milik user ini
       select: { balance: true } // hanya butuh field balance, tidak perlu data lain
     });
     // Jumlahkan semua saldo kartu aktif user sebagai saldo efektif
-    const cardBalance = cards.reduce((sum, c) => sum + (c.balance || 0), 0);
+    const cardBalance = cards.reduce((sum, c) => sum + (c.balance || 0), 0); // .reduce() menjumlahkan semua balance kartu; || 0 fallback jika balance null
 
-    if (cardBalance > 0 && cardBalance !== user.balance) {
+    if (cardBalance > 0 && cardBalance !== user.balance) { // cek apakah saldo kartu berbeda dengan saldo user dan tidak nol
       // Saldo kartu berbeda dari saldo user → perbarui user.balance agar sinkron
-      await prisma.user.update({
-        where: { id: parseInt(id) },
+      await prisma.user.update({ // prisma.user.update(): memperbarui saldo user di database
+        where: { id: parseInt(id) }, // WHERE id = userId
         data: { balance: cardBalance } // set user.balance = total saldo kartu aktif
       });
       user.balance = cardBalance; // perbarui nilai lokal sebelum dikirim ke mobile app
-      console.log(`🔄 Auto-synced user ${id} balance: ${user.balance} → ${cardBalance}`);
+      console.log(`\ud83d\udd04 Auto-synced user ${id} balance: ${user.balance} \u2192 ${cardBalance}`); // log sinkronisasi saldo
     }
 
     res.json(user); // res.json(user) mengirim data user sebagai JSON response

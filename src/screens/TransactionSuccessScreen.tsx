@@ -201,13 +201,13 @@ export default function TransactionSuccessScreen({ // export default mengekspor 
               </View>
             </View>
           </View>
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.primaryButton} onPress={onDone}>
-              <Text style={styles.primaryButtonText}>Selesai</Text>
+          <View style={styles.actions}> {/* View container tombol aksi di bagian bawah screen */}
+            <TouchableOpacity style={styles.primaryButton} onPress={onDone}> {/* tombol Selesai; onPress memanggil callback onDone untuk kembali ke Dashboard */}
+              <Text style={styles.primaryButtonText}>Selesai</Text> {/* teks label tombol utama */}
             </TouchableOpacity>
             {onViewDetails && ( // Tampilkan tombol detail hanya jika callback diberikan
-              <TouchableOpacity style={styles.secondaryButton} onPress={onViewDetails}>
-                <Text style={styles.secondaryButtonText}>Lihat Detail</Text>
+              <TouchableOpacity style={styles.secondaryButton} onPress={onViewDetails}> {/* tombol sekunder Lihat Detail; hanya tampil jika callback onViewDetails tersedia */}
+                <Text style={styles.secondaryButtonText}>Lihat Detail</Text> {/* teks label tombol sekunder */}
               </TouchableOpacity>
             )}
           </View>

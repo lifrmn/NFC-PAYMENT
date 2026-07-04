@@ -161,7 +161,7 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
     cursor: pointer;        /* Kursor tangan saat ditekan */
 }
 
-.user-avatar {
+.user-avatar { /* selector .user-avatar menargetkan div berisi inisial nama admin sebagai avatar bulat */
     width: 40px;            /* Ukuran lingkaran avatar */
     height: 40px;           /* Tinggi sama dengan lebar untuk lingkaran sempurna */
     background: #3B82F6;    /* Warna latar avatar biru */
@@ -173,12 +173,12 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
     font-weight: 600;       /* Semi-bold untuk inisial */
 }
 
-.user-info h4 {
+.user-info h4 { /* selector .user-info h4 menargetkan nama admin di dalam area profil */
     font-size: 14px;        /* Ukuran nama pengguna */
     font-weight: 600;       /* Semi-bold untuk nama */
 }
 
-.user-info p {
+.user-info p { /* selector .user-info p menargetkan paragraf role/email di bawah nama admin */
     font-size: 12px;        /* Ukuran role/jabatan user */
     color: #64748b;         /* Abu-abu untuk teks sekunder */
 }
@@ -311,8 +311,8 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
    TABLE STYLES
    Gaya untuk tabel data transaksi, pengguna, dan fraud alert
    ======================================== */
-.table-container {
-    overflow-x: auto;   /* Scroll horizontal jika tabel terlalu lebar untuk layar */
+.table-container { /* selector .table-container menambahkan scroll horizontal jika tabel terlalu lebar */
+    overflow-x: auto;   /* overflow-x: auto menampilkan scrollbar horizontal hanya saat diperlukan; mencegah tabel merusak layout */
 }
 
 table { /* selector table menargetkan semua elemen tabel HTML di dashboard */
@@ -335,13 +335,13 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     border-bottom: 1px solid #f1f5f9;   /* border-bottom garis tipis pemisah antar baris tabel */
 }
 
-.user-cell {
+.user-cell { /* selector .user-cell menargetkan div yang menampilkan avatar dan nama pengguna berdampingan di tabel */
     display: flex;          /* Avatar dan nama berdampingan */
     align-items: center;    /* Sejajarkan secara vertikal */
     gap: 8px;               /* Jarak antara avatar dan nama */
 }
 
-.user-icon {
+.user-icon { /* selector .user-icon menargetkan kotak avatar kecil di tabel pengguna */
     width: 32px;                    /* Ukuran kotak avatar kecil di tabel */
     height: 32px;                   /* Tinggi sama dengan lebar */
     background: #EFF6FF;            /* Latar biru muda untuk avatar */
@@ -352,13 +352,13 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     font-size: 16px;                /* Ukuran emoji ikon user */
 }
 
-.user-info-cell h4 {
+.user-info-cell h4 { /* selector .user-info-cell h4 menargetkan nama pengguna dalam sel tabel */
     font-size: 14px;        /* Ukuran nama di sel tabel */
     font-weight: 600;       /* Semi-bold untuk nama */
     margin-bottom: 2px;     /* Jarak kecil antara nama dan info sekunder */
 }
 
-.user-info-cell p {
+.user-info-cell p { /* selector .user-info-cell p menargetkan teks sekunder (username/email) di bawah nama */
     font-size: 12px;        /* Ukuran kecil untuk info sekunder (username/email) */
     color: #64748b;         /* Abu-abu untuk teks sekunder */
 }
@@ -397,22 +397,22 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     color: #1E40AF;         /* Biru gelap untuk teks tipe */
 }
 
-.risk-badge.normal, .risk-score.normal {
+.risk-badge.normal, .risk-score.normal { /* menargetkan badge/score dengan class normal — transaksi Z-Score ≤ 2 */
     background: #D1FAE5;    /* Hijau muda untuk level risiko NORMAL (Z-Score ≤ 2) */
     color: #065F46;         /* Hijau gelap untuk teks NORMAL */
 }
 
-.risk-badge.suspicious, .risk-score.suspicious {
+.risk-badge.suspicious, .risk-score.suspicious { /* menargetkan badge/score dengan class suspicious — transaksi Z-Score 2-3 */
     background: #FEF3C7;    /* Kuning muda untuk level SUSPICIOUS (2 < Z-Score ≤ 3) */
     color: #92400E;         /* Oranye untuk teks SUSPICIOUS */
 }
 
-.risk-badge.anomaly, .risk-score.anomaly {
+.risk-badge.anomaly, .risk-score.anomaly { /* menargetkan badge/score dengan class anomaly — transaksi Z-Score > 3 */
     background: #FEE2E2;    /* Merah muda untuk level ANOMALY (Z-Score > 3) */
     color: #991B1B;         /* Merah gelap untuk teks ANOMALY */
 }
 
-.risk-score {
+.risk-score { /* selector .risk-score menargetkan span yang menampilkan nilai Z-Score aktual di tabel */
     font-size: 16px;        /* Angka Z-Score sedikit lebih besar dari badge biasa */
     font-weight: 700;       /* Tebal agar angka Z-Score mencolok */
 }
@@ -421,7 +421,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    FRAUD DONUT CHART (SVG)
    Grafik donat SVG untuk visualisasi distribusi level risiko fraud
    ======================================== */
-.chart-container {
+.chart-container { /* selector .chart-container menargetkan wrapper SVG donut chart dan legenda */
     display: flex;              /* Flexbox untuk posisikan chart */
     align-items: center;        /* Pusatkan chart secara vertikal */
     justify-content: center;    /* Pusatkan chart secara horizontal */
@@ -429,13 +429,13 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     position: relative;         /* Relatif agar .chart-center bisa absolute di dalamnya */
 }
 
-.chart-donut {
+.chart-donut { /* selector .chart-donut menargetkan elemen SVG yang menggambar donut chart */
     width: 200px;       /* Lebar area chart donat */
     height: 200px;      /* Tinggi area chart donat */
     position: relative; /* Relatif untuk posisi teks tengah */
 }
 
-.chart-center {
+.chart-center { /* selector .chart-center menargetkan div absolut di tengah donut chart berisi angka total */
     position: absolute;                 /* Posisi absolut di atas SVG chart */
     top: 50%;                           /* Mulai dari tengah vertikal */
     left: 50%;                          /* Mulai dari tengah horizontal */
@@ -443,21 +443,21 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     text-align: center;                 /* Teks rata tengah */
 }
 
-.chart-center h3 {
+.chart-center h3 { /* selector .chart-center h3 menargetkan angka total di tengah donut chart */
     font-size: 32px;    /* Angka total besar di tengah chart donat */
     font-weight: 700;   /* Tebal untuk angka total */
 }
 
-.chart-center p {
+.chart-center p { /* selector .chart-center p menargetkan label teks kecil di bawah angka total */
     font-size: 12px;    /* Label kecil di bawah angka ("Total Alert") */
     color: #64748b;     /* Abu-abu untuk label sekunder */
 }
 
-.chart-legend {
+.chart-legend { /* selector .chart-legend menargetkan container daftar legenda warna di bawah donut chart */
     margin-top: 24px;   /* Jarak dari chart ke legenda warna */
 }
 
-.legend-item {
+.legend-item { /* selector .legend-item menargetkan satu baris legenda: titik warna + label + nilai persentase */
     display: flex;                      /* Label dan nilai berdampingan */
     justify-content: space-between;     /* Label di kiri, nilai di kanan */
     align-items: center;                /* Sejajarkan secara vertikal */
@@ -465,24 +465,24 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     border-bottom: 1px solid #f1f5f9;   /* Garis pemisah antar item legenda */
 }
 
-.legend-label {
+.legend-label { /* selector .legend-label menargetkan div kiri berisi titik warna dan nama kategori */
     display: flex;      /* Titik warna dan teks berdampingan */
     align-items: center;/* Sejajarkan secara vertikal */
     gap: 8px;           /* Jarak antara titik warna dan teks */
     font-size: 14px;    /* Ukuran teks label legenda */
 }
 
-.legend-dot {
+.legend-dot { /* selector .legend-dot menargetkan span lingkaran berwarna sebagai indikator kategori */
     width: 12px;        /* Ukuran titik warna legenda */
     height: 12px;       /* Tinggi sama agar berbentuk lingkaran */
     border-radius: 50%; /* Bentuk lingkaran sempurna */
 }
 
-.legend-dot-normal     { background: #3B82F6; } /* Biru untuk titik NORMAL */
-.legend-dot-suspicious { background: #F59E0B; } /* Kuning untuk titik SUSPICIOUS */
-.legend-dot-anomaly    { background: #EF4444; } /* Merah untuk titik ANOMALY */
+.legend-dot-normal     { background: #3B82F6; } /* .legend-dot-normal: titik biru untuk kategori NORMAL */
+.legend-dot-suspicious { background: #F59E0B; } /* .legend-dot-suspicious: titik kuning untuk kategori SUSPICIOUS */
+.legend-dot-anomaly    { background: #EF4444; } /* .legend-dot-anomaly: titik merah untuk kategori ANOMALY */
 
-.legend-value {
+.legend-value { /* selector .legend-value menargetkan span nilai persentase di kanan setiap item legenda */
     font-size: 14px;    /* Ukuran nilai persentase di sisi kanan legenda */
     font-weight: 600;   /* Semi-bold agar angka persentase mencolok */
 }
@@ -491,7 +491,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    FILTERS (Fraud Alert Tab)
    Area filter pencarian dan penyaringan data fraud alert
    ======================================== */
-.filters {
+.filters { /* selector .filters menargetkan container baris filter pencarian di tab Fraud Alert */
     background: #fff;                           /* Latar putih untuk area filter */
     padding: 24px;                              /* Ruang dalam area filter */
     border-radius: 16px;                        /* Sudut membulat */
@@ -502,12 +502,12 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     flex-wrap: wrap;                            /* Pindah baris jika layar sempit */
 }
 
-.filter-group {
+.filter-group { /* selector .filter-group menargetkan wrapper satu field filter: label + input/select */
     flex: 1;            /* Setiap grup filter mengambil ruang yang sama */
     min-width: 200px;   /* Lebar minimum agar tidak terlalu sempit */
 }
 
-.filter-group label {
+.filter-group label { /* selector .filter-group label menargetkan teks label di atas setiap input filter */
     display: block;         /* Label di baris terpisah dari input */
     font-size: 13px;        /* Ukuran kecil untuk label filter */
     font-weight: 500;       /* Medium weight untuk label */
@@ -516,7 +516,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
 }
 
 .filter-group input,
-.filter-group select {
+.filter-group select { /* selector gabungan: menargetkan input teks dan select dropdown dalam .filter-group */
     width: 100%;                    /* Input/select mengisi lebar grup filter */
     padding: 10px 16px;             /* Ruang dalam input */
     border: 1px solid #e2e8f0;      /* Border abu-abu muda */
@@ -525,7 +525,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     background: #fff;               /* Latar putih */
 }
 
-.btn-filter {
+.btn-filter { /* selector .btn-filter menargetkan tombol Terapkan Filter */
     align-self: flex-end;   /* Tombol filter sejajar ke bawah dengan input */
     background: #3B82F6;    /* Latar biru untuk tombol filter */
     color: #fff;            /* Teks putih pada tombol filter */
@@ -540,7 +540,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     gap: 8px;               /* Jarak antara ikon dan teks */
 }
 
-.btn-details {
+.btn-details { /* selector .btn-details menargetkan span tombol detail (→) di kolom terakhir tabel fraud alert */
     color: #3B82F6;     /* Biru untuk tombol detail (ikon kaca pembesar) */
     font-size: 18px;    /* Sedikit lebih besar agar mudah diklik */
     cursor: pointer;    /* Kursor tangan saat di-hover */
@@ -550,7 +550,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    PAGINATION
    Kontrol navigasi halaman untuk tabel data
    ======================================== */
-.pagination {
+.pagination { /* selector .pagination menargetkan div kontrol navigasi halaman di bawah tabel */
     display: flex;                      /* Info dan kontrol berdampingan */
     justify-content: space-between;     /* Info di kiri, tombol di kanan */
     align-items: center;                /* Sejajarkan secara vertikal */
@@ -559,17 +559,17 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     border-top: 1px solid #f1f5f9;      /* Garis pemisah tipis antara tabel dan paginasi */
 }
 
-.pagination-info {
+.pagination-info { /* selector .pagination-info menargetkan teks info halaman di kiri pagination */
     font-size: 14px;    /* Ukuran teks info halaman ("Menampilkan 1-10 dari 100") */
     color: #64748b;     /* Abu-abu untuk teks info sekunder */
 }
 
-.pagination-controls {
+.pagination-controls { /* selector .pagination-controls menargetkan div berisi tombol-tombol nomor halaman */
     display: flex;  /* Tombol halaman berdampingan */
     gap: 8px;       /* Jarak antar tombol halaman */
 }
 
-.page-btn {
+.page-btn { /* selector .page-btn menargetkan setiap tombol navigasi halaman */
     width: 36px;                    /* Lebar tombol halaman */
     height: 36px;                   /* Tinggi tombol halaman (persegi) */
     border-radius: 8px;             /* Sudut membulat */
@@ -583,18 +583,18 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     transition: all 0.2s;           /* Animasi halus saat hover */
 }
 
-.page-btn:hover {
+.page-btn:hover { /* :hover pseudo-class aktif saat mouse di atas tombol halaman */
     border-color: #3B82F6;  /* Border biru saat di-hover */
     color: #3B82F6;         /* Teks biru saat di-hover */
 }
 
-.page-btn.active {
+.page-btn.active { /* .page-btn.active menargetkan tombol halaman yang sedang aktif/dipilih */
     background: #3B82F6;    /* Latar biru untuk halaman aktif */
     color: #fff;            /* Teks putih pada tombol aktif */
     border-color: #3B82F6;  /* Border biru untuk tombol aktif */
 }
 
-.page-btn:disabled {
+.page-btn:disabled { /* :disabled pseudo-class menargetkan tombol halaman yang dinonaktifkan */
     opacity: 0.5;       /* Tampak transparan/lemah untuk tombol yang tidak aktif */
     cursor: not-allowed;/* Kursor dilarang untuk tombol disabled */
 }
@@ -603,13 +603,13 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    ACTIVITY FEED
    Daftar aktivitas terbaru di sidebar kanan dashboard
    ======================================== */
-.activity-list {
+.activity-list { /* selector .activity-list menargetkan container daftar item aktivitas */
     display: flex;          /* Daftar aktivitas tersusun vertikal */
     flex-direction: column; /* Arah susunan dari atas ke bawah */
     gap: 16px;              /* Jarak antar item aktivitas */
 }
 
-.activity-item {
+.activity-item { /* selector .activity-item menargetkan satu baris item aktivitas (ikon + konten) */
     display: flex;              /* Ikon dan konten berdampingan */
     gap: 12px;                  /* Jarak antara ikon dan konten teks */
     padding: 16px;              /* Ruang dalam item aktivitas */
@@ -617,7 +617,7 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     border-radius: 12px;        /* Sudut membulat */
 }
 
-.activity-icon {
+.activity-icon { /* selector .activity-icon menargetkan kotak ikon kategori aktivitas */
     width: 40px;                /* Ukuran kotak ikon aktivitas */
     height: 40px;               /* Tinggi sama untuk bentuk persegi */
     border-radius: 12px;        /* Sudut membulat untuk ikon */
@@ -628,29 +628,29 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     flex-shrink: 0;             /* Ikon tidak menyusut jika konten panjang */
 }
 
-.activity-icon.blue   { background: #EFF6FF; }
-.activity-icon.green  { background: #F0FDF4; }
-.activity-icon.red    { background: #FEF2F2; }
-.activity-icon.purple { background: #FAF5FF; }
-.activity-icon.yellow { background: #FEF9C3; }
+.activity-icon.blue   { background: #EFF6FF; } /* .activity-icon.blue: ikon biru untuk aktivitas registrasi pengguna */
+.activity-icon.green  { background: #F0FDF4; } /* .activity-icon.green: ikon hijau untuk transaksi normal */
+.activity-icon.red    { background: #FEF2F2; } /* .activity-icon.red: ikon merah untuk fraud/anomali */
+.activity-icon.purple { background: #FAF5FF; } /* .activity-icon.purple: ikon ungu untuk kartu NFC baru */
+.activity-icon.yellow { background: #FEF9C3; } /* .activity-icon.yellow: ikon kuning untuk transaksi mencurigakan */
 
-.activity-content {
+.activity-content { /* selector .activity-content menargetkan kolom teks dalam item aktivitas */
     flex: 1;    /* Konten teks mengisi sisa ruang setelah ikon */
 }
 
-.activity-title {
+.activity-title { /* selector .activity-title menargetkan judul event aktivitas */
     font-size: 14px;    /* Ukuran judul aktivitas */
     font-weight: 600;   /* Semi-bold untuk judul aktivitas */
     margin-bottom: 4px; /* Jarak ke deskripsi di bawahnya */
 }
 
-.activity-desc {
+.activity-desc { /* selector .activity-desc menargetkan teks deskripsi detail aktivitas */
     font-size: 13px;    /* Kecil untuk deskripsi detail aktivitas */
     color: #64748b;     /* Abu-abu untuk deskripsi sekunder */
     margin-bottom: 4px; /* Jarak ke waktu aktivitas */
 }
 
-.activity-time {
+.activity-time { /* selector .activity-time menargetkan timestamp relatif aktivitas ("5m ago") */
     font-size: 12px;    /* Paling kecil untuk timestamp aktivitas */
     color: #94a3b8;     /* Abu-abu lebih pucat untuk waktu */
 }
@@ -659,13 +659,13 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    INLINE STYLE REPLACEMENTS
    Kelas utilitas yang menggantikan inline style agar CSS tetap terpisah dari HTML
    ======================================== */
-.connection-status {
+.connection-status { /* selector .connection-status menargetkan span status koneksi backend di header Dashboard */
     display: inline-flex;   /* Status koneksi ditampilkan sebaris */
     align-items: center;    /* Titik dan teks sejajar vertikal */
     gap: 6px;               /* Jarak antara titik hijau dan teks */
 }
 
-.connection-dot {
+.connection-dot { /* selector .connection-dot menargetkan titik bulat animasi indikator koneksi aktif */
     width: 8px;             /* Ukuran titik indikator koneksi */
     height: 8px;            /* Tinggi sama agar membentuk lingkaran */
     border-radius: 50%;     /* Bentuk lingkaran sempurna */
@@ -673,123 +673,123 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     display: inline-block;  /* Ditampilkan sebaris */
 }
 
-.connection-text {
+.connection-text { /* selector .connection-text menargetkan teks status koneksi di samping titik hijau */
     color: #10B981;     /* Teks hijau sesuai warna indikator koneksi */
     font-weight: 500;   /* Medium weight agar status mudah terbaca */
 }
 
-.btn-refresh {
+.btn-refresh { /* selector .btn-refresh menargetkan tombol Refresh Data berwarna hijau */
     background: #10B981;    /* Tombol refresh berwarna hijau */
 }
 
-.btn-refresh:hover {
+.btn-refresh:hover { /* :hover menargetkan tombol refresh saat mouse di atasnya */
     background: #059669;    /* Hijau lebih gelap saat tombol refresh di-hover */
 }
 
-.btn-gap-right {
+.btn-gap-right { /* selector .btn-gap-right menargetkan tombol yang membutuhkan margin kanan */
     margin-right: 12px;     /* Jarak kanan untuk tombol yang berdampingan */
 }
 
-.stat-row {
+.stat-row { /* selector .stat-row menargetkan baris dalam kartu statistik: angka di kiri, ikon di kanan */
     display: flex;                  /* Dua item statistik dalam satu baris */
     justify-content: space-between; /* Satu di kiri, satu di kanan */
 }
 
-.table-loading {
+.table-loading { /* selector .table-loading menargetkan sel loading awal sebelum data tersedia */
     text-align: center; /* Teks loading di tengah area tabel */
     color: #64748b;     /* Abu-abu untuk teks loading */
     padding: 20px;      /* Ruang saat data sedang dimuat */
 }
 
-.table-loading-muted {
+.table-loading-muted { /* selector .table-loading-muted menargetkan sel loading yang lebih pucat */
     text-align: center; /* Teks loading di tengah dengan warna lebih pucat */
     color: #94a3b8;     /* Abu-abu pucat untuk loading state sekunder */
     padding: 32px;      /* Ruang lebih besar untuk loading state */
 }
 
-.table-empty {
+.table-empty { /* selector .table-empty menargetkan sel empty state saat tabel tidak ada data */
     text-align: center; /* Konten "tabel kosong" di tengah */
     color: #64748b;     /* Abu-abu untuk teks kosong */
     padding: 40px;      /* Ruang besar saat tabel tidak ada data */
 }
 
-.table-empty-icon {
+.table-empty-icon { /* selector .table-empty-icon menargetkan emoji besar di empty state tabel */
     font-size: 48px;    /* Emoji ikon besar saat tabel kosong */
     margin-bottom: 16px;/* Jarak antara ikon dan teks pesan kosong */
 }
 
-.table-empty-title {
+.table-empty-title { /* selector .table-empty-title menargetkan judul di empty state tabel */
     margin-bottom: 8px;     /* Jarak antara judul dan deskripsi tabel kosong */
     color: #1e293b;         /* Warna gelap untuk judul tabel kosong */
 }
 
-.count-muted {
+.count-muted { /* selector .count-muted menargetkan span angka counter kecil di header kartu */
     font-size: 13px;    /* Ukuran kecil untuk angka sekunder */
     color: #64748b;     /* Abu-abu untuk info jumlah sekunder */
 }
 
-.laporan-fraud-summary {
+.laporan-fraud-summary { /* selector .laporan-fraud-summary menargetkan container tabel ringkasan fraud di tab Laporan */
     padding: 8px 0;     /* Ruang atas-bawah untuk ringkasan laporan fraud */
 }
 
-.settings-key {
+.settings-key { /* selector .settings-key menargetkan sel kunci/nama pengaturan di tabel konfigurasi */
     font-weight: 600;   /* Semi-bold untuk nama kunci pengaturan */
 }
 
-.settings-key-wide {
+.settings-key-wide { /* selector .settings-key-wide menargetkan sel kunci pengaturan yang lebih lebar */
     width: 220px;       /* Lebar tetap untuk kolom kunci pengaturan yang panjang */
 }
 
-.td-id-muted {
+.td-id-muted { /* selector .td-id-muted menargetkan sel ID di tabel yang ditampilkan kecil dan pucat */
     font-size: 12px;    /* Kecil untuk ID yang tidak perlu mencolok */
     color: #94a3b8;     /* Abu-abu pucat untuk teks ID sekunder */
 }
 
-.td-date-muted {
+.td-date-muted { /* selector .td-date-muted menargetkan sel tanggal di tabel yang ditampilkan kecil */
     font-size: 12px;    /* Kecil untuk tanggal di tabel */
     color: #64748b;     /* Abu-abu untuk tanggal sekunder */
 }
 
-.td-small {
+.td-small { /* selector .td-small menargetkan sel tabel dengan ukuran font yang lebih kecil */
     font-size: 13px;    /* Ukuran sedikit lebih kecil untuk sel tabel tertentu */
 }
 
-.td-strong {
+.td-strong { /* selector .td-strong menargetkan sel tabel yang nilainya perlu ditonjolkan */
     font-weight: 600;   /* Semi-bold untuk nilai yang perlu ditonjolkan di sel tabel */
 }
 
-.td-center {
+.td-center { /* selector .td-center menargetkan sel tabel yang kontennya perlu diratakan tengah */
     text-align: center; /* Rata tengah untuk isi sel tabel tertentu */
 }
 
-.td-mono {
+.td-mono { /* selector .td-mono menargetkan sel tabel yang menampilkan kode/ID dengan font monospace */
     font-family: monospace; /* Font monospace untuk kode/ID di tabel */
     font-size: 12px;        /* Ukuran kecil untuk kode monospace */
 }
 
-.reason-cell {
+.reason-cell { /* selector .reason-cell menargetkan sel alasan fraud di tabel fraud alert */
     max-width: 260px;   /* Batasi lebar sel alasan agar tidak terlalu lebar */
     font-size: 12px;    /* Kecil untuk teks alasan */
     color: #64748b;     /* Abu-abu untuk teks alasan sekunder */
 }
 
-.total-volume-value {
+.total-volume-value { /* selector .total-volume-value menargetkan angka total volume transaksi di laporan */
     font-size: 22px;    /* Besar untuk angka total volume transaksi */
     font-weight: 700;   /* Tebal untuk angka total volume */
     margin-top: 4px;    /* Jarak kecil dari label ke angka */
 }
 
-.summary-key {
+.summary-key { /* selector .summary-key menargetkan sel kunci dalam tabel ringkasan laporan */
     padding: 10px 12px;     /* Ruang dalam untuk sel kunci ringkasan */
     font-weight: 600;       /* Semi-bold untuk nama kunci ringkasan */
 }
 
-.risk-badge.critical {
+.risk-badge.critical { /* .risk-badge.critical menargetkan badge risiko CRITICAL (level tertinggi) */
     background: #FEE2E2;    /* Merah muda untuk badge CRITICAL (risiko sangat tinggi) */
     color: #991B1B;         /* Merah gelap untuk teks CRITICAL */
 }
 
-.risk-badge.high {
+.risk-badge.high { /* .risk-badge.high menargetkan badge risiko HIGH (level tinggi) */
     background: #FEF3C7;    /* Kuning muda untuk badge HIGH (risiko tinggi) */
     color: #92400E;         /* Oranye/cokelat untuk teks HIGH */
 }
@@ -798,167 +798,167 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
    TOP UP FORM
    Form tambah saldo kartu NFC
    ======================================== */
-.topup-form {
-    padding: 8px 0;
+.topup-form { /* selector .topup-form menargetkan wrapper form top-up kartu NFC */
+    padding: 8px 0; /* ruang atas-bawah di dalam form top-up */
 }
 
-.topup-form-row {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
+.topup-form-row { /* selector .topup-form-row menargetkan baris form yang berisi beberapa field sejajar */
+    display: flex; /* field form berdampingan horizontal */
+    gap: 16px; /* jarak antar field dalam satu baris */
+    flex-wrap: wrap; /* turun ke baris baru jika layar sempit */
+    margin-bottom: 16px; /* jarak bawah antar baris form */
 }
 
-.topup-field {
-    flex: 1;
-    min-width: 200px;
+.topup-field { /* selector .topup-field menargetkan wrapper satu field form top-up */
+    flex: 1; /* setiap field mengambil ruang yang sama */
+    min-width: 200px; /* lebar minimum agar field tidak terlalu sempit */
 }
 
-.topup-field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
-    margin-bottom: 8px;
+.topup-field label { /* selector .topup-field label menargetkan label teks di atas setiap input form */
+    display: block; /* label di baris tersendiri di atas input */
+    font-size: 13px; /* ukuran kecil untuk label field */
+    font-weight: 500; /* medium weight untuk label */
+    color: #64748b; /* abu-abu untuk teks label */
+    margin-bottom: 8px; /* jarak dari label ke input di bawahnya */
 }
 
-.topup-input {
-    width: 100%;
-    padding: 10px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 14px;
-    background: #fff;
-    box-sizing: border-box;
-    outline: none;
-    transition: border-color 0.2s;
+.topup-input { /* selector .topup-input menargetkan semua input/select di form top-up */
+    width: 100%; /* input mengisi penuh lebar field wrapper */
+    padding: 10px 16px; /* ruang dalam input */
+    border: 1px solid #e2e8f0; /* border abu-abu muda */
+    border-radius: 10px; /* sudut membulat */
+    font-size: 14px; /* ukuran teks input */
+    background: #fff; /* latar putih */
+    box-sizing: border-box; /* padding tidak menambah lebar total */
+    outline: none; /* hilangkan outline default browser saat fokus */
+    transition: border-color 0.2s; /* animasi border saat fokus */
 }
 
-.topup-input:focus {
-    border-color: #3B82F6;
+.topup-input:focus { /* :focus pseudo-class aktif saat input sedang fokus (diklik/ditab user) */
+    border-color: #3B82F6; /* border berubah biru saat input aktif */
 }
 
-.topup-presets {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
+.topup-presets { /* selector .topup-presets menargetkan baris tombol preset nominal cepat */
+    display: flex; /* tombol preset berjajar horizontal */
+    align-items: center; /* sejajarkan tombol secara vertikal */
+    flex-wrap: wrap; /* turun ke baris baru jika tombol terlalu banyak */
+    gap: 8px; /* jarak antar tombol preset */
+    margin-bottom: 20px; /* jarak bawah sebelum section berikutnya */
 }
 
-.topup-preset-label {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 500;
+.topup-preset-label { /* selector .topup-preset-label menargetkan teks "Nominal cepat:" sebelum tombol preset */
+    font-size: 13px; /* ukuran kecil untuk label preset */
+    color: #64748b; /* abu-abu untuk label */
+    font-weight: 500; /* medium weight */
 }
 
-.topup-preset-btn {
-    background: #EFF6FF;
-    color: #1D4ED8;
-    border: 1px solid #BFDBFE;
-    border-radius: 8px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+.topup-preset-btn { /* selector .topup-preset-btn menargetkan setiap tombol preset nominal (Rp 10.000, dll) */
+    background: #EFF6FF; /* biru sangat muda untuk tombol preset */
+    color: #1D4ED8; /* biru gelap untuk teks tombol preset */
+    border: 1px solid #BFDBFE; /* border biru muda */
+    border-radius: 8px; /* sudut membulat */
+    padding: 6px 14px; /* ruang dalam tombol */
+    font-size: 13px; /* ukuran teks tombol */
+    font-weight: 500; /* medium weight */
+    cursor: pointer; /* kursor tangan saat di-hover */
+    transition: background 0.15s, border-color 0.15s; /* animasi saat hover */
 }
 
-.topup-preset-btn:hover {
-    background: #DBEAFE;
-    border-color: #93C5FD;
+.topup-preset-btn:hover { /* :hover menargetkan tombol preset saat mouse di atasnya */
+    background: #DBEAFE; /* biru sedikit lebih gelap saat hover */
+    border-color: #93C5FD; /* border biru lebih gelap saat hover */
 }
 
-.topup-actions {
-    margin-bottom: 16px;
+.topup-actions { /* selector .topup-actions menargetkan container tombol submit top-up */
+    margin-bottom: 16px; /* jarak bawah sebelum div hasil */
 }
 
-.btn-topup-submit {
-    background: #10B981;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 32px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
+.btn-topup-submit { /* selector .btn-topup-submit menargetkan tombol "Top Up Sekarang" */
+    background: #10B981; /* latar hijau untuk tombol submit top-up */
+    color: #fff; /* teks putih */
+    border: none; /* hapus border default */
+    border-radius: 10px; /* sudut membulat */
+    padding: 12px 32px; /* ruang dalam tombol */
+    font-size: 15px; /* ukuran teks tombol submit */
+    font-weight: 600; /* semi-bold */
+    cursor: pointer; /* kursor tangan */
+    transition: background 0.2s; /* animasi background saat hover */
 }
 
-.btn-topup-submit:hover {
-    background: #059669;
+.btn-topup-submit:hover { /* :hover menargetkan tombol submit saat mouse di atasnya */
+    background: #059669; /* hijau lebih gelap saat hover */
 }
 
-.btn-topup-submit:disabled {
-    background: #9CA3AF;
-    cursor: not-allowed;
+.btn-topup-submit:disabled { /* :disabled menargetkan tombol submit saat dinonaktifkan (loading) */
+    background: #9CA3AF; /* abu-abu saat tombol disabled */
+    cursor: not-allowed; /* kursor dilarang saat disabled */
 }
 
-.topup-result {
-    padding: 14px 18px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    margin-top: 4px;
+.topup-result { /* selector .topup-result menargetkan div pesan hasil top-up (sukses/gagal) */
+    padding: 14px 18px; /* ruang dalam pesan hasil */
+    border-radius: 10px; /* sudut membulat */
+    font-size: 14px; /* ukuran teks pesan */
+    font-weight: 500; /* medium weight */
+    margin-top: 4px; /* jarak kecil dari tombol submit */
 }
 
-.topup-result.success {
-    background: #D1FAE5;
-    color: #065F46;
-    border: 1px solid #6EE7B7;
+.topup-result.success { /* .topup-result.success menargetkan pesan hasil top-up berhasil */
+    background: #D1FAE5; /* latar hijau muda untuk sukses */
+    color: #065F46; /* teks hijau gelap */
+    border: 1px solid #6EE7B7; /* border hijau */
 }
 
-.topup-result.error {
-    background: #FEE2E2;
-    color: #991B1B;
-    border: 1px solid #FCA5A5;
+.topup-result.error { /* .topup-result.error menargetkan pesan hasil top-up gagal */
+    background: #FEE2E2; /* latar merah muda untuk error */
+    color: #991B1B; /* teks merah gelap */
+    border: 1px solid #FCA5A5; /* border merah */
 }
 
-.btn-topup-quick {
-    background: #3B82F6;
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
+.btn-topup-quick { /* selector .btn-topup-quick menargetkan tombol "+ Top Up" cepat di tabel kartu */
+    background: #3B82F6; /* latar biru untuk tombol top-up cepat */
+    color: #fff; /* teks putih */
+    border: none; /* hapus border default */
+    border-radius: 7px; /* sudut membulat */
+    padding: 5px 12px; /* ruang dalam tombol kecil */
+    font-size: 12px; /* ukuran teks kecil */
+    font-weight: 500; /* medium weight */
+    cursor: pointer; /* kursor tangan */
+    transition: background 0.15s; /* animasi saat hover */
 }
 
-.btn-topup-quick:hover {
-    background: #2563EB;
+.btn-topup-quick:hover { /* :hover menargetkan tombol top-up cepat saat mouse di atasnya */
+    background: #2563EB; /* biru lebih gelap saat hover */
 }
 
 /* ========================================
    ACTION BUTTONS IN TABLES
    Tombol aksi di dalam baris tabel
    ======================================== */
-.btn-action {
-    border: none;
-    border-radius: 7px;
-    padding: 5px 12px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s;
+.btn-action { /* selector .btn-action menargetkan tombol aksi kecil di dalam baris tabel (blokir, aktifkan, hapus) */
+    border: none; /* hapus border default browser */
+    border-radius: 7px; /* sudut membulat */
+    padding: 5px 12px; /* ruang dalam tombol kecil */
+    font-size: 12px; /* ukuran teks kecil agar sesuai dengan ukuran sel tabel */
+    font-weight: 500; /* medium weight */
+    cursor: pointer; /* kursor tangan saat di-hover */
+    white-space: nowrap; /* teks tidak turun ke baris baru meski terlalu panjang */
+    transition: background 0.15s; /* animasi background saat hover */
 }
 
-.btn-action-danger {
-    background: #FEE2E2;
-    color: #991B1B;
+.btn-action-danger { /* .btn-action-danger menargetkan tombol aksi berbahaya (blokir, hapus) */
+    background: #FEE2E2; /* merah muda untuk tombol berbahaya */
+    color: #991B1B; /* teks merah gelap */
 }
 
-.btn-action-danger:hover {
-    background: #FECACA;
+.btn-action-danger:hover { /* :hover menargetkan tombol danger saat mouse di atasnya */
+    background: #FECACA; /* merah lebih pekat saat hover */
 }
 
-.btn-action-success {
-    background: #D1FAE5;
-    color: #065F46;
+.btn-action-success { /* .btn-action-success menargetkan tombol aksi positif (aktifkan kembali) */
+    background: #D1FAE5; /* hijau muda untuk tombol sukses */
+    color: #065F46; /* teks hijau gelap */
 }
 
-.btn-action-success:hover {
-    background: #A7F3D0;
+.btn-action-success:hover { /* :hover menargetkan tombol success saat mouse di atasnya */
+    background: #A7F3D0; /* hijau lebih pekat saat hover */
 }

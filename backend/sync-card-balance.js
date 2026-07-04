@@ -49,7 +49,7 @@ async function syncCardBalances() {
     // Ambil semua kartu yang sudah linked ke user (userId not null)
     // Kartu yang belum linked (userId = null) tidak perlu di-sync
     // karena tidak ada user balance sebagai referensi
-    const cards = await prisma.nFCCard.findMany({
+    const cards = await prisma.nFCCard.findMany({ // const cards: menyimpan semua kartu yang sudah terhubung ke user; await menunggu query database selesai
       where: {
         userId: { not: null } // Filter: hanya kartu yang punya userId
         // Kartu dengan userId = null diabaikan (belum linked ke user)
@@ -68,8 +68,8 @@ async function syncCardBalances() {
     // ========================================================================
     // STEP 2: VALIDASI - CEK APAKAH ADA KARTU YANG PERLU DI-SYNC
     // ========================================================================
-    if (cards.length === 0) {
-      console.log('⚠️  No cards found with userId');
+    if (cards.length === 0) { // if memeriksa kondisi; .length === 0 berarti tidak ada kartu yang perlu disync
+      console.log('⚠️  No cards found with userId'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       console.log('   Kemungkinan penyebab:');
       console.log('   • Belum ada kartu yang terdaftar');
       console.log('   • Semua kartu belum di-link ke user');
@@ -87,8 +87,8 @@ async function syncCardBalances() {
     // 2. Ambil balance baru (dari user.balance)
     // 3. Update card balance ke database
     // 4. Log perubahan untuk monitoring
-    for (const card of cards) {
-      if (card.user) {
+    for (const card of cards) { // for...of loop iterasi setiap kartu dalam array; const card adalah objek kartu saat ini
+      if (card.user) { // if memeriksa kondisi; card.user truthy berarti relasi user ditemukan (tidak null)
         // ====================================================================
         // STEP 3a: AMBIL BALANCE LAMA DAN BARU
         // ====================================================================
@@ -100,7 +100,7 @@ async function syncCardBalances() {
         // ====================================================================
         // Operation: SET card.balance = user.balance
         // Ini adalah one-way sync: user → card (tidak sebaliknya)
-        await prisma.nFCCard.update({
+        await prisma.nFCCard.update({ // await menunggu update database; prisma.nFCCard.update() mengeksekusi UPDATE SQL untuk kartu ini
           where: { id: card.id },           // Target: kartu ini
           data: { balance: newBalance }     // Update: card balance = user balance
         });
@@ -155,7 +155,7 @@ async function syncCardBalances() {
     // ========================================================================
     // PENTING: Selalu disconnect Prisma client setelah selesai
     // untuk release database connections dan prevent memory leak
-    await prisma.$disconnect();
+    await prisma.$disconnect(); // prisma.$disconnect() menutup koneksi database; penting untuk mencegah proses Node.js tetap berjalan
   }
 }
 
@@ -164,7 +164,7 @@ async function syncCardBalances() {
 // ============================================================================
 // Script ini auto-execute saat dijalankan dengan: node sync-card-balance.js
 // Prisma client akan otomatis connect saat first query
-syncCardBalances();
+syncCardBalances(); // memanggil fungsi utama syncCardBalances() untuk menjalankan proses sinkronisasi saldo
 
 // ============================================================================
 // END OF FILE: sync-card-balance.js
