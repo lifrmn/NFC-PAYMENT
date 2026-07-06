@@ -1,10 +1,16 @@
-const express = require('express'); // const membuat variabel tetap; require digunakan Node.js untuk memanggil module; express adalah framework web Node.js yang menyediakan routing dan middleware
-const { body, validationResult } = require('express-validator'); // const membuat variabel tetap; { body, validationResult } destructuring mengambil dua fungsi: body untuk mendefinisikan aturan validasi input, validationResult untuk mengambil hasil validasi
-const { PrismaClient } = require('@prisma/client'); // const membuat variabel tetap; { PrismaClient } destructuring mengambil class ORM dari module @prisma/client; PrismaClient memungkinkan query database SQLite dengan sintaks JavaScript
-const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'); // const membuat variabel tetap; { analyzeZScoreAnomaly, HISTORY_SIZE } destructuring mengambil fungsi utama Z-Score dan konstanta jumlah histori dari file fraudDetection.js; require('../utils/fraudDetection') memanggil file lokal (bukan library eksternal, tanda titik berarti path relatif)
+﻿const express = require('express');
+// const membuat variabel tetap; require digunakan Node.js untuk memanggil module; express adalah framework web Node.js yang menyediakan routing dan middleware
+const { body, validationResult } = require('express-validator');
+// const membuat variabel tetap; { body, validationResult } destructuring mengambil dua fungsi: body untuk mendefinisikan aturan validasi input, validationResult untuk mengambil hasil validasi
+const { PrismaClient } = require('@prisma/client');
+// const membuat variabel tetap; { PrismaClient } destructuring mengambil class ORM dari module @prisma/client; PrismaClient memungkinkan query database SQLite dengan sintaks JavaScript
+const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection');
+// const membuat variabel tetap; { analyzeZScoreAnomaly, HISTORY_SIZE } destructuring mengambil fungsi utama Z-Score dan konstanta jumlah histori dari file fraudDetection.js; require('../utils/fraudDetection') memanggil file lokal (bukan library eksternal, tanda titik berarti path relatif)
 
-const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru — kumpulan route yang di-mount ke /api/transactions di server.js
-const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma untuk operasi database SQLite
+const router = express.Router();
+// const membuat variabel tetap; express.Router() membuat instance router baru — kumpulan route yang di-mount ke /api/transactions di server.js
+const prisma = new PrismaClient();
+// const membuat variabel tetap; new PrismaClient() membuat instance Prisma untuk operasi database SQLite
 
 // --------------------------------------------------------------------------
 // Z-SCORE BASED ANOMALY DETECTION
@@ -31,80 +37,119 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 // --------------------------------------------------------------------------
 // DAPATKAN SEMUA TRANSAKSI
 // --------------------------------------------------------------------------
-router.get('/', async (req, res) => { // GET / → ambil semua transaksi dengan filter opsional
+router.get('/', async (req, res) => {
+  // GET / → ambil semua transaksi dengan filter opsional
   try {
-    const { limit = 20, offset = 0, userId, status } = req.query; // Ambil query params: limit, offset, userId, status
+    const { limit = 20, offset = 0, userId, status } = req.query;
+    // Ambil query params: limit, offset, userId, status
 
-    const where = {}; // Object filter WHERE yang akan dibangun secara dinamis
-    if (userId) { // Jika filter userId disertakan
-      const uid = parseInt(String(userId), 10); // Konversi userId dari string ke integer
-      if (!Number.isNaN(uid)) { // Validasi: pastikan hasil konversi bukan NaN
-        where.OR = [{ senderId: uid }, { receiverId: uid }]; // Filter: transaksi di mana user = sender ATAU receiver
+    const where = {};
+    // Object filter WHERE yang akan dibangun secara dinamis
+    if (userId) {
+      // Jika filter userId disertakan
+      const uid = parseInt(String(userId), 10);
+      // Konversi userId dari string ke integer
+      if (!Number.isNaN(uid)) {
+        // Validasi: pastikan hasil konversi bukan NaN
+        where.OR = [{ senderId: uid }, { receiverId: uid }];
+        // Filter: transaksi di mana user = sender ATAU receiver
       }
     }
-    if (status) where.status = status; // Filter by status jika disertakan (completed/pending/failed)
+    if (status) where.status = status;
+    // Filter by status jika disertakan (completed/pending/failed)
 
-    const transactions = await prisma.transaction.findMany({ // Query semua transaksi yang sesuai filter
-      where, // Gunakan filter dinamis yang dibangun di atas
+    const transactions = await prisma.transaction.findMany({
+      // Query semua transaksi yang sesuai filter
+      where,
+      // Gunakan filter dinamis yang dibangun di atas
       include: {
-        sender: { select: { id: true, name: true, username: true } }, // Include data sender (hanya field yang diperlukan)
-        receiver: { select: { id: true, name: true, username: true } }, // Include data receiver
+        sender: { select: { id: true, name: true, username: true } },
+        // Include data sender (hanya field yang diperlukan)
+        receiver: { select: { id: true, name: true, username: true } },
+        // Include data receiver
       },
-      orderBy: { createdAt: 'desc' }, // Urutkan dari terbaru ke terlama
-      take: parseInt(String(limit), 10), // LIMIT: maksimal N data
-      skip: parseInt(String(offset), 10), // OFFSET: skip N data pertama (untuk pagination)
+      orderBy: { createdAt: 'desc' },
+      // Urutkan dari terbaru ke terlama
+      take: parseInt(String(limit), 10),
+      // LIMIT: maksimal N data
+      skip: parseInt(String(offset), 10),
+      // OFFSET: skip N data pertama (untuk pagination)
     });
 
-    res.json(transactions); // Kirim array transaksi sebagai JSON response
+    res.json(transactions);
+    // Kirim array transaksi sebagai JSON response
   } catch (error) {
-    console.error('\u274c Kesalahan mendapatkan transaksi:', error); // Log error ke console
-    res.status(500).json({ error: 'Gagal mendapatkan transaksi' }); // Return 500 Internal Server Error
+    console.error('\u274c Kesalahan mendapatkan transaksi:', error);
+    // Log error ke console
+    res.status(500).json({ error: 'Gagal mendapatkan transaksi' });
+    // Return 500 Internal Server Error
   }
 });
 
 // --------------------------------------------------------------------------
 // DAPATKAN TRANSAKSI BERDASARKAN ID PENGGUNA
 // --------------------------------------------------------------------------
-router.get('/user/:userId', async (req, res) => { // GET /user/:userId → transaksi milik user tertentu
+router.get('/user/:userId', async (req, res) => {
+  // GET /user/:userId → transaksi milik user tertentu
   try {
-    const userId = parseInt(req.params.userId, 10); // Konversi userId URL param dari string ke integer
-    if (isNaN(userId)) { // Validasi: jika bukan angka, tolak request
-      return res.status(400).json({ error: 'ID pengguna tidak valid' }); // Return 400 Bad Request
+    const userId = parseInt(req.params.userId, 10);
+    // Konversi userId URL param dari string ke integer
+    if (isNaN(userId)) {
+      // Validasi: jika bukan angka, tolak request
+      return res.status(400).json({ error: 'ID pengguna tidak valid' });
+      // Return 400 Bad Request
     }
 
-    const { limit = 20, offset = 0, status } = req.query; // Ambil query params untuk pagination dan filter
+    const { limit = 20, offset = 0, status } = req.query;
+    // Ambil query params untuk pagination dan filter
 
-    const where = { // Bangun filter WHERE: cari transaksi sebagai sender ATAU receiver
+    const where = {
+      // Bangun filter WHERE: cari transaksi sebagai sender ATAU receiver
       OR: [
-        { senderId: userId }, // User sebagai pengirim uang
-        { receiverId: userId } // User sebagai penerima uang
+        { senderId: userId },
+        // User sebagai pengirim uang
+        { receiverId: userId }
+        // User sebagai penerima uang
       ]
     };
     
-    if (status) where.status = status; // Tambahkan filter status jika disertakan
+    if (status) where.status = status;
+    // Tambahkan filter status jika disertakan
 
-    const transactions = await prisma.transaction.findMany({ // Query transaksi user dari database
-      where, // Gunakan filter yang sudah dibangun
+    const transactions = await prisma.transaction.findMany({
+      // Query transaksi user dari database
+      where,
+      // Gunakan filter yang sudah dibangun
       include: {
-        sender: { // Sertakan data pengirim
-          select: { id: true, name: true, username: true } // Hanya ambil field yang aman (tanpa password)
+        sender: {
+          // Sertakan data pengirim
+          select: { id: true, name: true, username: true }
+          // Hanya ambil field yang aman (tanpa password)
         },
-        receiver: { // Sertakan data penerima
+        receiver: {
+          // Sertakan data penerima
           select: { id: true, name: true, username: true }
         }
       },
-      orderBy: { createdAt: 'desc' }, // Terbaru di atas
-      take: parseInt(String(limit), 10), // Limit jumlah hasil
-      skip: parseInt(String(offset), 10), // Offset untuk pagination
+      orderBy: { createdAt: 'desc' },
+      // Terbaru di atas
+      take: parseInt(String(limit), 10),
+      // Limit jumlah hasil
+      skip: parseInt(String(offset), 10),
+      // Offset untuk pagination
     });
 
     // Tambahkan info tipe transaksi (terkirim/diterima) untuk pengguna yang meminta
-    const transactionsWithType = transactions.map(transaction => ({ // Transform setiap transaksi
-      ...transaction, // Salin semua field asli
-      transactionType: transaction.senderId === userId ? 'sent' : 'received' // Tentukan apakah dikirim atau diterima
+    const transactionsWithType = transactions.map(transaction => ({
+      // Transform setiap transaksi
+      ...transaction,
+      // Salin semua field asli
+      transactionType: transaction.senderId === userId ? 'sent' : 'received'
+      // Tentukan apakah dikirim atau diterima
     }));
 
-    res.json(transactionsWithType); // Kirim hasil dengan field transactionType tambahan
+    res.json(transactionsWithType);
+    // Kirim hasil dengan field transactionType tambahan
   } catch (error) {
     console.error('\u274c Kesalahan mendapatkan transaksi pengguna:', error);
     res.status(500).json({ error: 'Gagal mendapatkan transaksi pengguna' });
@@ -114,34 +159,54 @@ router.get('/user/:userId', async (req, res) => { // GET /user/:userId → trans
 // --------------------------------------------------------------------------
 // STATISTIK TRANSAKSI (TEMPATKAN SEBELUM /:id)
 // --------------------------------------------------------------------------
-router.get('/stats/summary', async (req, res) => { // GET /stats/summary → ringkasan statistik transaksi
+router.get('/stats/summary', async (req, res) => {
+  // GET /stats/summary → ringkasan statistik transaksi
   try {
-    const { userId, period = '7d' } = req.query; // Ambil filter userId dan period (default 7 hari)
-    const now = new Date(); // Waktu sekarang sebagai acuan perhitungan periode
-    let from; // Akan diisi batas waktu awal periode
+    const { userId, period = '7d' } = req.query;
+    // Ambil filter userId dan period (default 7 hari)
+    const now = new Date();
+    // Waktu sekarang sebagai acuan perhitungan periode
+    let from;
+    // Akan diisi batas waktu awal periode
 
-    if (period === '1d') from = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 jam = 86.400.000 ms
-    else if (period === '30d') from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 hari
-    else from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // Default: 7 hari terakhir
+    if (period === '1d') from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    // 24 jam = 86.400.000 ms
+    else if (period === '30d') from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // 30 hari
+    else from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // Default: 7 hari terakhir
 
-    const where = { createdAt: { gte: from } }; // Filter: hanya transaksi yang dibuat setelah 'from'
+    const where = { createdAt: { gte: from } };
+    // Filter: hanya transaksi yang dibuat setelah 'from'
 
-    if (userId) { // Jika filter userId disertakan
-      const uid = parseInt(String(userId), 10); // Konversi ke integer
-      if (!Number.isNaN(uid)) where.OR = [{ senderId: uid }, { receiverId: uid }]; // Filter: sender atau receiver
+    if (userId) {
+      // Jika filter userId disertakan
+      const uid = parseInt(String(userId), 10);
+      // Konversi ke integer
+      if (!Number.isNaN(uid)) where.OR = [{ senderId: uid }, { receiverId: uid }];
+      // Filter: sender atau receiver
     }
 
-    const [count, sum, avg] = await Promise.all([ // Jalankan 3 query paralel sekaligus (lebih cepat)
-      prisma.transaction.count({ where }), // Query 1: hitung jumlah transaksi
-      prisma.transaction.aggregate({ where, _sum: { amount: true } }), // Query 2: jumlahkan total amount
-      prisma.transaction.aggregate({ where, _avg: { amount: true } }), // Query 3: hitung rata-rata amount
+    const [count, sum, avg] = await Promise.all([
+    // Jalankan 3 query paralel sekaligus (lebih cepat)
+      prisma.transaction.count({ where }),
+      // Query 1: hitung jumlah transaksi
+      prisma.transaction.aggregate({ where, _sum: { amount: true } }),
+      // Query 2: jumlahkan total amount
+      prisma.transaction.aggregate({ where, _avg: { amount: true } }),
+      // Query 3: hitung rata-rata amount
     ]);
 
-    res.json({ // Kirim statistik sebagai response
-      period, // Periode yang digunakan (1d/7d/30d)
-      totalTransactions: count, // Jumlah transaksi dalam periode
-      totalAmount: sum._sum.amount || 0, // Total nilai semua transaksi (default 0 jika kosong)
-      averageAmount: avg._avg.amount || 0, // Rata-rata nilai per transaksi
+    res.json({
+      // Kirim statistik sebagai response
+      period,
+      // Periode yang digunakan (1d/7d/30d)
+      totalTransactions: count,
+      // Jumlah transaksi dalam periode
+      totalAmount: sum._sum.amount || 0,
+      // Total nilai semua transaksi (default 0 jika kosong)
+      averageAmount: avg._avg.amount || 0,
+      // Rata-rata nilai per transaksi
     });
   } catch (error) {
     console.error('\u274c Kesalahan mendapatkan statistik transaksi:', error);
@@ -153,54 +218,85 @@ router.get('/stats/summary', async (req, res) => { // GET /stats/summary → rin
 // BUAT TRANSAKSI BARU
 // --------------------------------------------------------------------------
 router.post(
-  '/', // POST / → buat transaksi baru (transfer uang antar user)
+  '/',
+  // POST / → buat transaksi baru (transfer uang antar user)
   [
-    body('amount').isFloat({ min: 0.01 }).withMessage('Jumlah harus lebih dari 0'), // Validasi: amount harus float positif
-    body('receiverUsername').optional().isString(), // receiverUsername opsional, harus string jika ada
-    body('receiverId').optional().isInt(), // receiverId opsional, harus integer jika ada
+    body('amount').isFloat({ min: 0.01 }).withMessage('Jumlah harus lebih dari 0'),
+    // Validasi: amount harus float positif
+    body('receiverUsername').optional().isString(),
+    // receiverUsername opsional, harus string jika ada
+    body('receiverId').optional().isInt(),
+    // receiverId opsional, harus integer jika ada
     // catatan: senderId dari body tidak dipercaya, hanya fallback
-    body('senderId').optional().isInt(), // senderId dari body hanya fallback (utama dari JWT token)
-    body('description').optional().isString(), // Deskripsi transaksi opsional
-    body('deviceId').optional().isString(), // ID perangkat opsional untuk tracking
+    body('senderId').optional().isInt(),
+    // senderId dari body hanya fallback (utama dari JWT token)
+    body('description').optional().isString(),
+    // Deskripsi transaksi opsional
+    body('deviceId').optional().isString(),
+    // ID perangkat opsional untuk tracking
   ],
   async (req, res) => {
     try {
-      const errors = validationResult(req); // Cek hasil validasi express-validator
-      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() }); // Return error jika validasi gagal
+      const errors = validationResult(req);
+      // Cek hasil validasi express-validator
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+      // Return error jika validasi gagal
 
       const {
-        receiverUsername, // Username penerima (prioritas utama untuk identifikasi receiver)
-        receiverId, // ID penerima (fallback jika tidak ada username)
-        senderId: senderIdFromBody, // Sender dari body (tidak aman, hanya fallback)
-        amount, // Jumlah transfer dalam Rupiah
-        description, // Catatan/deskripsi transaksi
-        deviceId, // ID perangkat Android pengirim
+        receiverUsername,
+        // Username penerima (prioritas utama untuk identifikasi receiver)
+        receiverId,
+        // ID penerima (fallback jika tidak ada username)
+        senderId: senderIdFromBody,
+        // Sender dari body (tidak aman, hanya fallback)
+        amount,
+        // Jumlah transfer dalam Rupiah
+        description,
+        // Catatan/deskripsi transaksi
+        deviceId,
+        // ID perangkat Android pengirim
       } = req.body;
 
       // Ambil sender dari token (authenticateToken), kalau tidak ada baru fallback body
-      const senderId = req.user?.id ?? senderIdFromBody; // Prioritas: token > body
-      if (!senderId) return res.status(401).json({ error: 'Pengirim tidak terautentikasi' }); // Wajib ada sender
+      const senderId = req.user?.id ?? senderIdFromBody;
+      // Prioritas: token > body
+      if (!senderId) return res.status(401).json({ error: 'Pengirim tidak terautentikasi' });
+      // Wajib ada sender
 
-      const amountNum = Number(amount); // Konversi amount ke number
-      if (!Number.isFinite(amountNum) || amountNum <= 0) { // Validasi: harus angka terhingga dan positif
-        return res.status(400).json({ error: 'Invalid amount' }); // Tolak jika tidak valid
+      const amountNum = Number(amount);
+      // Konversi amount ke number
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        // Validasi: harus angka terhingga dan positif
+        return res.status(400).json({ error: 'Invalid amount' });
+        // Tolak jika tidak valid
       }
 
       // Cari receiver (username lebih diutamakan)
-      let receiver = null; // Akan diisi dengan data user penerima
-      if (receiverUsername) { // Mode 1: cari berdasarkan username
-        receiver = await prisma.user.findUnique({ where: { username: receiverUsername } }); // Query by username
-      } else if (receiverId) { // Mode 2: cari berdasarkan ID
-        receiver = await prisma.user.findUnique({ where: { id: Number(receiverId) } }); // Query by ID
+      let receiver = null;
+      // Akan diisi dengan data user penerima
+      if (receiverUsername) {
+        // Mode 1: cari berdasarkan username
+        receiver = await prisma.user.findUnique({ where: { username: receiverUsername } });
+        // Query by username
+      } else if (receiverId) {
+        // Mode 2: cari berdasarkan ID
+        receiver = await prisma.user.findUnique({ where: { id: Number(receiverId) } });
+        // Query by ID
       }
-      if (!receiver) return res.status(404).json({ error: 'Receiver not found' }); // Penerima tidak ditemukan
-      if (receiver.id === Number(senderId)) return res.status(400).json({ error: 'Cannot send money to yourself' }); // Tidak bisa transfer ke diri sendiri
+      if (!receiver) return res.status(404).json({ error: 'Receiver not found' });
+      // Penerima tidak ditemukan
+      if (receiver.id === Number(senderId)) return res.status(400).json({ error: 'Cannot send money to yourself' });
+      // Tidak bisa transfer ke diri sendiri
 
       // Cek awal saldo sender (untuk early reject sebelum fraud check — bukan pengganti cek atomik)
-      const sender = await prisma.user.findUnique({ where: { id: Number(senderId) } }); // Ambil data sender dari DB
-      if (!sender) return res.status(404).json({ error: 'Sender not found' }); // Sender tidak ditemukan
-      if (sender.balance < amountNum) { // Cek cepat — saldo akan dicek ulang secara atomik di dalam $transaction
-        return res.status(400).json({ error: 'Insufficient balance' }); // Return 400 jika saldo kurang
+      const sender = await prisma.user.findUnique({ where: { id: Number(senderId) } });
+      // Ambil data sender dari DB
+      if (!sender) return res.status(404).json({ error: 'Sender not found' });
+      // Sender tidak ditemukan
+      if (sender.balance < amountNum) {
+        // Cek cepat — saldo akan dicek ulang secara atomik di dalam $transaction
+        return res.status(400).json({ error: 'Insufficient balance' });
+        // Return 400 jika saldo kurang
       }
 
       // ======================================================================
@@ -208,150 +304,244 @@ router.post(
       // Ambil 20 transaksi historis terakhir pengguna sebagai baseline
       // Transaksi baru (amountNum) adalah X = transaksi ke-21
       // ======================================================================
-      const historicalTxs = await prisma.transaction.findMany({ // Query 20 transaksi historis user
-        where: { senderId: Number(senderId), status: 'completed' }, // Filter: hanya transaksi completed milik sender
-        select: { amount: true, createdAt: true }, // Hanya ambil field yang diperlukan untuk Z-Score
-        orderBy: { createdAt: 'desc' }, // Terbaru di atas (paling relevan untuk baseline)
-        take: HISTORY_SIZE, // Ambil maksimal 20 transaksi (HISTORY_SIZE = 20)
+      const historicalTxs = await prisma.transaction.findMany({
+        // Query 20 transaksi historis user
+        where: { senderId: Number(senderId), status: 'completed' },
+        // Filter: hanya transaksi completed milik sender
+        select: { amount: true, createdAt: true },
+        // Hanya ambil field yang diperlukan untuk Z-Score
+        orderBy: { createdAt: 'desc' },
+        // Terbaru di atas (paling relevan untuk baseline)
+        take: HISTORY_SIZE,
+        // Ambil maksimal 20 transaksi (HISTORY_SIZE = 20)
       });
 
-      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs); // const membuat variabel tetap; analyzeZScoreAnomaly(amount, history) adalah fungsi dari fraudDetection.js yang menghitung Z-Score: mengambil amount transaksi baru sebagai X dan array histori sebagai baseline, lalu mengembalikan objek { zScore, decision, mean, stdDev, variance, n, reasons }
+      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs);
+      // const membuat variabel tetap; analyzeZScoreAnomaly(amount, history) adalah fungsi dari fraudDetection.js yang menghitung Z-Score: mengambil amount transaksi baru sebagai X dan array histori sebagai baseline, lalu mengembalikan objek { zScore, decision, mean, stdDev, variance, n, reasons }
       // Handle edge case: zScore null (σ=0, amount≠mean) → Z tidak terdefinisi → ANOMALY/BLOCK
-      const zScoreLevel = (fraudResult.zScore === null) // const membuat variabel tetap; operator === null mengecek apakah Z-Score tidak terdefinisi (kasus khusus sigma=0)
-        ? 'ANOMALY' // jika Z null: anomali (distribusi degenerasi — semua histori identik tapi amount berbeda)
-        : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY'); // ternary berantai: Z≤2=NORMAL, 2<Z≤3=SUSPICIOUS, Z>3=ANOMALY (Three-Sigma Rule)
+      const zScoreLevel = (fraudResult.zScore === null)
+      // const membuat variabel tetap; operator === null mengecek apakah Z-Score tidak terdefinisi (kasus khusus sigma=0)
+        ? 'ANOMALY'
+        // jika Z null: anomali (distribusi degenerasi — semua histori identik tapi amount berbeda)
+        : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY');
+        // ternary berantai: Z≤2=NORMAL, 2<Z≤3=SUSPICIOUS, Z>3=ANOMALY (Three-Sigma Rule)
 
       // BLOCK: Tolak transaksi, catat sebagai percobaan fraud
-      if (fraudResult.decision === 'BLOCK') { // Z > 3: anomali ekstrem, blokir transaksi
-        await prisma.fraudAlert.create({ // Simpan fraud alert ke database
+      if (fraudResult.decision === 'BLOCK') {
+        // Z > 3: anomali ekstrem, blokir transaksi
+        await prisma.fraudAlert.create({
+          // Simpan fraud alert ke database
           data: {
-            userId: Number(senderId), // User yang melakukan transaksi mencurigakan
-            deviceId: deviceId || 'unknown', // Device yang digunakan
-            deviceName: 'Mobile App', // Nama perangkat
+            userId: Number(senderId),
+            // User yang melakukan transaksi mencurigakan
+            deviceId: deviceId || 'unknown',
+            // Device yang digunakan
+            deviceName: 'Mobile App',
+            // Nama perangkat
             // zScore null = edge case sigma=0 (Z tidak terdefinisi). Simpan -1 sebagai sentinel.
-            riskScore: fraudResult.zScore ?? -1, // Z-Score atau -1 jika tidak terdefinisi
-            riskLevel: 'ANOMALY', // Level risiko tertinggi untuk BLOCK
-            decision: 'BLOCK', // Keputusan: blokir
-            reasons: JSON.stringify(fraudResult.reasons), // Alasan dalam JSON string
-            confidence: 0.997, // 99.7% confidence (3-sigma rule)
+            riskScore: fraudResult.zScore ?? -1,
+            // Z-Score atau -1 jika tidak terdefinisi
+            riskLevel: 'ANOMALY',
+            // Level risiko tertinggi untuk BLOCK
+            decision: 'BLOCK',
+            // Keputusan: blokir
+            reasons: JSON.stringify(fraudResult.reasons),
+            // Alasan dalam JSON string
+            confidence: 0.997,
+            // 99.7% confidence (3-sigma rule)
             riskFactors: JSON.stringify({
-              zScore: fraudResult.zScore, // Nilai Z
-              mean: fraudResult.mean, // Rata-rata historis
-              stdDev: fraudResult.stdDev, // Standar deviasi
-              variance: fraudResult.variance, // Varians
-              n: fraudResult.n, // Jumlah data historis
-              currentAmount: amountNum, // Amount yang diblokir
-              algorithm: 'Z-Score Based Anomaly Detection', // Nama algoritma
-              thresholds: { allow: 2, review: 3 } // Threshold Z-Score
+              zScore: fraudResult.zScore,
+              // Nilai Z
+              mean: fraudResult.mean,
+              // Rata-rata historis
+              stdDev: fraudResult.stdDev,
+              // Standar deviasi
+              variance: fraudResult.variance,
+              // Varians
+              n: fraudResult.n,
+              // Jumlah data historis
+              currentAmount: amountNum,
+              // Amount yang diblokir
+              algorithm: 'Z-Score Based Anomaly Detection',
+              // Nama algoritma
+              thresholds: { allow: 2, review: 3 }
+              // Threshold Z-Score
             }),
-            ipAddress: req.ip, // IP address pengirim
-            userAgent: req.headers['user-agent'], // Browser/app info
+            ipAddress: req.ip,
+            // IP address pengirim
+            userAgent: req.headers['user-agent'],
+            // Browser/app info
           },
         });
-        return res.status(403).json({ // Return 403 Forbidden: transaksi ditolak
+        return res.status(403).json({
+          // Return 403 Forbidden: transaksi ditolak
           error: 'Transaksi diblokir \u2013 anomali terdeteksi (Z-Score > 3)',
-          zScore: fraudResult.zScore, // Nilai Z untuk informasi user
-          riskLevel: 'ANOMALY', // Level risiko
-          decision: 'BLOCK', // Keputusan sistem
-          reasons: fraudResult.reasons, // Penjelasan alasan pemblokiran
-          mean: fraudResult.mean, // Rata-rata historis (untuk konteks)
-          stdDev: fraudResult.stdDev, // Standar deviasi historis
-          historyCount: fraudResult.n // Jumlah data yang dipakai
+          zScore: fraudResult.zScore,
+          // Nilai Z untuk informasi user
+          riskLevel: 'ANOMALY',
+          // Level risiko
+          decision: 'BLOCK',
+          // Keputusan sistem
+          reasons: fraudResult.reasons,
+          // Penjelasan alasan pemblokiran
+          mean: fraudResult.mean,
+          // Rata-rata historis (untuk konteks)
+          stdDev: fraudResult.stdDev,
+          // Standar deviasi historis
+          historyCount: fraudResult.n
+          // Jumlah data yang dipakai
         });
       }
 
       // ALLOW / REVIEW: Proses transaksi, perbarui saldo
-      const transaction = await prisma.$transaction(async (tx) => { // const membuat variabel tetap; await menunggu; prisma.$transaction() menjalankan beberapa operasi database secara ATOMIK — artinya semua berhasil atau semua dibatalkan (rollback), tidak ada keadaan setengah-setengah; ini mencegah saldo berkurang tapi transaksi tidak tercatat; async (tx) adalah callback function dimana tx adalah Prisma client khusus yang terikat dalam transaction
+      const transaction = await prisma.$transaction(async (tx) => {
+        // const membuat variabel tetap; await menunggu; prisma.$transaction() menjalankan beberapa operasi database secara ATOMIK — artinya semua berhasil atau semua dibatalkan (rollback), tidak ada keadaan setengah-setengah; ini mencegah saldo berkurang tapi transaksi tidak tercatat; async (tx) adalah callback function dimana tx adalah Prisma client khusus yang terikat dalam transaction
         // Atomic check-and-decrement: kurangi saldo HANYA jika masih cukup
         // Mencegah TOCTOU race condition — jika dua transaksi diproses bersamaan,
         // hanya satu yang berhasil karena updateMany dengan WHERE balance >= amount.
-        const deducted = await tx.user.updateMany({ // const membuat variabel tetap; await menunggu; tx.user.updateMany mengupdate banyak record; tx (bukan prisma) digunakan agar operasi ini masuk dalam transaksi atomik
-          where: { id: Number(senderId), balance: { gte: amountNum } }, // WHERE id=senderId AND balance >= amountNum — kondisi atomik: hanya update jika saldo masih cukup; gte = greater than or equal
-          data: { balance: { decrement: amountNum } }, // SET balance = balance - amountNum — decrement adalah operasi atomik bawaan Prisma untuk pengurangan
+        const deducted = await tx.user.updateMany({
+          // const membuat variabel tetap; await menunggu; tx.user.updateMany mengupdate banyak record; tx (bukan prisma) digunakan agar operasi ini masuk dalam transaksi atomik
+          where: { id: Number(senderId), balance: { gte: amountNum } },
+          // WHERE id=senderId AND balance >= amountNum — kondisi atomik: hanya update jika saldo masih cukup; gte = greater than or equal
+          data: { balance: { decrement: amountNum } },
+          // SET balance = balance - amountNum — decrement adalah operasi atomik bawaan Prisma untuk pengurangan
         });
-        if (deducted.count === 0) { // if mengecek apakah tidak ada row yang terupdate; .count adalah jumlah row yang teraffect; 0 berarti kondisi WHERE tidak terpenuhi yaitu saldo tidak cukup
-          throw new Error('INSUFFICIENT_BALANCE'); // throw melempar error secara sengaja untuk memicu rollback seluruh $transaction; new Error() membuat objek error baru dengan pesan custom
+        if (deducted.count === 0) {
+          // if mengecek apakah tidak ada row yang terupdate; .count adalah jumlah row yang teraffect; 0 berarti kondisi WHERE tidak terpenuhi yaitu saldo tidak cukup
+          throw new Error('INSUFFICIENT_BALANCE');
+          // throw melempar error secara sengaja untuk memicu rollback seluruh $transaction; new Error() membuat objek error baru dengan pesan custom
         }
 
-        await tx.user.update({ // await menunggu; tx.user.update mengupdate satu record; menggunakan tx agar masuk dalam transaksi atomik
-          where: { id: receiver.id }, // WHERE id = receiver.id — identifikasi receiver berdasarkan ID
-          data: { balance: { increment: amountNum } }, // SET balance = balance + amountNum — increment adalah operasi atomik bawaan Prisma untuk penambahan
+        await tx.user.update({
+          // await menunggu; tx.user.update mengupdate satu record; menggunakan tx agar masuk dalam transaksi atomik
+          where: { id: receiver.id },
+          // WHERE id = receiver.id — identifikasi receiver berdasarkan ID
+          data: { balance: { increment: amountNum } },
+          // SET balance = balance + amountNum — increment adalah operasi atomik bawaan Prisma untuk penambahan
         });
 
-        const created = await tx.transaction.create({ // const membuat variabel tetap; await menunggu; tx.transaction.create menyimpan record transaksi baru ke tabel Transaction; menggunakan tx agar atomik
+        const created = await tx.transaction.create({
+          // const membuat variabel tetap; await menunggu; tx.transaction.create menyimpan record transaksi baru ke tabel Transaction; menggunakan tx agar atomik
           data: {
-            senderId: Number(senderId), // Number() mengkonversi nilai ke tipe number untuk memastikan tipe data benar
-            receiverId: receiver.id, // ID user penerima
-            amount: amountNum, // jumlah transfer dalam Rupiah
-            description, // shorthand ES6: description: description — catatan transaksi opsional
-            deviceId, // shorthand ES6: deviceId: deviceId — ID perangkat Android
-            fraudRiskScore: fraudResult.zScore ?? null,  // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float? di schema Prisma — kolom nullable
-            fraudRiskLevel: zScoreLevel, // level risiko: NORMAL/SUSPICIOUS/ANOMALY
-            fraudReasons: JSON.stringify(fraudResult.reasons), // JSON.stringify() mengubah array JavaScript menjadi string JSON untuk disimpan di kolom teks database
-            ipAddress: req.ip, // IP address client untuk audit keamanan
+            senderId: Number(senderId),
+            // Number() mengkonversi nilai ke tipe number untuk memastikan tipe data benar
+            receiverId: receiver.id,
+            // ID user penerima
+            amount: amountNum,
+            // jumlah transfer dalam Rupiah
+            description,
+            // shorthand ES6: description: description — catatan transaksi opsional
+            deviceId,
+            // shorthand ES6: deviceId: deviceId — ID perangkat Android
+            fraudRiskScore: fraudResult.zScore ?? null,
+            // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float? di schema Prisma — kolom nullable
+            fraudRiskLevel: zScoreLevel,
+            // level risiko: NORMAL/SUSPICIOUS/ANOMALY
+            fraudReasons: JSON.stringify(fraudResult.reasons),
+            // JSON.stringify() mengubah array JavaScript menjadi string JSON untuk disimpan di kolom teks database
+            ipAddress: req.ip,
+            // IP address client untuk audit keamanan
           },
           include: {
-            sender: { // include melakukan JOIN ke tabel User untuk data sender
-              select: { id: true, name: true, username: true, balance: true, deviceId: true }, // SELECT hanya field yang diperlukan (hindari password)
+            sender: {
+              // include melakukan JOIN ke tabel User untuk data sender
+              select: { id: true, name: true, username: true, balance: true, deviceId: true },
+              // SELECT hanya field yang diperlukan (hindari password)
             },
-            receiver: { // include melakukan JOIN ke tabel User untuk data receiver
+            receiver: {
+              // include melakukan JOIN ke tabel User untuk data receiver
               select: { id: true, name: true, username: true, balance: true, deviceId: true },
             },
           },
         });
 
-        return created; // Return transaksi yang dibuat untuk digunakan di luar blok
+        return created;
+        // Return transaksi yang dibuat untuk digunakan di luar blok
       });
 
       // REVIEW: Buat fraud alert untuk admin
-      if (fraudResult.decision === 'REVIEW') { // 2 < Z ≤ 3: mencurigakan, perlu review admin
-        await prisma.fraudAlert.create({ // Simpan fraud alert dengan status SUSPICIOUS
+      if (fraudResult.decision === 'REVIEW') {
+        // 2 < Z ≤ 3: mencurigakan, perlu review admin
+        await prisma.fraudAlert.create({
+          // Simpan fraud alert dengan status SUSPICIOUS
           data: {
-            userId: Number(senderId), // User yang melakukan transaksi mencurigakan
-            transactionId: transaction.id, // Link ke transaksi yang baru dibuat
-            deviceId: deviceId || 'unknown', // ID perangkat
-            deviceName: 'Mobile App', // Nama perangkat
-            riskScore: fraudResult.zScore ?? -1,  // -1 = sentinel: Z tidak terdefinisi (\u03c3=0)
-            riskLevel: 'SUSPICIOUS', // Level: mencurigakan (bukan anomali penuh)
-            decision: 'REVIEW', // Keputusan: perlu ditinjau admin
-            reasons: JSON.stringify(fraudResult.reasons), // Alasan
-            confidence: 0.95, // 95% confidence (2-sigma rule)
+            userId: Number(senderId),
+            // User yang melakukan transaksi mencurigakan
+            transactionId: transaction.id,
+            // Link ke transaksi yang baru dibuat
+            deviceId: deviceId || 'unknown',
+            // ID perangkat
+            deviceName: 'Mobile App',
+            // Nama perangkat
+            riskScore: fraudResult.zScore ?? -1,
+            // -1 = sentinel: Z tidak terdefinisi (\u03c3=0)
+            riskLevel: 'SUSPICIOUS',
+            // Level: mencurigakan (bukan anomali penuh)
+            decision: 'REVIEW',
+            // Keputusan: perlu ditinjau admin
+            reasons: JSON.stringify(fraudResult.reasons),
+            // Alasan
+            confidence: 0.95,
+            // 95% confidence (2-sigma rule)
             riskFactors: JSON.stringify({
-              zScore: fraudResult.zScore, // Nilai Z
-              mean: fraudResult.mean, // Rata-rata
-              stdDev: fraudResult.stdDev, // Standar deviasi
-              variance: fraudResult.variance, // Varians
-              n: fraudResult.n, // Jumlah data historis
-              currentAmount: amountNum, // Amount transaksi
-              algorithm: 'Z-Score Based Anomaly Detection', // Algoritma
-              thresholds: { allow: 2, review: 3 } // Threshold
+              zScore: fraudResult.zScore,
+              // Nilai Z
+              mean: fraudResult.mean,
+              // Rata-rata
+              stdDev: fraudResult.stdDev,
+              // Standar deviasi
+              variance: fraudResult.variance,
+              // Varians
+              n: fraudResult.n,
+              // Jumlah data historis
+              currentAmount: amountNum,
+              // Amount transaksi
+              algorithm: 'Z-Score Based Anomaly Detection',
+              // Algoritma
+              thresholds: { allow: 2, review: 3 }
+              // Threshold
             }),
-            ipAddress: req.ip, // IP address
-            userAgent: req.headers['user-agent'], // Info browser/app
+            ipAddress: req.ip,
+            // IP address
+            userAgent: req.headers['user-agent'],
+            // Info browser/app
           },
         });
       }
 
       // Emit realtime
-      if (req.io) { // if mengecek apakah Socket.IO tersedia (diset di server.js via middleware app.use)
-        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult }); // req.io.to('admin-room') mengirim event ke semua socket yang ada di room admin; .emit(eventName, data) mengirim event real-time dengan data transaksi dan hasil fraud detection ke admin dashboard
-        if (transaction.sender?.deviceId) { // ?. adalah optional chaining — mencegah error jika sender null; mengecek apakah sender punya deviceId
-          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', { // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit mengirim event update saldo
-            balance: transaction.sender.balance, // saldo sender setelah dikurangi (sudah diupdate dalam $transaction)
+      if (req.io) {
+        // if mengecek apakah Socket.IO tersedia (diset di server.js via middleware app.use)
+        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult });
+        // req.io.to('admin-room') mengirim event ke semua socket yang ada di room admin; .emit(eventName, data) mengirim event real-time dengan data transaksi dan hasil fraud detection ke admin dashboard
+        if (transaction.sender?.deviceId) {
+          // ?. adalah optional chaining — mencegah error jika sender null; mengecek apakah sender punya deviceId
+          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', {
+            // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit mengirim event update saldo
+            balance: transaction.sender.balance,
+            // saldo sender setelah dikurangi (sudah diupdate dalam $transaction)
           });
         }
-        if (transaction.receiver?.deviceId) { // ?. mencegah error jika receiver null; mengecek deviceId receiver
-          req.io.to(`device-${transaction.receiver.deviceId}`).emit('balance-updated', { // kirim event update saldo ke device receiver
-            balance: transaction.receiver.balance, // saldo receiver setelah ditambah (sudah diupdate dalam $transaction)
+        if (transaction.receiver?.deviceId) {
+          // ?. mencegah error jika receiver null; mengecek deviceId receiver
+          req.io.to(`device-${transaction.receiver.deviceId}`).emit('balance-updated', {
+            // kirim event update saldo ke device receiver
+            balance: transaction.receiver.balance,
+            // saldo receiver setelah ditambah (sudah diupdate dalam $transaction)
           });
         }
       }
 
-      res.status(201).json({ // res.status(201) mengatur HTTP status 201 Created; .json() mengirim response dalam format JSON
-        success: true, // flag sukses untuk client — mobile app cek ini untuk menampilkan pesan berhasil
-        message: 'Transaksi berhasil diselesaikan', // pesan konfirmasi yang ditampilkan ke user
-        transaction, // shorthand ES6: mengirim data transaksi lengkap (include sender & receiver)
-        fraudResult, // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt transaksi
+      res.status(201).json({
+        // res.status(201) mengatur HTTP status 201 Created; .json() mengirim response dalam format JSON
+        success: true,
+        // flag sukses untuk client — mobile app cek ini untuk menampilkan pesan berhasil
+        message: 'Transaksi berhasil diselesaikan',
+        // pesan konfirmasi yang ditampilkan ke user
+        transaction,
+        // shorthand ES6: mengirim data transaksi lengkap (include sender & receiver)
+        fraudResult,
+        // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt transaksi
       });
     } catch (error) {
       console.error('\u274c Kesalahan membuat transaksi:', error);
@@ -359,7 +549,8 @@ router.post(
       if (error.message === 'INSUFFICIENT_BALANCE') {
         return res.status(400).json({ error: 'Insufficient balance' });
       }
-      res.status(500).json({ error: 'Gagal membuat transaksi' }); // Return 500 ke client
+      res.status(500).json({ error: 'Gagal membuat transaksi' });
+      // Return 500 ke client
     }
   }
 );
@@ -367,25 +558,35 @@ router.post(
 // --------------------------------------------------------------------------
 // DAPATKAN TRANSAKSI BERDASARKAN ID
 // --------------------------------------------------------------------------
-router.get('/:id', async (req, res) => { // GET /:id → ambil detail transaksi berdasarkan ID
+router.get('/:id', async (req, res) => {
+  // GET /:id → ambil detail transaksi berdasarkan ID
   try {
-    const id = parseInt(String(req.params.id), 10); // Konversi ID dari URL param ke integer
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' }); // Validasi: harus angka valid
+    const id = parseInt(String(req.params.id), 10);
+    // Konversi ID dari URL param ke integer
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    // Validasi: harus angka valid
 
-    const transaction = await prisma.transaction.findUnique({ // Cari transaksi berdasarkan ID unik
-      where: { id }, // Filter: id harus sama
+    const transaction = await prisma.transaction.findUnique({
+      // Cari transaksi berdasarkan ID unik
+      where: { id },
+      // Filter: id harus sama
       include: {
-        sender: { select: { id: true, name: true, username: true } }, // Include data sender
-        receiver: { select: { id: true, name: true, username: true } }, // Include data receiver
+        sender: { select: { id: true, name: true, username: true } },
+        // Include data sender
+        receiver: { select: { id: true, name: true, username: true } },
+        // Include data receiver
       },
     });
 
-    if (!transaction) return res.status(404).json({ error: 'Transaction not found' }); // Return 404 jika tidak ditemukan
-    res.json(transaction); // Return detail transaksi
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+    // Return 404 jika tidak ditemukan
+    res.json(transaction);
+    // Return detail transaksi
   } catch (error) {
     console.error('\u274c Kesalahan mendapatkan transaksi:', error);
     res.status(500).json({ error: 'Gagal mendapatkan transaksi' });
   }
 });
 
-module.exports = router; // module.exports adalah cara CommonJS untuk mengekspor router dari file ini; router yang di-export akan di-mount di server.js sebagai app.use('/api/transactions', authenticateToken, transactionRoutes)
+module.exports = router;
+// module.exports adalah cara CommonJS untuk mengekspor router dari file ini; router yang di-export akan di-mount di server.js sebagai app.use('/api/transactions', authenticateToken, transactionRoutes)

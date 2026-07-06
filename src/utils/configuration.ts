@@ -1,4 +1,4 @@
-// src/utils/configuration.ts
+﻿// src/utils/configuration.ts
 // ==================================================================================
 // 🌐 CONFIGURATION FILE - API ENDPOINT CONFIGURATION
 // ==================================================================================
@@ -48,11 +48,13 @@
 // Format: base URL tanpa trailing slash, endpoint akan ditambahkan di apiService
 // Contoh full URL: API_URL + '/api/auth/login'
 // PENTING: Ganti URL ini dengan URL Ngrok terbaru setiap kali Ngrok di-restart
-export const API_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev'; // export const mengekspor konstanta ini agar bisa diimport di file lain; API_URL adalah base URL backend via Ngrok tunnel; WAJIB diperbarui setiap kali Ngrok di-restart
+export const API_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev';
+// export const mengekspor konstanta ini agar bisa diimport di file lain; API_URL adalah base URL backend via Ngrok tunnel; WAJIB diperbarui setiap kali Ngrok di-restart
 
 // App Secret untuk bypass JWT check (development only)
 // Ini matching dengan APP_SECRET di backend .env
-export const APP_SECRET = 'NFC2025SecureApp'; // export const mengekspor konstanta ini; APP_SECRET adalah kunci rahasia yang cocok dengan konfigurasi di backend .env; digunakan sebagai x-app-key header untuk autentikasi device
+export const APP_SECRET = 'NFC2025SecureApp';
+// export const mengekspor konstanta ini; APP_SECRET adalah kunci rahasia yang cocok dengan konfigurasi di backend .env; digunakan sebagai x-app-key header untuk autentikasi device
 
 // Admin password untuk operasi top-up kartu NFC (development only)
 // Matching dengan ADMIN_PASSWORD di backend .env (default: 'admin123')

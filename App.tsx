@@ -107,43 +107,66 @@
 //
 // ==================================================================================
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // import React (wajib untuk JSX); useState untuk state authState, currentUser, error; useEffect untuk inisialisasi app saat mount; useCallback untuk memoize fungsi navigateToScreen agar tidak dibuat ulang setiap render; useRef untuk menyimpan referensi stabil ke navigationRef dan authStateRef
-import { StatusBar } from 'expo-status-bar'; // import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian atas layar (warna, style dark/light)
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationContainerRef (tipe TypeScript untuk ref navigasi programatik)
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // import createStackNavigator untuk membuat navigator stack (tumpukan layar); StackNavigationProp adalah tipe TypeScript untuk prop navigation di tiap screen
-import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digunakan untuk menyimpan userId dan deviceId agar sesi tidak hilang saat app ditutup
-import { registerRootComponent } from 'expo'; // import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebagai entry point utama aplikasi Expo
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+// import React (wajib untuk JSX); useState untuk state authState, currentUser, error; useEffect untuk inisialisasi app saat mount; useCallback untuk memoize fungsi navigateToScreen agar tidak dibuat ulang setiap render; useRef untuk menyimpan referensi stabil ke navigationRef dan authStateRef
+import { StatusBar } from 'expo-status-bar';
+// import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian atas layar (warna, style dark/light)
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+// import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationContainerRef (tipe TypeScript untuk ref navigasi programatik)
+import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack';
+// import createStackNavigator untuk membuat navigator stack (tumpukan layar); StackNavigationProp adalah tipe TypeScript untuk prop navigation di tiap screen
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digunakan untuk menyimpan userId dan deviceId agar sesi tidak hilang saat app ditutup
+import { registerRootComponent } from 'expo';
+// import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebagai entry point utama aplikasi Expo
 import {
-  ActivityIndicator, // Spinner loading yang tampil saat startup
-  StyleSheet, // Utility untuk membuat stylesheet yang dioptimalkan
-  Text, // Komponen teks dasar React Native
-  AppState, // API untuk memantau status aplikasi (active/background/inactive)
-  AppStateStatus, // Tipe union untuk nilai AppState
-  Platform, // Utilitas untuk membedakan Android vs iOS
+  ActivityIndicator,
+  // Spinner loading yang tampil saat startup
+  StyleSheet,
+  // Utility untuk membuat stylesheet yang dioptimalkan
+  Text,
+  // Komponen teks dasar React Native
+  AppState,
+  // API untuk memantau status aplikasi (active/background/inactive)
+  AppStateStatus,
+  // Tipe union untuk nilai AppState
+  Platform,
+  // Utilitas untuk membedakan Android vs iOS
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'; // Provider + View yang menghindari area notch/status bar
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+// Provider + View yang menghindari area notch/status bar
 
 // ==================================================================================
 // IMPORT: Kumpulan Screen
 // ==================================================================================
 // Seluruh komponen layar yang dipakai di navigation stack utama.
 // ==================================================================================
-import LoginScreen from './src/screens/LoginScreen'; // Layar form login dengan username dan password
-import RegisterScreen from './src/screens/RegisterScreen'; // Layar form pendaftaran akun baru
-import DashboardScreen from './src/screens/DashboardScreen'; // Layar pusat menu setelah login berhasil
-import NFCScreen from './src/screens/NFCScreen'; // Layar proses pembayaran via NFC
-import RegisterCardScreen from './src/screens/RegisterCardScreen'; // Layar pendaftaran kartu NFC baru
-import MyCardsScreen from './src/screens/MyCardsScreen'; // Layar daftar dan manajemen kartu NFC milik user
-import TopUpScreen from './src/screens/TopUpScreen'; // Layar top-up saldo kartu NFC
+import LoginScreen from './src/screens/LoginScreen';
+// Layar form login dengan username dan password
+import RegisterScreen from './src/screens/RegisterScreen';
+// Layar form pendaftaran akun baru
+import DashboardScreen from './src/screens/DashboardScreen';
+// Layar pusat menu setelah login berhasil
+import NFCScreen from './src/screens/NFCScreen';
+// Layar proses pembayaran via NFC
+import RegisterCardScreen from './src/screens/RegisterCardScreen';
+// Layar pendaftaran kartu NFC baru
+import MyCardsScreen from './src/screens/MyCardsScreen';
+// Layar daftar dan manajemen kartu NFC milik user
+import TopUpScreen from './src/screens/TopUpScreen';
+// Layar top-up saldo kartu NFC
 
 // ==================================================================================
 // IMPORT: Kumpulan Utilitas
 // ==================================================================================
 // Fungsi dan service pendukung untuk database, NFC, dan komunikasi API.
 // ==================================================================================
-import { getUserById, initDatabase } from './src/utils/database'; // Fungsi baca user dan inisialisasi database SQLite lokal
-import { NFCService } from './src/utils/nfc'; // Service NFC untuk scan dan cleanup resource hardware NFC
-import { apiService } from './src/utils/apiService'; // Service HTTP untuk komunikasi dengan backend Express
+import { getUserById, initDatabase } from './src/utils/database';
+// Fungsi baca user dan inisialisasi database SQLite lokal
+import { NFCService } from './src/utils/nfc';
+// Service NFC untuk scan dan cleanup resource hardware NFC
+import { apiService } from './src/utils/apiService';
+// Service HTTP untuk komunikasi dengan backend Express
 
 // ==================================================================================
 // DEFINISI TIPE: Navigasi
@@ -158,18 +181,28 @@ import { apiService } from './src/utils/apiService'; // Service HTTP untuk komun
 // - Tipe untuk prop navigation yang diteruskan ke screen
 // - Membantu memastikan pemanggilan navigasi tetap type-safe
 // ==================================================================================
-export type RootStackParamList = { // Definisi semua route yang ada di navigation stack
-  Login: undefined; // Screen login — tidak butuh parameter tambahan
-  Register: undefined; // Screen daftar — tidak butuh parameter tambahan
-  Dashboard: undefined; // Screen dashboard — tidak butuh parameter tambahan
-  NFC: undefined; // Screen pembayaran NFC — tidak butuh parameter tambahan
-  RegisterCard: undefined; // Screen daftarkan kartu — tidak butuh parameter tambahan
-  MyCards: undefined; // Screen daftar kartu — tidak butuh parameter tambahan
-  TopUp: undefined; // Screen top-up saldo kartu NFC
+export type RootStackParamList = {
+  // Definisi semua route yang ada di navigation stack
+  Login: undefined;
+  // Screen login — tidak butuh parameter tambahan
+  Register: undefined;
+  // Screen daftar — tidak butuh parameter tambahan
+  Dashboard: undefined;
+  // Screen dashboard — tidak butuh parameter tambahan
+  NFC: undefined;
+  // Screen pembayaran NFC — tidak butuh parameter tambahan
+  RegisterCard: undefined;
+  // Screen daftarkan kartu — tidak butuh parameter tambahan
+  MyCards: undefined;
+  // Screen daftar kartu — tidak butuh parameter tambahan
+  TopUp: undefined;
+  // Screen top-up saldo kartu NFC
 };
 
-export type NavigationProp = StackNavigationProp<RootStackParamList>; // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
-const Stack = createStackNavigator<RootStackParamList>(); // const membuat variabel tetap; createStackNavigator<RootStackParamList>() membuat instance stack navigator bertipe — semua Screen.name harus sesuai dengan key di RootStackParamList
+export type NavigationProp = StackNavigationProp<RootStackParamList>;
+// export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
+const Stack = createStackNavigator<RootStackParamList>();
+// const membuat variabel tetap; createStackNavigator<RootStackParamList>() membuat instance stack navigator bertipe — semua Screen.name harus sesuai dengan key di RootStackParamList
 
 // ==================================================================================
 // DEFINISI TIPE: Aplikasi
@@ -188,15 +221,23 @@ const Stack = createStackNavigator<RootStackParamList>(); // const membuat varia
 // - balance: Saldo aktif dalam Rupiah
 // - email: Email opsional hasil turunan dari username
 // ==================================================================================
-type AuthState = 'loading' | 'signedIn' | 'signedOut'; // Tiga kondisi: sedang memuat, sudah login, belum login
-type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards' | 'topUp'; // Enum nama screen internal (huruf kecil, beda dari nama route)
+type AuthState = 'loading' | 'signedIn' | 'signedOut';
+// Tiga kondisi: sedang memuat, sudah login, belum login
+type AppScreen = 'login' | 'register' | 'dashboard' | 'nfc' | 'registerCard' | 'myCards' | 'topUp';
+// Enum nama screen internal (huruf kecil, beda dari nama route)
 
-interface AppUser { // Struktur data user yang beredar di level komponen App
-  id: number; // Primary key user dari database backend
-  name: string; // Nama lengkap untuk ditampilkan di UI
-  username: string; // Username unik untuk login dan referensi API
-  balance: number; // Saldo aktif dalam satuan Rupiah
-  email?: string; // Email opsional — dibentuk otomatis dari username
+interface AppUser {
+  // Struktur data user yang beredar di level komponen App
+  id: number;
+  // Primary key user dari database backend
+  name: string;
+  // Nama lengkap untuk ditampilkan di UI
+  username: string;
+  // Username unik untuk login dan referensi API
+  balance: number;
+  // Saldo aktif dalam satuan Rupiah
+  email?: string;
+  // Email opsional — dibentuk otomatis dari username
 }
 
 // ==================================================================================
@@ -220,16 +261,22 @@ export default function App() {
   // error: Pesan error untuk layar kegagalan
   // navigationRef: Ref untuk navigasi programatik dari level root
   // ================================================================================
-  const [authState, setAuthState] = useState<AuthState>('loading'); // State awal: aplikasi belum tahu user sudah login atau belum.
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null); // Menyimpan data user aktif setelah login berhasil.
-  const [error, setError] = useState<string | null>(null); // Dipakai untuk menampilkan pesan error ke layar fallback.
-  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null); // Ref ini memungkinkan navigasi dari luar screen.
-  const authStateRef = useRef<AuthState>('loading'); // Ref untuk melacak nilai authState terkini di dalam closure.
+  const [authState, setAuthState] = useState<AuthState>('loading');
+  // State awal: aplikasi belum tahu user sudah login atau belum.
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  // Menyimpan data user aktif setelah login berhasil.
+  const [error, setError] = useState<string | null>(null);
+  // Dipakai untuk menampilkan pesan error ke layar fallback.
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  // Ref ini memungkinkan navigasi dari luar screen.
+  const authStateRef = useRef<AuthState>('loading');
+  // Ref untuk melacak nilai authState terkini di dalam closure.
 
   // Sync authStateRef setiap kali authState berubah, agar timeout tidak terjebak stale closure
   useEffect(() => { authStateRef.current = authState; }, [authState]);
 
-  console.log('🚀 App.tsx rendered, authState:', authState); // Log ini membantu melihat perubahan state saat debugging.
+  console.log('🚀 App.tsx rendered, authState:', authState);
+  // Log ini membantu melihat perubahan state saat debugging.
 
   // ================================================================================
   // EFFECT: Inisialisasi Aplikasi
@@ -247,19 +294,25 @@ export default function App() {
   useEffect(() => {
     // Timeout pengaman agar user tidak tertahan di layar loading terlalu lama.
     const forceLoginTimeout = setTimeout(() => {
-      if (authStateRef.current === 'loading') { // Gunakan ref agar tidak terjebak stale closure
+      if (authStateRef.current === 'loading') {
+        // Gunakan ref agar tidak terjebak stale closure
         console.warn('⚠️ Loading timeout, paksa ke login screen');
         setAuthState('signedOut');
       }
     }, 20000);
 
-    initializeApp(); // Menjalankan seluruh proses startup aplikasi.
+    initializeApp();
+    // Menjalankan seluruh proses startup aplikasi.
     
-    const sub = AppState.addEventListener('change', handleAppStateChange); // Listener ini aktif saat app pindah active/background.
+    const sub = AppState.addEventListener('change', handleAppStateChange);
+    // Listener ini aktif saat app pindah active/background.
     return () => {
-      clearTimeout(forceLoginTimeout); // Membersihkan timer agar tidak tetap jalan setelah komponen dibongkar.
-      sub?.remove?.(); // Melepas listener untuk mencegah memory leak.
-      NFCService.cleanup(); // Membersihkan resource NFC saat aplikasi keluar dari komponen root.
+      clearTimeout(forceLoginTimeout);
+      // Membersihkan timer agar tidak tetap jalan setelah komponen dibongkar.
+      sub?.remove?.();
+      // Melepas listener untuk mencegah memory leak.
+      NFCService.cleanup();
+      // Membersihkan resource NFC saat aplikasi keluar dari komponen root.
     };
   }, []);
 
@@ -279,20 +332,26 @@ export default function App() {
   // - Memastikan registry device tetap terbaru
   // - Membantu monitoring penggunaan aplikasi di lapangan
   // ================================================================================
-  const handleAppStateChange = async (nextAppState: AppStateStatus) => { // Fungsi async: dipanggil otomatis saat status app berubah (active/background/inactive)
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    // Fungsi async: dipanggil otomatis saat status app berubah (active/background/inactive)
     if (nextAppState === 'active') {
       console.log('📱 App aktif kembali, sync status device...');
       try {
         const deviceId =
-          (await AsyncStorage.getItem('deviceId')) || `device_${Date.now()}`; // Jika belum ada deviceId tersimpan, buat ID sementara baru.
+          (await AsyncStorage.getItem('deviceId')) || `device_${Date.now()}`;
+          // Jika belum ada deviceId tersimpan, buat ID sementara baru.
         const deviceInfo = {
           deviceId,
-          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`, // Nama device dibuat sederhana agar mudah dikenali di admin.
-          platform: Platform.OS, // Memberi tahu backend apakah device Android atau iOS.
-          appVersion: '1.0.0', // Versi aplikasi berguna untuk troubleshooting di backend.
+          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`,
+          // Nama device dibuat sederhana agar mudah dikenali di admin.
+          platform: Platform.OS,
+          // Memberi tahu backend apakah device Android atau iOS.
+          appVersion: '1.0.0',
+          // Versi aplikasi berguna untuk troubleshooting di backend.
         };
 
-        await apiService.registerDevice(deviceInfo); // Mengirim data device terbaru ke backend.
+        await apiService.registerDevice(deviceInfo);
+        // Mengirim data device terbaru ke backend.
         console.log('✅ Device status tersinkron ke backend');
       } catch (err) {
         console.log('⚠️ Gagal sync device status:', err);
@@ -337,34 +396,43 @@ export default function App() {
   // - Tahap 3-4 dibuat non-blocking agar aplikasi lebih tahan gangguan
   // - Tahap 5 selalu dijalankan dengan fallback ke signedOut
   // ================================================================================
-  const initializeApp = async () => { // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health → device → auth)
+  const initializeApp = async () => {
+    // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health → device → auth)
     try {
-      setError(null); // Error lama dibersihkan dulu agar startup baru dimulai dari kondisi bersih.
+      setError(null);
+      // Error lama dibersihkan dulu agar startup baru dimulai dari kondisi bersih.
       console.log('🚀 Memulai inisialisasi aplikasi...');
 
       // === 1️⃣ Inisialisasi database lokal
       console.log('1️⃣ Inisialisasi database...');
       await Promise.race([
-        initDatabase(), // Proses utama membuka atau menyiapkan database.
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 10000)) // Jika terlalu lama, startup dipaksa gagal agar tidak hang.
+        initDatabase(),
+        // Proses utama membuka atau menyiapkan database.
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 10000))
+        // Jika terlalu lama, startup dipaksa gagal agar tidak hang.
       ]);
       console.log('✅ Database ready');
 
       // === 2️⃣ Inisialisasi service backend
       console.log('2️⃣ Inisialisasi Backend API...');
       await Promise.race([
-        apiService.initialize(), // Memulihkan token dan konfigurasi dasar API.
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Backend API timeout')), 10000)) // Proteksi bila inisialisasi API macet.
+        apiService.initialize(),
+        // Memulihkan token dan konfigurasi dasar API.
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Backend API timeout')), 10000))
+        // Proteksi bila inisialisasi API macet.
       ]);
       console.log('✅ Backend API ready');
 
       // === 3️⃣ Cek koneksi backend melalui health check
       console.log('3️⃣ Koneksi ke backend server...');
-      let connected = false; // Variabel penanda ini menunjukkan apakah backend merespons health check.
+      let connected = false;
+      // Variabel penanda ini menunjukkan apakah backend merespons health check.
       try {
         await Promise.race([
-          apiService.healthCheck(), // Menguji apakah server backend sedang aktif.
-          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)) // Timeout lebih singkat karena ini hanya pengecekan koneksi.
+          apiService.healthCheck(),
+          // Menguji apakah server backend sedang aktif.
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+          // Timeout lebih singkat karena ini hanya pengecekan koneksi.
         ]);
         connected = true;
         console.log('✅ Backend connected');
@@ -377,19 +445,27 @@ export default function App() {
       try {
         console.log('4️⃣ Register device...');
         const deviceId =
-          (await AsyncStorage.getItem('deviceId')) || `device_${Date.now()}`; // Ambil deviceId lama supaya identitas device tetap konsisten.
-        await AsyncStorage.setItem('deviceId', deviceId); // Simpan lagi agar startup berikutnya memakai ID yang sama.
+          (await AsyncStorage.getItem('deviceId')) || `device_${Date.now()}`;
+          // Ambil deviceId lama supaya identitas device tetap konsisten.
+        await AsyncStorage.setItem('deviceId', deviceId);
+        // Simpan lagi agar startup berikutnya memakai ID yang sama.
 
         const deviceInfo = {
-          deviceId, // ID unik device yang sudah diambil atau dibuat di atas
-          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`, // Nama yang mudah dikenali: platform + 6 karakter terakhir ID
-          platform: Platform.OS, // 'android' atau 'ios' — dipakai backend untuk klasifikasi device
-          appVersion: '1.0.0', // Versi aplikasi untuk kebutuhan monitoring dan debugging jarak jauh
+          deviceId,
+          // ID unik device yang sudah diambil atau dibuat di atas
+          deviceName: `${Platform.OS}_device_${deviceId.slice(-6)}`,
+          // Nama yang mudah dikenali: platform + 6 karakter terakhir ID
+          platform: Platform.OS,
+          // 'android' atau 'ios' — dipakai backend untuk klasifikasi device
+          appVersion: '1.0.0',
+          // Versi aplikasi untuk kebutuhan monitoring dan debugging jarak jauh
         };
 
         await Promise.race([
-          apiService.registerDevice(deviceInfo), // Registrasi ini menghubungkan device mobile ke dashboard/admin backend.
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 3000)) // Karena opsional, timeout dibuat singkat.
+          apiService.registerDevice(deviceInfo),
+          // Registrasi ini menghubungkan device mobile ke dashboard/admin backend.
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 3000))
+          // Karena opsional, timeout dibuat singkat.
         ]);
         console.log('✅ Device registered ke admin system');
       } catch (err) {
@@ -399,13 +475,15 @@ export default function App() {
 
       // === 5️⃣ Pemeriksaan sesi login
       console.log('5️⃣ Cek authentication...');
-      await checkAuthState(); // Langkah terakhir: tentukan user masuk dashboard atau login.
+      await checkAuthState();
+      // Langkah terakhir: tentukan user masuk dashboard atau login.
 
       console.log('✅ Aplikasi siap digunakan!');
     } catch (err: any) {
       console.error('❌ Initialization error:', err);
       // Jika startup gagal, aplikasi tetap diarahkan ke login agar tidak buntu di loading.
-      setAuthState('signedOut'); // Fallback aman: jika startup bermasalah, tampilkan login saja.
+      setAuthState('signedOut');
+      // Fallback aman: jika startup bermasalah, tampilkan login saja.
     }
   };
 
@@ -424,26 +502,34 @@ export default function App() {
   // - Berhasil: user masuk ke Dashboard
   // - Gagal: user diarahkan ke Login
   // ================================================================================
-  const checkAuthState = async () => { // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi login
+  const checkAuthState = async () => {
+    // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi login
     try {
-      const storedUserId = await AsyncStorage.getItem('userId'); // Mengambil ID user yang disimpan saat login sebelumnya.
+      const storedUserId = await AsyncStorage.getItem('userId');
+      // Mengambil ID user yang disimpan saat login sebelumnya.
       if (storedUserId) {
-        const user = await getUserById(Number(storedUserId)); // Mengubah string ke number lalu mencari data user di database.
+        const user = await getUserById(Number(storedUserId));
+        // Mengubah string ke number lalu mencari data user di database.
         if (user) {
           const appUser: AppUser = {
             id: user.id,
             name: user.name,
             username: user.username,
-            email: `${user.username}@nfcpay.com`, // Email dibentuk otomatis dari username untuk konsistensi format.
-            balance: user.balance || 0, // Jika balance kosong, default ke 0 agar aman dipakai UI.
+            email: `${user.username}@nfcpay.com`,
+            // Email dibentuk otomatis dari username untuk konsistensi format.
+            balance: user.balance || 0,
+            // Jika balance kosong, default ke 0 agar aman dipakai UI.
           };
-          setCurrentUser(appUser); // Menyimpan data user ke state global App.
-          setAuthState('signedIn'); // Menandakan user valid dan boleh masuk area utama aplikasi.
+          setCurrentUser(appUser);
+          // Menyimpan data user ke state global App.
+          setAuthState('signedIn');
+          // Menandakan user valid dan boleh masuk area utama aplikasi.
           console.log('✅ User authenticated:', appUser.name);
           return;
         }
       }
-      setAuthState('signedOut'); // Jika tidak ada sesi valid, user harus kembali ke layar login.
+      setAuthState('signedOut');
+      // Jika tidak ada sesi valid, user harus kembali ke layar login.
     } catch (err) {
       console.error('Error checking authentication:', err);
       setAuthState('signedOut');
@@ -469,7 +555,8 @@ export default function App() {
   // - reset() dipakai agar layar login tidak tersisa di stack
   // - Tombol back tidak akan membawa user kembali ke form login
   // ================================================================================
-  const handleLogin = async (userData: { // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Dashboard
+  const handleLogin = async (userData: {
+    // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Dashboard
     id: number;
     name: string;
     username: string;
@@ -477,19 +564,29 @@ export default function App() {
   }) => {
     try {
       const appUser: AppUser = {
-        id: userData.id, // ID user dari response backend setelah login
-        name: userData.name, // Nama lengkap user untuk ditampilkan di UI
-        username: userData.username, // Username untuk referensi API dan tampilan
-        email: `${userData.username}@nfcpay.com`, // Format email diseragamkan di level App.
-        balance: userData.balance || 0, // Saldo awal; default 0 jika tidak dikirim dari backend
+        id: userData.id,
+        // ID user dari response backend setelah login
+        name: userData.name,
+        // Nama lengkap user untuk ditampilkan di UI
+        username: userData.username,
+        // Username untuk referensi API dan tampilan
+        email: `${userData.username}@nfcpay.com`,
+        // Format email diseragamkan di level App.
+        balance: userData.balance || 0,
+        // Saldo awal; default 0 jika tidak dikirim dari backend
       };
-      await AsyncStorage.setItem('userId', appUser.id.toString()); // Menyimpan session sederhana berbasis userId.
-      setCurrentUser(appUser); // Data user dipakai ulang oleh screen-screen setelah login.
-      setAuthState('signedIn'); // Mengubah status supaya app menampilkan area terproteksi.
+      await AsyncStorage.setItem('userId', appUser.id.toString());
+      // Menyimpan session sederhana berbasis userId.
+      setCurrentUser(appUser);
+      // Data user dipakai ulang oleh screen-screen setelah login.
+      setAuthState('signedIn');
+      // Mengubah status supaya app menampilkan area terproteksi.
 
       navigationRef.current?.reset({
-        index: 0, // Stack disetel ulang dari awal.
-        routes: [{ name: 'Dashboard' }], // Setelah login berhasil, halaman pertama jadi Dashboard.
+        index: 0,
+        // Stack disetel ulang dari awal.
+        routes: [{ name: 'Dashboard' }],
+        // Setelah login berhasil, halaman pertama jadi Dashboard.
       });
       console.log('✅ Login success:', appUser.name);
     } catch (err) {
@@ -515,16 +612,23 @@ export default function App() {
   // - Resource hardware dirilis
   // - Navigasi di-reset agar user tidak bisa kembali ke area privat lewat back
   // ================================================================================
-  const handleLogout = async () => { // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan ke Login
+  const handleLogout = async () => {
+    // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan ke Login
     try {
-      await AsyncStorage.removeItem('userId'); // Menghapus penanda sesi dari penyimpanan lokal.
-      setCurrentUser(null); // Membersihkan data user dari memory aplikasi.
-      setAuthState('signedOut'); // Mengubah mode aplikasi ke status belum login.
-      NFCService.cleanup(); // Penting agar proses NFC yang sedang aktif tidak tertinggal.
+      await AsyncStorage.removeItem('userId');
+      // Menghapus penanda sesi dari penyimpanan lokal.
+      setCurrentUser(null);
+      // Membersihkan data user dari memory aplikasi.
+      setAuthState('signedOut');
+      // Mengubah mode aplikasi ke status belum login.
+      NFCService.cleanup();
+      // Penting agar proses NFC yang sedang aktif tidak tertinggal.
 
       navigationRef.current?.reset({
-        index: 0, // Stack navigasi dimulai ulang dari posisi pertama
-        routes: [{ name: 'Login' }], // Setelah logout, user dipaksa mulai lagi dari layar login.
+        index: 0,
+        // Stack navigasi dimulai ulang dari posisi pertama
+        routes: [{ name: 'Login' }],
+        // Setelah logout, user dipaksa mulai lagi dari layar login.
       });
       console.log('✅ Logout success');
     } catch (err) {
@@ -576,10 +680,12 @@ export default function App() {
           ? 'MyCards'
           : screen === 'topUp'
           ? 'TopUp'
-          : 'Login'; // Jika tidak cocok dengan semua kondisi di atas, fallback ke Login.
+          : 'Login';
+          // Jika tidak cocok dengan semua kondisi di atas, fallback ke Login.
       
       console.log(`🧭 Navigating from current to: ${targetScreen} (screen param: ${screen})`);
-      navigationRef.current.navigate(targetScreen); // Menjalankan perpindahan route sesuai hasil pemetaan.
+      navigationRef.current.navigate(targetScreen);
+      // Menjalankan perpindahan route sesuai hasil pemetaan.
       console.log(`✅ Navigation completed: ${screen}`);
     } catch (err) {
       console.error('❌ Navigation error:', err);
@@ -589,7 +695,8 @@ export default function App() {
   // ========================================================
   // Layar Loading dan Error
   // ========================================================
-  if (authState === 'loading') { // Tampilkan spinner selama proses startup berlangsung
+  if (authState === 'loading') {
+    // Tampilkan spinner selama proses startup berlangsung
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
@@ -599,7 +706,8 @@ export default function App() {
     );
   }
 
-  if (error && authState === 'signedOut') { // Tampilkan layar error hanya jika ada pesan error dan user belum login
+  if (error && authState === 'signedOut') {
+    // Tampilkan layar error hanya jika ada pesan error dan user belum login
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorTitle}>Terjadi Kesalahan</Text>
@@ -607,8 +715,10 @@ export default function App() {
         <Text
           style={styles.retryText}
           onPress={() => {
-            setError(null); // Error dibersihkan dulu agar UI kembali normal.
-            initializeApp(); // Menjalankan ulang seluruh startup dari awal.
+            setError(null);
+            // Error dibersihkan dulu agar UI kembali normal.
+            initializeApp();
+            // Menjalankan ulang seluruh startup dari awal.
           }}
         >
           Coba lagi
@@ -626,17 +736,23 @@ export default function App() {
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           screenOptions={{
-            headerShown: false, // Header default dimatikan karena tiap screen memakai layout sendiri.
-            gestureEnabled: true, // Gesture back/transition tetap diaktifkan.
-            animationEnabled: true, // Transisi layar dibuat halus.
+            headerShown: false,
+            // Header default dimatikan karena tiap screen memakai layout sendiri.
+            gestureEnabled: true,
+            // Gesture back/transition tetap diaktifkan.
+            animationEnabled: true,
+            // Transisi layar dibuat halus.
           }}
-          initialRouteName={authState === 'signedOut' ? 'Login' : 'Dashboard'} // Menentukan layar awal berdasarkan status login.
+          initialRouteName={authState === 'signedOut' ? 'Login' : 'Dashboard'}
+          // Menentukan layar awal berdasarkan status login.
         >
           <Stack.Screen name="Login" options={{ headerShown: false }}>
             {() => (
               <LoginScreen
-                onLogin={handleLogin} // Jika login sukses, App akan menyimpan sesi dan reset ke Dashboard.
-                onNavigateToRegister={() => navigateToScreen('register')} // Tombol daftar dari Login diarahkan ke screen Register.
+                onLogin={handleLogin}
+                // Jika login sukses, App akan menyimpan sesi dan reset ke Dashboard.
+                onNavigateToRegister={() => navigateToScreen('register')}
+                // Tombol daftar dari Login diarahkan ke screen Register.
               />
             )}
           </Stack.Screen>
@@ -644,8 +760,10 @@ export default function App() {
           <Stack.Screen name="Register" options={{ headerShown: false }}>
             {() => (
               <RegisterScreen
-                onRegisterSuccess={() => navigateToScreen('login')} // Setelah daftar berhasil, user dibawa kembali ke login.
-                onNavigateToLogin={() => navigateToScreen('login')} // Jika user batal daftar, kembali ke login.
+                onRegisterSuccess={() => navigateToScreen('login')}
+                // Setelah daftar berhasil, user dibawa kembali ke login.
+                onNavigateToLogin={() => navigateToScreen('login')}
+                // Jika user batal daftar, kembali ke login.
               />
             )}
           </Stack.Screen>
@@ -653,12 +771,18 @@ export default function App() {
           <Stack.Screen name="Dashboard" options={{ headerShown: false }}>
             {() => (
               <DashboardScreen
-                user={currentUser} // Dashboard menerima data user aktif untuk ditampilkan.
-                onLogout={handleLogout} // Tombol logout di dashboard akan membersihkan sesi.
-                onNavigateToNFC={() => navigateToScreen('nfc')} // Masuk ke alur pembayaran NFC.
-                onNavigateToRegisterCard={() => navigateToScreen('registerCard')} // Masuk ke form pendaftaran kartu baru.
-                onNavigateToMyCards={() => navigateToScreen('myCards')} // Melihat daftar kartu yang sudah terhubung.
-                onNavigateToTopUp={() => navigateToScreen('topUp')} // Masuk ke screen top-up saldo kartu NFC.
+                user={currentUser}
+                // Dashboard menerima data user aktif untuk ditampilkan.
+                onLogout={handleLogout}
+                // Tombol logout di dashboard akan membersihkan sesi.
+                onNavigateToNFC={() => navigateToScreen('nfc')}
+                // Masuk ke alur pembayaran NFC.
+                onNavigateToRegisterCard={() => navigateToScreen('registerCard')}
+                // Masuk ke form pendaftaran kartu baru.
+                onNavigateToMyCards={() => navigateToScreen('myCards')}
+                // Melihat daftar kartu yang sudah terhubung.
+                onNavigateToTopUp={() => navigateToScreen('topUp')}
+                // Masuk ke screen top-up saldo kartu NFC.
               />
             )}
           </Stack.Screen>
@@ -666,8 +790,10 @@ export default function App() {
           <Stack.Screen name="NFC" options={{ headerShown: false }}>
             {() => (
               <NFCScreen
-                user={currentUser} // Data user dipakai untuk konteks pembayaran atau saldo.
-                onBack={() => navigateToScreen('dashboard')} // Tombol kembali dari NFC mengarah ke dashboard.
+                user={currentUser}
+                // Data user dipakai untuk konteks pembayaran atau saldo.
+                onBack={() => navigateToScreen('dashboard')}
+                // Tombol kembali dari NFC mengarah ke dashboard.
               />
             )}
           </Stack.Screen>
@@ -675,9 +801,12 @@ export default function App() {
           <Stack.Screen name="RegisterCard" options={{ headerShown: false }}>
             {() => (
               <RegisterCardScreen
-                user={currentUser} // Screen ini butuh data user agar kartu dikaitkan ke pemilik yang benar.
-                onBack={() => navigateToScreen('dashboard')} // Jika batal, kembali ke dashboard.
-                onSuccess={() => navigateToScreen('myCards')} // Jika berhasil, lanjut ke daftar kartu.
+                user={currentUser}
+                // Screen ini butuh data user agar kartu dikaitkan ke pemilik yang benar.
+                onBack={() => navigateToScreen('dashboard')}
+                // Jika batal, kembali ke dashboard.
+                onSuccess={() => navigateToScreen('myCards')}
+                // Jika berhasil, lanjut ke daftar kartu.
               />
             )}
           </Stack.Screen>
@@ -685,9 +814,12 @@ export default function App() {
           <Stack.Screen name="MyCards" options={{ headerShown: false }}>
             {() => (
               <MyCardsScreen
-                user={currentUser} // Screen kartu butuh user untuk memuat data kartu yang sesuai.
-                onBack={() => navigateToScreen('dashboard')} // Kembali ke pusat menu utama.
-                onRegisterNew={() => navigateToScreen('registerCard')} // Shortcut tambah kartu baru dari daftar kartu.
+                user={currentUser}
+                // Screen kartu butuh user untuk memuat data kartu yang sesuai.
+                onBack={() => navigateToScreen('dashboard')}
+                // Kembali ke pusat menu utama.
+                onRegisterNew={() => navigateToScreen('registerCard')}
+                // Shortcut tambah kartu baru dari daftar kartu.
               />
             )}
           </Stack.Screen>
@@ -695,9 +827,12 @@ export default function App() {
           <Stack.Screen name="TopUp" options={{ headerShown: false }}>
             {() => (
               <TopUpScreen
-                user={currentUser} // TopUpScreen butuh user untuk load kartu NFC miliknya.
-                onBack={() => navigateToScreen('dashboard')} // Kembali ke dashboard setelah selesai.
-                onSuccess={() => navigateToScreen('dashboard')} // Refresh dashboard setelah top-up berhasil.
+                user={currentUser}
+                // TopUpScreen butuh user untuk load kartu NFC miliknya.
+                onBack={() => navigateToScreen('dashboard')}
+                // Kembali ke dashboard setelah selesai.
+                onSuccess={() => navigateToScreen('dashboard')}
+                // Refresh dashboard setelah top-up berhasil.
               />
             )}
           </Stack.Screen>
@@ -712,47 +847,76 @@ export default function App() {
 // ========================================================
 const styles = StyleSheet.create({
   loadingContainer: {
-    flex: 1, // Mengisi seluruh tinggi layar.
-    justifyContent: 'center', // Konten diposisikan ke tengah secara vertikal.
-    alignItems: 'center', // Konten diposisikan ke tengah secara horizontal.
-    backgroundColor: '#f8fafc', // Warna latar loading yang terang dan netral.
+    flex: 1,
+    // Mengisi seluruh tinggi layar.
+    justifyContent: 'center',
+    // Konten diposisikan ke tengah secara vertikal.
+    alignItems: 'center',
+    // Konten diposisikan ke tengah secara horizontal.
+    backgroundColor: '#f8fafc',
+    // Warna latar loading yang terang dan netral.
   },
   loadingText: {
-    marginTop: 20, // Memberi jarak dari indikator loading.
-    fontSize: 16, // Ukuran teks yang nyaman dibaca
-    color: '#6b7280', // Abu-abu sedang — kontras cukup tanpa terlalu mencolok
-    textAlign: 'center', // Rata tengah agar sejajar dengan spinner
+    marginTop: 20,
+    // Memberi jarak dari indikator loading.
+    fontSize: 16,
+    // Ukuran teks yang nyaman dibaca
+    color: '#6b7280',
+    // Abu-abu sedang — kontras cukup tanpa terlalu mencolok
+    textAlign: 'center',
+    // Rata tengah agar sejajar dengan spinner
   },
   loadingSubtext: {
-    marginTop: 8, // Jarak kecil dari teks utama loading
-    fontSize: 14, // Sedikit lebih kecil dari teks utama
-    color: '#9ca3af', // Abu-abu lebih terang untuk memberi kesan teks sekunder
-    textAlign: 'center', // Rata tengah
+    marginTop: 8,
+    // Jarak kecil dari teks utama loading
+    fontSize: 14,
+    // Sedikit lebih kecil dari teks utama
+    color: '#9ca3af',
+    // Abu-abu lebih terang untuk memberi kesan teks sekunder
+    textAlign: 'center',
+    // Rata tengah
   },
   errorContainer: {
-    flex: 1, // Mengisi seluruh layar
-    justifyContent: 'center', // Konten di tengah secara vertikal
-    alignItems: 'center', // Konten di tengah secara horizontal
-    backgroundColor: '#fef2f2', // Warna merah muda muda memberi kesan ada error tapi tetap lembut.
-    padding: 20, // Padding agar teks tidak mepet ke tepi layar
+    flex: 1,
+    // Mengisi seluruh layar
+    justifyContent: 'center',
+    // Konten di tengah secara vertikal
+    alignItems: 'center',
+    // Konten di tengah secara horizontal
+    backgroundColor: '#fef2f2',
+    // Warna merah muda muda memberi kesan ada error tapi tetap lembut.
+    padding: 20,
+    // Padding agar teks tidak mepet ke tepi layar
   },
   errorTitle: {
-    fontSize: 22, // Besar agar langsung terbaca sebagai judul halaman error
-    fontWeight: 'bold', // Tebal untuk memperkuat kesan penting
-    color: '#b91c1c', // Merah pekat untuk judul error agar segera terlihat.
-    marginBottom: 10, // Jarak antara judul dan deskripsi error
+    fontSize: 22,
+    // Besar agar langsung terbaca sebagai judul halaman error
+    fontWeight: 'bold',
+    // Tebal untuk memperkuat kesan penting
+    color: '#b91c1c',
+    // Merah pekat untuk judul error agar segera terlihat.
+    marginBottom: 10,
+    // Jarak antara judul dan deskripsi error
   },
   errorText: {
-    fontSize: 15, // Ukuran badan teks yang nyaman
-    color: '#374151', // Abu tua agar mudah dibaca di atas latar merah muda
-    textAlign: 'center', // Rata tengah untuk keterbacaan lebih baik
-    marginBottom: 12, // Jarak dari teks ke tombol coba lagi
+    fontSize: 15,
+    // Ukuran badan teks yang nyaman
+    color: '#374151',
+    // Abu tua agar mudah dibaca di atas latar merah muda
+    textAlign: 'center',
+    // Rata tengah untuk keterbacaan lebih baik
+    marginBottom: 12,
+    // Jarak dari teks ke tombol coba lagi
   },
   retryText: {
-    fontSize: 16, // Ukuran yang cukup besar agar mudah ditekan
-    color: '#1d4ed8', // Biru dipakai agar teks ini terasa seperti aksi yang bisa ditekan.
-    fontWeight: '600', // Semi-bold untuk membedakan dari teks biasa
-    textDecorationLine: 'underline', // Garis bawah memperkuat kesan tautan/tombol
+    fontSize: 16,
+    // Ukuran yang cukup besar agar mudah ditekan
+    color: '#1d4ed8',
+    // Biru dipakai agar teks ini terasa seperti aksi yang bisa ditekan.
+    fontWeight: '600',
+    // Semi-bold untuk membedakan dari teks biasa
+    textDecorationLine: 'underline',
+    // Garis bawah memperkuat kesan tautan/tombol
   },
 });
 
