@@ -768,17 +768,28 @@ AUTO REFRESH (REALTIME):
         // =================================================================
         // GLOBAL VARIABLES
         // =================================================================
-        let allUsers = []; // Array semua data user yang dimuat dari backend; diisi oleh loadUsers(); digunakan oleh renderPenggunaTab(), renderFraudTable(), dan renderActivityFeed()
-        let nfcCards = []; // Array semua kartu NFC yang dimuat dari backend; diisi oleh loadNFCCards(); digunakan oleh renderPerangkatTab() dan renderTopupTab()
-        let allTransactions = []; // Array semua transaksi yang dimuat dari backend; diisi oleh loadTransactions(); digunakan oleh renderTransaksiTab() dan renderTransactions()
-        let fraudAlerts = []; // Array semua fraud alert yang dimuat dari backend; diisi oleh loadFraudAlerts(); digunakan oleh renderFraudTable() dan updateFraudStats()
-        let filteredAlerts = []; // Array fraud alert hasil filter/pencarian; subset dari fraudAlerts; diperbarui oleh applyFilters()
-        let currentTab = 'dashboard'; // Nama tab yang sedang aktif; default 'dashboard'; diperbarui oleh switchTab()
-        let currentPage = 1; // Nomor halaman saat ini untuk paginasi tabel fraud alert; diperbarui oleh changePage()
-        let itemsPerPage = 10; // Jumlah baris data per halaman untuk paginasi; 10 alert per halaman
-        let autoRefresh = true; // Flag untuk mengaktifkan/menonaktifkan auto-refresh; jika true, data diperbarui setiap 30 detik
-        let refreshInterval = null; // Menyimpan ID interval setInterval untuk auto-refresh; digunakan untuk clearInterval() saat perlu dibatalkan
-        const API_BASE = 'http://localhost:4000/api'; // Base URL backend server PORT 4000; semua endpoint API digabung dengan URL ini
+        let allUsers = [];
+        // Array semua data user yang dimuat dari backend; diisi oleh loadUsers(); digunakan oleh renderPenggunaTab(), renderFraudTable(), dan renderActivityFeed()
+        let nfcCards = [];
+        // Array semua kartu NFC yang dimuat dari backend; diisi oleh loadNFCCards(); digunakan oleh renderPerangkatTab() dan renderTopupTab()
+        let allTransactions = [];
+        // Array semua transaksi yang dimuat dari backend; diisi oleh loadTransactions(); digunakan oleh renderTransaksiTab() dan renderTransactions()
+        let fraudAlerts = [];
+        // Array semua fraud alert yang dimuat dari backend; diisi oleh loadFraudAlerts(); digunakan oleh renderFraudTable() dan updateFraudStats()
+        let filteredAlerts = [];
+        // Array fraud alert hasil filter/pencarian; subset dari fraudAlerts; diperbarui oleh applyFilters()
+        let currentTab = 'dashboard';
+        // Nama tab yang sedang aktif; default 'dashboard'; diperbarui oleh switchTab()
+        let currentPage = 1;
+        // Nomor halaman saat ini untuk paginasi tabel fraud alert; diperbarui oleh changePage()
+        let itemsPerPage = 10;
+        // Jumlah baris data per halaman untuk paginasi; 10 alert per halaman
+        let autoRefresh = true;
+        // Flag untuk mengaktifkan/menonaktifkan auto-refresh; jika true, data diperbarui setiap 30 detik
+        let refreshInterval = null;
+        // Menyimpan ID interval setInterval untuk auto-refresh; digunakan untuk clearInterval() saat perlu dibatalkan
+        const API_BASE = 'http://localhost:4000/api';
+        // Base URL backend server PORT 4000; semua endpoint API digabung dengan URL ini
 
         // =================================================================
         // UTILITY FUNCTIONS
@@ -790,11 +801,16 @@ AUTO REFRESH (REALTIME):
          * @returns {string} - Format: Rp 100.000
          */
         function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', { // Intl.NumberFormat adalah API bawaan browser untuk format angka sesuai locale
-                style: 'currency', // style 'currency' menambahkan simbol mata uang
-                currency: 'IDR', // IDR = Indonesian Rupiah; menentukan simbol dan format mata uang
-                minimumFractionDigits: 0 // 0 berarti tidak ada angka desimal; Rp 50.000 bukan Rp 50.000,00
-            }).format(amount); // .format(amount) mengkonversi angka menjadi string terformat
+            return new Intl.NumberFormat('id-ID', {
+              // Intl.NumberFormat adalah API bawaan browser untuk format angka sesuai locale
+                style: 'currency',
+                // style 'currency' menambahkan simbol mata uang
+                currency: 'IDR',
+                // IDR = Indonesian Rupiah; menentukan simbol dan format mata uang
+                minimumFractionDigits: 0
+                // 0 berarti tidak ada angka desimal; Rp 50.000 bukan Rp 50.000,00
+            }).format(amount);
+            // .format(amount) mengkonversi angka menjadi string terformat
         }
 
         /**
@@ -803,12 +819,18 @@ AUTO REFRESH (REALTIME):
          * @returns {string} - Format: 26 Mei 2025, 09:41
          */
         function formatDate(dateString) {
-            return new Date(dateString).toLocaleString('id-ID', { // new Date() membuat objek tanggal dari string ISO; toLocaleString memformat ke string Indonesia
-                day: '2-digit', // hari ditampilkan 2 digit: 01, 09, 15
-                month: 'short', // bulan dalam format pendek: Jan, Feb, Mar
-                year: 'numeric', // tahun penuh: 2025
-                hour: '2-digit', // jam 2 digit: 09, 14
-                minute: '2-digit' // menit 2 digit: 05, 30
+            return new Date(dateString).toLocaleString('id-ID', {
+              // new Date() membuat objek tanggal dari string ISO; toLocaleString memformat ke string Indonesia
+                day: '2-digit',
+                // hari ditampilkan 2 digit: 01, 09, 15
+                month: 'short',
+                // bulan dalam format pendek: Jan, Feb, Mar
+                year: 'numeric',
+                // tahun penuh: 2025
+                hour: '2-digit',
+                // jam 2 digit: 09, 14
+                minute: '2-digit'
+                // menit 2 digit: 05, 30
             });
         }
 
@@ -818,36 +840,57 @@ AUTO REFRESH (REALTIME):
          * @returns {string} - Format: 5m ago, 2h ago, 3d ago
          */
         function formatRelativeTime(dateString) {
-            const now = new Date(); // buat objek Date untuk waktu saat ini (sekarang)
-            const date = new Date(dateString); // konversi string tanggal parameter menjadi objek Date
-            const diffMs = now - date; // hitung selisih waktu dalam milliseconds; pengurangan dua Date menghasilkan ms
-            const diffMins = Math.floor(diffMs / 60000); // konversi ms ke menit; 60000 ms = 1 menit; Math.floor bulatkan ke bawah
-            const diffHours = Math.floor(diffMs / 3600000); // konversi ms ke jam; 3600000 ms = 1 jam
-            const diffDays = Math.floor(diffMs / 86400000); // konversi ms ke hari; 86400000 ms = 1 hari
+            const now = new Date();
+            // buat objek Date untuk waktu saat ini (sekarang)
+            const date = new Date(dateString);
+            // konversi string tanggal parameter menjadi objek Date
+            const diffMs = now - date;
+            // hitung selisih waktu dalam milliseconds; pengurangan dua Date menghasilkan ms
+            const diffMins = Math.floor(diffMs / 60000);
+            // konversi ms ke menit; 60000 ms = 1 menit; Math.floor bulatkan ke bawah
+            const diffHours = Math.floor(diffMs / 3600000);
+            // konversi ms ke jam; 3600000 ms = 1 jam
+            const diffDays = Math.floor(diffMs / 86400000);
+            // konversi ms ke hari; 86400000 ms = 1 hari
             
-            if (diffMins < 60) return `${diffMins}m ago`; // tampilkan dalam menit jika kurang dari 1 jam
-            if (diffHours < 24) return `${diffHours}h ago`; // tampilkan dalam jam jika kurang dari 1 hari
-            return `${diffDays}d ago`; // tampilkan dalam hari untuk selisih 1 hari ke atas
+            if (diffMins < 60) return `${diffMins}m ago`;
+            // tampilkan dalam menit jika kurang dari 1 jam
+            if (diffHours < 24) return `${diffHours}h ago`;
+            // tampilkan dalam jam jika kurang dari 1 hari
+            return `${diffDays}d ago`;
+            // tampilkan dalam hari untuk selisih 1 hari ke atas
         }
 
-        function getRiskBadgeClass(level) { // fungsi pembantu: mengkonversi string level risiko fraud menjadi nama class CSS untuk styling badge
-            const classes = { 'ANOMALY': 'critical', 'SUSPICIOUS': 'high', 'NORMAL': 'low' }; // objek peta: key=level risiko, value=nama class CSS badge yang sesuai; 'critical'=merah, 'high'=kuning, 'low'=hijau
-            return classes[level] || 'low'; // return class CSS sesuai level; operator || 'low' sebagai fallback jika level tidak dikenali
+        function getRiskBadgeClass(level) {
+          // fungsi pembantu: mengkonversi string level risiko fraud menjadi nama class CSS untuk styling badge
+            const classes = { 'ANOMALY': 'critical', 'SUSPICIOUS': 'high', 'NORMAL': 'low' };
+            // objek peta: key=level risiko, value=nama class CSS badge yang sesuai; 'critical'=merah, 'high'=kuning, 'low'=hijau
+            return classes[level] || 'low';
+            // return class CSS sesuai level; operator || 'low' sebagai fallback jika level tidak dikenali
         }
 
-        function getDecisionBadgeClass(decision) { // fungsi pembantu: mengkonversi keputusan AI menjadi nama class CSS untuk badge keputusan
-            const classes = { 'BLOCK': 'block', 'REVIEW': 'review', 'ALLOW': 'allow' }; // objek peta: key=keputusan AI, value=nama class CSS; 'block'=merah, 'review'=kuning, 'allow'=hijau
-            return classes[decision] || 'allow'; // return class CSS sesuai keputusan; fallback 'allow' jika keputusan tidak dikenali
+        function getDecisionBadgeClass(decision) {
+          // fungsi pembantu: mengkonversi keputusan AI menjadi nama class CSS untuk badge keputusan
+            const classes = { 'BLOCK': 'block', 'REVIEW': 'review', 'ALLOW': 'allow' };
+            // objek peta: key=keputusan AI, value=nama class CSS; 'block'=merah, 'review'=kuning, 'allow'=hijau
+            return classes[decision] || 'allow';
+            // return class CSS sesuai keputusan; fallback 'allow' jika keputusan tidak dikenali
         }
 
-        function getDecisionIcon(decision) { // fungsi pembantu: mengkonversi keputusan AI menjadi emoji ikon yang ditampilkan di badge
-            const icons = { 'BLOCK': '⛔', 'REVIEW': '⚠️', 'ALLOW': '✅' }; // objek peta: BLOCK=tanda stop merah, REVIEW=tanda peringatan, ALLOW=centang hijau
-            return icons[decision] || '✅'; // return emoji ikon sesuai keputusan; fallback centang hijau jika tidak dikenali
+        function getDecisionIcon(decision) {
+          // fungsi pembantu: mengkonversi keputusan AI menjadi emoji ikon yang ditampilkan di badge
+            const icons = { 'BLOCK': '⛔', 'REVIEW': '⚠️', 'ALLOW': '✅' };
+            // objek peta: BLOCK=tanda stop merah, REVIEW=tanda peringatan, ALLOW=centang hijau
+            return icons[decision] || '✅';
+            // return emoji ikon sesuai keputusan; fallback centang hijau jika tidak dikenali
         }
 
-        function getDecisionText(decision) { // fungsi pembantu: mengkonversi kode keputusan AI bahasa Inggris menjadi teks bahasa Indonesia untuk tampilan
-            const texts = { 'BLOCK': 'Diblokir', 'REVIEW': 'Perlu Review', 'ALLOW': 'Diizinkan' }; // objek peta: key=kode keputusan, value=teks Indonesia yang ditampilkan di badge
-            return texts[decision] || 'Diizinkan'; // return teks Indonesia; fallback 'Diizinkan' jika kode tidak dikenali
+        function getDecisionText(decision) {
+          // fungsi pembantu: mengkonversi kode keputusan AI bahasa Inggris menjadi teks bahasa Indonesia untuk tampilan
+            const texts = { 'BLOCK': 'Diblokir', 'REVIEW': 'Perlu Review', 'ALLOW': 'Diizinkan' };
+            // objek peta: key=kode keputusan, value=teks Indonesia yang ditampilkan di badge
+            return texts[decision] || 'Diizinkan';
+            // return teks Indonesia; fallback 'Diizinkan' jika kode tidak dikenali
         }
 
         // =================================================================
@@ -859,50 +902,73 @@ AUTO REFRESH (REALTIME):
          * @param {string} tabName - 'dashboard' or 'fraud-alert'
          */
         function switchTab(tabName) {
-            currentTab = tabName; // perbarui variabel global currentTab dengan nama tab yang baru dipilih
+            currentTab = tabName;
+            // perbarui variabel global currentTab dengan nama tab yang baru dipilih
             
             // Hide all tabs
-            var tabs = document.querySelectorAll('.tab-content'); // querySelectorAll mengembalikan NodeList semua elemen dengan class 'tab-content'
-            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active'); // hapus class 'active' dari semua tab agar semua tersembunyi
+            var tabs = document.querySelectorAll('.tab-content');
+            // querySelectorAll mengembalikan NodeList semua elemen dengan class 'tab-content'
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            // hapus class 'active' dari semua tab agar semua tersembunyi
             
             // Show selected tab
-            var tabEl = document.getElementById('tab-' + tabName); // cari elemen tab tujuan berdasarkan id yang dinamis (misal 'tab-dashboard')
-            if (tabEl) tabEl.classList.add('active'); // tambahkan class 'active' ke tab tujuan untuk menampilkannya
+            var tabEl = document.getElementById('tab-' + tabName);
+            // cari elemen tab tujuan berdasarkan id yang dinamis (misal 'tab-dashboard')
+            if (tabEl) tabEl.classList.add('active');
+            // tambahkan class 'active' ke tab tujuan untuk menampilkannya
             
             // Update nav active state
-            var navLinks = document.querySelectorAll('.nav-link'); // ambil semua elemen link navigasi sidebar
-            for (var j = 0; j < navLinks.length; j++) navLinks[j].classList.remove('active'); // hapus class 'active' dari semua link nav untuk mereset highlight
-            var navEl = document.getElementById('nav-' + tabName); // cari elemen nav link yang sesuai dengan tab terpilih
-            if (navEl) navEl.classList.add('active'); // tambahkan class 'active' ke nav link agar tampak terhighlight
+            var navLinks = document.querySelectorAll('.nav-link');
+            // ambil semua elemen link navigasi sidebar
+            for (var j = 0; j < navLinks.length; j++) navLinks[j].classList.remove('active');
+            // hapus class 'active' dari semua link nav untuk mereset highlight
+            var navEl = document.getElementById('nav-' + tabName);
+            // cari elemen nav link yang sesuai dengan tab terpilih
+            if (navEl) navEl.classList.add('active');
+            // tambahkan class 'active' ke nav link agar tampak terhighlight
             
             // Render tab-specific content
-            if (tabName === 'transaksi') renderTransaksiTab(); // render konten tab Transaksi jika tab ini yang dipilih
-            if (tabName === 'pengguna') renderPenggunaTab(); // render konten tab Pengguna jika tab ini yang dipilih
-            if (tabName === 'perangkat') renderPerangkatTab(); // render konten tab Perangkat/Kartu NFC jika tab ini yang dipilih
-            if (tabName === 'laporan') renderLaporanTab(); // render konten tab Laporan jika tab ini yang dipilih
-            if (tabName === 'topup') renderTopupTab(); // render konten tab Top Up jika tab ini yang dipilih
+            if (tabName === 'transaksi') renderTransaksiTab();
+            // render konten tab Transaksi jika tab ini yang dipilih
+            if (tabName === 'pengguna') renderPenggunaTab();
+            // render konten tab Pengguna jika tab ini yang dipilih
+            if (tabName === 'perangkat') renderPerangkatTab();
+            // render konten tab Perangkat/Kartu NFC jika tab ini yang dipilih
+            if (tabName === 'laporan') renderLaporanTab();
+            // render konten tab Laporan jika tab ini yang dipilih
+            if (tabName === 'topup') renderTopupTab();
+            // render konten tab Top Up jika tab ini yang dipilih
             
             // Update URL hash
-            window.location.hash = tabName; // perbarui URL di browser agar hash (#) mencerminkan tab aktif; mendukung tombol back/forward browser
+            window.location.hash = tabName;
+            // perbarui URL di browser agar hash (#) mencerminkan tab aktif; mendukung tombol back/forward browser
         }
 
         /**
          * Initialize URL hash routing
          * Support browser back/forward buttons
          */
-        var VALID_TABS = ['dashboard','fraud-alert','transaksi','pengguna','perangkat','laporan','topup','pengaturan']; // array nama tab yang valid; digunakan untuk validasi hash URL agar tidak berpindah ke tab yang tidak ada
+        var VALID_TABS = ['dashboard','fraud-alert','transaksi','pengguna','perangkat','laporan','topup','pengaturan'];
+        // array nama tab yang valid; digunakan untuk validasi hash URL agar tidak berpindah ke tab yang tidak ada
 
         function initRouting() {
-            var hash = window.location.hash.replace('#', ''); // ambil nilai hash URL saat ini (tanpa simbol #); contoh: '#dashboard' menjadi 'dashboard'
-            if (VALID_TABS.indexOf(hash) !== -1) { // cek apakah hash adalah nama tab yang valid; indexOf mengembalikan -1 jika tidak ditemukan
-                switchTab(hash); // berpindah ke tab sesuai hash jika valid
+            var hash = window.location.hash.replace('#', '');
+            // ambil nilai hash URL saat ini (tanpa simbol #); contoh: '#dashboard' menjadi 'dashboard'
+            if (VALID_TABS.indexOf(hash) !== -1) {
+              // cek apakah hash adalah nama tab yang valid; indexOf mengembalikan -1 jika tidak ditemukan
+                switchTab(hash);
+                // berpindah ke tab sesuai hash jika valid
             } else {
-                switchTab('dashboard'); // fallback ke tab dashboard jika hash tidak valid atau kosong
+                switchTab('dashboard');
+                // fallback ke tab dashboard jika hash tidak valid atau kosong
             }
             
-            window.addEventListener('hashchange', function() { // event listener yang dipanggil setiap kali hash URL berubah (misal user klik back/forward browser)
-                var newHash = window.location.hash.replace('#', ''); // ambil hash baru tanpa simbol #
-                if (VALID_TABS.indexOf(newHash) !== -1) switchTab(newHash); // berpindah ke tab hanya jika hash adalah tab yang valid
+            window.addEventListener('hashchange', function() {
+              // event listener yang dipanggil setiap kali hash URL berubah (misal user klik back/forward browser)
+                var newHash = window.location.hash.replace('#', '');
+                // ambil hash baru tanpa simbol #
+                if (VALID_TABS.indexOf(newHash) !== -1) switchTab(newHash);
+                // berpindah ke tab hanya jika hash adalah tab yang valid
             });
         }
 
@@ -911,29 +977,47 @@ AUTO REFRESH (REALTIME):
         // =================================================================
 
         function renderTransaksiTab() {
-            const tbody = document.getElementById('transaksi-table-body'); // ambil elemen tbody tabel transaksi untuk diisi HTML
-            const count = document.getElementById('transaksi-count'); // ambil elemen span counter jumlah transaksi
-            if (!tbody) return; // guard: hentikan jika elemen tbody tidak ditemukan di DOM
+            const tbody = document.getElementById('transaksi-table-body');
+            // ambil elemen tbody tabel transaksi untuk diisi HTML
+            const count = document.getElementById('transaksi-count');
+            // ambil elemen span counter jumlah transaksi
+            if (!tbody) return;
+            // guard: hentikan jika elemen tbody tidak ditemukan di DOM
 
-            const search = (document.getElementById('transaksi-search')?.value || '').toLowerCase(); // ambil nilai input pencarian dan konversi ke huruf kecil; optional chaining (?.) mencegah error jika elemen belum ada
-            const riskFilter = document.getElementById('transaksi-filter-risk')?.value || ''; // ambil nilai filter risiko dari dropdown; string kosong berarti 'Semua Risiko'
+            const search = (document.getElementById('transaksi-search')?.value || '').toLowerCase();
+            // ambil nilai input pencarian dan konversi ke huruf kecil; optional chaining (?.) mencegah error jika elemen belum ada
+            const riskFilter = document.getElementById('transaksi-filter-risk')?.value || '';
+            // ambil nilai filter risiko dari dropdown; string kosong berarti 'Semua Risiko'
 
-            let data = allTransactions.slice().reverse(); // buat salinan array allTransactions dan balikkan urutan agar transaksi terbaru tampil di atas
-            if (search) data = data.filter(tx => // terapkan filter pencarian hanya jika input pencarian tidak kosong
-                (tx.sender?.name || '').toLowerCase().includes(search) || // cek apakah nama pengirim mengandung kata kunci pencarian
-                (tx.receiver?.name || '').toLowerCase().includes(search) // cek apakah nama penerima mengandung kata kunci pencarian
+            let data = allTransactions.slice().reverse();
+            // buat salinan array allTransactions dan balikkan urutan agar transaksi terbaru tampil di atas
+            if (search) data = data.filter(tx =>
+            // terapkan filter pencarian hanya jika input pencarian tidak kosong
+                (tx.sender?.name || '').toLowerCase().includes(search) ||
+                // cek apakah nama pengirim mengandung kata kunci pencarian
+                (tx.receiver?.name || '').toLowerCase().includes(search)
+                // cek apakah nama penerima mengandung kata kunci pencarian
             );
-            if (riskFilter) data = data.filter(tx => (tx.fraudRiskLevel || 'NORMAL') === riskFilter); // terapkan filter risiko jika dipilih; || 'NORMAL' sebagai fallback jika field tidak ada
+            if (riskFilter) data = data.filter(tx => (tx.fraudRiskLevel || 'NORMAL') === riskFilter);
+            // terapkan filter risiko jika dipilih; || 'NORMAL' sebagai fallback jika field tidak ada
 
-            if (data.length === 0) { // cek apakah tidak ada data transaksi setelah filter diterapkan
-                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada transaksi ditemukan</td></tr>'; // tampilkan pesan kosong jika tidak ada data
-                if (count) count.textContent = '0 transaksi'; // perbarui counter dengan 0
-                return; // hentikan eksekusi setelah menampilkan empty state
+            if (data.length === 0) {
+              // cek apakah tidak ada data transaksi setelah filter diterapkan
+                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada transaksi ditemukan</td></tr>';
+                // tampilkan pesan kosong jika tidak ada data
+                if (count) count.textContent = '0 transaksi';
+                // perbarui counter dengan 0
+                return;
+                // hentikan eksekusi setelah menampilkan empty state
             }
-            if (count) count.textContent = data.length + ' transaksi'; // perbarui counter dengan jumlah transaksi yang ditampilkan
-            tbody.innerHTML = data.map(tx => { // map() mengubah setiap objek transaksi menjadi string HTML baris tabel
-                const statusClass = (tx.status === 'completed' || tx.status === 'SUCCESS') ? 'success' : (tx.status === 'failed' || tx.status === 'FAILED') ? 'failed' : 'pending'; // tentukan class CSS badge status berdasarkan nilai status transaksi
-                const riskClass = getRiskBadgeClass(tx.fraudRiskLevel || 'NORMAL'); // tentukan class CSS badge risiko; fallback NORMAL jika field tidak ada
+            if (count) count.textContent = data.length + ' transaksi';
+            // perbarui counter dengan jumlah transaksi yang ditampilkan
+            tbody.innerHTML = data.map(tx => {
+              // map() mengubah setiap objek transaksi menjadi string HTML baris tabel
+                const statusClass = (tx.status === 'completed' || tx.status === 'SUCCESS') ? 'success' : (tx.status === 'failed' || tx.status === 'FAILED') ? 'failed' : 'pending';
+                // tentukan class CSS badge status berdasarkan nilai status transaksi
+                const riskClass = getRiskBadgeClass(tx.fraudRiskLevel || 'NORMAL');
+                // tentukan class CSS badge risiko; fallback NORMAL jika field tidak ada
                 return `<tr>
                     <td class="td-id-muted">#${tx.id}</td>
                     <td>${tx.sender?.name || '-'}</td>
@@ -944,34 +1028,55 @@ AUTO REFRESH (REALTIME):
                     <td><span class="risk-badge ${riskClass}">${tx.fraudRiskLevel || 'NORMAL'}</span></td>
                     <td class="td-date-muted">${formatDate(tx.createdAt)}</td>
                 </tr>`;
-            }).join(''); // join('') menggabungkan array string HTML menjadi satu string tanpa pemisah
+            }).join('');
+            // join('') menggabungkan array string HTML menjadi satu string tanpa pemisah
         }
 
         function renderPenggunaTab() {
-            const tbody = document.getElementById('pengguna-table-body'); // ambil elemen tbody tabel pengguna untuk diisi HTML
-            const count = document.getElementById('pengguna-count'); // ambil elemen span counter jumlah pengguna
-            if (!tbody) return; // guard: hentikan jika elemen tbody tidak ditemukan
+            const tbody = document.getElementById('pengguna-table-body');
+            // ambil elemen tbody tabel pengguna untuk diisi HTML
+            const count = document.getElementById('pengguna-count');
+            // ambil elemen span counter jumlah pengguna
+            if (!tbody) return;
+            // guard: hentikan jika elemen tbody tidak ditemukan
 
-            const search = (document.getElementById('pengguna-search')?.value || '').toLowerCase(); // ambil nilai input pencarian pengguna dan konversi ke huruf kecil
-            let data = allUsers; // mulai dengan seluruh array pengguna
-            if (search) data = data.filter(u => // terapkan filter pencarian hanya jika input tidak kosong
-                (u.name || '').toLowerCase().includes(search) || // cek apakah nama pengguna mengandung kata kunci
-                (u.username || '').toLowerCase().includes(search) // cek apakah username mengandung kata kunci
+            const search = (document.getElementById('pengguna-search')?.value || '').toLowerCase();
+            // ambil nilai input pencarian pengguna dan konversi ke huruf kecil
+            let data = allUsers;
+            // mulai dengan seluruh array pengguna
+            if (search) data = data.filter(u =>
+            // terapkan filter pencarian hanya jika input tidak kosong
+                (u.name || '').toLowerCase().includes(search) ||
+                // cek apakah nama pengguna mengandung kata kunci
+                (u.username || '').toLowerCase().includes(search)
+                // cek apakah username mengandung kata kunci
             );
 
-            if (data.length === 0) { // cek apakah tidak ada pengguna setelah filter
-                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada pengguna ditemukan</td></tr>'; // tampilkan pesan kosong
-                if (count) count.textContent = '0 pengguna'; // perbarui counter
-                return; // hentikan eksekusi
+            if (data.length === 0) {
+              // cek apakah tidak ada pengguna setelah filter
+                tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Tidak ada pengguna ditemukan</td></tr>';
+                // tampilkan pesan kosong
+                if (count) count.textContent = '0 pengguna';
+                // perbarui counter
+                return;
+                // hentikan eksekusi
             }
-            if (count) count.textContent = data.length + ' pengguna'; // perbarui counter dengan jumlah pengguna
-            tbody.innerHTML = data.map(u => { // map setiap pengguna menjadi string HTML baris tabel
-                const cardCount = nfcCards.filter(c => c.userId === u.id).length; // hitung jumlah kartu NFC milik pengguna ini dari array nfcCards
-                const isActive = u.isActive !== false; // tentukan status aktif; !== false agar null/undefined juga dianggap aktif
-                const statusClass = isActive ? 'success' : 'failed'; // class CSS badge: 'success'=hijau untuk aktif, 'failed'=merah untuk nonaktif
-                const blockBtn = isActive // tentukan tombol aksi berdasarkan status aktif
-                    ? `<button class="btn-action btn-action-danger" onclick="blockUser(${u.id}, '${u.username}')">🚫 Blokir</button>` // tombol Blokir jika user aktif
-                    : `<button class="btn-action btn-action-success" onclick="unblockUser(${u.id}, '${u.username}')">✅ Aktifkan</button>`; // tombol Aktifkan jika user diblokir
+            if (count) count.textContent = data.length + ' pengguna';
+            // perbarui counter dengan jumlah pengguna
+            tbody.innerHTML = data.map(u => {
+              // map setiap pengguna menjadi string HTML baris tabel
+                const cardCount = nfcCards.filter(c => c.userId === u.id).length;
+                // hitung jumlah kartu NFC milik pengguna ini dari array nfcCards
+                const isActive = u.isActive !== false;
+                // tentukan status aktif; !== false agar null/undefined juga dianggap aktif
+                const statusClass = isActive ? 'success' : 'failed';
+                // class CSS badge: 'success'=hijau untuk aktif, 'failed'=merah untuk nonaktif
+                const blockBtn = isActive
+                // tentukan tombol aksi berdasarkan status aktif
+                    ? `<button class="btn-action btn-action-danger" onclick="blockUser(${u.id}, '${u.username}')">🚫 Blokir</button>`
+                    // tombol Blokir jika user aktif
+                    : `<button class="btn-action btn-action-success" onclick="unblockUser(${u.id}, '${u.username}')">✅ Aktifkan</button>`;
+                    // tombol Aktifkan jika user diblokir
                 return `<tr>
                     <td class="td-id-muted">#${u.id}</td>
                     <td><div class="user-cell"><div class="user-icon">👤</div><div class="user-info-cell"><h4>${u.name || '-'}</h4></div></div></td>
@@ -982,25 +1087,40 @@ AUTO REFRESH (REALTIME):
                     <td class="td-date-muted">${formatDate(u.createdAt)}</td>
                     <td>${blockBtn}</td>
                 </tr>`;
-            }).join(''); // join('') menggabungkan semua baris menjadi satu string HTML
+            }).join('');
+            // join('') menggabungkan semua baris menjadi satu string HTML
         }
 
         function renderPerangkatTab() {
-            const tbody = document.getElementById('perangkat-table-body'); // ambil elemen tbody tabel kartu NFC untuk diisi HTML
-            const count = document.getElementById('perangkat-count'); // ambil elemen span counter jumlah kartu NFC
-            if (!tbody) return; // guard: hentikan jika tbody tidak ditemukan
-            if (nfcCards.length === 0) { // cek apakah belum ada kartu NFC
-                tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Belum ada kartu NFC</td></tr>'; // tampilkan pesan kosong
-                return; // hentikan eksekusi
+            const tbody = document.getElementById('perangkat-table-body');
+            // ambil elemen tbody tabel kartu NFC untuk diisi HTML
+            const count = document.getElementById('perangkat-count');
+            // ambil elemen span counter jumlah kartu NFC
+            if (!tbody) return;
+            // guard: hentikan jika tbody tidak ditemukan
+            if (nfcCards.length === 0) {
+              // cek apakah belum ada kartu NFC
+                tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Belum ada kartu NFC</td></tr>';
+                // tampilkan pesan kosong
+                return;
+                // hentikan eksekusi
             }
-            if (count) count.textContent = nfcCards.length + ' kartu'; // perbarui counter dengan jumlah kartu NFC
-            tbody.innerHTML = nfcCards.map(c => { // map setiap kartu NFC menjadi string HTML baris tabel
-                const owner = allUsers.find(u => u.id === c.userId); // cari data pengguna pemilik kartu berdasarkan userId
-                const isActive = c.cardStatus === 'ACTIVE'; // tentukan status aktif kartu berdasarkan field cardStatus
-                const statusClass = isActive ? 'success' : 'failed'; // class CSS badge status kartu
-                const toggleBtn = isActive // tentukan tombol aksi berdasarkan status kartu
-                    ? `<button class="btn-action btn-action-danger" onclick="toggleCardStatus('${c.cardId}', 'BLOCKED')" style="margin-right:4px">🔒 Blokir</button>` // tombol Blokir jika kartu aktif
-                    : `<button class="btn-action btn-action-success" onclick="toggleCardStatus('${c.cardId}', 'ACTIVE')" style="margin-right:4px">🔓 Aktifkan</button>`; // tombol Aktifkan jika kartu diblokir
+            if (count) count.textContent = nfcCards.length + ' kartu';
+            // perbarui counter dengan jumlah kartu NFC
+            tbody.innerHTML = nfcCards.map(c => {
+              // map setiap kartu NFC menjadi string HTML baris tabel
+                const owner = allUsers.find(u => u.id === c.userId);
+                // cari data pengguna pemilik kartu berdasarkan userId
+                const isActive = c.cardStatus === 'ACTIVE';
+                // tentukan status aktif kartu berdasarkan field cardStatus
+                const statusClass = isActive ? 'success' : 'failed';
+                // class CSS badge status kartu
+                const toggleBtn = isActive
+                // tentukan tombol aksi berdasarkan status kartu
+                    ? `<button class="btn-action btn-action-danger" onclick="toggleCardStatus('${c.cardId}', 'BLOCKED')" style="margin-right:4px">🔒 Blokir</button>`
+                    // tombol Blokir jika kartu aktif
+                    : `<button class="btn-action btn-action-success" onclick="toggleCardStatus('${c.cardId}', 'ACTIVE')" style="margin-right:4px">🔓 Aktifkan</button>`;
+                    // tombol Aktifkan jika kartu diblokir
                 return `<tr>
                     <td class="td-mono">${c.cardId || c.id}</td>
                     <td>${owner ? owner.name : (c.userId ? '#' + c.userId : '-')}</td>
@@ -1010,7 +1130,8 @@ AUTO REFRESH (REALTIME):
                     <td class="td-date-muted">${formatDate(c.createdAt)}</td>
                     <td>${toggleBtn}<button class="btn-action btn-action-danger" style="background:#fef2f2;color:#ef4444;" onclick="deleteCardAdmin('${c.cardId}', '${owner ? owner.name : 'user'}')">🗑️ Hapus</button></td>
                 </tr>`;
-            }).join(''); // gabungkan semua baris HTML menjadi satu string
+            }).join('');
+            // gabungkan semua baris HTML menjadi satu string
         }
 
         // =================================================================
@@ -1018,17 +1139,22 @@ AUTO REFRESH (REALTIME):
         // =================================================================
 
         // Password admin yang di-cache agar tidak ditanya berulang kali dalam satu sesi
-        var _cachedAdminPass = ''; // variabel global untuk menyimpan password admin sementara di memori sesi; kosong saat halaman pertama kali dibuka
+        var _cachedAdminPass = '';
+        // variabel global untuk menyimpan password admin sementara di memori sesi; kosong saat halaman pertama kali dibuka
 
         /**
          * Minta password admin dari user (cache di memori sesi)
          * Jika sudah ada di cache, langsung return tanpa prompt
          */
         function getAdminPassword(forcePrompt) {
-            if (!forcePrompt && _cachedAdminPass) return _cachedAdminPass; // jika tidak dipaksa ulang dan cache ada, langsung kembalikan tanpa menampilkan prompt
-            const pass = window.prompt('🔐 Masukkan Password Admin:'); // tampilkan dialog prompt native browser untuk input password; null jika user menekan Batal
-            if (pass) _cachedAdminPass = pass; // simpan ke cache hanya jika user mengisi (tidak membatalkan)
-            return pass; // kembalikan password yang diinput; null jika user menekan Batal
+            if (!forcePrompt && _cachedAdminPass) return _cachedAdminPass;
+            // jika tidak dipaksa ulang dan cache ada, langsung kembalikan tanpa menampilkan prompt
+            const pass = window.prompt('🔐 Masukkan Password Admin:');
+            // tampilkan dialog prompt native browser untuk input password; null jika user menekan Batal
+            if (pass) _cachedAdminPass = pass;
+            // simpan ke cache hanya jika user mengisi (tidak membatalkan)
+            return pass;
+            // kembalikan password yang diinput; null jika user menekan Batal
         }
 
         /**
@@ -1036,30 +1162,47 @@ AUTO REFRESH (REALTIME):
          * Headers: x-app-key, x-admin-password
          */
         async function blockUser(userId, username) {
-            if (!window.confirm(`Blokir user "${username}" (#${userId})?\nUser tidak bisa login dan transaksi.`)) return; // tampilkan konfirmasi; return jika user membatalkan
-            const pass = getAdminPassword(); // minta password admin dari cache atau prompt
-            if (!pass) return; // hentikan jika user tidak memasukkan password
+            if (!window.confirm(`Blokir user "${username}" (#${userId})?\nUser tidak bisa login dan transaksi.`)) return;
+            // tampilkan konfirmasi; return jika user membatalkan
+            const pass = getAdminPassword();
+            // minta password admin dari cache atau prompt
+            if (!pass) return;
+            // hentikan jika user tidak memasukkan password
             try {
-                const res = await fetch(API_BASE + '/admin/block-user', { // kirim POST request ke endpoint block-user backend
-                    method: 'POST', // method POST untuk aksi blokir
+                const res = await fetch(API_BASE + '/admin/block-user', {
+                  // kirim POST request ke endpoint block-user backend
+                    method: 'POST',
+                    // method POST untuk aksi blokir
                     headers: {
-                        'Content-Type': 'application/json', // format body JSON
-                        'x-app-key': 'NFC2025SecureApp', // header autentikasi app key
-                        'x-admin-password': pass // header password admin untuk validasi di backend
+                        'Content-Type': 'application/json',
+                        // format body JSON
+                        'x-app-key': 'NFC2025SecureApp',
+                        // header autentikasi app key
+                        'x-admin-password': pass
+                        // header password admin untuk validasi di backend
                     },
-                    body: JSON.stringify({ userId, password: pass }) // serialize body request dengan userId dan password
+                    body: JSON.stringify({ userId, password: pass })
+                    // serialize body request dengan userId dan password
                 });
-                const data = await res.json(); // parse response JSON dari backend
-                if (res.ok && data.success) { // cek apakah request berhasil
-                    alert(`✅ User "${username}" berhasil diblokir.`); // tampilkan notifikasi sukses
-                    await loadUsers(); // muat ulang data pengguna dari backend
-                    renderPenggunaTab(); // render ulang tabel pengguna
+                const data = await res.json();
+                // parse response JSON dari backend
+                if (res.ok && data.success) {
+                  // cek apakah request berhasil
+                    alert(`✅ User "${username}" berhasil diblokir.`);
+                    // tampilkan notifikasi sukses
+                    await loadUsers();
+                    // muat ulang data pengguna dari backend
+                    renderPenggunaTab();
+                    // render ulang tabel pengguna
                 } else {
-                    if (res.status === 401) _cachedAdminPass = ''; // hapus cache password jika tidak valid (401 Unauthorized)
-                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan')); // tampilkan pesan error
+                    if (res.status === 401) _cachedAdminPass = '';
+                    // hapus cache password jika tidak valid (401 Unauthorized)
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                    // tampilkan pesan error
                 }
             } catch (err) {
-                alert('❌ Error: ' + err.message); // tampilkan error jika request gagal (network error, dll)
+                alert('❌ Error: ' + err.message);
+                // tampilkan error jika request gagal (network error, dll)
             }
         }
 
@@ -1067,30 +1210,47 @@ AUTO REFRESH (REALTIME):
          * Aktifkan kembali user → POST /api/admin/unblock-user
          */
         async function unblockUser(userId, username) {
-            if (!window.confirm(`Aktifkan kembali user "${username}" (#${userId})?`)) return; // konfirmasi sebelum membuka blokir
-            const pass = getAdminPassword(); // minta password admin
-            if (!pass) return; // hentikan jika tidak ada password
+            if (!window.confirm(`Aktifkan kembali user "${username}" (#${userId})?`)) return;
+            // konfirmasi sebelum membuka blokir
+            const pass = getAdminPassword();
+            // minta password admin
+            if (!pass) return;
+            // hentikan jika tidak ada password
             try {
-                const res = await fetch(API_BASE + '/admin/unblock-user', { // kirim POST request ke endpoint unblock-user
-                    method: 'POST', // method POST untuk aksi unblokir
+                const res = await fetch(API_BASE + '/admin/unblock-user', {
+                  // kirim POST request ke endpoint unblock-user
+                    method: 'POST',
+                    // method POST untuk aksi unblokir
                     headers: {
-                        'Content-Type': 'application/json', // format JSON
-                        'x-app-key': 'NFC2025SecureApp', // header app key
-                        'x-admin-password': pass // header password admin
+                        'Content-Type': 'application/json',
+                        // format JSON
+                        'x-app-key': 'NFC2025SecureApp',
+                        // header app key
+                        'x-admin-password': pass
+                        // header password admin
                     },
-                    body: JSON.stringify({ userId, password: pass }) // body request dengan userId dan password
+                    body: JSON.stringify({ userId, password: pass })
+                    // body request dengan userId dan password
                 });
-                const data = await res.json(); // parse response JSON
-                if (res.ok && data.success) { // cek keberhasilan
-                    alert(`✅ User "${username}" berhasil diaktifkan kembali.`); // notifikasi sukses
-                    await loadUsers(); // muat ulang data pengguna
-                    renderPenggunaTab(); // render ulang tabel
+                const data = await res.json();
+                // parse response JSON
+                if (res.ok && data.success) {
+                  // cek keberhasilan
+                    alert(`✅ User "${username}" berhasil diaktifkan kembali.`);
+                    // notifikasi sukses
+                    await loadUsers();
+                    // muat ulang data pengguna
+                    renderPenggunaTab();
+                    // render ulang tabel
                 } else {
-                    if (res.status === 401) _cachedAdminPass = ''; // hapus cache jika password salah
-                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan')); // tampilkan error
+                    if (res.status === 401) _cachedAdminPass = '';
+                    // hapus cache jika password salah
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                    // tampilkan error
                 }
             } catch (err) {
-                alert('❌ Error: ' + err.message); // error koneksi atau parsing
+                alert('❌ Error: ' + err.message);
+                // error koneksi atau parsing
             }
         }
 
@@ -1100,31 +1260,49 @@ AUTO REFRESH (REALTIME):
          * @param {string} newStatus - 'ACTIVE' | 'BLOCKED'
          */
         async function toggleCardStatus(cardId, newStatus) {
-            const label = newStatus === 'BLOCKED' ? 'blokir' : 'aktifkan'; // tentukan label aksi berdasarkan status tujuan
-            if (!window.confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} kartu "${cardId}"?`)) return; // konfirmasi dengan label yang dipascalkan
-            const pass = getAdminPassword(); // minta password admin
-            if (!pass) return; // hentikan jika tidak ada password
+            const label = newStatus === 'BLOCKED' ? 'blokir' : 'aktifkan';
+            // tentukan label aksi berdasarkan status tujuan
+            if (!window.confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} kartu "${cardId}"?`)) return;
+            // konfirmasi dengan label yang dipascalkan
+            const pass = getAdminPassword();
+            // minta password admin
+            if (!pass) return;
+            // hentikan jika tidak ada password
             try {
-                const res = await fetch(API_BASE + '/nfc-cards/status', { // kirim PUT request ke endpoint update status kartu
-                    method: 'PUT', // method PUT untuk update resource yang ada
+                const res = await fetch(API_BASE + '/nfc-cards/status', {
+                  // kirim PUT request ke endpoint update status kartu
+                    method: 'PUT',
+                    // method PUT untuk update resource yang ada
                     headers: {
-                        'Content-Type': 'application/json', // format JSON
-                        'x-app-key': 'NFC2025SecureApp' // header app key
+                        'Content-Type': 'application/json',
+                        // format JSON
+                        'x-app-key': 'NFC2025SecureApp'
+                        // header app key
                     },
-                    body: JSON.stringify({ cardId, status: newStatus, adminPassword: pass }) // body dengan cardId, status baru, dan password
+                    body: JSON.stringify({ cardId, status: newStatus, adminPassword: pass })
+                    // body dengan cardId, status baru, dan password
                 });
-                const data = await res.json(); // parse response JSON
-                if (res.ok && (data.success || data.card)) { // cek keberhasilan (field success atau card)
-                    alert(`✅ Kartu "${cardId}" berhasil di-${label}.`); // notifikasi sukses
-                    await loadNFCCards(); // muat ulang data kartu NFC
-                    renderPerangkatTab(); // render ulang tabel perangkat
-                    if (currentTab === 'topup') renderTopupTab(); // jika tab topup aktif, render ulang juga
+                const data = await res.json();
+                // parse response JSON
+                if (res.ok && (data.success || data.card)) {
+                  // cek keberhasilan (field success atau card)
+                    alert(`✅ Kartu "${cardId}" berhasil di-${label}.`);
+                    // notifikasi sukses
+                    await loadNFCCards();
+                    // muat ulang data kartu NFC
+                    renderPerangkatTab();
+                    // render ulang tabel perangkat
+                    if (currentTab === 'topup') renderTopupTab();
+                    // jika tab topup aktif, render ulang juga
                 } else {
-                    if (res.status === 401) _cachedAdminPass = ''; // hapus cache jika password salah
-                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan')); // tampilkan error
+                    if (res.status === 401) _cachedAdminPass = '';
+                    // hapus cache jika password salah
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                    // tampilkan error
                 }
             } catch (err) {
-                alert('❌ Error: ' + err.message); // error koneksi
+                alert('❌ Error: ' + err.message);
+                // error koneksi
             }
         }
 
@@ -1137,36 +1315,60 @@ AUTO REFRESH (REALTIME):
          */
         function renderTopupTab() {
             // --- isi dropdown pilih kartu ---
-            const sel = document.getElementById('topup-card-select'); // ambil elemen select dropdown pilih kartu
-            if (sel) { // hanya proses jika elemen dropdown ditemukan
-                const current = sel.value; // simpan nilai yang sedang dipilih agar bisa dipulihkan setelah rebuild
-                sel.innerHTML = '<option value="">-- Pilih Kartu --</option>'; // reset dropdown ke hanya opsi placeholder
-                nfcCards.forEach(c => { // iterasi setiap kartu NFC untuk ditambahkan sebagai opsi dropdown
-                    const owner = allUsers.find(u => u.id === c.userId); // cari data pengguna pemilik kartu
-                    const label = owner // buat label opsi dengan format: CardID — NamaPemilik (Saldo)
+            const sel = document.getElementById('topup-card-select');
+            // ambil elemen select dropdown pilih kartu
+            if (sel) {
+              // hanya proses jika elemen dropdown ditemukan
+                const current = sel.value;
+                // simpan nilai yang sedang dipilih agar bisa dipulihkan setelah rebuild
+                sel.innerHTML = '<option value="">-- Pilih Kartu --</option>';
+                // reset dropdown ke hanya opsi placeholder
+                nfcCards.forEach(c => {
+                  // iterasi setiap kartu NFC untuk ditambahkan sebagai opsi dropdown
+                    const owner = allUsers.find(u => u.id === c.userId);
+                    // cari data pengguna pemilik kartu
+                    const label = owner
+                    // buat label opsi dengan format: CardID — NamaPemilik (Saldo)
                         ? `${c.cardId} — ${owner.name} (${formatCurrency(c.balance || 0)})`
-                        : `${c.cardId} (${formatCurrency(c.balance || 0)})`; // jika tidak ada pemilik, tampilkan ID dan saldo saja
-                    const opt = document.createElement('option'); // buat elemen <option> baru secara programatik
-                    opt.value = c.cardId; // set value option ke cardId untuk referensi saat submit
-                    opt.textContent = label; // set teks yang ditampilkan di dropdown
-                    if (c.cardId === current) opt.selected = true; // pertahankan pilihan sebelumnya jika cardId sama
-                    sel.appendChild(opt); // tambahkan option ke dropdown
+                        : `${c.cardId} (${formatCurrency(c.balance || 0)})`;
+                        // jika tidak ada pemilik, tampilkan ID dan saldo saja
+                    const opt = document.createElement('option');
+                    // buat elemen <option> baru secara programatik
+                    opt.value = c.cardId;
+                    // set value option ke cardId untuk referensi saat submit
+                    opt.textContent = label;
+                    // set teks yang ditampilkan di dropdown
+                    if (c.cardId === current) opt.selected = true;
+                    // pertahankan pilihan sebelumnya jika cardId sama
+                    sel.appendChild(opt);
+                    // tambahkan option ke dropdown
                 });
             }
 
             // --- tabel daftar kartu ---
-            const tbody = document.getElementById('topup-cards-tbody'); // ambil tbody tabel daftar kartu
-            const countEl = document.getElementById('topup-card-count'); // ambil span counter kartu
-            if (!tbody) return; // guard: hentikan jika tbody tidak ditemukan
-            if (nfcCards.length === 0) { // cek apakah belum ada kartu NFC terdaftar
-                tbody.innerHTML = '<tr><td colspan="5" class="table-loading-muted">Belum ada kartu NFC terdaftar</td></tr>'; // tampilkan pesan kosong
-                if (countEl) countEl.textContent = ''; // kosongkan counter
-                return; // hentikan eksekusi
+            const tbody = document.getElementById('topup-cards-tbody');
+            // ambil tbody tabel daftar kartu
+            const countEl = document.getElementById('topup-card-count');
+            // ambil span counter kartu
+            if (!tbody) return;
+            // guard: hentikan jika tbody tidak ditemukan
+            if (nfcCards.length === 0) {
+              // cek apakah belum ada kartu NFC terdaftar
+                tbody.innerHTML = '<tr><td colspan="5" class="table-loading-muted">Belum ada kartu NFC terdaftar</td></tr>';
+                // tampilkan pesan kosong
+                if (countEl) countEl.textContent = '';
+                // kosongkan counter
+                return;
+                // hentikan eksekusi
             }
-            if (countEl) countEl.textContent = nfcCards.length + ' kartu'; // perbarui counter dengan jumlah kartu
-            tbody.innerHTML = nfcCards.map(c => { // map setiap kartu menjadi baris tabel HTML
-                const owner = allUsers.find(u => u.id === c.userId); // cari pemilik kartu
-                const statusClass = c.cardStatus === 'ACTIVE' ? 'success' : 'failed'; // class CSS badge status kartu
+            if (countEl) countEl.textContent = nfcCards.length + ' kartu';
+            // perbarui counter dengan jumlah kartu
+            tbody.innerHTML = nfcCards.map(c => {
+              // map setiap kartu menjadi baris tabel HTML
+                const owner = allUsers.find(u => u.id === c.userId);
+                // cari pemilik kartu
+                const statusClass = c.cardStatus === 'ACTIVE' ? 'success' : 'failed';
+                // class CSS badge status kartu
                 return `<tr>
                     <td class="td-mono">${c.cardId}</td>
                     <td>${owner ? owner.name : (c.userId ? '#' + c.userId : '-')}</td>
@@ -1174,109 +1376,158 @@ AUTO REFRESH (REALTIME):
                     <td><span class="status-badge ${statusClass}">${c.cardStatus === 'ACTIVE' ? 'Aktif' : (c.cardStatus || 'Nonaktif')}</span></td>
                     <td><button class="btn-topup-quick" onclick="quickTopup('${c.cardId}')">+ Top Up</button></td>
                 </tr>`;
-            }).join(''); // gabungkan semua baris menjadi satu string HTML
+            }).join('');
+            // gabungkan semua baris menjadi satu string HTML
         }
 
         /**
          * Set nominal amount dari tombol preset
          */
         function setTopupAmount(amount) {
-            const input = document.getElementById('topup-amount'); // ambil elemen input nominal top up
-            if (input) input.value = amount; // isi nilai input dengan nominal dari tombol preset yang diklik
+            const input = document.getElementById('topup-amount');
+            // ambil elemen input nominal top up
+            if (input) input.value = amount;
+            // isi nilai input dengan nominal dari tombol preset yang diklik
         }
 
         /**
          * Isi cardId dari tabel ke dropdown dan scroll ke form
          */
         function quickTopup(cardId) {
-            const sel = document.getElementById('topup-card-select'); // ambil dropdown pilih kartu
-            if (sel) sel.value = cardId; // set pilihan dropdown ke cardId yang diklik dari tabel
-            const formEl = document.querySelector('.topup-form'); // ambil elemen form top up
-            if (formEl) formEl.scrollIntoView({ behavior: 'smooth' }); // scroll halaman ke form top up dengan animasi halus
+            const sel = document.getElementById('topup-card-select');
+            // ambil dropdown pilih kartu
+            if (sel) sel.value = cardId;
+            // set pilihan dropdown ke cardId yang diklik dari tabel
+            const formEl = document.querySelector('.topup-form');
+            // ambil elemen form top up
+            if (formEl) formEl.scrollIntoView({ behavior: 'smooth' });
+            // scroll halaman ke form top up dengan animasi halus
         }
 
         /**
          * Eksekusi top-up: POST /api/nfc-cards/topup ke simple-admin server
          */
         async function doTopup() {
-            const cardId    = document.getElementById('topup-card-select').value.trim(); // ambil cardId dari dropdown yang dipilih
-            const amount    = parseFloat(document.getElementById('topup-amount').value); // ambil nominal dan konversi ke angka desimal
-            const adminPass = document.getElementById('topup-admin-pass').value.trim(); // ambil password admin yang diinput
-            const resultEl  = document.getElementById('topup-result'); // ambil elemen untuk menampilkan hasil
-            const btn       = document.querySelector('.btn-topup-submit'); // ambil tombol submit untuk disable saat loading
+            const cardId    = document.getElementById('topup-card-select').value.trim();
+            // ambil cardId dari dropdown yang dipilih
+            const amount    = parseFloat(document.getElementById('topup-amount').value);
+            // ambil nominal dan konversi ke angka desimal
+            const adminPass = document.getElementById('topup-admin-pass').value.trim();
+            // ambil password admin yang diinput
+            const resultEl  = document.getElementById('topup-result');
+            // ambil elemen untuk menampilkan hasil
+            const btn       = document.querySelector('.btn-topup-submit');
+            // ambil tombol submit untuk disable saat loading
 
             // Validasi input
-            if (!cardId) { // cek apakah kartu sudah dipilih
+            if (!cardId) {
+              // cek apakah kartu sudah dipilih
                 showTopupResult('error', '❌ Pilih kartu NFC terlebih dahulu.');
-                return; // hentikan jika belum dipilih
+                return;
+                // hentikan jika belum dipilih
             }
-            if (!amount || isNaN(amount) || amount <= 0) { // cek apakah nominal valid (ada, bukan NaN, lebih dari 0)
+            if (!amount || isNaN(amount) || amount <= 0) {
+              // cek apakah nominal valid (ada, bukan NaN, lebih dari 0)
                 showTopupResult('error', '❌ Masukkan nominal top-up yang valid.');
-                return; // hentikan jika nominal tidak valid
+                return;
+                // hentikan jika nominal tidak valid
             }
-            if (!adminPass) { // cek apakah password admin sudah diisi
+            if (!adminPass) {
+              // cek apakah password admin sudah diisi
                 showTopupResult('error', '❌ Masukkan password admin.');
-                return; // hentikan jika password kosong
+                return;
+                // hentikan jika password kosong
             }
 
-            btn.disabled = true; // nonaktifkan tombol untuk mencegah double-click saat memproses
-            btn.textContent = '⏳ Memproses...'; // ubah teks tombol ke status memproses
-            if (resultEl) resultEl.style.display = 'none'; // sembunyikan hasil sebelumnya
+            btn.disabled = true;
+            // nonaktifkan tombol untuk mencegah double-click saat memproses
+            btn.textContent = '⏳ Memproses...';
+            // ubah teks tombol ke status memproses
+            if (resultEl) resultEl.style.display = 'none';
+            // sembunyikan hasil sebelumnya
 
             try {
-                const res = await fetch(API_BASE + '/nfc-cards/topup', { // kirim POST request ke endpoint top up kartu NFC backend
-                    method: 'POST', // method POST untuk mengirim data top up
+                const res = await fetch(API_BASE + '/nfc-cards/topup', {
+                  // kirim POST request ke endpoint top up kartu NFC backend
+                    method: 'POST',
+                    // method POST untuk mengirim data top up
                     headers: {
-                        'Content-Type': 'application/json', // format body JSON
-                        'x-app-key': 'NFC2025SecureApp' // header autentikasi app key
+                        'Content-Type': 'application/json',
+                        // format body JSON
+                        'x-app-key': 'NFC2025SecureApp'
+                        // header autentikasi app key
                     },
-                    body: JSON.stringify({ cardId, amount, adminPassword: adminPass }) // body request dengan data top up
+                    body: JSON.stringify({ cardId, amount, adminPassword: adminPass })
+                    // body request dengan data top up
                 });
-                const data = await res.json(); // parse response JSON dari backend
-                if (res.ok && data.success) { // cek keberhasilan top up
-                    const card = data.card || {}; // ambil data kartu yang diperbarui; fallback ke objek kosong
-                    showTopupResult('success', // tampilkan notifikasi sukses
+                const data = await res.json();
+                // parse response JSON dari backend
+                if (res.ok && data.success) {
+                  // cek keberhasilan top up
+                    const card = data.card || {};
+                    // ambil data kartu yang diperbarui; fallback ke objek kosong
+                    showTopupResult('success',
+                    // tampilkan notifikasi sukses
                         `✅ Top Up berhasil! Kartu <strong>${cardId}</strong> berhasil ditambahkan ` +
                         `<strong>${formatCurrency(amount)}</strong>. ` +
                         `Saldo kartu baru: <strong>${formatCurrency(card.balance || 0)}</strong>` +
                         `<br><small style="opacity:.75">Saldo user di aplikasi mobile otomatis ikut diperbarui.</small>`
                     );
                     // Reset form & refresh data
-                    document.getElementById('topup-amount').value = ''; // kosongkan input nominal setelah berhasil
-                    await loadNFCCards(); // muat ulang data kartu untuk menampilkan saldo terbaru
-                    renderTopupTab(); // render ulang tab top up
+                    document.getElementById('topup-amount').value = '';
+                    // kosongkan input nominal setelah berhasil
+                    await loadNFCCards();
+                    // muat ulang data kartu untuk menampilkan saldo terbaru
+                    renderTopupTab();
+                    // render ulang tab top up
                 } else {
-                    showTopupResult('error', '❌ Gagal: ' + (data.error || data.message || 'Terjadi kesalahan')); // tampilkan pesan error dari backend
+                    showTopupResult('error', '❌ Gagal: ' + (data.error || data.message || 'Terjadi kesalahan'));
+                    // tampilkan pesan error dari backend
                 }
             } catch (err) {
-                showTopupResult('error', '❌ Error: ' + err.message); // tampilkan error koneksi atau parsing
+                showTopupResult('error', '❌ Error: ' + err.message);
+                // tampilkan error koneksi atau parsing
             } finally {
-                btn.disabled = false; // aktifkan kembali tombol submit setelah selesai (berhasil maupun gagal)
-                btn.textContent = '💰 Top Up Sekarang'; // kembalikan teks tombol ke semula
+                btn.disabled = false;
+                // aktifkan kembali tombol submit setelah selesai (berhasil maupun gagal)
+                btn.textContent = '💰 Top Up Sekarang';
+                // kembalikan teks tombol ke semula
             }
         }
 
         function showTopupResult(type, message) {
-            const el = document.getElementById('topup-result'); // ambil elemen div untuk menampilkan pesan hasil
-            if (!el) return; // guard: hentikan jika elemen tidak ditemukan
-            el.className = 'topup-result ' + type; // set class CSS berdasarkan tipe: 'success' atau 'error'
-            el.innerHTML = message; // isi konten dengan pesan HTML (mendukung tag <strong>)
-            el.style.display = 'block'; // tampilkan elemen yang sebelumnya tersembunyi
+            const el = document.getElementById('topup-result');
+            // ambil elemen div untuk menampilkan pesan hasil
+            if (!el) return;
+            // guard: hentikan jika elemen tidak ditemukan
+            el.className = 'topup-result ' + type;
+            // set class CSS berdasarkan tipe: 'success' atau 'error'
+            el.innerHTML = message;
+            // isi konten dengan pesan HTML (mendukung tag <strong>)
+            el.style.display = 'block';
+            // tampilkan elemen yang sebelumnya tersembunyi
         }
 
         function renderLaporanTab() {
-            const statsEl = document.getElementById('laporan-stats'); // ambil container kartu statistik laporan
-            const fraudEl = document.getElementById('laporan-fraud-summary'); // ambil container ringkasan fraud detection
-            const total = allTransactions.reduce((s, t) => s + (t.amount || 0), 0); // hitung total volume semua transaksi dengan reduce
-            const blocked = fraudAlerts.filter(a => a.decision === 'BLOCK').length; // hitung jumlah transaksi yang diblokir
-            const reviewed = fraudAlerts.filter(a => a.decision === 'REVIEW').length; // hitung jumlah transaksi yang perlu review
-            if (statsEl) statsEl.innerHTML = ` // isi container statistik dengan 4 kartu ringkasan
+            const statsEl = document.getElementById('laporan-stats');
+            // ambil container kartu statistik laporan
+            const fraudEl = document.getElementById('laporan-fraud-summary');
+            // ambil container ringkasan fraud detection
+            const total = allTransactions.reduce((s, t) => s + (t.amount || 0), 0);
+            // hitung total volume semua transaksi dengan reduce
+            const blocked = fraudAlerts.filter(a => a.decision === 'BLOCK').length;
+            // hitung jumlah transaksi yang diblokir
+            const reviewed = fraudAlerts.filter(a => a.decision === 'REVIEW').length;
+            // hitung jumlah transaksi yang perlu review
+            if (statsEl) statsEl.innerHTML = `
+            // isi container statistik dengan 4 kartu ringkasan
                 <div class="stat-card"><h3>Total Pengguna</h3><div class="stat-value"><div class="stat-icon blue">👥</div><span class="stat-number">${allUsers.length}</span></div></div>
                 <div class="stat-card"><h3>Total Transaksi</h3><div class="stat-value"><div class="stat-icon green">💰</div><span class="stat-number">${allTransactions.length}</span></div></div>
                 <div class="stat-card"><h3>Total Volume</h3><div class="stat-value"><div class="stat-icon purple">📊</div></div><p class="total-volume-value">${formatCurrency(total)}</p></div>
                 <div class="stat-card"><h3>Fraud Alert</h3><div class="stat-value"><div class="stat-icon red">🚨</div><span class="stat-number">${fraudAlerts.length}</span></div></div>
             `;
-            if (fraudEl) fraudEl.innerHTML = ` // isi container ringkasan fraud dengan tabel key-value
+            if (fraudEl) fraudEl.innerHTML = `
+            // isi container ringkasan fraud dengan tabel key-value
                 <table><tbody>
                     <tr><td class="summary-key">Total Alert</td><td>${fraudAlerts.length}</td></tr>
                     <tr><td class="summary-key">Diblokir (BLOCK)</td><td><span class="risk-badge critical">${blocked}</span></td></tr>
@@ -1296,23 +1547,36 @@ AUTO REFRESH (REALTIME):
          */
         async function loadUsers() {
             try {
-                var res = await fetch(API_BASE + '/users', { // fetch GET /api/users dari backend
-                    headers: { 'x-app-key': 'NFC2025SecureApp' } // header app key untuk autentikasi
+                var res = await fetch(API_BASE + '/users', {
+                  // fetch GET /api/users dari backend
+                    headers: { 'x-app-key': 'NFC2025SecureApp' }
+                    // header app key untuk autentikasi
                 });
-                if (!res.ok) throw new Error('Failed to load users'); // lempar error jika response HTTP bukan 2xx
-                allUsers = await res.json(); // parse response JSON dan simpan ke variabel global allUsers
-                updateStats(); // perbarui 4 kartu statistik dengan data terbaru
-                renderActivityFeed(); // render ulang activity feed dengan data pengguna baru
+                if (!res.ok) throw new Error('Failed to load users');
+                // lempar error jika response HTTP bukan 2xx
+                allUsers = await res.json();
+                // parse response JSON dan simpan ke variabel global allUsers
+                updateStats();
+                // perbarui 4 kartu statistik dengan data terbaru
+                renderActivityFeed();
+                // render ulang activity feed dengan data pengguna baru
                 // Re-render pengguna tab jika sedang aktif
-                if (currentTab === 'pengguna') renderPenggunaTab(); // render ulang tabel pengguna jika tab pengguna sedang aktif
-                console.log('✅ Users loaded:', allUsers.length); // log jumlah pengguna yang berhasil dimuat
+                if (currentTab === 'pengguna') renderPenggunaTab();
+                // render ulang tabel pengguna jika tab pengguna sedang aktif
+                console.log('✅ Users loaded:', allUsers.length);
+                // log jumlah pengguna yang berhasil dimuat
             } catch (error) {
-                console.error('❌ Error loading users:', error); // log error ke console
-                allUsers = []; // reset ke array kosong jika gagal
+                console.error('❌ Error loading users:', error);
+                // log error ke console
+                allUsers = [];
+                // reset ke array kosong jika gagal
                 // Show error message di pengguna tab jika sedang aktif
-                if (currentTab === 'pengguna') { // cek apakah tab pengguna sedang aktif
-                    const tbody = document.getElementById('pengguna-table-body'); // ambil tbody tabel pengguna
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Gagal memuat data pengguna</td></tr>'; // tampilkan pesan error di tabel
+                if (currentTab === 'pengguna') {
+                  // cek apakah tab pengguna sedang aktif
+                    const tbody = document.getElementById('pengguna-table-body');
+                    // ambil tbody tabel pengguna
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-loading-muted">Gagal memuat data pengguna</td></tr>';
+                    // tampilkan pesan error di tabel
                 }
             }
         }
@@ -1323,25 +1587,39 @@ AUTO REFRESH (REALTIME):
          */
         async function loadNFCCards() {
             try {
-                var res = await fetch(API_BASE + '/nfc-cards', { // fetch GET /api/nfc-cards dari backend
-                    headers: { 'x-app-key': 'NFC2025SecureApp' } // header app key untuk autentikasi
+                var res = await fetch(API_BASE + '/nfc-cards', {
+                  // fetch GET /api/nfc-cards dari backend
+                    headers: { 'x-app-key': 'NFC2025SecureApp' }
+                    // header app key untuk autentikasi
                 });
-                if (!res.ok) throw new Error('Failed to load cards'); // lempar error jika HTTP bukan 2xx
-                var data = await res.json(); // parse response JSON
+                if (!res.ok) throw new Error('Failed to load cards');
+                // lempar error jika HTTP bukan 2xx
+                var data = await res.json();
+                // parse response JSON
                 // Handle response format: { cards: [...] } atau array langsung
-                nfcCards = Array.isArray(data) ? data : (data.cards || []); // normalisasi response: bisa berupa array atau objek {cards: [...]}
-                renderActivityFeed(); // render ulang activity feed dengan data kartu baru
+                nfcCards = Array.isArray(data) ? data : (data.cards || []);
+                // normalisasi response: bisa berupa array atau objek {cards: [...]}
+                renderActivityFeed();
+                // render ulang activity feed dengan data kartu baru
                 // Re-render perangkat tab jika sedang aktif
-                if (currentTab === 'perangkat') renderPerangkatTab(); // render ulang tabel kartu jika tab perangkat aktif
+                if (currentTab === 'perangkat') renderPerangkatTab();
+                // render ulang tabel kartu jika tab perangkat aktif
                 // Re-render pengguna tab juga karena menampilkan jumlah kartu per user
-                if (currentTab === 'pengguna') renderPenggunaTab(); // render ulang pengguna karena kolom "Kartu NFC" berubah
-                console.log('✅ NFC Cards loaded:', nfcCards.length); // log jumlah kartu yang berhasil dimuat
+                if (currentTab === 'pengguna') renderPenggunaTab();
+                // render ulang pengguna karena kolom "Kartu NFC" berubah
+                console.log('✅ NFC Cards loaded:', nfcCards.length);
+                // log jumlah kartu yang berhasil dimuat
             } catch (error) {
-                console.error('❌ Error loading NFC cards:', error); // log error
-                nfcCards = []; // reset ke array kosong jika gagal
-                if (currentTab === 'perangkat') { // cek apakah tab perangkat sedang aktif
-                    const tbody = document.getElementById('perangkat-table-body'); // ambil tbody tabel kartu
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-loading-muted">Gagal memuat data kartu NFC</td></tr>'; // tampilkan pesan error
+                console.error('❌ Error loading NFC cards:', error);
+                // log error
+                nfcCards = [];
+                // reset ke array kosong jika gagal
+                if (currentTab === 'perangkat') {
+                  // cek apakah tab perangkat sedang aktif
+                    const tbody = document.getElementById('perangkat-table-body');
+                    // ambil tbody tabel kartu
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="table-loading-muted">Gagal memuat data kartu NFC</td></tr>';
+                    // tampilkan pesan error
                 }
             }
         }
@@ -1352,24 +1630,38 @@ AUTO REFRESH (REALTIME):
          */
         async function loadTransactions() {
             try {
-                var res = await fetch(API_BASE + '/transactions', { // fetch GET /api/transactions dari backend
-                    headers: { 'x-app-key': 'NFC2025SecureApp' } // header app key untuk autentikasi
+                var res = await fetch(API_BASE + '/transactions', {
+                  // fetch GET /api/transactions dari backend
+                    headers: { 'x-app-key': 'NFC2025SecureApp' }
+                    // header app key untuk autentikasi
                 });
-                if (!res.ok) throw new Error('Failed to load transactions'); // lempar error jika HTTP bukan 2xx
-                allTransactions = await res.json(); // parse response JSON dan simpan ke variabel global
-                renderTransactions(); // render tabel 5 transaksi terbaru di tab Dashboard
-                renderActivityFeed(); // render ulang activity feed dengan data transaksi baru
+                if (!res.ok) throw new Error('Failed to load transactions');
+                // lempar error jika HTTP bukan 2xx
+                allTransactions = await res.json();
+                // parse response JSON dan simpan ke variabel global
+                renderTransactions();
+                // render tabel 5 transaksi terbaru di tab Dashboard
+                renderActivityFeed();
+                // render ulang activity feed dengan data transaksi baru
                 // Re-render transaksi tab jika sedang aktif
-                if (currentTab === 'transaksi') renderTransaksiTab(); // render tabel transaksi lengkap jika tab aktif
+                if (currentTab === 'transaksi') renderTransaksiTab();
+                // render tabel transaksi lengkap jika tab aktif
                 // Update laporan tab juga
-                if (currentTab === 'laporan') renderLaporanTab(); // render ulang laporan dengan data transaksi terbaru
-                console.log('✅ Transactions loaded:', allTransactions.length); // log jumlah transaksi
+                if (currentTab === 'laporan') renderLaporanTab();
+                // render ulang laporan dengan data transaksi terbaru
+                console.log('✅ Transactions loaded:', allTransactions.length);
+                // log jumlah transaksi
             } catch (error) {
-                console.error('❌ Error loading transactions:', error); // log error
-                allTransactions = []; // reset ke array kosong jika gagal
-                if (currentTab === 'transaksi') { // cek apakah tab transaksi aktif
-                    const tbody = document.getElementById('transaksi-table-body'); // ambil tbody tabel transaksi
-                    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Gagal memuat data transaksi</td></tr>'; // tampilkan pesan error
+                console.error('❌ Error loading transactions:', error);
+                // log error
+                allTransactions = [];
+                // reset ke array kosong jika gagal
+                if (currentTab === 'transaksi') {
+                  // cek apakah tab transaksi aktif
+                    const tbody = document.getElementById('transaksi-table-body');
+                    // ambil tbody tabel transaksi
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="table-loading-muted">Gagal memuat data transaksi</td></tr>';
+                    // tampilkan pesan error
                 }
             }
         }
@@ -1381,28 +1673,44 @@ AUTO REFRESH (REALTIME):
          */
         async function loadFraudAlerts() {
             try {
-                var res = await fetch(API_BASE + '/fraud/alerts', { // fetch GET /api/fraud/alerts dari backend
-                    headers: { 'x-app-key': 'NFC2025SecureApp' } // header app key untuk autentikasi
+                var res = await fetch(API_BASE + '/fraud/alerts', {
+                  // fetch GET /api/fraud/alerts dari backend
+                    headers: { 'x-app-key': 'NFC2025SecureApp' }
+                    // header app key untuk autentikasi
                 });
-                if (!res.ok) { // cek apakah HTTP response bukan 2xx
-                    console.warn('⚠️ Fraud alerts API not available or empty'); // log peringatan jika endpoint tidak tersedia
-                    fraudAlerts = []; // reset ke array kosong
-                    filteredAlerts = []; // reset filtered alerts juga
+                if (!res.ok) {
+                  // cek apakah HTTP response bukan 2xx
+                    console.warn('⚠️ Fraud alerts API not available or empty');
+                    // log peringatan jika endpoint tidak tersedia
+                    fraudAlerts = [];
+                    // reset ke array kosong
+                    filteredAlerts = [];
+                    // reset filtered alerts juga
                 } else {
-                    fraudAlerts = await res.json(); // parse response JSON dan simpan ke variabel global
-                    filteredAlerts = fraudAlerts.slice(); // buat salinan array untuk keperluan filter (slice tanpa argumen = copy)
-                    console.log('✅ Fraud alerts loaded:', fraudAlerts.length); // log jumlah fraud alert
+                    fraudAlerts = await res.json();
+                    // parse response JSON dan simpan ke variabel global
+                    filteredAlerts = fraudAlerts.slice();
+                    // buat salinan array untuk keperluan filter (slice tanpa argumen = copy)
+                    console.log('✅ Fraud alerts loaded:', fraudAlerts.length);
+                    // log jumlah fraud alert
                 }
             } catch (error) {
-                console.error('❌ Error loading fraud alerts:', error); // log error
-                fraudAlerts = []; // reset ke array kosong jika gagal
-                filteredAlerts = []; // reset filtered alerts
+                console.error('❌ Error loading fraud alerts:', error);
+                // log error
+                fraudAlerts = [];
+                // reset ke array kosong jika gagal
+                filteredAlerts = [];
+                // reset filtered alerts
             }
-            updateFraudStats(); // perbarui statistik dan chart donut fraud
-            renderFraudTable(); // render ulang tabel fraud alert
-            renderActivityFeed(); // render ulang activity feed dengan data fraud terbaru
+            updateFraudStats();
+            // perbarui statistik dan chart donut fraud
+            renderFraudTable();
+            // render ulang tabel fraud alert
+            renderActivityFeed();
+            // render ulang activity feed dengan data fraud terbaru
             // Re-render laporan tab jika sedang aktif
-            if (currentTab === 'laporan') renderLaporanTab(); // render ulang laporan dengan data fraud terbaru
+            if (currentTab === 'laporan') renderLaporanTab();
+            // render ulang laporan dengan data fraud terbaru
         }
 
         // =================================================================
@@ -1417,77 +1725,123 @@ AUTO REFRESH (REALTIME):
          * Menampilkan 15 event terbaru secara kronologis
          */
         function renderActivityFeed() {
-            const container = document.getElementById('activity-feed-list'); // ambil elemen container daftar aktivitas
-            if (!container) return; // guard: hentikan jika container tidak ditemukan
+            const container = document.getElementById('activity-feed-list');
+            // ambil elemen container daftar aktivitas
+            if (!container) return;
+            // guard: hentikan jika container tidak ditemukan
 
-            const events = []; // array untuk menampung semua event dari berbagai sumber data
+            const events = [];
+            // array untuk menampung semua event dari berbagai sumber data
 
             // 1. Transaksi
-            allTransactions.forEach(t => { // iterasi semua transaksi untuk dibuat menjadi event activity
-                const isAnomaly = t.riskLevel === 'ANOMALY' || t.decision === 'BLOCK'; // tandai transaksi yang terdeteksi sebagai anomali atau diblokir
-                const isSuspicious = t.riskLevel === 'SUSPICIOUS'; // tandai transaksi yang mencurigakan (Z > 2)
-                const zLabel = (t.zScore !== undefined && t.zScore !== null) // buat label Z-Score jika tersedia
+            allTransactions.forEach(t => {
+              // iterasi semua transaksi untuk dibuat menjadi event activity
+                const isAnomaly = t.riskLevel === 'ANOMALY' || t.decision === 'BLOCK';
+                // tandai transaksi yang terdeteksi sebagai anomali atau diblokir
+                const isSuspicious = t.riskLevel === 'SUSPICIOUS';
+                // tandai transaksi yang mencurigakan (Z > 2)
+                const zLabel = (t.zScore !== undefined && t.zScore !== null)
+                // buat label Z-Score jika tersedia
                     ? ` (Z=${parseFloat(t.zScore).toFixed(4)} — ${t.decision || 'ALLOW'})`
-                    : ''; // string kosong jika Z-Score tidak ada
-                const senderName = t.sender?.name || t.senderName || ('User #' + (t.senderId || t.id)); // nama pengirim dengan fallback bertingkat
-                const receiverName = t.receiver?.name || t.receiverName || ('User #' + (t.receiverId || '?')); // nama penerima dengan fallback bertingkat
-                events.push({ // tambahkan event transaksi ke array
-                    date: new Date(t.createdAt), // konversi string tanggal ke objek Date untuk pengurutan
-                    icon: isAnomaly ? '🚨' : isSuspicious ? '⚠️' : '💳', // ikon berbeda sesuai tingkat risiko
-                    iconClass: isAnomaly ? 'red' : isSuspicious ? 'yellow' : 'green', // class CSS warna ikon
-                    title: isAnomaly ? 'Transaksi diblokir (Fraud)' : isSuspicious ? 'Transaksi mencurigakan' : 'Transaksi berhasil', // judul event
-                    desc: `${formatCurrency(t.amount)} dari ${senderName} ke ${receiverName}${zLabel}`, // deskripsi detail transaksi
+                    : '';
+                    // string kosong jika Z-Score tidak ada
+                const senderName = t.sender?.name || t.senderName || ('User #' + (t.senderId || t.id));
+                // nama pengirim dengan fallback bertingkat
+                const receiverName = t.receiver?.name || t.receiverName || ('User #' + (t.receiverId || '?'));
+                // nama penerima dengan fallback bertingkat
+                events.push({
+                  // tambahkan event transaksi ke array
+                    date: new Date(t.createdAt),
+                    // konversi string tanggal ke objek Date untuk pengurutan
+                    icon: isAnomaly ? '🚨' : isSuspicious ? '⚠️' : '💳',
+                    // ikon berbeda sesuai tingkat risiko
+                    iconClass: isAnomaly ? 'red' : isSuspicious ? 'yellow' : 'green',
+                    // class CSS warna ikon
+                    title: isAnomaly ? 'Transaksi diblokir (Fraud)' : isSuspicious ? 'Transaksi mencurigakan' : 'Transaksi berhasil',
+                    // judul event
+                    desc: `${formatCurrency(t.amount)} dari ${senderName} ke ${receiverName}${zLabel}`,
+                    // deskripsi detail transaksi
                 });
             });
 
             // 2. Registrasi user baru
-            allUsers.forEach(u => { // iterasi semua pengguna untuk event registrasi
-                events.push({ // tambahkan event registrasi user baru
-                    date: new Date(u.createdAt), // tanggal user mendaftar
-                    icon: '👤', // ikon user
-                    iconClass: 'blue', // warna biru untuk event pengguna baru
-                    title: 'Pengguna baru terdaftar', // judul event
-                    desc: `${u.name} (@${u.username}) bergabung ke sistem`, // deskripsi nama dan username
+            allUsers.forEach(u => {
+              // iterasi semua pengguna untuk event registrasi
+                events.push({
+                  // tambahkan event registrasi user baru
+                    date: new Date(u.createdAt),
+                    // tanggal user mendaftar
+                    icon: '👤',
+                    // ikon user
+                    iconClass: 'blue',
+                    // warna biru untuk event pengguna baru
+                    title: 'Pengguna baru terdaftar',
+                    // judul event
+                    desc: `${u.name} (@${u.username}) bergabung ke sistem`,
+                    // deskripsi nama dan username
                 });
             });
 
             // 3. Fraud alerts (yang belum ada dari transaksi — riskLevel != NORMAL)
-            fraudAlerts.filter(a => a.riskLevel !== 'NORMAL').forEach(a => { // hanya alert SUSPICIOUS dan ANOMALY
-                const z = (a.zScore !== undefined && a.zScore !== null) ? parseFloat(a.zScore).toFixed(4) : '?'; // format Z-Score atau '?' jika tidak ada
-                events.push({ // tambahkan event fraud alert
-                    date: new Date(a.createdAt || a.timestamp), // gunakan createdAt atau timestamp sebagai fallback
-                    icon: a.riskLevel === 'ANOMALY' ? '🚨' : '⚠️', // merah untuk ANOMALY, kuning untuk SUSPICIOUS
-                    iconClass: a.riskLevel === 'ANOMALY' ? 'red' : 'yellow', // class CSS warna ikon
-                    title: a.riskLevel === 'ANOMALY' ? 'Fraud terdeteksi (ANOMALY)' : 'Aktivitas mencurigakan', // judul event
-                    desc: `Z-Score=${z} — ${a.decision || a.riskLevel}`, // deskripsi Z-Score dan keputusan
+            fraudAlerts.filter(a => a.riskLevel !== 'NORMAL').forEach(a => {
+              // hanya alert SUSPICIOUS dan ANOMALY
+                const z = (a.zScore !== undefined && a.zScore !== null) ? parseFloat(a.zScore).toFixed(4) : '?';
+                // format Z-Score atau '?' jika tidak ada
+                events.push({
+                  // tambahkan event fraud alert
+                    date: new Date(a.createdAt || a.timestamp),
+                    // gunakan createdAt atau timestamp sebagai fallback
+                    icon: a.riskLevel === 'ANOMALY' ? '🚨' : '⚠️',
+                    // merah untuk ANOMALY, kuning untuk SUSPICIOUS
+                    iconClass: a.riskLevel === 'ANOMALY' ? 'red' : 'yellow',
+                    // class CSS warna ikon
+                    title: a.riskLevel === 'ANOMALY' ? 'Fraud terdeteksi (ANOMALY)' : 'Aktivitas mencurigakan',
+                    // judul event
+                    desc: `Z-Score=${z} — ${a.decision || a.riskLevel}`,
+                    // deskripsi Z-Score dan keputusan
                 });
             });
 
             // 4. Kartu NFC baru terdaftar
-            nfcCards.forEach(c => { // iterasi semua kartu NFC untuk event pendaftaran
-                const ownerName = c.user?.name || c.user?.username || ('User #' + c.userId); // nama pemilik kartu dengan fallback bertingkat
-                events.push({ // tambahkan event kartu NFC
-                    date: new Date(c.createdAt || c.registeredAt), // tanggal kartu terdaftar
-                    icon: c.cardStatus === 'BLOCKED' ? '🚫' : '🎫', // ikon berbeda untuk kartu aktif vs diblokir
-                    iconClass: c.cardStatus === 'BLOCKED' ? 'red' : 'purple', // merah untuk diblokir, ungu untuk aktif
-                    title: c.cardStatus === 'BLOCKED' ? 'Kartu NFC diblokir' : 'Kartu NFC terdaftar', // judul event
-                    desc: `Kartu ${c.cardId} milik ${ownerName} — Status: ${c.cardStatus}`, // deskripsi detail kartu
+            nfcCards.forEach(c => {
+              // iterasi semua kartu NFC untuk event pendaftaran
+                const ownerName = c.user?.name || c.user?.username || ('User #' + c.userId);
+                // nama pemilik kartu dengan fallback bertingkat
+                events.push({
+                  // tambahkan event kartu NFC
+                    date: new Date(c.createdAt || c.registeredAt),
+                    // tanggal kartu terdaftar
+                    icon: c.cardStatus === 'BLOCKED' ? '🚫' : '🎫',
+                    // ikon berbeda untuk kartu aktif vs diblokir
+                    iconClass: c.cardStatus === 'BLOCKED' ? 'red' : 'purple',
+                    // merah untuk diblokir, ungu untuk aktif
+                    title: c.cardStatus === 'BLOCKED' ? 'Kartu NFC diblokir' : 'Kartu NFC terdaftar',
+                    // judul event
+                    desc: `Kartu ${c.cardId} milik ${ownerName} — Status: ${c.cardStatus}`,
+                    // deskripsi detail kartu
                 });
             });
 
             // Sort terbaru dulu
-            events.sort((a, b) => b.date - a.date); // sort descending berdasarkan tanggal; event terbaru di atas
+            events.sort((a, b) => b.date - a.date);
+            // sort descending berdasarkan tanggal; event terbaru di atas
 
-            const top = events.slice(0, 15); // ambil 15 event terbaru; membatasi panjang activity feed
-            const countEl = document.getElementById('activity-feed-count'); // ambil elemen counter jumlah aktivitas
-            if (countEl) countEl.textContent = `${top.length} aktivitas terbaru`; // perbarui teks counter
+            const top = events.slice(0, 15);
+            // ambil 15 event terbaru; membatasi panjang activity feed
+            const countEl = document.getElementById('activity-feed-count');
+            // ambil elemen counter jumlah aktivitas
+            if (countEl) countEl.textContent = `${top.length} aktivitas terbaru`;
+            // perbarui teks counter
 
-            if (top.length === 0) { // tampilkan empty state jika tidak ada aktivitas
+            if (top.length === 0) {
+              // tampilkan empty state jika tidak ada aktivitas
                 container.innerHTML = '<div style="text-align:center;padding:32px;color:#94a3b8;"><div style="font-size:32px;margin-bottom:8px;">📭</div><div>Belum ada aktivitas</div></div>';
-                return; // hentikan eksekusi
+                return;
+                // hentikan eksekusi
             }
 
-            container.innerHTML = top.map(ev => ` // map setiap event menjadi HTML baris activity feed
+            container.innerHTML = top.map(ev => `
+            // map setiap event menjadi HTML baris activity feed
                 <div class="activity-item">
                     <div class="activity-icon ${ev.iconClass}">${ev.icon}</div>
                     <div class="activity-content">
@@ -1496,25 +1850,36 @@ AUTO REFRESH (REALTIME):
                         <div class="activity-time">${formatRelativeTime(ev.date)}</div>
                     </div>
                 </div>
-            `).join(''); // gabungkan semua baris HTML menjadi satu string
+            `).join('');
+            // gabungkan semua baris HTML menjadi satu string
         }
 
         function updateStats() {
-            const totalUsers = allUsers.length; // jumlah total pengguna terdaftar
-            const activeCards = nfcCards.filter(c => c.cardStatus === 'ACTIVE').length; // hitung kartu NFC yang berstatus ACTIVE
+            const totalUsers = allUsers.length;
+            // jumlah total pengguna terdaftar
+            const activeCards = nfcCards.filter(c => c.cardStatus === 'ACTIVE').length;
+            // hitung kartu NFC yang berstatus ACTIVE
             
             // Filter transaksi hari ini
-            const today = new Date(); // buat objek Date untuk hari ini
-            const todayTransactions = allTransactions.filter(t => { // filter transaksi yang terjadi hari ini
-                const tDate = new Date(t.createdAt); // konversi string tanggal transaksi ke objek Date
-                return tDate.toDateString() === today.toDateString(); // bandingkan representasi tanggal (tanpa waktu)
+            const today = new Date();
+            // buat objek Date untuk hari ini
+            const todayTransactions = allTransactions.filter(t => {
+              // filter transaksi yang terjadi hari ini
+                const tDate = new Date(t.createdAt);
+                // konversi string tanggal transaksi ke objek Date
+                return tDate.toDateString() === today.toDateString();
+                // bandingkan representasi tanggal (tanpa waktu)
             }).length;
 
             // Update DOM
-            document.getElementById('stat-users').textContent = totalUsers.toLocaleString('id-ID'); // format angka dengan titik ribuan Indonesia
-            document.getElementById('stat-transactions').textContent = todayTransactions.toLocaleString('id-ID'); // tampilkan transaksi hari ini
-            document.getElementById('stat-cards').textContent = activeCards.toLocaleString('id-ID'); // tampilkan jumlah kartu aktif
-            document.getElementById('stat-fraud').textContent = fraudAlerts.length.toLocaleString('id-ID'); // tampilkan jumlah fraud alert
+            document.getElementById('stat-users').textContent = totalUsers.toLocaleString('id-ID');
+            // format angka dengan titik ribuan Indonesia
+            document.getElementById('stat-transactions').textContent = todayTransactions.toLocaleString('id-ID');
+            // tampilkan transaksi hari ini
+            document.getElementById('stat-cards').textContent = activeCards.toLocaleString('id-ID');
+            // tampilkan jumlah kartu aktif
+            document.getElementById('stat-fraud').textContent = fraudAlerts.length.toLocaleString('id-ID');
+            // tampilkan jumlah fraud alert
         }
 
         /**
@@ -1522,20 +1887,30 @@ AUTO REFRESH (REALTIME):
          * Handle empty state dengan proper message
          */
         function renderTransactions() {
-            const tbody = document.getElementById('transaction-tbody'); // ambil tbody tabel transaksi di tab Dashboard
-            if (!tbody) return; // guard: hentikan jika elemen tidak ditemukan
+            const tbody = document.getElementById('transaction-tbody');
+            // ambil tbody tabel transaksi di tab Dashboard
+            if (!tbody) return;
+            // guard: hentikan jika elemen tidak ditemukan
 
-            const recentTransactions = allTransactions.slice(0, 5); // ambil 5 transaksi pertama (terbaru di indeks 0)
+            const recentTransactions = allTransactions.slice(0, 5);
+            // ambil 5 transaksi pertama (terbaru di indeks 0)
             
-            if (recentTransactions.length === 0) { // cek apakah belum ada transaksi
-                tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><div class="table-empty-icon">💳</div><h3 class="table-empty-title">Belum Ada Transaksi</h3><p>Transaksi akan muncul di sini setelah user melakukan pembayaran</p></td></tr>'; // tampilkan empty state
-                return; // hentikan eksekusi
+            if (recentTransactions.length === 0) {
+              // cek apakah belum ada transaksi
+                tbody.innerHTML = '<tr><td colspan="5" class="table-empty"><div class="table-empty-icon">💳</div><h3 class="table-empty-title">Belum Ada Transaksi</h3><p>Transaksi akan muncul di sini setelah user melakukan pembayaran</p></td></tr>';
+                // tampilkan empty state
+                return;
+                // hentikan eksekusi
             }
 
-            tbody.innerHTML = recentTransactions.map(t => { // map setiap transaksi menjadi baris tabel HTML
-                const statusClass = t.status === 'completed' ? 'success' : t.status === 'pending' ? 'pending' : 'failed'; // tentukan class badge status
-                const typeMap = { 'payment': 'Pembayaran', 'PAYMENT': 'Pembayaran', 'topup': 'Top Up', 'TOPUP': 'Top Up', 'transfer': 'Transfer', 'TRANSFER': 'Transfer' }; // peta kode tipe ke label Indonesia
-                const type = typeMap[t.type] || t.type; // ambil label Indonesia atau gunakan nilai asli jika tidak ada mapping
+            tbody.innerHTML = recentTransactions.map(t => {
+              // map setiap transaksi menjadi baris tabel HTML
+                const statusClass = t.status === 'completed' ? 'success' : t.status === 'pending' ? 'pending' : 'failed';
+                // tentukan class badge status
+                const typeMap = { 'payment': 'Pembayaran', 'PAYMENT': 'Pembayaran', 'topup': 'Top Up', 'TOPUP': 'Top Up', 'transfer': 'Transfer', 'TRANSFER': 'Transfer' };
+                // peta kode tipe ke label Indonesia
+                const type = typeMap[t.type] || t.type;
+                // ambil label Indonesia atau gunakan nilai asli jika tidak ada mapping
                 
                 return `
                     <tr>
@@ -1546,7 +1921,8 @@ AUTO REFRESH (REALTIME):
                         <td><span class="status-badge ${statusClass}">${t.status}</span></td>
                     </tr>
                 `;
-            }).join(''); // gabungkan semua baris HTML
+            }).join('');
+            // gabungkan semua baris HTML
         }
 
         /**
@@ -1554,44 +1930,69 @@ AUTO REFRESH (REALTIME):
          * NO DEFAULT VALUES - 100% real data dari backend
          */
         function updateFraudStats() {
-            const normal = fraudAlerts.filter(a => a.riskLevel === 'NORMAL').length; // hitung alert dengan level NORMAL
-            const suspicious = fraudAlerts.filter(a => a.riskLevel === 'SUSPICIOUS').length; // hitung alert dengan level SUSPICIOUS
-            const anomaly = fraudAlerts.filter(a => a.riskLevel === 'ANOMALY').length; // hitung alert dengan level ANOMALY
-            const total = fraudAlerts.length; // Real data only, no default
+            const normal = fraudAlerts.filter(a => a.riskLevel === 'NORMAL').length;
+            // hitung alert dengan level NORMAL
+            const suspicious = fraudAlerts.filter(a => a.riskLevel === 'SUSPICIOUS').length;
+            // hitung alert dengan level SUSPICIOUS
+            const anomaly = fraudAlerts.filter(a => a.riskLevel === 'ANOMALY').length;
+            // hitung alert dengan level ANOMALY
+            const total = fraudAlerts.length;
+            // Real data only, no default
 
             // Update chart center
-            document.getElementById('chart-total').textContent = total; // tampilkan total di tengah donut chart
+            document.getElementById('chart-total').textContent = total;
+            // tampilkan total di tengah donut chart
 
             // Update legend (handle division by zero)
-            const normalPercent = total > 0 ? Math.round((normal / total) * 100) : 0; // hitung persentase NORMAL; guard pembagian nol
-            const suspiciousPercent = total > 0 ? Math.round((suspicious / total) * 100) : 0; // hitung persentase SUSPICIOUS
-            const anomalyPercent = total > 0 ? Math.round((anomaly / total) * 100) : 0; // hitung persentase ANOMALY
+            const normalPercent = total > 0 ? Math.round((normal / total) * 100) : 0;
+            // hitung persentase NORMAL; guard pembagian nol
+            const suspiciousPercent = total > 0 ? Math.round((suspicious / total) * 100) : 0;
+            // hitung persentase SUSPICIOUS
+            const anomalyPercent = total > 0 ? Math.round((anomaly / total) * 100) : 0;
+            // hitung persentase ANOMALY
 
-            document.getElementById('legend-normal').textContent = `${normal} (${normalPercent}%)`; // perbarui teks legenda NORMAL
-            document.getElementById('legend-suspicious').textContent = `${suspicious} (${suspiciousPercent}%)`; // perbarui teks legenda SUSPICIOUS
-            document.getElementById('legend-anomaly').textContent = `${anomaly} (${anomalyPercent}%)`; // perbarui teks legenda ANOMALY
+            document.getElementById('legend-normal').textContent = `${normal} (${normalPercent}%)`;
+            // perbarui teks legenda NORMAL
+            document.getElementById('legend-suspicious').textContent = `${suspicious} (${suspiciousPercent}%)`;
+            // perbarui teks legenda SUSPICIOUS
+            document.getElementById('legend-anomaly').textContent = `${anomaly} (${anomalyPercent}%)`;
+            // perbarui teks legenda ANOMALY
 
             // Update donut chart SVG segments
-            if (total > 0) { // hanya perbarui chart jika ada data
-                let offset = 0; // offset awal untuk posisi segment pertama di SVG
+            if (total > 0) {
+              // hanya perbarui chart jika ada data
+                let offset = 0;
+                // offset awal untuk posisi segment pertama di SVG
                 
-                const chartNormal = document.getElementById('chart-normal'); // ambil elemen circle SVG untuk segment NORMAL
-                chartNormal.setAttribute('stroke-dasharray', `${normalPercent} ${100 - normalPercent}`); // set panjang dash (isi) dan gap (kosong) untuk segment
-                chartNormal.setAttribute('stroke-dashoffset', -offset); // set offset negatif untuk posisi awal segment
-                offset += normalPercent; // geser offset untuk segment berikutnya
+                const chartNormal = document.getElementById('chart-normal');
+                // ambil elemen circle SVG untuk segment NORMAL
+                chartNormal.setAttribute('stroke-dasharray', `${normalPercent} ${100 - normalPercent}`);
+                // set panjang dash (isi) dan gap (kosong) untuk segment
+                chartNormal.setAttribute('stroke-dashoffset', -offset);
+                // set offset negatif untuk posisi awal segment
+                offset += normalPercent;
+                // geser offset untuk segment berikutnya
                 
-                const chartSuspicious = document.getElementById('chart-suspicious'); // ambil circle SVG segment SUSPICIOUS
-                chartSuspicious.setAttribute('stroke-dasharray', `${suspiciousPercent} ${100 - suspiciousPercent}`); // set ukuran segment SUSPICIOUS
-                chartSuspicious.setAttribute('stroke-dashoffset', -offset); // posisikan setelah segment NORMAL
-                offset += suspiciousPercent; // geser offset lagi
+                const chartSuspicious = document.getElementById('chart-suspicious');
+                // ambil circle SVG segment SUSPICIOUS
+                chartSuspicious.setAttribute('stroke-dasharray', `${suspiciousPercent} ${100 - suspiciousPercent}`);
+                // set ukuran segment SUSPICIOUS
+                chartSuspicious.setAttribute('stroke-dashoffset', -offset);
+                // posisikan setelah segment NORMAL
+                offset += suspiciousPercent;
+                // geser offset lagi
                 
-                const chartAnomaly = document.getElementById('chart-anomaly'); // ambil circle SVG segment ANOMALY
-                chartAnomaly.setAttribute('stroke-dasharray', `${anomalyPercent} ${100 - anomalyPercent}`); // set ukuran segment ANOMALY
-                chartAnomaly.setAttribute('stroke-dashoffset', -offset); // posisikan setelah segment SUSPICIOUS
+                const chartAnomaly = document.getElementById('chart-anomaly');
+                // ambil circle SVG segment ANOMALY
+                chartAnomaly.setAttribute('stroke-dasharray', `${anomalyPercent} ${100 - anomalyPercent}`);
+                // set ukuran segment ANOMALY
+                chartAnomaly.setAttribute('stroke-dashoffset', -offset);
+                // posisikan setelah segment SUSPICIOUS
             }
 
             // Update fraud alert tab stats
-            updateFraudTabStats(); // perbarui 4 kartu statistik di tab Fraud Alert
+            updateFraudTabStats();
+            // perbarui 4 kartu statistik di tab Fraud Alert
         }
 
         // =================================================================
@@ -1602,15 +2003,23 @@ AUTO REFRESH (REALTIME):
          * Update fraud alert tab stat cards
          */
         function updateFraudTabStats() {
-            const totalAlerts = fraudAlerts.length; // total semua fraud alert
-            const blocked = fraudAlerts.filter(a => a.decision === 'BLOCK').length; // hitung yang diblokir
-            const highRisk = fraudAlerts.filter(a => a.riskLevel === 'ANOMALY' || a.riskLevel === 'SUSPICIOUS').length; // hitung Z > 2 (waspada)
-            const reviewed = fraudAlerts.filter(a => a.decision === 'REVIEW').length; // hitung yang perlu review
+            const totalAlerts = fraudAlerts.length;
+            // total semua fraud alert
+            const blocked = fraudAlerts.filter(a => a.decision === 'BLOCK').length;
+            // hitung yang diblokir
+            const highRisk = fraudAlerts.filter(a => a.riskLevel === 'ANOMALY' || a.riskLevel === 'SUSPICIOUS').length;
+            // hitung Z > 2 (waspada)
+            const reviewed = fraudAlerts.filter(a => a.decision === 'REVIEW').length;
+            // hitung yang perlu review
 
-            document.getElementById('fraud-stat-total').textContent = totalAlerts.toLocaleString('id-ID'); // perbarui kartu total alert
-            document.getElementById('fraud-stat-blocked').textContent = blocked.toLocaleString('id-ID'); // perbarui kartu diblokir
-            document.getElementById('fraud-stat-high').textContent = highRisk.toLocaleString('id-ID'); // perbarui kartu waspada
-            document.getElementById('fraud-stat-reviewed').textContent = reviewed.toLocaleString('id-ID'); // perbarui kartu diperiksa
+            document.getElementById('fraud-stat-total').textContent = totalAlerts.toLocaleString('id-ID');
+            // perbarui kartu total alert
+            document.getElementById('fraud-stat-blocked').textContent = blocked.toLocaleString('id-ID');
+            // perbarui kartu diblokir
+            document.getElementById('fraud-stat-high').textContent = highRisk.toLocaleString('id-ID');
+            // perbarui kartu waspada
+            document.getElementById('fraud-stat-reviewed').textContent = reviewed.toLocaleString('id-ID');
+            // perbarui kartu diperiksa
         }
 
         /**
@@ -1618,38 +2027,60 @@ AUTO REFRESH (REALTIME):
          * Handle empty state dengan proper message
          */
         function renderFraudTable() {
-            const tbody = document.getElementById('fraud-alert-tbody'); // ambil elemen tbody tabel fraud alert
-            if (!tbody) return; // guard: hentikan jika tidak ditemukan
+            const tbody = document.getElementById('fraud-alert-tbody');
+            // ambil elemen tbody tabel fraud alert
+            if (!tbody) return;
+            // guard: hentikan jika tidak ditemukan
 
-            const start = (currentPage - 1) * itemsPerPage; // hitung indeks awal data untuk halaman saat ini
-            const end = start + itemsPerPage; // hitung indeks akhir (eksklusif)
-            const pageData = filteredAlerts.slice(start, end); // ambil subset data sesuai rentang halaman
+            const start = (currentPage - 1) * itemsPerPage;
+            // hitung indeks awal data untuk halaman saat ini
+            const end = start + itemsPerPage;
+            // hitung indeks akhir (eksklusif)
+            const pageData = filteredAlerts.slice(start, end);
+            // ambil subset data sesuai rentang halaman
 
-            if (filteredAlerts.length === 0) { // cek apakah tidak ada data setelah filter
-                tbody.innerHTML = '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">📊</div><h3 class="table-empty-title">Belum Ada Data Fraud Alert</h3><p>Data fraud alert akan muncul di sini setelah transaksi dianalisa oleh sistem</p></td></tr>'; // tampilkan empty state
-                renderPagination(); // render pagination meski kosong untuk reset tampilan
-                return; // hentikan eksekusi
+            if (filteredAlerts.length === 0) {
+              // cek apakah tidak ada data setelah filter
+                tbody.innerHTML = '<tr><td colspan="8" class="table-empty"><div class="table-empty-icon">📊</div><h3 class="table-empty-title">Belum Ada Data Fraud Alert</h3><p>Data fraud alert akan muncul di sini setelah transaksi dianalisa oleh sistem</p></td></tr>';
+                // tampilkan empty state
+                renderPagination();
+                // render pagination meski kosong untuk reset tampilan
+                return;
+                // hentikan eksekusi
             }
 
-            tbody.innerHTML = pageData.map(alert => { // map setiap alert di halaman ini menjadi baris tabel HTML
-                const riskClass = getRiskBadgeClass(alert.riskLevel); // class CSS badge risiko
-                const decisionClass = getDecisionBadgeClass(alert.decision); // class CSS badge keputusan
-                const decisionIcon = getDecisionIcon(alert.decision); // emoji ikon keputusan
-                const decisionText = getDecisionText(alert.decision); // teks Indonesia keputusan
+            tbody.innerHTML = pageData.map(alert => {
+              // map setiap alert di halaman ini menjadi baris tabel HTML
+                const riskClass = getRiskBadgeClass(alert.riskLevel);
+                // class CSS badge risiko
+                const decisionClass = getDecisionBadgeClass(alert.decision);
+                // class CSS badge keputusan
+                const decisionIcon = getDecisionIcon(alert.decision);
+                // emoji ikon keputusan
+                const decisionText = getDecisionText(alert.decision);
+                // teks Indonesia keputusan
 
                 // Nama user: dari field yang sudah dinormalisasi backend, fallback ke allUsers
-                const userFromList = allUsers.find(u => u.id === alert.userId); // cari data pengguna dari array allUsers berdasarkan userId
-                const userName = alert.userName || userFromList?.name || (alert.userId ? 'User #' + alert.userId : 'Tidak diketahui'); // prioritas: field userName, lalu dari allUsers, lalu fallback ID
-                const userEmail = alert.userEmail || userFromList?.email || userFromList?.username || '-'; // email atau username pengguna dengan fallback
+                const userFromList = allUsers.find(u => u.id === alert.userId);
+                // cari data pengguna dari array allUsers berdasarkan userId
+                const userName = alert.userName || userFromList?.name || (alert.userId ? 'User #' + alert.userId : 'Tidak diketahui');
+                // prioritas: field userName, lalu dari allUsers, lalu fallback ID
+                const userEmail = alert.userEmail || userFromList?.email || userFromList?.username || '-';
+                // email atau username pengguna dengan fallback
 
                 // Nominal: dari field amount (dinormalisasi backend dari riskFactors)
-                const amountDisplay = (alert.amount != null && !isNaN(alert.amount)) // cek apakah field amount ada dan valid
-                    ? formatCurrency(alert.amount) // format sebagai currency Indonesia
-                    : (alert.riskFactors?.amount != null ? formatCurrency(alert.riskFactors.amount) : '-'); // fallback ke riskFactors.amount atau '-'
+                const amountDisplay = (alert.amount != null && !isNaN(alert.amount))
+                // cek apakah field amount ada dan valid
+                    ? formatCurrency(alert.amount)
+                    // format sebagai currency Indonesia
+                    : (alert.riskFactors?.amount != null ? formatCurrency(alert.riskFactors.amount) : '-');
+                    // fallback ke riskFactors.amount atau '-'
 
                 // Ambil alasan pertama (reasons sudah di-parse jadi array oleh backend)
-                const reasons = Array.isArray(alert.reasons) ? alert.reasons : []; // pastikan reasons adalah array, bukan string
-                const reason = reasons.length > 0 ? reasons[0] : 'Tidak ada alasan'; // ambil alasan pertama; fallback jika kosong
+                const reasons = Array.isArray(alert.reasons) ? alert.reasons : [];
+                // pastikan reasons adalah array, bukan string
+                const reason = reasons.length > 0 ? reasons[0] : 'Tidak ada alasan';
+                // ambil alasan pertama; fallback jika kosong
 
                 return `
                     <tr>
@@ -1671,9 +2102,11 @@ AUTO REFRESH (REALTIME):
                         <td><span class="btn-details" onclick="showAlertDetails(${alert.id})">→</span></td>
                     </tr>
                 `;
-            }).join(''); // gabungkan semua baris HTML menjadi satu string
+            }).join('');
+            // gabungkan semua baris HTML menjadi satu string
 
-            renderPagination(); // render kontrol pagination setelah tabel diisi
+            renderPagination();
+            // render kontrol pagination setelah tabel diisi
         }
 
         /**
@@ -1681,44 +2114,66 @@ AUTO REFRESH (REALTIME):
          * Handle empty state (0 items)
          */
         function renderPagination() {
-            const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage)); // hitung total halaman; Math.max(1,...) memastikan minimal 1 halaman
-            const paginationInfo = document.getElementById('pagination-info'); // ambil elemen teks info paginasi
-            const paginationControls = document.getElementById('pagination-controls'); // ambil elemen container tombol halaman
+            const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage));
+            // hitung total halaman; Math.max(1,...) memastikan minimal 1 halaman
+            const paginationInfo = document.getElementById('pagination-info');
+            // ambil elemen teks info paginasi
+            const paginationControls = document.getElementById('pagination-controls');
+            // ambil elemen container tombol halaman
 
-            if (paginationInfo) { // perbarui teks info hanya jika elemen ditemukan
-                if (filteredAlerts.length === 0) { // kondisi khusus: tidak ada data
-                    paginationInfo.textContent = 'Menampilkan 0 - 0 dari 0 data'; // tampilkan info kosong
+            if (paginationInfo) {
+              // perbarui teks info hanya jika elemen ditemukan
+                if (filteredAlerts.length === 0) {
+                  // kondisi khusus: tidak ada data
+                    paginationInfo.textContent = 'Menampilkan 0 - 0 dari 0 data';
+                    // tampilkan info kosong
                 } else {
-                    const start = (currentPage - 1) * itemsPerPage + 1; // nomor baris pertama di halaman ini (1-based)
-                    const end = Math.min(currentPage * itemsPerPage, filteredAlerts.length); // nomor baris terakhir; tidak melebihi total data
-                    paginationInfo.textContent = `Menampilkan ${start} - ${end} dari ${filteredAlerts.length} data`; // tampilkan range dan total
+                    const start = (currentPage - 1) * itemsPerPage + 1;
+                    // nomor baris pertama di halaman ini (1-based)
+                    const end = Math.min(currentPage * itemsPerPage, filteredAlerts.length);
+                    // nomor baris terakhir; tidak melebihi total data
+                    paginationInfo.textContent = `Menampilkan ${start} - ${end} dari ${filteredAlerts.length} data`;
+                    // tampilkan range dan total
                 }
             }
 
-            if (paginationControls) { // render tombol navigasi halaman hanya jika elemen ditemukan
-                let html = `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>←</button>`; // tombol halaman sebelumnya; disabled saat di halaman pertama
+            if (paginationControls) {
+              // render tombol navigasi halaman hanya jika elemen ditemukan
+                let html = `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>←</button>`;
+                // tombol halaman sebelumnya; disabled saat di halaman pertama
                 
-                html += `<button class="page-btn ${currentPage === 1 ? 'active' : ''}" onclick="changePage(1)">1</button>`; // tombol halaman 1 selalu ditampilkan
+                html += `<button class="page-btn ${currentPage === 1 ? 'active' : ''}" onclick="changePage(1)">1</button>`;
+                // tombol halaman 1 selalu ditampilkan
                 
-                if (currentPage > 3) { // tampilkan ellipsis jika halaman aktif jauh dari awal
-                    html += `<button class="page-btn">...</button>`; // tombol ellipsis tidak bisa diklik
+                if (currentPage > 3) {
+                  // tampilkan ellipsis jika halaman aktif jauh dari awal
+                    html += `<button class="page-btn">...</button>`;
+                    // tombol ellipsis tidak bisa diklik
                 }
                 
-                for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) { // render tombol di sekitar halaman aktif
-                    html += `<button class="page-btn ${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`; // tombol setiap halaman dengan class active jika aktif
+                for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+                  // render tombol di sekitar halaman aktif
+                    html += `<button class="page-btn ${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                    // tombol setiap halaman dengan class active jika aktif
                 }
                 
-                if (currentPage < totalPages - 2) { // tampilkan ellipsis jika halaman aktif jauh dari akhir
-                    html += `<button class="page-btn">...</button>`; // ellipsis akhir
+                if (currentPage < totalPages - 2) {
+                  // tampilkan ellipsis jika halaman aktif jauh dari akhir
+                    html += `<button class="page-btn">...</button>`;
+                    // ellipsis akhir
                 }
                 
-                if (totalPages > 1) { // tampilkan tombol halaman terakhir hanya jika ada lebih dari 1 halaman
-                    html += `<button class="page-btn ${currentPage === totalPages ? 'active' : ''}" onclick="changePage(${totalPages})">${totalPages}</button>`; // tombol halaman terakhir
+                if (totalPages > 1) {
+                  // tampilkan tombol halaman terakhir hanya jika ada lebih dari 1 halaman
+                    html += `<button class="page-btn ${currentPage === totalPages ? 'active' : ''}" onclick="changePage(${totalPages})">${totalPages}</button>`;
+                    // tombol halaman terakhir
                 }
                 
-                html += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>→</button>`; // tombol halaman berikutnya; disabled saat di halaman terakhir
+                html += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>→</button>`;
+                // tombol halaman berikutnya; disabled saat di halaman terakhir
                 
-                paginationControls.innerHTML = html; // masukkan semua tombol ke DOM sekaligus
+                paginationControls.innerHTML = html;
+                // masukkan semua tombol ke DOM sekaligus
             }
         }
 
@@ -1730,63 +2185,97 @@ AUTO REFRESH (REALTIME):
          * Change page (pagination)
          */
         function changePage(page) {
-            const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage); // hitung total halaman
-            if (page < 1 || page > totalPages) return; // guard: abaikan halaman di luar batas
-            currentPage = page; // perbarui variabel global halaman aktif
-            renderFraudTable(); // render ulang tabel dengan data halaman yang baru
+            const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage);
+            // hitung total halaman
+            if (page < 1 || page > totalPages) return;
+            // guard: abaikan halaman di luar batas
+            currentPage = page;
+            // perbarui variabel global halaman aktif
+            renderFraudTable();
+            // render ulang tabel dengan data halaman yang baru
         }
 
         /**
          * Apply filters (search, level, decision)
          */
         function applyFilters() {
-            const searchInput = document.getElementById('search-input'); // ambil elemen input pencarian
-            const levelSelect = document.getElementById('level-select'); // ambil dropdown filter level risiko
-            const decisionSelect = document.getElementById('decision-select'); // ambil dropdown filter keputusan
+            const searchInput = document.getElementById('search-input');
+            // ambil elemen input pencarian
+            const levelSelect = document.getElementById('level-select');
+            // ambil dropdown filter level risiko
+            const decisionSelect = document.getElementById('decision-select');
+            // ambil dropdown filter keputusan
 
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : ''; // ambil kata kunci pencarian; default string kosong
-            const levelFilter = levelSelect ? levelSelect.value : 'Semua Level'; // ambil filter level; default 'Semua Level'
-            const decisionFilter = decisionSelect ? decisionSelect.value : 'Semua Keputusan'; // ambil filter keputusan; default 'Semua Keputusan'
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            // ambil kata kunci pencarian; default string kosong
+            const levelFilter = levelSelect ? levelSelect.value : 'Semua Level';
+            // ambil filter level; default 'Semua Level'
+            const decisionFilter = decisionSelect ? decisionSelect.value : 'Semua Keputusan';
+            // ambil filter keputusan; default 'Semua Keputusan'
 
-            filteredAlerts = fraudAlerts.filter(alert => { // filter fraudAlerts berdasarkan semua kriteria
-                const matchSearch = searchTerm === '' || // tidak ada filter pencarian ATAU
-                    (alert.userName && alert.userName.toLowerCase().includes(searchTerm)) || // nama user mengandung kata kunci
-                    (alert.userEmail && alert.userEmail.toLowerCase().includes(searchTerm)) || // email user mengandung kata kunci
-                    (alert.amount && alert.amount.toString().includes(searchTerm)) || // nominal mengandung kata kunci
-                    (alert.reasons && alert.reasons.some(r => r.toLowerCase().includes(searchTerm))); // salah satu alasan mengandung kata kunci
+            filteredAlerts = fraudAlerts.filter(alert => {
+              // filter fraudAlerts berdasarkan semua kriteria
+                const matchSearch = searchTerm === '' ||
+                // tidak ada filter pencarian ATAU
+                    (alert.userName && alert.userName.toLowerCase().includes(searchTerm)) ||
+                    // nama user mengandung kata kunci
+                    (alert.userEmail && alert.userEmail.toLowerCase().includes(searchTerm)) ||
+                    // email user mengandung kata kunci
+                    (alert.amount && alert.amount.toString().includes(searchTerm)) ||
+                    // nominal mengandung kata kunci
+                    (alert.reasons && alert.reasons.some(r => r.toLowerCase().includes(searchTerm)));
+                    // salah satu alasan mengandung kata kunci
 
-                const matchLevel = levelFilter === 'Semua Level' || // tidak ada filter level ATAU
-                    (levelFilter === 'NORMAL' && alert.riskLevel === 'NORMAL') || // filter NORMAL
-                    (levelFilter === 'SUSPICIOUS' && alert.riskLevel === 'SUSPICIOUS') || // filter SUSPICIOUS
-                    (levelFilter === 'ANOMALY' && alert.riskLevel === 'ANOMALY'); // filter ANOMALY
+                const matchLevel = levelFilter === 'Semua Level' ||
+                // tidak ada filter level ATAU
+                    (levelFilter === 'NORMAL' && alert.riskLevel === 'NORMAL') ||
+                    // filter NORMAL
+                    (levelFilter === 'SUSPICIOUS' && alert.riskLevel === 'SUSPICIOUS') ||
+                    // filter SUSPICIOUS
+                    (levelFilter === 'ANOMALY' && alert.riskLevel === 'ANOMALY');
+                    // filter ANOMALY
 
-                const matchDecision = decisionFilter === 'Semua Keputusan' || // tidak ada filter keputusan ATAU
-                    (decisionFilter === 'Diizinkan' && alert.decision === 'ALLOW') || // filter ALLOW
-                    (decisionFilter === 'Perlu Review' && alert.decision === 'REVIEW') || // filter REVIEW
-                    (decisionFilter === 'Diblokir' && alert.decision === 'BLOCK'); // filter BLOCK
+                const matchDecision = decisionFilter === 'Semua Keputusan' ||
+                // tidak ada filter keputusan ATAU
+                    (decisionFilter === 'Diizinkan' && alert.decision === 'ALLOW') ||
+                    // filter ALLOW
+                    (decisionFilter === 'Perlu Review' && alert.decision === 'REVIEW') ||
+                    // filter REVIEW
+                    (decisionFilter === 'Diblokir' && alert.decision === 'BLOCK');
+                    // filter BLOCK
 
-                return matchSearch && matchLevel && matchDecision; // alert lolos filter jika memenuhi semua kondisi
+                return matchSearch && matchLevel && matchDecision;
+                // alert lolos filter jika memenuhi semua kondisi
             });
 
-            currentPage = 1; // reset ke halaman 1 setelah filter diterapkan
-            renderFraudTable(); // render ulang tabel dengan data yang sudah difilter
+            currentPage = 1;
+            // reset ke halaman 1 setelah filter diterapkan
+            renderFraudTable();
+            // render ulang tabel dengan data yang sudah difilter
         }
 
         /**
          * Show alert details popup — delegated to modal below
          */
-        function showAlertDetails_old_removed() { /* removed — modal version defined below */ } // fungsi lama yang sudah dihapus; digantikan oleh showAlertDetails() yang menggunakan modal HTML
+        function showAlertDetails_old_removed() { /* removed — modal version defined below */ }
+        // fungsi lama yang sudah dihapus; digantikan oleh showAlertDetails() yang menggunakan modal HTML
 
         /**
          * Show alert details — modal popup (bukan window.alert)
          */
         function showAlertDetails(alertId) {
-            const alert = fraudAlerts.find(a => a.id === alertId); // cari objek fraud alert berdasarkan id
-            if (!alert) return; // guard: hentikan jika alert tidak ditemukan
-            const body = document.getElementById('fraud-detail-body'); // ambil div konten modal
-            const riskClass = getRiskBadgeClass(alert.riskLevel); // class CSS badge risiko
-            const decClass = getDecisionBadgeClass(alert.decision); // class CSS badge keputusan
-            body.innerHTML = [ // buat array pasangan [label, nilai] untuk ditampilkan
+            const alert = fraudAlerts.find(a => a.id === alertId);
+            // cari objek fraud alert berdasarkan id
+            if (!alert) return;
+            // guard: hentikan jika alert tidak ditemukan
+            const body = document.getElementById('fraud-detail-body');
+            // ambil div konten modal
+            const riskClass = getRiskBadgeClass(alert.riskLevel);
+            // class CSS badge risiko
+            const decClass = getDecisionBadgeClass(alert.decision);
+            // class CSS badge keputusan
+            body.innerHTML = [
+            // buat array pasangan [label, nilai] untuk ditampilkan
                 ['ID', '#' + alert.id],
                 ['User', alert.userName || '-'],
                 ['Jumlah', formatCurrency(alert.amount)],
@@ -1795,18 +2284,23 @@ AUTO REFRESH (REALTIME):
                 ['Keputusan', `<span class="risk-badge ${decClass}">${getDecisionText(alert.decision)}</span>`],
                 ['Alasan', Array.isArray(alert.reasons) ? alert.reasons.join(', ') : (alert.reasons || '-')],
                 ['Waktu', formatDate(alert.createdAt)],
-            ].map(([k, v]) => ` // map setiap pasangan ke baris HTML flex layout
+            ].map(([k, v]) => `
+            // map setiap pasangan ke baris HTML flex layout
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;">
                     <span style="color:#64748b;font-size:13px;">${k}</span>
                     <span style="font-weight:600;font-size:13px;text-align:right;max-width:60%;">${v}</span>
                 </div>
-            `).join(''); // gabungkan semua baris HTML
-            const modal = document.getElementById('fraud-detail-modal'); // ambil elemen modal
-            modal.style.display = 'flex'; // tampilkan modal dengan flexbox (untuk centering konten)
+            `).join('');
+            // gabungkan semua baris HTML
+            const modal = document.getElementById('fraud-detail-modal');
+            // ambil elemen modal
+            modal.style.display = 'flex';
+            // tampilkan modal dengan flexbox (untuk centering konten)
         }
 
         function closeAlertModal() {
-            document.getElementById('fraud-detail-modal').style.display = 'none'; // sembunyikan modal dengan mengembalikan display ke 'none'
+            document.getElementById('fraud-detail-modal').style.display = 'none';
+            // sembunyikan modal dengan mengembalikan display ke 'none'
         }
 
         /**
@@ -1814,99 +2308,158 @@ AUTO REFRESH (REALTIME):
          * @param {'transaksi'|'pengguna'|'perangkat'|'fraud'} type
          */
         function exportCSV(type) {
-            let rows = [], filename = 'export.csv'; // inisialisasi array baris dan nama file default
-            if (type === 'transaksi') { // branch untuk export data transaksi
-                filename = 'transaksi_' + new Date().toISOString().slice(0,10) + '.csv'; // nama file dengan tanggal hari ini
-                rows = [['ID','Pengirim','Penerima','Jumlah','Tipe','Status','Risiko','Waktu']]; // baris header kolom
-                allTransactions.forEach(t => rows.push([ // tambahkan satu baris per transaksi
+            let rows = [], filename = 'export.csv';
+            // inisialisasi array baris dan nama file default
+            if (type === 'transaksi') {
+              // branch untuk export data transaksi
+                filename = 'transaksi_' + new Date().toISOString().slice(0,10) + '.csv';
+                // nama file dengan tanggal hari ini
+                rows = [['ID','Pengirim','Penerima','Jumlah','Tipe','Status','Risiko','Waktu']];
+                // baris header kolom
+                allTransactions.forEach(t => rows.push([
+                // tambahkan satu baris per transaksi
                     t.id, t.sender?.name || '', t.receiver?.name || '', t.amount,
                     t.type || '', t.status || '', t.fraudRiskLevel || 'NORMAL',
                     new Date(t.createdAt).toLocaleString('id-ID')
                 ]));
-            } else if (type === 'pengguna') { // branch untuk export data pengguna
-                filename = 'pengguna_' + new Date().toISOString().slice(0,10) + '.csv'; // nama file dengan tanggal
-                rows = [['ID','Nama','Username','Saldo','Status','Jumlah Kartu','Bergabung']]; // header kolom pengguna
-                allUsers.forEach(u => { // tambahkan satu baris per pengguna
-                    const cardCount = nfcCards.filter(c => c.userId === u.id).length; // hitung kartu NFC milik user ini
+            } else if (type === 'pengguna') {
+              // branch untuk export data pengguna
+                filename = 'pengguna_' + new Date().toISOString().slice(0,10) + '.csv';
+                // nama file dengan tanggal
+                rows = [['ID','Nama','Username','Saldo','Status','Jumlah Kartu','Bergabung']];
+                // header kolom pengguna
+                allUsers.forEach(u => {
+                  // tambahkan satu baris per pengguna
+                    const cardCount = nfcCards.filter(c => c.userId === u.id).length;
+                    // hitung kartu NFC milik user ini
                     rows.push([u.id, u.name, u.username, u.balance || 0,
                         u.isActive !== false ? 'Aktif' : 'Nonaktif', cardCount,
                         new Date(u.createdAt).toLocaleString('id-ID')]);
                 });
-            } else if (type === 'perangkat') { // branch untuk export data kartu NFC
-                filename = 'kartu_nfc_' + new Date().toISOString().slice(0,10) + '.csv'; // nama file dengan tanggal
-                rows = [['Card ID','Pemilik','Saldo','Status','Terakhir Digunakan','Terdaftar']]; // header kolom kartu NFC
-                nfcCards.forEach(c => { // tambahkan satu baris per kartu
-                    const owner = allUsers.find(u => u.id === c.userId); // cari pemilik kartu
-                    rows.push([c.cardId, owner ? owner.name : '', c.balance || 0, c.cardStatus, // tambahkan data kartu ke baris
-                        c.lastUsed ? new Date(c.lastUsed).toLocaleString('id-ID') : '-', // format tanggal terakhir digunakan; '-' jika belum pernah
-                        new Date(c.createdAt).toLocaleString('id-ID')]); // format tanggal kartu terdaftar
+            } else if (type === 'perangkat') {
+              // branch untuk export data kartu NFC
+                filename = 'kartu_nfc_' + new Date().toISOString().slice(0,10) + '.csv';
+                // nama file dengan tanggal
+                rows = [['Card ID','Pemilik','Saldo','Status','Terakhir Digunakan','Terdaftar']];
+                // header kolom kartu NFC
+                nfcCards.forEach(c => {
+                  // tambahkan satu baris per kartu
+                    const owner = allUsers.find(u => u.id === c.userId);
+                    // cari pemilik kartu
+                    rows.push([c.cardId, owner ? owner.name : '', c.balance || 0, c.cardStatus,
+                    // tambahkan data kartu ke baris
+                        c.lastUsed ? new Date(c.lastUsed).toLocaleString('id-ID') : '-',
+                        // format tanggal terakhir digunakan; '-' jika belum pernah
+                        new Date(c.createdAt).toLocaleString('id-ID')]);
+                        // format tanggal kartu terdaftar
                 });
-            } else if (type === 'fraud') { // branch untuk export data fraud alerts
-                filename = 'fraud_alerts_' + new Date().toISOString().slice(0,10) + '.csv'; // nama file dengan tanggal
-                rows = [['ID','User','Jumlah','Z-Score','Risk Level','Keputusan','Alasan','Waktu']]; // header kolom fraud alert
-                fraudAlerts.forEach(a => rows.push([ // tambahkan satu baris per fraud alert
+            } else if (type === 'fraud') {
+              // branch untuk export data fraud alerts
+                filename = 'fraud_alerts_' + new Date().toISOString().slice(0,10) + '.csv';
+                // nama file dengan tanggal
+                rows = [['ID','User','Jumlah','Z-Score','Risk Level','Keputusan','Alasan','Waktu']];
+                // header kolom fraud alert
+                fraudAlerts.forEach(a => rows.push([
+                // tambahkan satu baris per fraud alert
                     a.id, a.userName || '', a.amount || 0,
-                    a.riskScore === -1 ? 'edge-case' : (a.riskScore || 0), // nilai edge-case jika riskScore -1 (sigma=0)
+                    a.riskScore === -1 ? 'edge-case' : (a.riskScore || 0),
+                    // nilai edge-case jika riskScore -1 (sigma=0)
                     a.riskLevel, a.decision,
-                    Array.isArray(a.reasons) ? a.reasons.join('; ') : (a.reasons || ''), // gabungkan array alasan dengan semicolon
-                    new Date(a.createdAt).toLocaleString('id-ID') // format tanggal Indonesia
+                    Array.isArray(a.reasons) ? a.reasons.join('; ') : (a.reasons || ''),
+                    // gabungkan array alasan dengan semicolon
+                    new Date(a.createdAt).toLocaleString('id-ID')
+                    // format tanggal Indonesia
                 ]));
             }
-            if (rows.length <= 1) { alert('Tidak ada data untuk diekspor.'); return; } // hentikan jika tidak ada baris data (hanya header)
-            const csv = rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n'); // konversi array ke string CSV dengan escaping tanda kutip
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); // buat objek Blob berisi data CSV
-            const url = URL.createObjectURL(blob); // buat URL sementara dari Blob untuk download
-            const a = document.createElement('a'); a.href = url; a.download = filename; // buat elemen <a> sementara dengan href URL dan nama file
-            a.click(); URL.revokeObjectURL(url); // klik programatik untuk memulai download lalu bebaskan memori URL
+            if (rows.length <= 1) { alert('Tidak ada data untuk diekspor.'); return; }
+            // hentikan jika tidak ada baris data (hanya header)
+            const csv = rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
+            // konversi array ke string CSV dengan escaping tanda kutip
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            // buat objek Blob berisi data CSV
+            const url = URL.createObjectURL(blob);
+            // buat URL sementara dari Blob untuk download
+            const a = document.createElement('a'); a.href = url; a.download = filename;
+            // buat elemen <a> sementara dengan href URL dan nama file
+            a.click(); URL.revokeObjectURL(url);
+            // klik programatik untuk memulai download lalu bebaskan memori URL
         }
 
         /**
          * Hapus kartu NFC dari admin (dengan password admin)
          */
         async function deleteCardAdmin(cardId, ownerName) {
-            if (!window.confirm(`Hapus kartu "${cardId}" milik ${ownerName}?\nData transaksi kartu ini juga akan dihapus!`)) return; // konfirmasi sebelum hapus permanen
-            const pass = getAdminPassword(); // minta password admin
-            if (!pass) return; // hentikan jika tidak ada password
+            if (!window.confirm(`Hapus kartu "${cardId}" milik ${ownerName}?\nData transaksi kartu ini juga akan dihapus!`)) return;
+            // konfirmasi sebelum hapus permanen
+            const pass = getAdminPassword();
+            // minta password admin
+            if (!pass) return;
+            // hentikan jika tidak ada password
             try {
-                const res = await fetch(API_BASE + '/nfc-cards/' + cardId, { // kirim DELETE request ke endpoint kartu
-                    method: 'DELETE', // method DELETE untuk menghapus resource
-                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' }, // headers JSON dan app key
-                    body: JSON.stringify({ adminPassword: pass }) // body dengan password admin untuk otorisasi
+                const res = await fetch(API_BASE + '/nfc-cards/' + cardId, {
+                  // kirim DELETE request ke endpoint kartu
+                    method: 'DELETE',
+                    // method DELETE untuk menghapus resource
+                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' },
+                    // headers JSON dan app key
+                    body: JSON.stringify({ adminPassword: pass })
+                    // body dengan password admin untuk otorisasi
                 });
-                const data = await res.json(); // parse response JSON
-                if (res.ok && data.success) { // cek keberhasilan
-                    alert(`✅ Kartu "${cardId}" berhasil dihapus.`); // notifikasi sukses
-                    await loadNFCCards(); // muat ulang data kartu
-                    renderPerangkatTab(); // render ulang tabel perangkat
-                    if (currentTab === 'topup') renderTopupTab(); // render ulang tab topup jika aktif
+                const data = await res.json();
+                // parse response JSON
+                if (res.ok && data.success) {
+                  // cek keberhasilan
+                    alert(`✅ Kartu "${cardId}" berhasil dihapus.`);
+                    // notifikasi sukses
+                    await loadNFCCards();
+                    // muat ulang data kartu
+                    renderPerangkatTab();
+                    // render ulang tabel perangkat
+                    if (currentTab === 'topup') renderTopupTab();
+                    // render ulang tab topup jika aktif
                 } else {
-                    if (res.status === 401 || res.status === 403) _cachedAdminPass = ''; // hapus cache password jika tidak otorisasi
-                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan')); // tampilkan pesan error
+                    if (res.status === 401 || res.status === 403) _cachedAdminPass = '';
+                    // hapus cache password jika tidak otorisasi
+                    alert('❌ Gagal: ' + (data.error || 'Terjadi kesalahan'));
+                    // tampilkan pesan error
                 }
-            } catch (err) { alert('❌ Error: ' + err.message); } // error koneksi
+            } catch (err) { alert('❌ Error: ' + err.message); }
+            // error koneksi
         }
 
         /**
          * Test koneksi ke backend
          */
         async function testBackendConnection() {
-            const statusEl = document.getElementById('setting-conn-status'); // ambil elemen status koneksi
-            const resultEl = document.getElementById('pengaturan-result'); // ambil elemen hasil test
-            if (statusEl) statusEl.innerHTML = '<span style="color:#f59e0b;">⏳ Memeriksa...</span>'; // tampilkan status sedang memeriksa
+            const statusEl = document.getElementById('setting-conn-status');
+            // ambil elemen status koneksi
+            const resultEl = document.getElementById('pengaturan-result');
+            // ambil elemen hasil test
+            if (statusEl) statusEl.innerHTML = '<span style="color:#f59e0b;">⏳ Memeriksa...</span>';
+            // tampilkan status sedang memeriksa
             try {
-                const res = await fetch(API_BASE.replace('/api', '/health')); // fetch endpoint /health (tanpa /api)
-                const ok = res.ok; // true jika HTTP 2xx
+                const res = await fetch(API_BASE.replace('/api', '/health'));
+                // fetch endpoint /health (tanpa /api)
+                const ok = res.ok;
+                // true jika HTTP 2xx
                 if (statusEl) statusEl.innerHTML = ok
-                    ? '<span style="color:#10b981;">✅ Terhubung</span>' // hijau jika berhasil
-                    : '<span style="color:#ef4444;">❌ Gagal</span>'; // merah jika gagal
+                    ? '<span style="color:#10b981;">✅ Terhubung</span>'
+                    // hijau jika berhasil
+                    : '<span style="color:#ef4444;">❌ Gagal</span>';
+                    // merah jika gagal
                 if (resultEl) {
-                    resultEl.style.display = 'block'; // tampilkan div hasil
-                    resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;margin-top:12px;background:' + (ok ? '#f0fdf4;color:#166534;' : '#fef2f2;color:#991b1b;'); // warna hijau jika ok, merah jika gagal
-                    resultEl.textContent = ok ? '✅ Backend berjalan normal di ' + API_BASE : '❌ Tidak dapat terhubung ke backend. Pastikan server berjalan.'; // pesan hasil
+                    resultEl.style.display = 'block';
+                    // tampilkan div hasil
+                    resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;margin-top:12px;background:' + (ok ? '#f0fdf4;color:#166534;' : '#fef2f2;color:#991b1b;');
+                    // warna hijau jika ok, merah jika gagal
+                    resultEl.textContent = ok ? '✅ Backend berjalan normal di ' + API_BASE : '❌ Tidak dapat terhubung ke backend. Pastikan server berjalan.';
+                    // pesan hasil
                 }
             } catch (err) {
-                if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;">❌ Gagal</span>'; // tampilkan gagal jika exception
-                if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = '❌ Error: ' + err.message; } // tampilkan pesan error
+                if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;">❌ Gagal</span>';
+                // tampilkan gagal jika exception
+                if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = '❌ Error: ' + err.message; }
+                // tampilkan pesan error
             }
         }
 
@@ -1914,27 +2467,43 @@ AUTO REFRESH (REALTIME):
          * Clear semua fraud alerts dari backend
          */
         async function clearAllFraudAlerts() {
-            if (!window.confirm('Hapus semua fraud alerts?\nAksi ini tidak dapat dibatalkan.')) return; // konfirmasi sebelum hapus permanen
-            const pass = getAdminPassword(); // minta password admin
-            if (!pass) return; // hentikan jika tidak ada password
+            if (!window.confirm('Hapus semua fraud alerts?\nAksi ini tidak dapat dibatalkan.')) return;
+            // konfirmasi sebelum hapus permanen
+            const pass = getAdminPassword();
+            // minta password admin
+            if (!pass) return;
+            // hentikan jika tidak ada password
             try {
-                const res = await fetch(API_BASE + '/admin/clear-fraud-alerts', { // kirim POST ke endpoint clear-fraud-alerts
-                    method: 'POST', // method POST
-                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' }, // headers
-                    body: JSON.stringify({ password: pass }) // body dengan password admin
+                const res = await fetch(API_BASE + '/admin/clear-fraud-alerts', {
+                  // kirim POST ke endpoint clear-fraud-alerts
+                    method: 'POST',
+                    // method POST
+                    headers: { 'Content-Type': 'application/json', 'x-app-key': 'NFC2025SecureApp' },
+                    // headers
+                    body: JSON.stringify({ password: pass })
+                    // body dengan password admin
                 });
-                const data = await res.json(); // parse response
-                const resultEl = document.getElementById('pengaturan-result'); // elemen untuk menampilkan hasil
-                if (res.ok && (data.success || data.message)) { // cek keberhasilan
-                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;'; resultEl.textContent = '✅ Semua fraud alerts berhasil dihapus.'; } // tampilkan sukses
-                    await loadFraudAlerts(); // muat ulang fraud alerts (harusnya kosong)
+                const data = await res.json();
+                // parse response
+                const resultEl = document.getElementById('pengaturan-result');
+                // elemen untuk menampilkan hasil
+                if (res.ok && (data.success || data.message)) {
+                  // cek keberhasilan
+                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;'; resultEl.textContent = '✅ Semua fraud alerts berhasil dihapus.'; }
+                    // tampilkan sukses
+                    await loadFraudAlerts();
+                    // muat ulang fraud alerts (harusnya kosong)
                 } else {
-                    if (res.status === 401) _cachedAdminPass = ''; // hapus cache jika password salah
-                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Gagal: ' + (data.error || 'Terjadi kesalahan'); } // tampilkan error
+                    if (res.status === 401) _cachedAdminPass = '';
+                    // hapus cache jika password salah
+                    if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Gagal: ' + (data.error || 'Terjadi kesalahan'); }
+                    // tampilkan error
                 }
             } catch (err) {
-                const resultEl = document.getElementById('pengaturan-result'); // ambil elemen hasil
-                if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Error: ' + err.message; } // tampilkan error koneksi
+                const resultEl = document.getElementById('pengaturan-result');
+                // ambil elemen hasil
+                if (resultEl) { resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#fef2f2;color:#991b1b;'; resultEl.textContent = '❌ Error: ' + err.message; }
+                // tampilkan error koneksi
             }
         }
 
@@ -1942,12 +2511,18 @@ AUTO REFRESH (REALTIME):
          * Reset cached admin password
          */
         function resetAdminPassword() {
-            _cachedAdminPass = ''; // hapus cache password saat ini agar prompt muncul kembali
-            const newPass = getAdminPassword(true); // tampilkan prompt paksa untuk input password baru; true = forcePrompt
-            const resultEl = document.getElementById('pengaturan-result'); // ambil elemen hasil
-            if (newPass && resultEl) { // hanya tampilkan sukses jika user mengisi password baru
-                resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;'; // style sukses hijau
-                resultEl.textContent = '✅ Password admin berhasil diperbarui untuk sesi ini.'; // pesan konfirmasi
+            _cachedAdminPass = '';
+            // hapus cache password saat ini agar prompt muncul kembali
+            const newPass = getAdminPassword(true);
+            // tampilkan prompt paksa untuk input password baru; true = forcePrompt
+            const resultEl = document.getElementById('pengaturan-result');
+            // ambil elemen hasil
+            if (newPass && resultEl) {
+              // hanya tampilkan sukses jika user mengisi password baru
+                resultEl.style.cssText = 'display:block;padding:12px 16px;border-radius:8px;background:#f0fdf4;color:#166534;';
+                // style sukses hijau
+                resultEl.textContent = '✅ Password admin berhasil diperbarui untuk sesi ini.';
+                // pesan konfirmasi
             }
         }
 
@@ -1955,7 +2530,8 @@ AUTO REFRESH (REALTIME):
          * Export report (Fraud Alert tab) — real CSV download
          */
         function exportReport() {
-            exportCSV('fraud'); // panggil exportCSV dengan tipe 'fraud' untuk download fraud alerts sebagai CSV
+            exportCSV('fraud');
+            // panggil exportCSV dengan tipe 'fraud' untuk download fraud alerts sebagai CSV
         }
 
         // =================================================================
@@ -1967,13 +2543,20 @@ AUTO REFRESH (REALTIME):
          * Realtime updates dari backend setiap 30 detik
          */
         function startAutoRefresh() {
-            if (refreshInterval) clearInterval(refreshInterval); // hapus interval lama jika ada agar tidak terjadi duplikasi
-            refreshInterval = setInterval(() => { // buat interval baru yang berjalan setiap 30 detik
-                const now = new Date().toLocaleTimeString('id-ID'); // dapatkan waktu saat ini dalam format Indonesia
-                console.log(`🔄 [${now}] Auto-refresh triggered...`); // log waktu setiap kali auto-refresh dijalankan
-                refreshAllData(); // muat ulang semua data dari backend
-            }, 30000); // 30 seconds = 30000 ms
-            console.log('✅ Auto-refresh enabled (interval: 30s)'); // konfirmasi auto-refresh aktif
+            if (refreshInterval) clearInterval(refreshInterval);
+            // hapus interval lama jika ada agar tidak terjadi duplikasi
+            refreshInterval = setInterval(() => {
+              // buat interval baru yang berjalan setiap 30 detik
+                const now = new Date().toLocaleTimeString('id-ID');
+                // dapatkan waktu saat ini dalam format Indonesia
+                console.log(`🔄 [${now}] Auto-refresh triggered...`);
+                // log waktu setiap kali auto-refresh dijalankan
+                refreshAllData();
+                // muat ulang semua data dari backend
+            }, 30000);
+            // 30 seconds = 30000 ms
+            console.log('✅ Auto-refresh enabled (interval: 30s)');
+            // konfirmasi auto-refresh aktif
         }
 
         /**
@@ -1981,24 +2564,35 @@ AUTO REFRESH (REALTIME):
          * Fetch users, cards, transactions, fraud alerts secara bersamaan
          */
         async function refreshAllData() {
-            const startTime = Date.now(); // catat waktu mulai untuk mengukur performa
-            console.log('🔄 Refreshing all data from backend...'); // log mulai refresh
+            const startTime = Date.now();
+            // catat waktu mulai untuk mengukur performa
+            console.log('🔄 Refreshing all data from backend...');
+            // log mulai refresh
             
             try {
-                await Promise.all([ // muat semua data secara paralel untuk efisiensi
-                    loadUsers(), // muat data pengguna
-                    loadNFCCards(), // muat data kartu NFC
-                    loadTransactions(), // muat data transaksi
-                    loadFraudAlerts() // muat data fraud alerts
+                await Promise.all([
+                // muat semua data secara paralel untuk efisiensi
+                    loadUsers(),
+                    // muat data pengguna
+                    loadNFCCards(),
+                    // muat data kartu NFC
+                    loadTransactions(),
+                    // muat data transaksi
+                    loadFraudAlerts()
+                    // muat data fraud alerts
                 ]);
                 
-                const elapsed = Date.now() - startTime; // hitung durasi refresh dalam ms
-                console.log(`✅ Refresh complete (${elapsed}ms)`); // log durasi
+                const elapsed = Date.now() - startTime;
+                // hitung durasi refresh dalam ms
+                console.log(`✅ Refresh complete (${elapsed}ms)`);
+                // log durasi
                 
                 // Re-render current tab setelah semua data selesai load
-                renderCurrentTab(); // render ulang tab yang sedang aktif
+                renderCurrentTab();
+                // render ulang tab yang sedang aktif
             } catch (error) {
-                console.error('❌ Refresh failed:', error); // log error jika refresh gagal
+                console.error('❌ Refresh failed:', error);
+                // log error jika refresh gagal
             }
         }
         
@@ -2007,31 +2601,50 @@ AUTO REFRESH (REALTIME):
          * Dipanggil setelah data selesai load
          */
         function renderCurrentTab() {
-            switch(currentTab) { // pilih fungsi render berdasarkan tab yang sedang aktif
-                case 'dashboard': // jika tab dashboard aktif
-                    updateStats(); // perbarui 4 kartu statistik
-                    renderTransactions(); // render tabel 5 transaksi terbaru
-                    updateFraudStats(); // perbarui chart donut fraud
-                    renderActivityFeed(); // render activity feed
+            switch(currentTab) {
+              // pilih fungsi render berdasarkan tab yang sedang aktif
+                case 'dashboard':
+                    // jika tab dashboard aktif
+                    updateStats();
+                    // perbarui 4 kartu statistik
+                    renderTransactions();
+                    // render tabel 5 transaksi terbaru
+                    updateFraudStats();
+                    // perbarui chart donut fraud
+                    renderActivityFeed();
+                    // render activity feed
                     break;
-                case 'fraud-alert': // jika tab fraud alert aktif
-                    updateFraudStats(); // perbarui statistik dan chart fraud
-                    renderFraudTable(); // render tabel fraud alert
+                case 'fraud-alert':
+                    // jika tab fraud alert aktif
+                    updateFraudStats();
+                    // perbarui statistik dan chart fraud
+                    renderFraudTable();
+                    // render tabel fraud alert
                     break;
-                case 'transaksi': // jika tab transaksi aktif
-                    renderTransaksiTab(); // render tabel semua transaksi
+                case 'transaksi':
+                    // jika tab transaksi aktif
+                    renderTransaksiTab();
+                    // render tabel semua transaksi
                     break;
-                case 'pengguna': // jika tab pengguna aktif
-                    renderPenggunaTab(); // render tabel daftar pengguna
+                case 'pengguna':
+                    // jika tab pengguna aktif
+                    renderPenggunaTab();
+                    // render tabel daftar pengguna
                     break;
-                case 'perangkat': // jika tab perangkat aktif
-                    renderPerangkatTab(); // render tabel daftar kartu NFC
+                case 'perangkat':
+                    // jika tab perangkat aktif
+                    renderPerangkatTab();
+                    // render tabel daftar kartu NFC
                     break;
-                case 'laporan': // jika tab laporan aktif
-                    renderLaporanTab(); // render statistik laporan
+                case 'laporan':
+                    // jika tab laporan aktif
+                    renderLaporanTab();
+                    // render statistik laporan
                     break;
-                case 'topup': // jika tab topup aktif
-                    renderTopupTab(); // render dropdown dan tabel top up
+                case 'topup':
+                    // jika tab topup aktif
+                    renderTopupTab();
+                    // render dropdown dan tabel top up
                     break;
             }
         }
@@ -2048,30 +2661,40 @@ AUTO REFRESH (REALTIME):
          * 4. Start auto refresh
          */
         async function initialize() {
-            console.log('🚀 Initializing unified dashboard...'); // log mulai inisialisasi
+            console.log('🚀 Initializing unified dashboard...');
+            // log mulai inisialisasi
             
             // Setup routing
-            initRouting(); // inisialisasi routing berbasis URL hash
+            initRouting();
+            // inisialisasi routing berbasis URL hash
             
             // Load data
-            await refreshAllData(); // muat semua data dari backend sebelum tampilkan konten
+            await refreshAllData();
+            // muat semua data dari backend sebelum tampilkan konten
             
             // Add event listeners
-            const searchInput = document.getElementById('search-input'); // ambil input pencarian fraud alert
-            if (searchInput) { // hanya daftarkan listener jika elemen ditemukan
-                searchInput.addEventListener('keyup', (e) => { // daftarkan event listener saat key ditekan di input pencarian
-                    if (e.key === 'Enter') applyFilters(); // terapkan filter saat user menekan Enter
+            const searchInput = document.getElementById('search-input');
+            // ambil input pencarian fraud alert
+            if (searchInput) {
+              // hanya daftarkan listener jika elemen ditemukan
+                searchInput.addEventListener('keyup', (e) => {
+                  // daftarkan event listener saat key ditekan di input pencarian
+                    if (e.key === 'Enter') applyFilters();
+                    // terapkan filter saat user menekan Enter
                 });
             }
             
             // Start auto refresh
-            startAutoRefresh(); // mulai timer auto-refresh setiap 30 detik
+            startAutoRefresh();
+            // mulai timer auto-refresh setiap 30 detik
             
-            console.log('✅ Unified dashboard ready'); // log inisialisasi selesai
+            console.log('✅ Unified dashboard ready');
+            // log inisialisasi selesai
         }
 
         // Start when page loads
-        window.addEventListener('DOMContentLoaded', initialize); // daftarkan initialize() agar dijalankan saat DOM selesai dimuat sepenuhnya
+        window.addEventListener('DOMContentLoaded', initialize);
+        // daftarkan initialize() agar dijalankan saat DOM selesai dimuat sepenuhnya
     </script>
 </body> <!-- penutup elemen body; semua konten halaman ada di antara <body> dan </body> -->
 </html> <!-- penutup elemen html; tag penutup wajib untuk dokumen HTML5 yang valid -->
