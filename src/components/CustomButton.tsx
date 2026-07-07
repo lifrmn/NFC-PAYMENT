@@ -57,23 +57,23 @@
 //
 // ==================================================================================
 
-import React from 'react';
+import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalank...
 // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan otomatis saat ada elemen JSX seperti <TouchableOpacity>
-import {
+import { // import dari react-native: mengambil beberapa komponen UI sekaligus dalam satu...
   // import dari react-native: mengambil beberapa komponen UI sekaligus dalam satu pernyataan import
-  TouchableOpacity,
+  TouchableOpacity, // TouchableOpacity adalah tombol interaktif dengan efek transparansi saat ditek...
   // TouchableOpacity adalah tombol interaktif dengan efek transparansi saat ditekan \u2014 digunakan sebagai wrapper utama CustomButton
-  Text,
+  Text, // Text menampilkan label teks di dalam tombol
   // Text menampilkan label teks di dalam tombol
-  StyleSheet,
+  StyleSheet, // StyleSheet.create() adalah API React Native untuk mendefinisikan style dengan...
   // StyleSheet.create() adalah API React Native untuk mendefinisikan style dengan validasi tipe dan optimasi performa
-  ViewStyle,
+  ViewStyle, // ViewStyle adalah tipe TypeScript khusus untuk styling View \u2014 digunakan d...
   // ViewStyle adalah tipe TypeScript khusus untuk styling View \u2014 digunakan di prop style agar type-safe
-  TextStyle,
+  TextStyle, // TextStyle adalah tipe TypeScript khusus untuk styling Text \u2014 digunakan d...
   // TextStyle adalah tipe TypeScript khusus untuk styling Text \u2014 digunakan di prop textStyle
-  ActivityIndicator,
+  ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan menggantikan teks...
   // ActivityIndicator adalah spinner animasi \u2014 ditampilkan menggantikan teks label saat state loading=true
-} from 'react-native';
+} from 'react-native'; // penutup import block — semua komponen di atas diambil dari library react-native
 // penutup import block — semua komponen di atas diambil dari library react-native
 
 // ==================================================================================
@@ -86,23 +86,23 @@ import {
 // - Autocomplete: IDE suggest available props
 // - Documentation: Self-documenting code
 // ==================================================================================
-interface CustomButtonProps {
+interface CustomButtonProps { // interface TypeScript mendefinisikan struktur props yang harus/boleh diberikan...
   // interface TypeScript mendefinisikan struktur props yang harus/boleh diberikan ke komponen CustomButton
-  title: string;
+  title: string; // Button text (REQUIRED)
   // Button text (REQUIRED)
-  onPress: () => void;
+  onPress: () => void; // Callback function saat button di-tap (REQUIRED)
   // Callback function saat button di-tap (REQUIRED)
-  style?: ViewStyle;
+  style?: ViewStyle; // Custom container style (optional)
   // Custom container style (optional)
-  textStyle?: TextStyle;
+  textStyle?: TextStyle; // Custom text style (optional)
   // Custom text style (optional)
-  disabled?: boolean;
+  disabled?: boolean; // Disable button (default: false)
   // Disable button (default: false)
-  loading?: boolean;
+  loading?: boolean; // Show loading spinner (default: false)
   // Show loading spinner (default: false)
-  variant?: 'primary' | 'secondary' | 'link';
+  variant?: 'primary' | 'secondary' | 'link'; // Button variant (default: 'primary')
   // Button variant (default: 'primary')
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large'; // Button size (default: 'medium')
   // Button size (default: 'medium')
 }
 
@@ -112,26 +112,26 @@ interface CustomButtonProps {
 // Functional component menggunakan React hooks pattern.
 // Export default untuk simplicity (import tanpa curly braces).
 // ==================================================================================
-export default function CustomButton({
+export default function CustomButton({ // export default: komponen diekspor sebagai default sehingga bisa diimport tanp...
   // export default: komponen diekspor sebagai default sehingga bisa diimport tanpa kurung kurawal; function mendefinisikan komponen React fungsional
   // Destructure props dengan default values untuk prop yang opsional
-  title,
+  title, // Wajib: text yang ditampilkan di button
   // Wajib: text yang ditampilkan di button
-  onPress,
+  onPress, // Wajib: callback saat button di-tap
   // Wajib: callback saat button di-tap
-  style,
+  style, // Opsional: custom style container
   // Opsional: custom style container
-  textStyle,
+  textStyle, // Opsional: custom style text
   // Opsional: custom style text
-  disabled = false,
+  disabled = false, // Opsional: default false (button aktif)
   // Opsional: default false (button aktif)
-  loading = false,
+  loading = false, // Opsional: default false (tidak loading)
   // Opsional: default false (tidak loading)
-  variant = 'primary',
+  variant = 'primary', // Opsional: default biru (primary)
   // Opsional: default biru (primary)
-  size = 'medium',
+  size = 'medium', // Opsional: default medium size
   // Opsional: default medium size
-}: CustomButtonProps) {
+}: CustomButtonProps) { // penutup destructuring — TypeScript memvalidasi semua props sesuai interface C...
   // penutup destructuring — TypeScript memvalidasi semua props sesuai interface CustomButtonProps
   
   // ================================================================================
@@ -151,33 +151,33 @@ export default function CustomButton({
   // - Debugging: Log semua button interactions untuk troubleshooting
   // - Validation: Ensure onPress hanya dipanggil jika button active
   // ================================================================================
-  const handlePress = () => {
+  const handlePress = () => { // arrow function tanpa async — handler tekan tombol; membungkus onPress dengan ...
     // arrow function tanpa async — handler tekan tombol; membungkus onPress dengan validasi dan error handling
     // Log untuk debugging: track setiap kali button di-tap
     console.log('🔘 CustomButton pressed:', title, 'disabled:', disabled, 'loading:', loading);
     
     // Validasi: button hanya bisa di-press jika tidak disabled, tidak loading, dan punya callback
     // Triple check untuk keamanan: disabled, loading, dan onPress defined
-    if (!disabled && !loading && onPress) {
+    if (!disabled && !loading && onPress) { // ! membalik boolean; tiga kondisi harus terpenuhi: tidak disabled, tidak loadi...
       // ! membalik boolean; tiga kondisi harus terpenuhi: tidak disabled, tidak loading, dan onPress ada
-      try {
+      try { // try membungkus pemanggilan onPress; mencegah error dari parent component meny...
         // try membungkus pemanggilan onPress; mencegah error dari parent component menyebabkan crash
         // Panggil callback yang diberikan oleh parent component
-        onPress();
+        onPress(); // memanggil fungsi callback yang diberikan komponen induk saat tombol ini dibuat
         // memanggil fungsi callback yang diberikan komponen induk saat tombol ini dibuat
         
         // Log sukses untuk memastikan callback berhasil dipanggil
-        console.log('✅ CustomButton onPress called successfully for:', title);
+        console.log('✅ CustomButton onPress called successfully for:', title); // console.log mencetak pesan sukses ke terminal untuk keperluan debugging
         // console.log mencetak pesan sukses ke terminal untuk keperluan debugging
         
-      } catch (error) {
+      } catch (error) { // catch menangkap error jika onPress melempar exception — mencegah aplikasi crash
         // catch menangkap error jika onPress melempar exception — mencegah aplikasi crash
         // Tangkap error untuk mencegah app crash
         // Error bisa terjadi jika onPress throw exception
-        console.error('❌ CustomButton onPress error for:', title, error);
+        console.error('❌ CustomButton onPress error for:', title, error); // console.error mencetak error dengan detail ke terminal
         // console.error mencetak error dengan detail ke terminal
       }
-    } else {
+    } else { // else: blok yang dijalankan ketika tombol disabled, loading, atau onPress tida...
       // else: blok yang dijalankan ketika tombol disabled, loading, atau onPress tidak ada
       // Log mengapa button tidak merespons (untuk debugging)
       // Membantu troubleshoot masalah "button tidak berfungsi"
@@ -204,32 +204,32 @@ export default function CustomButton({
   // ================================================================================
   // Gabungkan style berdasarkan props yang diberikan
   // Array style akan di-merge dari kiri ke kanan (kanan override kiri)
-  const buttonStyle = [
+  const buttonStyle = [ // array style di-merge React Native dari kiri ke kanan; kanan override kiri jik...
   // array style di-merge React Native dari kiri ke kanan; kanan override kiri jika ada konflik
-    styles.baseButton,
+    styles.baseButton, // Style dasar: border radius, shadow
     // Style dasar: border radius, shadow
-    styles[`${variant}Button`],
+    styles[`${variant}Button`], // Style variant: warna background
     // Style variant: warna background
-    styles[`${size}Button`],
+    styles[`${size}Button`], // Style size: padding
     // Style size: padding
-    disabled && styles.disabledButton,
+    disabled && styles.disabledButton, // Style disabled: abu-abu jika disabled
     // Style disabled: abu-abu jika disabled
-    style,
+    style, // Custom style dari parent (prioritas tertinggi)
     // Custom style dari parent (prioritas tertinggi)
   ];
 
   // Gabungkan style text dengan pola yang sama
-  const buttonTextStyle = [
+  const buttonTextStyle = [ // array style teks; digabung dari kiri ke kanan; style terakhir punya prioritas...
   // array style teks; digabung dari kiri ke kanan; style terakhir punya prioritas tertinggi
-    styles.baseText,
+    styles.baseText, // Style dasar text: font weight, align
     // Style dasar text: font weight, align
-    styles[`${variant}Text`],
+    styles[`${variant}Text`], // Warna text sesuai variant
     // Warna text sesuai variant
-    styles[`${size}Text`],
+    styles[`${size}Text`], // Ukuran font sesuai size
     // Ukuran font sesuai size
-    disabled && styles.disabledText,
+    disabled && styles.disabledText, // Warna text abu-abu jika disabled
     // Warna text abu-abu jika disabled
-    textStyle,
+    textStyle, // Custom text style dari parent (prioritas tertinggi)
     // Custom text style dari parent (prioritas tertinggi)
   ];
 
@@ -238,9 +238,9 @@ export default function CustomButton({
   // ================================================================================
   // Render TouchableOpacity dengan conditional content (loading spinner atau text).
   // ================================================================================
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender ke layar
   // return JSX: mengembalikan elemen UI yang akan dirender ke layar
-    <TouchableOpacity
+    <TouchableOpacity // TouchableOpacity: komponen wrapper yang merespons sentuhan dan memberi e...
     // TouchableOpacity: komponen wrapper yang merespons sentuhan dan memberi efek transparansi saat ditekan
       // STEP 1: Apply combined styles
       style={buttonStyle}
@@ -268,15 +268,15 @@ export default function CustomButton({
       accessibilityRole="button"
       accessibilityLabel={title}
     >
-      {loading ? (
+      {loading ? ( // Show loading spinner jika loading = true
         // Show loading spinner jika loading = true
-        <ActivityIndicator 
+        <ActivityIndicator  // Spinner color: white untuk primary/secondary, blue untuk link
           // Spinner color: white untuk primary/secondary, blue untuk link
           color={variant === 'link' ? '#3498db' : 'white'} 
-          size="small"
+          size="small" // Size: 'small' atau 'large'
           // Size: 'small' atau 'large'
         />
-      ) : (
+      ) : ( // Show button text jika tidak loading
         // Show button text jika tidak loading
         <Text style={buttonTextStyle}>{title}</Text>
       )}
@@ -301,35 +301,35 @@ export default function CustomButton({
 // - Text Styles: Corresponding text styles untuk each variant/size
 //
 // ==================================================================================
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({ // StyleSheet.create() membuat objek style yang dioptimalkan React Native; lebih...
   // StyleSheet.create() membuat objek style yang dioptimalkan React Native; lebih cepat dari objek biasa
   // ================================================================================
   // BASE BUTTON STYLE - APPLIED TO ALL BUTTONS
   // ================================================================================
   baseButton: {
-    borderRadius: 12,
+    borderRadius: 12, // Rounded corners (modern design)
     // Rounded corners (modern design)
-    alignItems: 'center',
+    alignItems: 'center', // Center content horizontally
     // Center content horizontally
-    justifyContent: 'center',
+    justifyContent: 'center', // Center content vertically
     // Center content vertically
     
     // Shadow properties (iOS style shadow)
-    shadowColor: '#000',
+    shadowColor: '#000', // Black shadow
     // Black shadow
     shadowOffset: {
-      width: 0,
+      width: 0, // Horizontal offset
       // Horizontal offset
-      height: 2,
+      height: 2, // Vertical offset (shadow below button)
       // Vertical offset (shadow below button)
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.25, // 25% opacity (subtle shadow)
     // 25% opacity (subtle shadow)
-    shadowRadius: 3.84,
+    shadowRadius: 3.84, // Blur radius (soft shadow)
     // Blur radius (soft shadow)
     
     // Elevation (Android style shadow)
-    elevation: 5,
+    elevation: 5, // Higher = more shadow
     // Higher = more shadow
   },
   
@@ -340,27 +340,27 @@ const styles = StyleSheet.create({
   // Primary Button: Blue background (main actions)
   // Use case: Login, Submit, Confirm
   primaryButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#3498db', // Blue color (Flat UI color palette)
     // Blue color (Flat UI color palette)
   },
   
   // Secondary Button: Green background (secondary actions)
   // Use case: Register, Save, Add
   secondaryButton: {
-    backgroundColor: '#27ae60',
+    backgroundColor: '#27ae60', // Green color (success/positive)
     // Green color (success/positive)
   },
   
   // Link Button: Transparent background (tertiary actions)
   // Use case: Cancel, Back, Forgot Password
   linkButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'transparent', // No background
     // No background
-    shadowOpacity: 0,
+    shadowOpacity: 0, // No shadow
     // No shadow
-    elevation: 0,
+    elevation: 0, // No elevation
     // No elevation
-    paddingVertical: 12,
+    paddingVertical: 12, // Less padding (text-like appearance)
     // Less padding (text-like appearance)
     paddingHorizontal: 16,
   },
@@ -393,11 +393,11 @@ const styles = StyleSheet.create({
   
   // Disabled Button: Gray background, no shadow
   disabledButton: {
-    backgroundColor: '#bdc3c7',
+    backgroundColor: '#bdc3c7', // Light gray (indicates disabled)
     // Light gray (indicates disabled)
-    shadowOpacity: 0,
+    shadowOpacity: 0, // Remove shadow
     // Remove shadow
-    elevation: 0,
+    elevation: 0, // Remove elevation
     // Remove elevation
   },
   
@@ -407,9 +407,9 @@ const styles = StyleSheet.create({
   
   // Base Text Style: Applied to all button text
   baseText: {
-    fontWeight: '600',
+    fontWeight: '600', // Semi-bold (readable)
     // Semi-bold (readable)
-    textAlign: 'center',
+    textAlign: 'center', // Center align
     // Center align
   },
   
@@ -430,21 +430,21 @@ const styles = StyleSheet.create({
   
   // Text Size Variants
   smallText: {
-    fontSize: 14,
+    fontSize: 14, // Smaller text
     // Smaller text
   },
   mediumText: {
-    fontSize: 16,
+    fontSize: 16, // Default text size
     // Default text size
   },
   largeText: {
-    fontSize: 18,
+    fontSize: 18, // Larger text
     // Larger text
   },
   
   // Disabled Text: Gray color
   disabledText: {
-    color: '#7f8c8d',
+    color: '#7f8c8d', // Dark gray (low contrast = disabled)
     // Dark gray (low contrast = disabled)
   },
 });

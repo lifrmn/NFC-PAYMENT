@@ -24,16 +24,16 @@
 // Server save device info -> Return success -> App siap digunakan
 // ============================================================
 
-const express = require('express');
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js ...
 // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router HTTP endpoint devices
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ...
 // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman tanpa SQL mentah
-const { authenticateDevice } = require('../middleware/auth');
+const { authenticateDevice } = require('../middleware/auth'); // destructuring { authenticateDevice } dari middleware auth.js — middleware yan...
 // destructuring { authenticateDevice } dari middleware auth.js — middleware yang memvalidasi x-app-key header sebelum endpoint device sensitif bisa diakses
 
-const router = express.Router();
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru u...
 // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/devices
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneks...
 // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
 
 // ============================================================
@@ -64,180 +64,180 @@ const prisma = new PrismaClient();
 //   "device": { ... }
 // }
 // ============================================================
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POS...
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { deviceId, deviceName, platform, appVersion } = req.body;
+    const { deviceId, deviceName, platform, appVersion } = req.body; // Destructuring data perangkat dari request body
     // Destructuring data perangkat dari request body
     
-    if (!deviceId) {
+    if (!deviceId) { // Validasi: deviceId wajib ada
       // Validasi: deviceId wajib ada
-      return res.status(400).json({ error: 'ID Perangkat diperlukan' });
+      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
-    const now = new Date();
+    const now = new Date(); // Catat waktu sekarang untuk lastSeen
     // Catat waktu sekarang untuk lastSeen
     
     // Daftarkan atau perbarui catatan perangkat
-    const deviceRecord = await prisma.device.upsert({
+    const deviceRecord = await prisma.device.upsert({ // UPSERT: update jika ada, create jika belum ada
       // UPSERT: update jika ada, create jika belum ada
-      where: { deviceId: deviceId },
+      where: { deviceId: deviceId }, // Cari berdasarkan deviceId unik
       // Cari berdasarkan deviceId unik
-      update: {
+      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
         // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
-        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`,
+        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`, // Nama perangkat, ambil 6 karakter terakhir jika tidak ada nama
         // Nama perangkat, ambil 6 karakter terakhir jika tidak ada nama
-        platform: platform || 'unknown',
+        platform: platform || 'unknown', // Platform android/ios
         // Platform android/ios
-        ipAddress: req.ip,
+        ipAddress: req.ip, // IP address perangkat saat ini
         // IP address perangkat saat ini
-        isOnline: true,
+        isOnline: true, // Tandai perangkat online
         // Tandai perangkat online
-        lastSeen: now,
+        lastSeen: now, // Update waktu terakhir aktif
         // Update waktu terakhir aktif
         // Simpan data pengguna/saldo yang ada saat update
       },
-      create: {
+      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
         // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
-        deviceId: deviceId,
+        deviceId: deviceId, // ID unik perangkat
         // ID unik perangkat
-        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`,
+        deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`, // Nama perangkat dengan fallback
         // Nama perangkat dengan fallback
-        platform: platform || 'unknown',
+        platform: platform || 'unknown', // Platform dengan fallback
         // Platform dengan fallback
-        ipAddress: req.ip,
+        ipAddress: req.ip, // IP address perangkat
         // IP address perangkat
-        isOnline: true,
+        isOnline: true, // Status online saat pertama daftar
         // Status online saat pertama daftar
-        lastSeen: now,
+        lastSeen: now, // Waktu pertama kali daftar
         // Waktu pertama kali daftar
-        totalUsers: 0,
+        totalUsers: 0, // Inisialisasi total user = 0
         // Inisialisasi total user = 0
-        totalBalance: 0
+        totalBalance: 0 // Inisialisasi total saldo = 0
         // Inisialisasi total saldo = 0
       }
     });
 
-    console.log(`📱 Device registered: ${deviceId} (${platform})`);
+    console.log(`📱 Device registered: ${deviceId} (${platform})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      success: true,
+      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
       // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-      message: 'Perangkat berhasil didaftarkan',
+      message: 'Perangkat berhasil didaftarkan', // pesan sukses registrasi perangkat; dikirim ke frontend setelah device berhasi...
       // pesan sukses registrasi perangkat; dikirim ke frontend setelah device berhasil disimpan ke database
-      device: deviceRecord
+      device: deviceRecord // Kembalikan data perangkat yang baru didaftarkan
       // Kembalikan data perangkat yang baru didaftarkan
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan pendaftaran perangkat:', error);
+    console.error('❌ Kesalahan pendaftaran perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({
+    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesa...
       // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
-      error: 'Gagal mendaftarkan perangkat',
+      error: 'Gagal mendaftarkan perangkat', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend u...
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
-      details: error.message
+      details: error.message // Detail error untuk debugging
       // Detail error untuk debugging
     });
   }
 });
 
 // Sinkronkan data perangkat (kompatibel dengan aplikasi mobile yang ada)
-router.post('/sync-device', authenticateDevice, async (req, res) => {
+router.post('/sync-device', authenticateDevice, async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POS...
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { device, users, recentTransactions, stats } = req.body;
+    const { device, users, recentTransactions, stats } = req.body; // Destructuring data sync dari request body
     // Destructuring data sync dari request body
     
-    if (!device || !device.deviceId) {
+    if (!device || !device.deviceId) { // Validasi: data device dan deviceId wajib ada
       // Validasi: data device dan deviceId wajib ada
-      return res.status(400).json({ error: 'ID Perangkat diperlukan' });
+      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
-    const now = new Date();
+    const now = new Date(); // Catat waktu sekarang untuk lastSeen
     // Catat waktu sekarang untuk lastSeen
     
     // Perbarui atau buat catatan perangkat
-    const deviceRecord = await prisma.device.upsert({
+    const deviceRecord = await prisma.device.upsert({ // UPSERT device: update atau buat baru
       // UPSERT device: update atau buat baru
-      where: { deviceId: device.deviceId },
+      where: { deviceId: device.deviceId }, // Cari berdasarkan deviceId
       // Cari berdasarkan deviceId
-      update: {
+      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
         // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
-        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`,
+        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`, // Nama perangkat dengan fallback
         // Nama perangkat dengan fallback
-        platform: device.platform || 'android',
+        platform: device.platform || 'android', // Platform dengan default android
         // Platform dengan default android
-        ipAddress: req.ip,
+        ipAddress: req.ip, // IP address saat ini
         // IP address saat ini
-        isOnline: true,
+        isOnline: true, // Tandai perangkat online
         // Tandai perangkat online
-        lastSeen: now,
+        lastSeen: now, // Update waktu terakhir sync
         // Update waktu terakhir sync
-        totalUsers: stats?.totalUsers || 0,
+        totalUsers: stats?.totalUsers || 0, // Total user dari stats (optional chaining)
         // Total user dari stats (optional chaining)
-        totalBalance: stats?.totalBalance || 0
+        totalBalance: stats?.totalBalance || 0 // Total saldo dari stats
         // Total saldo dari stats
       },
-      create: {
+      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
         // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
-        deviceId: device.deviceId,
+        deviceId: device.deviceId, // ID unik perangkat
         // ID unik perangkat
-        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`,
+        deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`, // Nama perangkat
         // Nama perangkat
-        platform: device.platform || 'android',
+        platform: device.platform || 'android', // Platform
         // Platform
-        ipAddress: req.ip,
+        ipAddress: req.ip, // IP address
         // IP address
-        isOnline: true,
+        isOnline: true, // Status online
         // Status online
-        lastSeen: now,
+        lastSeen: now, // Waktu pertama sync
         // Waktu pertama sync
-        totalUsers: stats?.totalUsers || 0,
+        totalUsers: stats?.totalUsers || 0, // Total user
         // Total user
-        totalBalance: stats?.totalBalance || 0
+        totalBalance: stats?.totalBalance || 0 // Total saldo
         // Total saldo
       }
     });
 
     // Sinkronkan pengguna jika disediakan
-    if (users && Array.isArray(users)) {
+    if (users && Array.isArray(users)) { // Proses hanya jika users dikirim dan berupa array
       // Proses hanya jika users dikirim dan berupa array
-      for (const userData of users) {
+      for (const userData of users) { // Loop setiap data user
         // Loop setiap data user
-        await prisma.user.upsert({
+        await prisma.user.upsert({ // UPSERT user: update atau buat baru
           // UPSERT user: update atau buat baru
-          where: { id: userData.id },
+          where: { id: userData.id }, // Cari berdasarkan id user
           // Cari berdasarkan id user
-          update: {
+          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
             // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
-            name: userData.name,
+            name: userData.name, // Update nama user
             // Update nama user
-            balance: userData.balance,
+            balance: userData.balance, // Update saldo
             // Update saldo
-            deviceId: device.deviceId
+            deviceId: device.deviceId // Update deviceId
             // Update deviceId
           },
-          create: {
+          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
             // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
-            id: userData.id,
+            id: userData.id, // ID user dari mobile
             // ID user dari mobile
-            name: userData.name,
+            name: userData.name, // Nama user
             // Nama user
-            username: userData.username,
+            username: userData.username, // Username untuk login
             // Username untuk login
-            password: userData.password || 'synced-user',
+            password: userData.password || 'synced-user', // Password (fallback untuk user hasil sync)
             // Password (fallback untuk user hasil sync)
-            balance: userData.balance,
+            balance: userData.balance, // Saldo awal
             // Saldo awal
-            deviceId: device.deviceId
+            deviceId: device.deviceId // Kaitkan ke deviceId
             // Kaitkan ke deviceId
           }
         });
@@ -245,393 +245,393 @@ router.post('/sync-device', authenticateDevice, async (req, res) => {
     }
 
     // Sinkronkan transaksi jika disediakan
-    if (recentTransactions && Array.isArray(recentTransactions)) {
+    if (recentTransactions && Array.isArray(recentTransactions)) { // Proses hanya jika transaksi dikirim
       // Proses hanya jika transaksi dikirim
-      for (const txData of recentTransactions) {
+      for (const txData of recentTransactions) { // Loop setiap data transaksi
         // Loop setiap data transaksi
-        await prisma.transaction.upsert({
+        await prisma.transaction.upsert({ // UPSERT transaksi
           // UPSERT transaksi
-          where: { id: txData.id },
+          where: { id: txData.id }, // Cari berdasarkan id transaksi
           // Cari berdasarkan id transaksi
-          update: {
+          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
             // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
-            amount: txData.amount,
+            amount: txData.amount, // Update jumlah transaksi
             // Update jumlah transaksi
-            type: txData.type,
+            type: txData.type, // Update tipe transaksi
             // Update tipe transaksi
-            deviceId: device.deviceId
+            deviceId: device.deviceId // Update deviceId
             // Update deviceId
           },
-          create: {
+          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
             // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
-            id: txData.id,
+            id: txData.id, // ID transaksi dari mobile
             // ID transaksi dari mobile
-            senderId: txData.senderId,
+            senderId: txData.senderId, // ID pengirim
             // ID pengirim
-            receiverId: txData.receiverId,
+            receiverId: txData.receiverId, // ID penerima
             // ID penerima
-            amount: txData.amount,
+            amount: txData.amount, // Jumlah transaksi
             // Jumlah transaksi
-            type: txData.type || 'transfer',
+            type: txData.type || 'transfer', // Tipe transaksi dengan default 'transfer'
             // Tipe transaksi dengan default 'transfer'
-            deviceId: device.deviceId,
+            deviceId: device.deviceId, // Kaitkan ke deviceId
             // Kaitkan ke deviceId
-            createdAt: new Date(txData.createdAt)
+            createdAt: new Date(txData.createdAt) // Waktu transaksi (convert dari string)
             // Waktu transaksi (convert dari string)
           }
         });
       }
     }
 
-    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`);
+    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Periksa pembaruan saldo yang tertunda
-    const pendingUpdates = await prisma.adminLog.findMany({
+    const pendingUpdates = await prisma.adminLog.findMany({ // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
       // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
-      where: {
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
         // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-        action: 'BALANCE_UPDATE_PENDING',
+        action: 'BALANCE_UPDATE_PENDING', // Filter berdasarkan tipe aksi
         // Filter berdasarkan tipe aksi
-        details: {
+        details: { // objek details berisi informasi tambahan kondisi filter; digunakan untuk WHERE...
           // objek details berisi informasi tambahan kondisi filter; digunakan untuk WHERE dengan kondisi nested di Prisma
-          contains: device.deviceId
+          contains: device.deviceId // Filter yang berkaitan dengan deviceId ini
           // Filter yang berkaitan dengan deviceId ini
         }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }, // Urutkan dari terbaru
       // Urutkan dari terbaru
-      take: 10
+      take: 10 // Ambil maksimal 10 pending updates
       // Ambil maksimal 10 pending updates
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
       // Hanya kirim jika Socket.IO tersedia
-      req.io.to('admin-room').emit('device-sync', {
+      req.io.to('admin-room').emit('device-sync', { // Broadcast ke semua admin di admin-room
         // Broadcast ke semua admin di admin-room
-        device: deviceRecord,
+        device: deviceRecord, // Data perangkat yang baru sync
         // Data perangkat yang baru sync
-        stats: stats || {}
+        stats: stats || {} // Statistik perangkat
         // Statistik perangkat
       });
     }
 
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      success: true,
+      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
       // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-      message: 'Perangkat berhasil disinkronkan',
+      message: 'Perangkat berhasil disinkronkan', // pesan sukses sinkronisasi perangkat; dikonfirmasi setelah data perangkat dipe...
       // pesan sukses sinkronisasi perangkat; dikonfirmasi setelah data perangkat diperbarui dari backend
-      balanceUpdates: pendingUpdates.map(update => JSON.parse(update.details)),
+      balanceUpdates: pendingUpdates.map(update => JSON.parse(update.details)), // Parse details dari JSON string
       // Parse details dari JSON string
-      deviceId: device.deviceId,
+      deviceId: device.deviceId, // Echo kembali deviceId
       // Echo kembali deviceId
-      timestamp: now.toISOString()
+      timestamp: now.toISOString() // Waktu sync dalam format ISO
       // Waktu sync dalam format ISO
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan sinkronisasi perangkat:', error);
+    console.error('❌ Kesalahan sinkronisasi perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menyinkronkan perangkat' });
+    res.status(500).json({ error: 'Gagal menyinkronkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan semua perangkat
-router.get('/', async (req, res) => {
+router.get('/', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const devices = await prisma.device.findMany({
+    const devices = await prisma.device.findMany({ // Ambil semua record Device dari database
       // Ambil semua record Device dari database
-      orderBy: {
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya ...
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        lastSeen: 'desc'
+        lastSeen: 'desc' // Urutkan dari yang paling baru sync
         // Urutkan dari yang paling baru sync
       }
     });
 
     // Perbarui status online berdasarkan terakhir terlihat
-    const now = new Date();
+    const now = new Date(); // Waktu sekarang untuk menghitung status online
     // Waktu sekarang untuk menghitung status online
-    const devicesWithStatus = devices.map(device => ({
+    const devicesWithStatus = devices.map(device => ({ // Map setiap device dan tambahkan field isOnline
       // Map setiap device dan tambahkan field isOnline
-      ...device,
+      ...device, // Spread semua field device yang ada
       // Spread semua field device yang ada
-      isOnline: (now - new Date(device.lastSeen)) < 300000
+      isOnline: (now - new Date(device.lastSeen)) < 300000 // Device online jika sync dalam 5 menit terakhir
       // Device online jika sync dalam 5 menit terakhir
     }));
 
-    res.json(devicesWithStatus);
+    res.json(devicesWithStatus); // Kirim array devices dengan status online
     // Kirim array devices dengan status online
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan perangkat:', error);
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan perangkat' });
+    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan perangkat berdasarkan ID
-router.get('/:deviceId', async (req, res) => {
+router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { deviceId } = req.params;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
     
-    const device = await prisma.device.findUnique({
+    const device = await prisma.device.findUnique({ // Cari satu device berdasarkan deviceId
       // Cari satu device berdasarkan deviceId
-      where: { deviceId }
+      where: { deviceId } // Kondisi pencarian
       // Kondisi pencarian
     });
 
-    if (!device) {
+    if (!device) { // Jika device tidak ditemukan
       // Jika device tidak ditemukan
-      return res.status(404).json({ error: 'Perangkat tidak ditemukan' });
+      return res.status(404).json({ error: 'Perangkat tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke...
       // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
     }
 
     // Dapatkan pengguna untuk perangkat ini
-    const users = await prisma.user.findMany({
+    const users = await prisma.user.findMany({ // Ambil semua user yang terhubung ke device ini
       // Ambil semua user yang terhubung ke device ini
-      where: { deviceId },
+      where: { deviceId }, // Filter berdasarkan deviceId
       // Filter berdasarkan deviceId
-      select: {
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true,
+        id: true, // Hanya ambil field yang diperlukan (tidak include password)
         // Hanya ambil field yang diperlukan (tidak include password)
-        name: true,
+        name: true, // Nama user
         // Nama user
-        username: true,
+        username: true, // Username
         // Username
-        balance: true,
+        balance: true, // Saldo
         // Saldo
-        isActive: true,
+        isActive: true, // Status aktif
         // Status aktif
-        createdAt: true
+        createdAt: true // Waktu dibuat
         // Waktu dibuat
       }
     });
 
     // Dapatkan transaksi terbaru untuk perangkat ini
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await prisma.transaction.findMany({ // Ambil transaksi yang dilakukan dari device ini
       // Ambil transaksi yang dilakukan dari device ini
-      where: { deviceId },
+      where: { deviceId }, // Filter berdasarkan deviceId
       // Filter berdasarkan deviceId
-      include: {
+      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambi...
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
-        sender: {
+        sender: { // Join data pengirim
           // Join data pengirim
-          select: { id: true, name: true, username: true }
+          select: { id: true, name: true, username: true } // Hanya ambil field yang diperlukan
           // Hanya ambil field yang diperlukan
         },
-        receiver: {
+        receiver: { // Join data penerima
           // Join data penerima
-          select: { id: true, name: true, username: true }
+          select: { id: true, name: true, username: true } // Hanya ambil field yang diperlukan
           // Hanya ambil field yang diperlukan
         }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc' }, // Urutkan dari transaksi terbaru
       // Urutkan dari transaksi terbaru
-      take: 10
+      take: 10 // Ambil maksimal 10 transaksi terakhir
       // Ambil maksimal 10 transaksi terakhir
     });
 
-    const now = new Date();
+    const now = new Date(); // Waktu sekarang
     // Waktu sekarang
-    const isOnline = (now - new Date(device.lastSeen)) < 300000;
+    const isOnline = (now - new Date(device.lastSeen)) < 300000; // Device online jika sync dalam 5 menit terakhir
     // Device online jika sync dalam 5 menit terakhir
 
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      ...device,
+      ...device, // Spread semua field device
       // Spread semua field device
-      isOnline,
+      isOnline, // Tambahkan status online yang sudah dihitung
       // Tambahkan status online yang sudah dihitung
-      users,
+      users, // Array user yang terhubung ke device ini
       // Array user yang terhubung ke device ini
-      recentTransactions: transactions
+      recentTransactions: transactions // 10 transaksi terbaru
       // 10 transaksi terbaru
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan perangkat:', error);
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan perangkat' });
+    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Perbarui status perangkat
-router.put('/:deviceId/status', async (req, res) => {
+router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang suda...
   // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { deviceId } = req.params;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
-    const { isOnline } = req.body;
+    const { isOnline } = req.body; // Ambil status online/offline dari request body
     // Ambil status online/offline dari request body
 
-    const device = await prisma.device.update({
+    const device = await prisma.device.update({ // Update record device di database
       // Update record device di database
-      where: { deviceId },
+      where: { deviceId }, // Cari berdasarkan deviceId
       // Cari berdasarkan deviceId
-      data: {
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        isOnline: Boolean(isOnline),
+        isOnline: Boolean(isOnline), // Konversi ke boolean (true/false)
         // Konversi ke boolean (true/false)
-        lastSeen: new Date()
+        lastSeen: new Date() // Update waktu terakhir terlihat
         // Update waktu terakhir terlihat
       }
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
       // Hanya kirim jika Socket.IO tersedia
-      req.io.to('admin-room').emit('device-status-updated', { device });
+      req.io.to('admin-room').emit('device-status-updated', { device }); // Broadcast perubahan status ke admin
       // Broadcast perubahan status ke admin
     }
 
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      message: 'Status perangkat berhasil diperbarui',
+      message: 'Status perangkat berhasil diperbarui', // pesan sukses perubahan status perangkat; dikirim setelah field status device ...
       // pesan sukses perubahan status perangkat; dikirim setelah field status device diperbarui di database
-      device
+      device // Kembalikan data device yang sudah diupdate
       // Kembalikan data device yang sudah diupdate
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan memperbarui status perangkat:', error);
+    console.error('❌ Kesalahan memperbarui status perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui status perangkat' });
+    res.status(500).json({ error: 'Gagal memperbarui status perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Hapus perangkat (khusus admin)
-router.delete('/:deviceId', async (req, res) => {
+router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarkan endpoint HTTP DELETE; untuk menghapus data
   // router.delete() mendaftarkan endpoint HTTP DELETE; untuk menghapus data
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { deviceId } = req.params;
+    const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
-    const { adminPassword } = req.body;
+    const { adminPassword } = req.body; // Ambil password admin dari request body
     // Ambil password admin dari request body
 
     // Verifikasi password admin
-    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) {
+    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password admin dari env atau default
       // Cek password admin dari env atau default
-      return res.status(401).json({ error: 'Password admin tidak valid' });
+      return res.status(401).json({ error: 'Password admin tidak valid' }); // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika passw...
       // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika password admin salah
     }
 
-    await prisma.device.delete({
+    await prisma.device.delete({ // Hapus record device dari database
       // Hapus record device dari database
-      where: { deviceId }
+      where: { deviceId } // Hapus berdasarkan deviceId
       // Hapus berdasarkan deviceId
     });
 
     // Catat aksi admin
-    await prisma.adminLog.create({
+    await prisma.adminLog.create({ // Simpan log bahwa admin menghapus device
       // Simpan log bahwa admin menghapus device
-      data: {
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        action: 'DEVICE_DELETE',
+        action: 'DEVICE_DELETE', // Tipe aksi
         // Tipe aksi
-        details: JSON.stringify({ deviceId }),
+        details: JSON.stringify({ deviceId }), // Simpan deviceId yang dihapus sebagai JSON
         // Simpan deviceId yang dihapus sebagai JSON
-        ipAddress: req.ip,
+        ipAddress: req.ip, // IP admin yang menghapus
         // IP admin yang menghapus
-        userAgent: req.headers['user-agent']
+        userAgent: req.headers['user-agent'] // Browser/client admin
         // Browser/client admin
       }
     });
 
     // Kirim ke dashboard admin
-    if (req.io) {
+    if (req.io) { // Hanya kirim jika Socket.IO tersedia
       // Hanya kirim jika Socket.IO tersedia
-      req.io.to('admin-room').emit('device-deleted', { deviceId });
+      req.io.to('admin-room').emit('device-deleted', { deviceId }); // Broadcast penghapusan ke semua admin
       // Broadcast penghapusan ke semua admin
     }
 
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      message: 'Perangkat berhasil dihapus'
+      message: 'Perangkat berhasil dihapus' // Konfirmasi penghapusan
       // Konfirmasi penghapusan
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan menghapus perangkat:', error);
+    console.error('❌ Kesalahan menghapus perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menghapus perangkat' });
+    res.status(500).json({ error: 'Gagal menghapus perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan statistik perangkat
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try {
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([
+    const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([ // Jalankan 4 query secara paralel
     // Jalankan 4 query secara paralel
-      prisma.device.count(),
+      prisma.device.count(), // Hitung total semua device
       // Hitung total semua device
-      prisma.device.count({
+      prisma.device.count({ // Hitung device yang sedang online (sync dalam 5 menit terakhir)
         // Hitung device yang sedang online (sync dalam 5 menit terakhir)
-        where: {
+        where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
           // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-          lastSeen: {
+          lastSeen: { // field lastSeen: timestamp terakhir kali device melakukan sinkronisasi; filter...
             // field lastSeen: timestamp terakhir kali device melakukan sinkronisasi; filter untuk menentukan device 'online'
-            gte: new Date(Date.now() - 300000)
+            gte: new Date(Date.now() - 300000) // 5 menit terakhir dalam milliseconds
             // 5 menit terakhir dalam milliseconds
           }
         }
       }),
-      prisma.user.count({
+      prisma.user.count({ // Hitung total user yang aktif
         // Hitung total user yang aktif
-        where: { isActive: true }
+        where: { isActive: true } // Filter hanya user yang isActive = true
         // Filter hanya user yang isActive = true
       }),
-      prisma.user.aggregate({
+      prisma.user.aggregate({ // Hitung total saldo semua user aktif
         // Hitung total saldo semua user aktif
-        _sum: { balance: true },
+        _sum: { balance: true }, // Agregasi: jumlahkan field balance
         // Agregasi: jumlahkan field balance
-        where: { isActive: true }
+        where: { isActive: true } // Filter hanya user aktif
         // Filter hanya user aktif
       })
     ]);
 
-    res.json({
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      totalDevices,
+      totalDevices, // Total semua device yang pernah terdaftar
       // Total semua device yang pernah terdaftar
-      onlineDevices,
+      onlineDevices, // Device yang online (sync dalam 5 menit)
       // Device yang online (sync dalam 5 menit)
-      offlineDevices: totalDevices - onlineDevices,
+      offlineDevices: totalDevices - onlineDevices, // Device yang offline = total - online
       // Device yang offline = total - online
-      totalUsers,
+      totalUsers, // Total user aktif di sistem
       // Total user aktif di sistem
-      totalBalance: totalBalance._sum.balance || 0
+      totalBalance: totalBalance._sum.balance || 0 // Total saldo (fallback 0 jika null)
       // Total saldo (fallback 0 jika null)
     });
 
-  } catch (error) {
+  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error);
+    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan statistik perangkat' });
+    res.status(500).json({ error: 'Gagal mendapatkan statistik perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
-module.exports = router;
+module.exports = router; // Export router agar bisa di-mount di server.js
 // Export router agar bisa di-mount di server.js

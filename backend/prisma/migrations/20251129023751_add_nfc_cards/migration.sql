@@ -1,70 +1,70 @@
 ﻿-- CreateTable: membuat tabel nfc_cards untuk menyimpan data kartu NFC fisik
 CREATE TABLE "nfc_cards" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, -- primary key auto-increment: ID unik kartu yang bertambah otomatis
     -- primary key auto-increment: ID unik kartu yang bertambah otomatis
-    "cardId" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL, -- UID fisik kartu NFC (7 bytes hex, contoh: 04AB12CD78EF90)
     -- UID fisik kartu NFC (7 bytes hex, contoh: 04AB12CD78EF90)
-    "cardType" TEXT NOT NULL DEFAULT 'NTag215',
+    "cardType" TEXT NOT NULL DEFAULT 'NTag215', -- tipe kartu NFC; default NTag215 (NXP Semiconductors)
     -- tipe kartu NFC; default NTag215 (NXP Semiconductors)
-    "frequency" TEXT NOT NULL DEFAULT '13.56MHz',
+    "frequency" TEXT NOT NULL DEFAULT '13.56MHz', -- frekuensi RF kartu; standar NFC adalah 13.56 MHz
     -- frekuensi RF kartu; standar NFC adalah 13.56 MHz
-    "userId" INTEGER,
+    "userId" INTEGER, -- foreign key ke tabel users; nullable agar kartu bisa ada sebelum di-link user
     -- foreign key ke tabel users; nullable agar kartu bisa ada sebelum di-link user
-    "cardStatus" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "cardStatus" TEXT NOT NULL DEFAULT 'ACTIVE', -- status kartu: ACTIVE, BLOCKED, LOST, EXPIRED; default ACTIVE saat pertama did...
     -- status kartu: ACTIVE, BLOCKED, LOST, EXPIRED; default ACTIVE saat pertama didaftarkan
-    "balance" REAL NOT NULL DEFAULT 0,
+    "balance" REAL NOT NULL DEFAULT 0, -- saldo kartu dalam Rupiah; REAL = angka desimal; default 0 saat didaftarkan
     -- saldo kartu dalam Rupiah; REAL = angka desimal; default 0 saat didaftarkan
-    "lastUsed" DATETIME,
+    "lastUsed" DATETIME, -- waktu terakhir kartu digunakan untuk transaksi; nullable karena kartu baru be...
     -- waktu terakhir kartu digunakan untuk transaksi; nullable karena kartu baru belum pernah dipakai
-    "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- waktu kartu didaftarkan ke sistem; otomatis diisi saat INSERT
     -- waktu kartu didaftarkan ke sistem; otomatis diisi saat INSERT
-    "expiresAt" DATETIME,
+    "expiresAt" DATETIME, -- waktu kadaluarsa kartu; nullable karena NTag215 tidak punya expiry hardware
     -- waktu kadaluarsa kartu; nullable karena NTag215 tidak punya expiry hardware
-    "isPhysical" BOOLEAN NOT NULL DEFAULT true,
+    "isPhysical" BOOLEAN NOT NULL DEFAULT true, -- flag apakah ini kartu fisik (NFC tag) atau virtual; default true
     -- flag apakah ini kartu fisik (NFC tag) atau virtual; default true
-    "cardData" TEXT,
+    "cardData" TEXT, -- data tambahan kartu dalam format JSON atau terenkripsi; nullable
     -- data tambahan kartu dalam format JSON atau terenkripsi; nullable
-    "metadata" TEXT,
+    "metadata" TEXT, -- metadata tambahan dalam format JSON; nullable; untuk keperluan debugging
     -- metadata tambahan dalam format JSON; nullable; untuk keperluan debugging
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- waktu record dibuat di database; otomatis diisi
     -- waktu record dibuat di database; otomatis diisi
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL, -- waktu record terakhir diperbarui; otomatis diperbarui oleh Prisma
     -- waktu record terakhir diperbarui; otomatis diperbarui oleh Prisma
-    CONSTRAINT "nfc_cards_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    CONSTRAINT "nfc_cards_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE -- foreign key constraint: jika user dihapus, userId di kartu di-set NULL (tidak...
     -- foreign key constraint: jika user dihapus, userId di kartu di-set NULL (tidak ikut terhapus)
 );
 
 -- CreateTable: membuat tabel nfc_transactions untuk log penggunaan kartu NFC
 CREATE TABLE "nfc_transactions" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, -- primary key auto-increment untuk setiap log tap kartu
     -- primary key auto-increment untuk setiap log tap kartu
-    "cardId" TEXT NOT NULL,
+    "cardId" TEXT NOT NULL, -- UID kartu yang digunakan; foreign key ke nfc_cards.cardId
     -- UID kartu yang digunakan; foreign key ke nfc_cards.cardId
-    "transactionType" TEXT NOT NULL,
+    "transactionType" TEXT NOT NULL, -- jenis operasi: TAP, PAYMENT, TOPUP, REGISTER, dll
     -- jenis operasi: TAP, PAYMENT, TOPUP, REGISTER, dll
-    "amount" REAL,
+    "amount" REAL, -- nominal transaksi dalam Rupiah; nullable karena TAP analytics tidak punya amount
     -- nominal transaksi dalam Rupiah; nullable karena TAP analytics tidak punya amount
-    "balanceBefore" REAL NOT NULL,
+    "balanceBefore" REAL NOT NULL, -- saldo kartu sebelum transaksi (untuk audit trail)
     -- saldo kartu sebelum transaksi (untuk audit trail)
-    "balanceAfter" REAL NOT NULL,
+    "balanceAfter" REAL NOT NULL, -- saldo kartu setelah transaksi (untuk audit trail)
     -- saldo kartu setelah transaksi (untuk audit trail)
-    "deviceId" TEXT NOT NULL,
+    "deviceId" TEXT NOT NULL, -- ID perangkat Android yang membaca kartu; untuk analytics
     -- ID perangkat Android yang membaca kartu; untuk analytics
-    "location" TEXT,
+    "location" TEXT, -- lokasi transaksi; nullable; untuk analytics dan fraud detection
     -- lokasi transaksi; nullable; untuk analytics dan fraud detection
-    "ipAddress" TEXT,
+    "ipAddress" TEXT, -- IP address device; nullable; untuk audit dan fraud detection
     -- IP address device; nullable; untuk audit dan fraud detection
-    "status" TEXT NOT NULL DEFAULT 'SUCCESS',
+    "status" TEXT NOT NULL DEFAULT 'SUCCESS', -- status operasi: SUCCESS, FAILED, BLOCKED; default SUCCESS
     -- status operasi: SUCCESS, FAILED, BLOCKED; default SUCCESS
-    "errorMessage" TEXT,
+    "errorMessage" TEXT, -- pesan error jika status FAILED; nullable
     -- pesan error jika status FAILED; nullable
-    "fraudScore" REAL,
+    "fraudScore" REAL, -- skor risiko fraud dari Z-Score; nullable karena tidak semua operasi diperiksa
     -- skor risiko fraud dari Z-Score; nullable karena tidak semua operasi diperiksa
-    "metadata" TEXT,
+    "metadata" TEXT, -- data tambahan dalam format JSON; nullable
     -- data tambahan dalam format JSON; nullable
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- waktu log dibuat; otomatis diisi
     -- waktu log dibuat; otomatis diisi
-    CONSTRAINT "nfc_transactions_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "nfc_cards" ("cardId") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "nfc_transactions_cardId_fkey" FOREIGN KEY ("cardId") REFERENCES "nfc_cards" ("cardId") ON DELETE RESTRICT ON UPDATE CASCADE -- foreign key constraint: mencegah hapus kartu jika masih ada log transaksi
     -- foreign key constraint: mencegah hapus kartu jika masih ada log transaksi
 );
 

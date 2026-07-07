@@ -12,223 +12,219 @@
 // - onDone: Callback saat user tap tombol "Selesai"
 // - onViewDetails: Callback opsional untuk tombol "Lihat Detail"
 // ==================================================================================
-import React from 'react';
+import React from 'react'; // import React digunakan untuk semua file JSX/TSX; React.createElement dijalank...
 // import React digunakan untuk semua file JSX/TSX; React.createElement dijalankan di balik layar setiap kali ada elemen JSX seperti <View>
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
-  View,
+  View, // View adalah komponen container dasar React Native \u2014 setara div di HTML; ...
   // View adalah komponen container dasar React Native \u2014 setara div di HTML; digunakan untuk layout dan pembungkus elemen
-  Text,
+  Text, // Text menampilkan konten teks \u2014 semua teks wajib dibungkus Text di React ...
   // Text menampilkan konten teks \u2014 semua teks wajib dibungkus Text di React Native
-  TouchableOpacity,
+  TouchableOpacity, // TouchableOpacity adalah tombol interaktif dengan efek transparan saat ditekan...
   // TouchableOpacity adalah tombol interaktif dengan efek transparan saat ditekan \u2014 digunakan untuk tombol "Selesai" dan "Lihat Detail"
-  ScrollView
+  ScrollView // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar \u2014 pe...
   // ScrollView memungkinkan konten di-scroll jika melebihi tinggi layar \u2014 penting karena detail transaksi bisa panjang
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
 // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home in...
 // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator Android
-import styles from './TransactionSuccessScreen.styles';
+import styles from './TransactionSuccessScreen.styles'; // import stylesheet dari file terpisah agar kode komponen tetap ringkas dan mud...
 // import stylesheet dari file terpisah agar kode komponen tetap ringkas dan mudah dibaca
 
 // Interface TypeScript untuk mendefinisikan tipe props yang diterima komponen
-interface TransactionSuccessScreenProps {
+interface TransactionSuccessScreenProps { // interface adalah blueprint TypeScript — mendefinisikan struktur objek props s...
   // interface adalah blueprint TypeScript — mendefinisikan struktur objek props sehingga TypeScript bisa mendeteksi jika ada props yang salah tipe
-  transaction: {
+  transaction: { // props transaction adalah objek berisi detail transaksi yang sudah selesai dip...
     // props transaction adalah objek berisi detail transaksi yang sudah selesai diproses
-    amount: number;
+    amount: number; // Nominal transaksi dalam Rupiah (contoh: 50000)
     // Nominal transaksi dalam Rupiah (contoh: 50000)
-    senderName: string;
+    senderName: string; // Nama pengirim (pembeli yang tap kartu)
     // Nama pengirim (pembeli yang tap kartu)
-    senderCardId: string;
+    senderCardId: string; // UID kartu pengirim — akan di-mask sebagian untuk keamanan tampilan
     // UID kartu pengirim — akan di-mask sebagian untuk keamanan tampilan
-    receiverName: string;
+    receiverName: string; // Nama penerima (merchant yang terima pembayaran)
     // Nama penerima (merchant yang terima pembayaran)
-    receiverCardId: string;
+    receiverCardId: string; // UID kartu penerima — juga di-mask untuk keamanan
     // UID kartu penerima — juga di-mask untuk keamanan
-    senderBalance: number;
+    senderBalance: number; // Saldo pengirim SETELAH transaksi berhasil dipotong
     // Saldo pengirim SETELAH transaksi berhasil dipotong
-    receiverBalance: number;
+    receiverBalance: number; // Saldo penerima SETELAH transaksi berhasil ditambah
     // Saldo penerima SETELAH transaksi berhasil ditambah
-    riskScore: number | null;
+    riskScore: number | null; // Nilai Z-Score aktual hasil perhitungan; null jika σ=0 dan X≠μ (kasus distribu...
     // Nilai Z-Score aktual hasil perhitungan; null jika σ=0 dan X≠μ (kasus distribusi terdegenerasi)
-    riskLevel: string;
+    riskLevel: string; // Kategori risiko: NORMAL | SUSPICIOUS | ANOMALY berdasarkan threshold Z-Score
     // Kategori risiko: NORMAL | SUSPICIOUS | ANOMALY berdasarkan threshold Z-Score
-    decision?: string;
+    decision?: string; // tanda ? berarti opsional; nilai: ALLOW | REVIEW | BLOCK sesuai keputusan frau...
     // tanda ? berarti opsional; nilai: ALLOW | REVIEW | BLOCK sesuai keputusan fraud detection
-    zScore?: number | null;
+    zScore?: number | null; // Alias dari riskScore; tanda ? berarti opsional — untuk konsistensi response b...
     // Alias dari riskScore; tanda ? berarti opsional — untuk konsistensi response backend
   };
-  onDone: () => void;
+  onDone: () => void; // callback function () => void — dipanggil saat user menekan tombol "Selesai"; ...
   // callback function () => void — dipanggil saat user menekan tombol "Selesai"; biasanya menutup screen ini dan kembali ke Dashboard
-  onViewDetails?: () => void;
+  onViewDetails?: () => void; // tanda ? berarti opsional — callback untuk menampilkan detail transaksi lebih ...
   // tanda ? berarti opsional — callback untuk menampilkan detail transaksi lebih lengkap jika diimplementasikan
 }
 
 // Komponen utama TransactionSuccessScreen
-export default function TransactionSuccessScreen({
+export default function TransactionSuccessScreen({ // export default mengekspor komponen sebagai ekspor utama file; function Transa...
   // export default mengekspor komponen sebagai ekspor utama file; function TransactionSuccessScreen menerima tiga props
-  transaction,
+  transaction, // destructuring: mengambil props transaction (objek detail transaksi) dari pare...
   // destructuring: mengambil props transaction (objek detail transaksi) dari parent component
-  onDone,
+  onDone, // destructuring: mengambil callback onDone (fungsi yang dipanggil saat user sel...
   // destructuring: mengambil callback onDone (fungsi yang dipanggil saat user selesai melihat layar ini)
-  onViewDetails,
+  onViewDetails, // destructuring: mengambil callback opsional onViewDetails
   // destructuring: mengambil callback opsional onViewDetails
-}: TransactionSuccessScreenProps) {
+}: TransactionSuccessScreenProps) { // : TransactionSuccessScreenProps adalah type annotation TypeScript — memastika...
   // : TransactionSuccessScreenProps adalah type annotation TypeScript — memastikan props sesuai interface yang didefinisikan di atas
 
   // Fungsi: Format angka ke format mata uang Rupiah Indonesia
   // Contoh: 50000 → "Rp 50.000"
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number) => { // const membuat variabel tetap; arrow function (amount: number) => {...} meneri...
     // const membuat variabel tetap; arrow function (amount: number) => {...} menerima angka dan mengembalikan string format Rupiah
-    return new Intl.NumberFormat('id-ID', {
+    return new Intl.NumberFormat('id-ID', { // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia untuk...
       // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia untuk format angka (titik sebagai pemisah ribuan)
-      style: 'currency',
+      style: 'currency', // style: 'currency' memberi tahu Intl bahwa ini format mata uang
       // style: 'currency' memberi tahu Intl bahwa ini format mata uang
-      currency: 'IDR',
+      currency: 'IDR', // currency: 'IDR' adalah kode mata uang Indonesian Rupiah
       // currency: 'IDR' adalah kode mata uang Indonesian Rupiah
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0, // 0 berarti tidak ada angka desimal — Rp 50.000, bukan Rp 50.000,00
       // 0 berarti tidak ada angka desimal — Rp 50.000, bukan Rp 50.000,00
-    }).format(amount);
+    }).format(amount); // .format(amount) menjalankan format aktual pada nilai angka dan mengembalikan ...
     // .format(amount) menjalankan format aktual pada nilai angka dan mengembalikan string
   };
 
   // Fungsi: Tentukan warna badge berdasarkan level risiko Z-Score
   // NORMAL → hijau, SUSPICIOUS → kuning, ANOMALY → merah
-  const getRiskColor = (level: string) => {
+  const getRiskColor = (level: string) => { // arrow function yang menerima string level dan mengembalikan kode warna hex
     // arrow function yang menerima string level dan mengembalikan kode warna hex
-    switch (level.toUpperCase()) {
+    switch (level.toUpperCase()) { // switch membandingkan satu nilai dengan banyak case; .toUpperCase() mengonvers...
       // switch membandingkan satu nilai dengan banyak case; .toUpperCase() mengonversi ke huruf besar agar perbandingan tidak case-sensitive
-      case 'NORMAL':
+      case 'NORMAL': // case NORMAL: transaksi normal; skor risiko Z-score ≤ 2; diklasifikasikan aman
         // case NORMAL: transaksi normal; skor risiko Z-score ≤ 2; diklasifikasikan aman
-        return '#10B981';
+        return '#10B981'; // return mengembalikan nilai dari fungsi; warna hijau emerald — Z-Score ≤ 2, tr...
         // return mengembalikan nilai dari fungsi; warna hijau emerald — Z-Score ≤ 2, transaksi aman
-      case 'SUSPICIOUS':
+      case 'SUSPICIOUS': // case SUSPICIOUS: transaksi mencurigakan; skor risiko Z-score 2-3; perlu ditinjau
         // case SUSPICIOUS: transaksi mencurigakan; skor risiko Z-score 2-3; perlu ditinjau
-        return '#F59E0B';
+        return '#F59E0B'; // warna kuning amber — 2 < Z-Score ≤ 3, perlu ditinjau admin
         // warna kuning amber — 2 < Z-Score ≤ 3, perlu ditinjau admin
-      case 'ANOMALY':
+      case 'ANOMALY': // case ANOMALY: transaksi anomali; skor risiko Z-score > 3; diblokir sistem fra...
         // case ANOMALY: transaksi anomali; skor risiko Z-score > 3; diblokir sistem fraud detection
-        return '#EF4444';
+        return '#EF4444'; // warna merah — Z-Score > 3, anomali terdeteksi, diperlukan tindakan
         // warna merah — Z-Score > 3, anomali terdeteksi, diperlukan tindakan
-      default:
+      default: // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk...
         // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk case yang tidak terdefinisi
-        return '#64748b';
+        return '#64748b'; // warna abu-abu — level tidak dikenali atau belum terdefinisi
         // warna abu-abu — level tidak dikenali atau belum terdefinisi
     }
   };
 
   // Fungsi: Dapatkan label teks untuk badge level risiko
   // Mengonversi kode risiko menjadi teks yang ditampilkan di UI
-  const getRiskLabel = (level: string) => {
+  const getRiskLabel = (level: string) => { // arrow function menerima string level dan mengembalikan label teks yang ramah ...
     // arrow function menerima string level dan mengembalikan label teks yang ramah pengguna
-    switch (level.toUpperCase()) {
+    switch (level.toUpperCase()) { // .toUpperCase() memastikan perbandingan tidak terpengaruh huruf besar/kecil
       // .toUpperCase() memastikan perbandingan tidak terpengaruh huruf besar/kecil
-      case 'NORMAL':
+      case 'NORMAL': // case NORMAL: transaksi normal; skor risiko Z-score ≤ 2; diklasifikasikan aman
         // case NORMAL: transaksi normal; skor risiko Z-score ≤ 2; diklasifikasikan aman
-        return 'NORMAL';
+        return 'NORMAL'; // Tampilkan teks "NORMAL"
         // Tampilkan teks "NORMAL"
-      case 'SUSPICIOUS':
+      case 'SUSPICIOUS': // case SUSPICIOUS: transaksi mencurigakan; skor risiko Z-score 2-3; perlu ditinjau
         // case SUSPICIOUS: transaksi mencurigakan; skor risiko Z-score 2-3; perlu ditinjau
-        return 'SUSPICIOUS';
+        return 'SUSPICIOUS'; // Tampilkan teks "SUSPICIOUS"
         // Tampilkan teks "SUSPICIOUS"
-      case 'ANOMALY':
+      case 'ANOMALY': // case ANOMALY: transaksi anomali; skor risiko Z-score > 3; diblokir sistem fra...
         // case ANOMALY: transaksi anomali; skor risiko Z-score > 3; diblokir sistem fraud detection
-        return 'ANOMALY';
+        return 'ANOMALY'; // Tampilkan teks "ANOMALY"
         // Tampilkan teks "ANOMALY"
-      default:
+      default: // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk...
         // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk case yang tidak terdefinisi
-        return level;
+        return level; // Gunakan nilai asli jika tidak cocok
         // Gunakan nilai asli jika tidak cocok
     }
   };
 
   // Fungsi: Sensor/masking UID kartu untuk keamanan dan privasi
   // Contoh: "04AB1234567890" → "04AB •••• •••• 7890"
-  const maskCardId = (cardId: string) => {
+  const maskCardId = (cardId: string) => { // const membuat variabel tetap; arrow function menerima UID kartu sebagai strin...
     // const membuat variabel tetap; arrow function menerima UID kartu sebagai string dan mengembalikan versi yang di-sensor
-    if (cardId.length <= 8) return cardId;
+    if (cardId.length <= 8) return cardId; // .length mengembalikan jumlah karakter; <= berarti kurang dari atau sama; jika...
     // .length mengembalikan jumlah karakter; <= berarti kurang dari atau sama; jika UID pendek, tampilkan apa adanya
-    return cardId.substring(0, 4) + ' •••• •••• ' + cardId.substring(cardId.length - 4);
+    return cardId.substring(0, 4) + ' •••• •••• ' + cardId.substring(cardId.length - 4); // .substring(start, end) mengambil sebagian string; 0,4 mengambil 4 karakter pe...
     // .substring(start, end) mengambil sebagian string; 0,4 mengambil 4 karakter pertama; cardId.length-4 menghitung posisi 4 karakter terakhir
   };
 
   // Render UI komponen sukses transaksi
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
   // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}> {/* ScrollView: konten bisa di-scroll; menampilkan scrollbar vertikal disembunyikan */}
-        <View style={styles.content}> {/* View konten utama dengan padding */}
-          {/* ✅ DIPERBAIKI: Literal \n dihapus — \n di antara elemen JSX dianggap teks oleh React Native */}
-          <View style={styles.successIcon}> {/* View container ikon centang sukses di tengah atas */}
-            <View style={styles.checkmarkCircle}> {/* View lingkaran hijau berisi centang */}
-              <Text style={styles.checkmark}>✓</Text> {/* teks centang putih di tengah lingkaran */}
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <View style={styles.successIcon}>
+            <View style={styles.checkmarkCircle}>
+              <Text style={styles.checkmark}>✓</Text>
             </View>
           </View>
-          <Text style={styles.title}>Transaksi Berhasil</Text> {/* judul utama layar sukses */}
-          <Text style={styles.subtitle}> {/* teks deskripsi singkat di bawah judul */}
+          <Text style={styles.title}>Transaksi Berhasil</Text>
+          <Text style={styles.subtitle}>
             Pembayaran NFC telah berhasil diproses
           </Text>
-          <View style={styles.amountCard}> {/* View kartu putih menampilkan nominal transaksi */}
-            <Text style={styles.amountLabel}>Nominal</Text> {/* label teks "Nominal" */}
-            <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text> {/* angka nominal diformat Rupiah */}
+          <View style={styles.amountCard}>
+            <Text style={styles.amountLabel}>Nominal</Text>
+            <Text style={styles.amount}>{formatCurrency(transaction.amount)}</Text>
           </View>
-          <View style={styles.detailsCard}> {/* View kartu putih berisi detail pengirim dan penerima */}
-            {/* ✅ DIPERBAIKI: Literal \n dihapus — penghapusan mencegah error 'Text strings must be rendered within a <Text>' */}
-            <View style={styles.detailSection}> {/* View section detail pengirim */}
-              <View style={styles.detailHeader}> {/* View header section berisi ikon dan label */}
-                <Text style={styles.detailHeaderIcon}>👤</Text> {/* ikon user pengirim */}
-                <Text style={styles.detailHeaderText}>Dari (Pengirim)</Text> {/* label header pengirim */}
+          <View style={styles.detailsCard}>
+            <View style={styles.detailSection}>
+              <View style={styles.detailHeader}>
+                <Text style={styles.detailHeaderIcon}>👤</Text>
+                <Text style={styles.detailHeaderText}>Dari (Pengirim)</Text>
               </View>
-              <View style={styles.detailContent}> {/* View kolom detail pengirim */}
-                <Text style={styles.detailName}>{transaction.senderName}</Text> {/* nama pengirim */}
-                <Text style={styles.detailLabel}>Kartu Pengirim</Text> {/* label kartu pengirim */}
-                <Text style={styles.detailValue}>{maskCardId(transaction.senderCardId)}</Text> {/* UID kartu pengirim yang di-mask */}
-                <Text style={styles.detailLabel}>Saldo Pengirim</Text> {/* label saldo pengirim */}
-                <Text style={[styles.detailValue, styles.balanceValue]}> {/* saldo pengirim setelah transaksi */}
+              <View style={styles.detailContent}>
+                <Text style={styles.detailName}>{transaction.senderName}</Text>
+                <Text style={styles.detailLabel}>Kartu Pengirim</Text>
+                <Text style={styles.detailValue}>{maskCardId(transaction.senderCardId)}</Text>
+                <Text style={styles.detailLabel}>Saldo Pengirim</Text>
+                <Text style={[styles.detailValue, styles.balanceValue]}>
                   {formatCurrency(transaction.senderBalance)}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.divider} /> {/* View garis pemisah antara section pengirim dan penerima */}
-            {/* ✅ DIPERBAIKI: Literal \n setelah self-closing tag dihapus — React Native tidak bisa render string mentah di luar <Text> */}
-            <View style={styles.detailSection}> {/* View section detail penerima */}
-              <View style={styles.detailHeader}> {/* View header section penerima */}
-                <Text style={styles.detailHeaderIcon}>👥</Text> {/* ikon user penerima */}
-                <Text style={styles.detailHeaderText}>Ke (Penerima)</Text> {/* label header penerima */}
+            <View style={styles.divider} />
+            <View style={styles.detailSection}>
+              <View style={styles.detailHeader}>
+                <Text style={styles.detailHeaderIcon}>👥</Text>
+                <Text style={styles.detailHeaderText}>Ke (Penerima)</Text>
               </View>
-              <View style={styles.detailContent}> {/* View kolom detail penerima */}
-                <Text style={styles.detailName}>{transaction.receiverName}</Text> {/* nama penerima */}
-                <Text style={styles.detailLabel}>Kartu Penerima</Text> {/* label kartu penerima */}
-                <Text style={styles.detailValue}>{maskCardId(transaction.receiverCardId)}</Text> {/* UID kartu penerima yang di-mask */}
-                <Text style={styles.detailLabel}>Penerima bertambah</Text> {/* label saldo tambah penerima */}
-                <Text style={[styles.detailValue, styles.positiveAmount]}> {/* jumlah yang diterima; warna hijau */}
+              <View style={styles.detailContent}>
+                <Text style={styles.detailName}>{transaction.receiverName}</Text>
+                <Text style={styles.detailLabel}>Kartu Penerima</Text>
+                <Text style={styles.detailValue}>{maskCardId(transaction.receiverCardId)}</Text>
+                <Text style={styles.detailLabel}>Penerima bertambah</Text>
+                <Text style={[styles.detailValue, styles.positiveAmount]}>
                   +{formatCurrency(transaction.amount)}
                 </Text>
               </View>
             </View>
           </View>
-          <View style={styles.riskCard}> {/* View kartu hasil Z-Score Anomaly Detection */}
-            <View style={styles.riskHeader}> {/* View header kartu risiko: ikon perisai + judul */}
-              <Text style={styles.riskIcon}>🛡️</Text> {/* ikon perisai keamanan */}
-              <View style={styles.riskHeaderText}> {/* View teks header risiko */}
-                <Text style={styles.riskTitle}>Z-Score Anomaly Detection</Text> {/* judul section deteksi fraud */}
+          <View style={styles.riskCard}>
+            <View style={styles.riskHeader}>
+              <Text style={styles.riskIcon}>🛡️</Text>
+              <View style={styles.riskHeaderText}>
+                <Text style={styles.riskTitle}>Z-Score Anomaly Detection</Text>
               </View>
             </View>
-            <View style={styles.riskContent}> {/* View konten detail Z-Score */}
-              {/* ✅ DIPERBAIKI: Literal \n dihapus — komentar JSX pakai {/* */} bukan
+            <View style={styles.riskContent}> bukan
               // agar tidak menjadi teks */}
               <View style={styles.riskScoreRow}>
                 <Text style={styles.riskScoreLabel}>Z-Score:</Text>
                 <Text style={styles.riskScoreValue}>
-                  {transaction.riskScore === null || transaction.riskScore === undefined
+                  {transaction.riskScore === null || transaction.riskScore === undefined // memeriksa apakah riskScore null atau undefined sebelum menampilkan; mencegah ...
                   // memeriksa apakah riskScore null atau undefined sebelum menampilkan; mencegah tampilan 'null' di UI
-                    ? 'null (σ=0, X≠μ)'
+                    ? 'null (σ=0, X≠μ)' // Kasus khusus: standar deviasi = 0
                     // Kasus khusus: standar deviasi = 0
-                    : typeof transaction.riskScore === 'number'
+                    : typeof transaction.riskScore === 'number' // jika riskScore bertipe number, gunakan toFixed(2) untuk format 2 desimal
                     // jika riskScore bertipe number, gunakan toFixed(2) untuk format 2 desimal
-                    ? transaction.riskScore.toFixed(4)
+                    ? transaction.riskScore.toFixed(4) // Tampilkan Z-Score dengan 4 desimal
                     // Tampilkan Z-Score dengan 4 desimal
                     : transaction.riskScore}
                 </Text>
@@ -241,33 +237,33 @@ export default function TransactionSuccessScreen({
               </View>
               <View style={styles.riskLevelRow}>
                 <Text style={styles.riskLevelLabel}>Risk Level:</Text>
-                <View
+                <View // View: komponen container di React Native setara dengan div di HTML; digu...
                 // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
-                  style={[
+                  style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                   // style={} prop untuk menerapkan styling ke elemen React Native
-                    styles.riskLevelBadge,
+                    styles.riskLevelBadge, // riskLevelBadge memberikan style dasar badge level risiko; warna ditambah via ...
                     // riskLevelBadge memberikan style dasar badge level risiko; warna ditambah via style prop berikutnya
-                    { backgroundColor: `${getRiskColor(transaction.riskLevel)}20` },
+                    { backgroundColor: `${getRiskColor(transaction.riskLevel)}20` }, // Warna latar badge dengan opacity 20%
                     // Warna latar badge dengan opacity 20%
                   ]}
                 >
-                  <View
+                  <View // View: komponen container di React Native setara dengan div di HTML; digu...
                   // View: komponen container di React Native setara dengan div di HTML; digunakan untuk mengelompokkan elemen
-                    style={[
+                    style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                     // style={} prop untuk menerapkan styling ke elemen React Native
-                      styles.riskLevelDot,
+                      styles.riskLevelDot, // riskLevelDot memberikan style untuk titik indikator dalam badge level risiko
                       // riskLevelDot memberikan style untuk titik indikator dalam badge level risiko
-                      { backgroundColor: getRiskColor(transaction.riskLevel) },
+                      { backgroundColor: getRiskColor(transaction.riskLevel) }, // Titik indikator warna penuh
                       // Titik indikator warna penuh
                     ]}
                   />
-                  <Text
+                  <Text // Text: komponen untuk menampilkan teks di layar; setara dengan p/span di ...
                   // Text: komponen untuk menampilkan teks di layar; setara dengan p/span di HTML
-                    style={[
+                    style={[ // style={} prop untuk menerapkan styling ke elemen React Native
                     // style={} prop untuk menerapkan styling ke elemen React Native
-                      styles.riskLevelText,
+                      styles.riskLevelText, // riskLevelText memberikan style dasar teks dalam badge level risiko
                       // riskLevelText memberikan style dasar teks dalam badge level risiko
-                      { color: getRiskColor(transaction.riskLevel) },
+                      { color: getRiskColor(transaction.riskLevel) }, // Teks berwarna sesuai level risiko
                       // Teks berwarna sesuai level risiko
                     ]}
                   >
@@ -277,19 +273,21 @@ export default function TransactionSuccessScreen({
               </View>
             </View>
           </View>
-          <View style={styles.actions}> {/* View container tombol aksi di bagian bawah screen */}
-            <TouchableOpacity style={styles.primaryButton} onPress={onDone}> {/* tombol Selesai; onPress memanggil callback onDone untuk kembali ke Dashboard */}
-              <Text style={styles.primaryButtonText}>Selesai</Text> {/* teks label tombol utama */}
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.primaryButton} onPress={onDone}>
+              <Text style={styles.primaryButtonText}>Selesai</Text>
             </TouchableOpacity>
-            {onViewDetails && (
+            {onViewDetails && ( // Tampilkan tombol detail hanya jika callback diberikan
             // Tampilkan tombol detail hanya jika callback diberikan
-              <TouchableOpacity style={styles.secondaryButton} onPress={onViewDetails}> {/* tombol sekunder Lihat Detail; hanya tampil jika callback onViewDetails tersedia */}
-                <Text style={styles.secondaryButtonText}>Lihat Detail</Text> {/* teks label tombol sekunder */}
+              <TouchableOpacity style={styles.secondaryButton} onPress={onViewDetails}>
+                <Text style={styles.secondaryButtonText}>Lihat Detail</Text>
               </TouchableOpacity>
             )}
           </View>
-        </View> {/* penutup View styles.content */}
-      </ScrollView> {/* penutup ScrollView */}
-    </SafeAreaView> {/* penutup SafeAreaView */}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+

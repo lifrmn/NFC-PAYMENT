@@ -91,196 +91,196 @@
 // Utils:
 // - apiService: HTTP client (getUserCards, updateCardStatus)
 // ==================================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk state cards/load...
 // import React (wajib untuk JSX) dan dua hooks: useState untuk state cards/loading/refreshing; useEffect untuk auto-load data kartu saat screen pertama kali dibuka
-import {
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
-  View,
+  View, // View adalah container dasar React Native — setara div di HTML
   // View adalah container dasar React Native — setara div di HTML
-  Text,
+  Text, // Text menampilkan teks statis maupun dinamis
   // Text menampilkan teks statis maupun dinamis
-  TouchableOpacity,
+  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan saat ditekan — digunaka...
   // TouchableOpacity adalah tombol dengan efek transparan saat ditekan — digunakan untuk tombol blokir, aktifkan, tambah kartu
-  ScrollView,
+  ScrollView, // ScrollView memungkinkan konten di-scroll — digunakan karena daftar kartu bisa...
   // ScrollView memungkinkan konten di-scroll — digunakan karena daftar kartu bisa panjang
-  Alert,
+  Alert, // Alert menampilkan dialog popup native — digunakan untuk konfirmasi blokir kar...
   // Alert menampilkan dialog popup native — digunakan untuk konfirmasi blokir kartu dan pesan error
-  RefreshControl,
+  RefreshControl, // RefreshControl adalah komponen khusus pull-to-refresh yang dipasang di dalam ...
   // RefreshControl adalah komponen khusus pull-to-refresh yang dipasang di dalam ScrollView
-  ActivityIndicator
+  ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat loading data kart...
   // ActivityIndicator adalah spinner animasi — ditampilkan saat loading data kartu pertama kali
-} from 'react-native';
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
 // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home in...
 // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
-import { apiService } from '../utils/apiService';
+import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil API getUserCards (amb...
 // import apiService Singleton — digunakan untuk memanggil API getUserCards (ambil kartu) dan updateCardStatus (blokir/aktifkan kartu)
-import styles from './MyCardsScreen.styles';
+import styles from './MyCardsScreen.styles'; // import stylesheet dari file terpisah agar komponen tetap bersih
 // import stylesheet dari file terpisah agar komponen tetap bersih
 
 // Props yang diterima dari parent component (App.tsx atau DashboardScreen)
-interface MyCardsScreenProps {
+interface MyCardsScreenProps { // interface adalah blueprint TypeScript — mendefinisikan struktur props agar ty...
   // interface adalah blueprint TypeScript — mendefinisikan struktur props agar type-safe
-  user: any;
+  user: any; // props user bertipe any — berisi data user yang sedang login (id, name, balanc...
   // props user bertipe any — berisi data user yang sedang login (id, name, balance, dll)
-  onBack: () => void;
+  onBack: () => void; // callback function () => void — dipanggil saat user menekan tombol kembali ke ...
   // callback function () => void — dipanggil saat user menekan tombol kembali ke DashboardScreen
-  onRegisterNew?: () => void;
+  onRegisterNew?: () => void; // tanda ? berarti props ini opsional — jika disediakan, dipanggil untuk navigas...
   // tanda ? berarti props ini opsional — jika disediakan, dipanggil untuk navigasi ke RegisterCardScreen
 }
 
 // Interface tipe data kartu NFC (sesuai schema Prisma di backend)
-interface NFCCard {
+interface NFCCard { // interface mendefinisikan struktur objek kartu NFC yang diterima dari backend API
   // interface mendefinisikan struktur objek kartu NFC yang diterima dari backend API
-  id: number;
+  id: number; // Primary key di database
   // Primary key di database
-  cardId: string;
+  cardId: string; // UID fisik kartu NFC (format hexadecimal, contoh: 04AB12CD78)
   // UID fisik kartu NFC (format hexadecimal, contoh: 04AB12CD78)
-  userId: number;
+  userId: number; // Foreign key ke tabel User — menghubungkan kartu dengan pemiliknya
   // Foreign key ke tabel User — menghubungkan kartu dengan pemiliknya
-  balance: number;
+  balance: number; // Saldo kartu dalam satuan Rupiah
   // Saldo kartu dalam satuan Rupiah
-  cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED';
+  cardStatus: 'ACTIVE' | 'BLOCKED' | 'LOST' | 'EXPIRED'; // Status kartu (4 pilihan)
   // Status kartu (4 pilihan)
-  cardType?: string;
+  cardType?: string; // Tipe kartu NFC (opsional)
   // Tipe kartu NFC (opsional)
-  cardFrequency?: string;
+  cardFrequency?: string; // Frekuensi RF kartu (opsional)
   // Frekuensi RF kartu (opsional)
-  createdAt: string;
+  createdAt: string; // Tanggal registrasi (ISO 8601)
   // Tanggal registrasi (ISO 8601)
-  lastUsed?: string;
+  lastUsed?: string; // Tanggal terakhir digunakan (opsional)
   // Tanggal terakhir digunakan (opsional)
 }
 
-export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsScreenProps) {
+export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsScreenProps) { // export default function: mendefinisikan dan mengekspor komponen React fungsio...
   // export default function: mendefinisikan dan mengekspor komponen React fungsional utama file ini
   // STATE 1: cards - Array kartu NFC milik user
   // Awalnya kosong, diisi setelah fetch dari backend
-  const [cards, setCards] = useState<NFCCard[]>([]);
+  const [cards, setCards] = useState<NFCCard[]>([]); // const membuat variabel tetap; useState<NFCCard[]>([]) membuat state array ber...
   // const membuat variabel tetap; useState<NFCCard[]>([]) membuat state array bertipe NFCCard; [] nilai awal array kosong; setCards memperbarui daftar kartu
 
   // STATE 2: loading - Flag loading awal (tampilkan full-screen spinner)
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // useState(false) membuat state boolean untuk loading awal; setLoading(true) di...
   // useState(false) membuat state boolean untuk loading awal; setLoading(true) dipanggil sebelum fetch data, setLoading(false) setelah selesai
 
   // STATE 3: refreshing - Flag pull-to-refresh (tampilkan spinner di atas scroll)
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // useState(false) membuat state boolean untuk pull-to-refresh; berbeda dengan l...
   // useState(false) membuat state boolean untuk pull-to-refresh; berbeda dengan loading — refreshing tidak menampilkan full-screen spinner
 
   // useEffect: Auto-load kartu saat komponen pertama kali mount
-  useEffect(() => {
+  useEffect(() => { // useEffect(callback, []) dijalankan SEKALI saat komponen pertama kali mount
     // useEffect(callback, []) dijalankan SEKALI saat komponen pertama kali mount
-    loadCards();
+    loadCards(); // memanggil loadCards() untuk mengambil data kartu dari backend saat screen dibuka
     // memanggil loadCards() untuk mengambil data kartu dari backend saat screen dibuka
-  }, []);
+  }, []); // array kosong [] berarti efek ini hanya berjalan sekali saat mount
   // array kosong [] berarti efek ini hanya berjalan sekali saat mount
 
   // Fungsi: Ambil daftar kartu user dari backend API
   // Kebijakan: max 1 kartu per user (.slice(0, 1))
-  const loadCards = async () => {
+  const loadCards = async () => { // loadCards: fungsi async untuk memuat data kartu NFC user dari backend; async ...
     // loadCards: fungsi async untuk memuat data kartu NFC user dari backend; async karena melakukan HTTP request
     // Guard: pastikan user valid sebelum request API
-    if (!user || !user.id) {
+    if (!user || !user.id) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      console.log('⚠️ No valid user');
+      console.log('⚠️ No valid user'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return;
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
       // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
-    setLoading(true);
+    setLoading(true); // Tampilkan loading spinner
     // Tampilkan loading spinner
-    try {
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Panggil API: GET /api/nfc-cards/user/:userId
-      const response = await apiService.getUserCards(user.id);
+      const response = await apiService.getUserCards(user.id); // const response: menyimpan response dari HTTP request; await menunggu response...
       // const response: menyimpan response dari HTTP request; await menunggu response diterima
       
       // Handle berbagai format response dari backend
-      if (response && Array.isArray(response.cards)) {
+      if (response && Array.isArray(response.cards)) { // memeriksa response valid dan berisi array cards; Array.isArray memastikan dat...
         // memeriksa response valid dan berisi array cards; Array.isArray memastikan data bertipe array
         // Format: { cards: [...] } - ambil hanya 1 kartu (kebijakan 1 user = 1 card)
-        setCards(response.cards.slice(0, 1));
+        setCards(response.cards.slice(0, 1)); // slice(0,1) mengambil hanya elemen pertama array; sistem menerapkan kebijakan ...
         // slice(0,1) mengambil hanya elemen pertama array; sistem menerapkan kebijakan 1 user = 1 kartu
-      } else if (Array.isArray(response)) {
+      } else if (Array.isArray(response)) { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak t...
         // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
         // Format: [...] - array langsung, ambil hanya 1 kartu
-        setCards(response.slice(0, 1));
+        setCards(response.slice(0, 1)); // slice(0,1) pada response langsung; fallback jika format response berupa array...
         // slice(0,1) pada response langsung; fallback jika format response berupa array langsung bukan objek
-      } else {
+      } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
-        setCards([]);
+        setCards([]); // Format tidak dikenal, set kosong
         // Format tidak dikenal, set kosong
       }
-    } catch (error: any) {
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi t...
       // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
-      console.error('Error loading cards:', error);
+      console.error('Error loading cards:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      if (error.message?.includes('404')) {
+      if (error.message?.includes('404')) { // memeriksa apakah error adalah 404 Not Found; menangani kasus khusus kartu bel...
         // memeriksa apakah error adalah 404 Not Found; menangani kasus khusus kartu belum terdaftar
-        setCards([]);
+        setCards([]); // 404 = user belum punya kartu, bukan error sebenarnya
         // 404 = user belum punya kartu, bukan error sebenarnya
-      } else {
+      } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
         // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
-        Alert.alert('Error', 'Gagal memuat data kartu');
+        Alert.alert('Error', 'Gagal memuat data kartu'); // Error lain: tampilkan pesan
         // Error lain: tampilkan pesan
       }
-    } finally {
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap...
       // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
-      setLoading(false);
+      setLoading(false); // Sembunyikan loading spinner bagaimanapun hasilnya
       // Sembunyikan loading spinner bagaimanapun hasilnya
     }
   };
 
   // Fungsi: Handler pull-to-refresh
   // Dipanggil saat user tarik layar ke bawah
-  const onRefresh = async () => {
+  const onRefresh = async () => { // async karena memanggil loadCards yang berisi await
     // async karena memanggil loadCards yang berisi await
-    setRefreshing(true);
+    setRefreshing(true); // setRefreshing(true) mengaktifkan spinner pull-to-refresh di RefreshControl
     // setRefreshing(true) mengaktifkan spinner pull-to-refresh di RefreshControl
-    await loadCards();
+    await loadCards(); // await menunggu loadCards selesai sebelum mematikan spinner
     // await menunggu loadCards selesai sebelum mematikan spinner
-    setRefreshing(false);
+    setRefreshing(false); // setRefreshing(false) mematikan spinner setelah data selesai dimuat
     // setRefreshing(false) mematikan spinner setelah data selesai dimuat
   };
 
   // Fungsi: Handler hapus kartu (permanent delete, lalu bisa daftar kartu baru)
-  const handleDeleteCard = (card: NFCCard) => {
+  const handleDeleteCard = (card: NFCCard) => { // arrow function menerima objek kartu NFCCard; menampilkan konfirmasi sebelum h...
     // arrow function menerima objek kartu NFCCard; menampilkan konfirmasi sebelum hapus permanen
-    Alert.alert(
+    Alert.alert( // Alert.alert() menampilkan dialog konfirmasi sebelum menghapus kartu secara pe...
     // Alert.alert() menampilkan dialog konfirmasi sebelum menghapus kartu secara permanen
-      '⚠️ Hapus Kartu',
+      '⚠️ Hapus Kartu', // judul dialog hapus kartu
       // judul dialog hapus kartu
-      `Kartu ${card.cardId} akan dihapus permanen dari akun Anda.\n\nSetelah dihapus, Anda dapat mendaftarkan kartu NFC baru.\n\nLanjutkan?`,
+      `Kartu ${card.cardId} akan dihapus permanen dari akun Anda.\n\nSetelah dihapus, Anda dapat mendaftarkan kartu NFC baru.\n\nLanjutkan?`, // pesan konfirmasi dengan template literal menyisipkan cardId
       // pesan konfirmasi dengan template literal menyisipkan cardId
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' }, // tombol batal; style: 'cancel' memberi tampilan khusus tombol batal
         // tombol batal; style: 'cancel' memberi tampilan khusus tombol batal
         {
-          text: 'Hapus',
+          text: 'Hapus', // teks tombol konfirmasi hapus
           // teks tombol konfirmasi hapus
-          style: 'destructive',
+          style: 'destructive', // style: 'destructive' menampilkan teks merah di iOS sebagai peringatan aksi be...
           // style: 'destructive' menampilkan teks merah di iOS sebagai peringatan aksi berbahaya
-          onPress: async () => {
+          onPress: async () => { // async callback dipanggil saat user menekan Hapus
             // async callback dipanggil saat user menekan Hapus
-            try {
+            try { // try: membungkus operasi yang berisiko error
               // try: membungkus operasi yang berisiko error
-              await apiService.deleteCard(card.cardId);
+              await apiService.deleteCard(card.cardId); // await HTTP DELETE ke backend untuk hapus kartu berdasarkan cardId
               // await HTTP DELETE ke backend untuk hapus kartu berdasarkan cardId
-              Alert.alert(
+              Alert.alert( // Alert.alert() menampilkan dialog sukses setelah kartu berhasil dihapus
               // Alert.alert() menampilkan dialog sukses setelah kartu berhasil dihapus
-                'Berhasil',
+                'Berhasil', // judul dialog sukses
                 // judul dialog sukses
-                'Kartu berhasil dihapus. Anda sekarang dapat mendaftarkan kartu NFC baru.',
+                'Kartu berhasil dihapus. Anda sekarang dapat mendaftarkan kartu NFC baru.', // pesan informasi setelah hapus berhasil
                 // pesan informasi setelah hapus berhasil
-                [{ text: 'OK', onPress: () => onRegisterNew && onRegisterNew() }]
+                [{ text: 'OK', onPress: () => onRegisterNew && onRegisterNew() }] // callback setelah OK: navigasi ke screen daftar kartu baru jika callback tersedia
                 // callback setelah OK: navigasi ke screen daftar kartu baru jika callback tersedia
               );
-              loadCards();
+              loadCards(); // muat ulang daftar kartu setelah hapus
               // muat ulang daftar kartu setelah hapus
-            } catch (error: any) {
+            } catch (error: any) { // catch menangkap error dari deleteCard
               // catch menangkap error dari deleteCard
-              Alert.alert('Error', error.message || 'Gagal menghapus kartu');
+              Alert.alert('Error', error.message || 'Gagal menghapus kartu'); // tampilkan pesan error; || fallback jika message tidak ada
               // tampilkan pesan error; || fallback jika message tidak ada
             }
           },
@@ -291,38 +291,38 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // Fungsi: Handler aksi kartu (BLOCK atau ACTIVATE)
   // Tampilkan konfirmasi dulu sebelum eksekusi perubahan status
-  const handleCardAction = async (card: NFCCard, action: 'BLOCK' | 'ACTIVATE') => {
+  const handleCardAction = async (card: NFCCard, action: 'BLOCK' | 'ACTIVATE') => { // async karena memanggil API; parameter card bertipe NFCCard; action bertipe un...
     // async karena memanggil API; parameter card bertipe NFCCard; action bertipe union string literal 'BLOCK' | 'ACTIVATE'
-    const actionText = action === 'BLOCK' ? 'memblokir' : 'mengaktifkan';
+    const actionText = action === 'BLOCK' ? 'memblokir' : 'mengaktifkan'; // ternary operator: jika action adalah 'BLOCK' gunakan 'memblokir', jika tidak ...
     // ternary operator: jika action adalah 'BLOCK' gunakan 'memblokir', jika tidak gunakan 'mengaktifkan'
-    const newStatus = action === 'BLOCK' ? 'BLOCKED' : 'ACTIVE';
+    const newStatus = action === 'BLOCK' ? 'BLOCKED' : 'ACTIVE'; // ternary menentukan nilai status baru yang akan dikirim ke backend
     // ternary menentukan nilai status baru yang akan dikirim ke backend
 
-    Alert.alert(
+    Alert.alert( // Alert.alert menampilkan dialog konfirmasi sebelum eksekusi perubahan status
     // Alert.alert menampilkan dialog konfirmasi sebelum eksekusi perubahan status
-      'Konfirmasi',
+      'Konfirmasi', // judul dialog konfirmasi sebelum melakukan aksi penting; mencegah aksi tidak d...
       // judul dialog konfirmasi sebelum melakukan aksi penting; mencegah aksi tidak disengaja
-      `Apakah Anda yakin ingin ${actionText} kartu ini?`,
+      `Apakah Anda yakin ingin ${actionText} kartu ini?`, // template literal ${} menyisipkan variabel ke string
       // template literal ${} menyisipkan variabel ke string
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' }, // tombol batal — tidak melakukan apa-apa
         // tombol batal — tidak melakukan apa-apa
         {
-          text: 'Ya',
+          text: 'Ya', // teks tombol konfirmasi; user harus menekan 'Ya' untuk melanjutkan perubahan s...
           // teks tombol konfirmasi; user harus menekan 'Ya' untuk melanjutkan perubahan status kartu
-          onPress: async () => {
+          onPress: async () => { // async arrow function sebagai callback tombol 'Ya'
             // async arrow function sebagai callback tombol 'Ya'
-            try {
+            try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
               // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-              await apiService.updateCardStatus(card.cardId, newStatus);
+              await apiService.updateCardStatus(card.cardId, newStatus); // await menunggu HTTP PUT /api/nfc-cards/:cardId/status mengubah status kartu d...
               // await menunggu HTTP PUT /api/nfc-cards/:cardId/status mengubah status kartu di backend
-              Alert.alert('Berhasil', `Kartu berhasil di${actionText}`);
+              Alert.alert('Berhasil', `Kartu berhasil di${actionText}`); // template literal menyisipkan actionText ke pesan
               // template literal menyisipkan actionText ke pesan
-              loadCards();
+              loadCards(); // memanggil loadCards() untuk me-refresh tampilan daftar kartu setelah status b...
               // memanggil loadCards() untuk me-refresh tampilan daftar kartu setelah status berubah
-            } catch (error: any) {
+            } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi t...
               // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
-              Alert.alert('Error', error.message || `Gagal ${actionText} kartu`);
+              Alert.alert('Error', error.message || `Gagal ${actionText} kartu`); // || menampilkan pesan fallback jika error.message tidak ada
               // || menampilkan pesan fallback jika error.message tidak ada
             }
           },
@@ -333,57 +333,57 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
 
   // Fungsi: Dapatkan warna badge berdasarkan status kartu
   // Digunakan untuk memberi warna visual yang berbeda tiap status
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string) => { // arrow function menerima status string dan mengembalikan kode warna hex
     // arrow function menerima status string dan mengembalikan kode warna hex
-    switch (status) {
+    switch (status) { // switch memeriksa nilai status dan menjalankan case yang cocok
       // switch memeriksa nilai status dan menjalankan case yang cocok
-      case 'ACTIVE':   return '#10B981';
+      case 'ACTIVE':   return '#10B981'; // return langsung mengembalikan nilai; hijau untuk kartu aktif
       // return langsung mengembalikan nilai; hijau untuk kartu aktif
-      case 'BLOCKED':  return '#EF4444';
+      case 'BLOCKED':  return '#EF4444'; // merah untuk kartu diblokir
       // merah untuk kartu diblokir
-      case 'LOST':     return '#94a3b8';
+      case 'LOST':     return '#94a3b8'; // abu-abu untuk kartu dilaporkan hilang
       // abu-abu untuk kartu dilaporkan hilang
-      case 'EXPIRED':  return '#F59E0B';
+      case 'EXPIRED':  return '#F59E0B'; // kuning untuk kartu kadaluarsa
       // kuning untuk kartu kadaluarsa
-      default:         return '#64748b';
+      default:         return '#64748b'; // default dipanggil jika tidak ada case yang cocok
       // default dipanggil jika tidak ada case yang cocok
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string) => { // arrow function mengubah status kode ke teks Bahasa Indonesia
     // arrow function mengubah status kode ke teks Bahasa Indonesia
-    switch (status) {
+    switch (status) { // switch statement memeriksa nilai variabel status dan menjalankan blok case ya...
       // switch statement memeriksa nilai variabel status dan menjalankan blok case yang cocok
-      case 'ACTIVE':   return 'Aktif';
+      case 'ACTIVE':   return 'Aktif'; // case ACTIVE: kartu dalam status aktif; bisa digunakan untuk transaksi
       // case ACTIVE: kartu dalam status aktif; bisa digunakan untuk transaksi
-      case 'ACTIVE':   return 'Aktif';
+      case 'ACTIVE':   return 'Aktif'; // case cocok dengan 'ACTIVE', return langsung keluar dari switch
       // case cocok dengan 'ACTIVE', return langsung keluar dari switch
-      case 'BLOCKED':  return 'Diblokir';
+      case 'BLOCKED':  return 'Diblokir'; // case BLOCKED: kartu dalam status diblokir; tidak bisa digunakan untuk transak...
       // case BLOCKED: kartu dalam status diblokir; tidak bisa digunakan untuk transaksi sampai diaktifkan kembali
-      case 'LOST':     return 'Hilang';
+      case 'LOST':     return 'Hilang'; // case LOST: kartu dilaporkan hilang; status ini menonaktifkan kartu demi keamanan
       // case LOST: kartu dilaporkan hilang; status ini menonaktifkan kartu demi keamanan
-      case 'EXPIRED':  return 'Kadaluarsa';
+      case 'EXPIRED':  return 'Kadaluarsa'; // case EXPIRED: kartu sudah kadaluarsa; tidak bisa digunakan lagi
       // case EXPIRED: kartu sudah kadaluarsa; tidak bisa digunakan lagi
-      default:         return status;
+      default:         return status; // default: jika tidak ada case yang cocok, kembalikan nilai asli string
       // default: jika tidak ada case yang cocok, kembalikan nilai asli string
     }
   };
 
-  const formatDate = (dateString: string | undefined | null) => {
+  const formatDate = (dateString: string | undefined | null) => { // arrow function: format string tanggal ISO menjadi teks tanggal Indonesia; men...
     // arrow function: format string tanggal ISO menjadi teks tanggal Indonesia; menerima string, undefined, atau null
-    if (!dateString) return '-';
+    if (!dateString) return '-'; // guard: kembalikan '-' jika dateString kosong/null/undefined
     // guard: kembalikan '-' jika dateString kosong/null/undefined
-    const date = new Date(dateString);
+    const date = new Date(dateString); // konversi string tanggal ISO ke objek Date JavaScript
     // konversi string tanggal ISO ke objek Date JavaScript
-    if (isNaN(date.getTime())) return '-';
+    if (isNaN(date.getTime())) return '-'; // getTime() mengembalikan NaN jika string bukan tanggal valid; kembalikan '-' u...
     // getTime() mengembalikan NaN jika string bukan tanggal valid; kembalikan '-' untuk data rusak
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString('id-ID', { // toLocaleDateString() memformat objek Date ke string tanggal sesuai locale Ind...
       // toLocaleDateString() memformat objek Date ke string tanggal sesuai locale Indonesia
-      day: '2-digit',
+      day: '2-digit', // hari 2 digit: 01, 15, 31
       // hari 2 digit: 01, 15, 31
-      month: 'short',
+      month: 'short', // bulan singkat: Jan, Feb, Mar
       // bulan singkat: Jan, Feb, Mar
-      year: 'numeric',
+      year: 'numeric', // tahun penuh: 2025
       // tahun penuh: 2025
     });
   };
@@ -391,39 +391,37 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
   // ── RENDER KONDISIONAL: Loading State (awal, belum ada data) ──
   // Tampilkan full-screen spinner HANYA saat loading pertama kali
   // (bukan saat pull-to-refresh, karena pull-to-refresh punya spinner sendiri)
-  if (loading && cards.length === 0) {
+  if (loading && cards.length === 0) { // if memeriksa dua kondisi sekaligus dengan &&; loading=true DAN belum ada data...
     // if memeriksa dua kondisi sekaligus dengan &&; loading=true DAN belum ada data kartu — tampilkan full-screen spinner
-    return (
+    return ( // early return menampilkan UI loading alternatif
     // early return menampilkan UI loading alternatif
-      <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch */}
-        <View style={styles.header}> {/* View header loading screen */}
-          <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali */}
-            <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Daftar Kartu</Text> {/* judul header */}
-          <View style={styles.headerSpacer} /> {/* spacer untuk keseimbangan */}
+          <Text style={styles.headerTitle}>Daftar Kartu</Text>
+          <View style={styles.headerSpacer} />
         </View>
-        <View style={styles.loadingContainer}> {/* View container spinner */}
-          <ActivityIndicator size="large" color="#3B82F6" /> {/* spinner biru besar */}
-          <Text style={styles.loadingText}>Memuat kartu...</Text> {/* teks loading */}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Memuat kartu...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   // ── RENDER UTAMA: Daftar Kartu ──
-  return (
+  return ( // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
   // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
-    <SafeAreaView style={styles.container}> {/* SafeAreaView: padding aman dari notch dan status bar */}
-      <View style={styles.header}> {/* View header: baris atas berisi tombol kembali dan judul */}
-        <TouchableOpacity onPress={onBack} style={styles.backButton}> {/* tombol kembali ke DashboardScreen */}
-          <Text style={styles.backIcon}>←</Text> {/* ikon panah kiri */}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daftar Kartu</Text> {/* judul screen */}
-        <View style={styles.headerSpacer} /> {/* spacer untuk keseimbangan layout */}
-      </View>
-      {/* ScrollView: View yang bisa discroll jika konten melebihi tinggi layar */}
-      {/* style={} menerapkan objek style yang sudah didefinisikan di StyleSheet */}
+        <Text style={styles.headerTitle}>Daftar Kartu</Text>
+        <View style={styles.headerSpacer} />
+      </View> menerapkan objek style yang sudah didefinisikan di StyleSheet */}
       {/* refreshControl prop untuk menambahkan fitur pull-to-refresh */}
       {/* showsVerticalScrollIndicator={false} menyembunyikan scrollbar vertikal */}
       <ScrollView
@@ -437,8 +435,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
           <Text style={styles.pageSubtitle}>
             Kelola kartu NFC yang terdaftar di akun Anda.
           </Text>
-          {/* ternary JSX: jika array cards kosong tampilkan empty state, jika ada tampilkan daftar */}
-          {cards.length === 0 ? (
+          {cards.length === 0 ? ( // Tampilkan pesan kosong jika user belum punya kartu
             // Tampilkan pesan kosong jika user belum punya kartu
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🎫</Text>
@@ -446,8 +443,6 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
               <Text style={styles.emptyText}>
                 Daftarkan kartu NFC Anda untuk mulai melakukan transaksi
               </Text>
-              {/* TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan */}
-              {/* onPress dipanggil saat user menekan elemen; menghubungkan event ke handler */}
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={onRegisterNew || (() => {})}
@@ -456,42 +451,35 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                 <Text style={styles.addButtonText}>Tambah Kartu</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : ( // bagian else dari ternary: tampilan saat ada kartu
             // bagian else dari ternary: tampilan saat ada kartu
             <>
-              {/* .map() iterasi array cards; index untuk label 'Kartu 1', 'Kartu 2', dll */}
               {cards.map((card, index) => (
                 <View key={card.id || index} style={styles.cardItem}>
                   <View style={styles.cardHeader}>
                     <View style={styles.cardBadge}>
                       <Text style={styles.cardBadgeText}>
-                        {/* ternary: kartu pertama (index 0) diberi label 'Kartu Utama'; kartu berikutnya diberi nomor urut */}
                         {index === 0 ? 'Kartu Utama' : `Kartu ${index + 1}`}
                       </Text>
                     </View>
-                    {/* View dengan style array untuk menggabungkan style statis dan dinamis */}
-                    {/* backgroundColor dinamis: warna dari getStatusColor + '20' untuk opacity 12% (format hex RGBA) */}
                     <View
                       style={[
                         styles.statusBadge,
                         { backgroundColor: `${getStatusColor(card.cardStatus)}20` },
                       ]}
                     >
-                      {/* statusDot: titik indikator dengan warna penuh dari getStatusColor */}
                       <View
                         style={[
                           styles.statusDot,
                           { backgroundColor: getStatusColor(card.cardStatus) },
                         ]}
                       />
-                      {/* Text dengan color dinamis sesuai status kartu */}
                       <Text
                         style={[
                           styles.statusText,
                           { color: getStatusColor(card.cardStatus) },
                         ]}
                       >
-                        {/* getStatusText: konversi enum status ke teks human-readable */}
                         {getStatusText(card.cardStatus)}
                       </Text>
                     </View>
@@ -530,12 +518,9 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                       <View style={styles.cardRow}>
                         <Text style={styles.cardLabel}>Saldo</Text>
                         <Text style={styles.cardBalance}>
-                          {/* .toLocaleString('id-ID') memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan) */}
                           Rp{(card.balance ?? 0).toLocaleString('id-ID')}
                         </Text>
                       </View>
-
-                      {/* conditional rendering: tampilkan info terakhir digunakan hanya jika card.lastUsed tidak null/undefined */}
                       {card.lastUsed && (
                         <View style={styles.cardRow}>
                           <Text style={styles.cardLabel}>Terakhir Digunakan</Text>
@@ -550,8 +535,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                     </View>
 
                     <View style={styles.cardActions}>
-                      {/* ternary rendering: tombol berbeda berdasarkan status kartu */}
-                      {card.cardStatus === 'ACTIVE' ? (
+                      {card.cardStatus === 'ACTIVE' ? ( // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                         // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                         // onPress menghubungkan event tap ke fungsi handleCardAction
                         <TouchableOpacity
@@ -561,7 +545,7 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                           <Text style={styles.blockButtonIcon}>🚫</Text>
                           <Text style={styles.blockButtonText}>Blokir Kartu</Text>
                         </TouchableOpacity>
-                      ) : card.cardStatus === 'BLOCKED' ? (
+                      ) : card.cardStatus === 'BLOCKED' ? ( // nested ternary: jika BLOCKED tampilkan tombol aktivasi
                         // nested ternary: jika BLOCKED tampilkan tombol aktivasi
                         <TouchableOpacity
                           style={styles.activateButton}
@@ -579,17 +563,16 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
                         <Text style={styles.deleteButtonIcon}>🗑️</Text>
                         <Text style={styles.deleteButtonText}>Hapus Kartu</Text>
                       </TouchableOpacity>
-                      {/* null jika status selain ACTIVE/BLOCKED - tidak menampilkan tombol */}
                     </View>
                   </View>
                 </View>
               ))}
 
-              <View style={styles.policyInfo}> {/* View kotak info kebijakan kartu */}
-                <Text style={styles.policyIcon}>📌</Text> {/* ikon pin kebijakan */}
-                <View style={styles.policyTextContainer}> {/* View kolom teks kebijakan */}
-                  <Text style={styles.policyTitle}>Kebijakan Kartu</Text> {/* judul kebijakan */}
-                  <Text style={styles.policyText}> {/* teks penjelasan kebijakan 1 user = 1 kartu */}
+              <View style={styles.policyInfo}>
+                <Text style={styles.policyIcon}>📌</Text>
+                <View style={styles.policyTextContainer}>
+                  <Text style={styles.policyTitle}>Kebijakan Kartu</Text>
+                  <Text style={styles.policyText}>
                     Saat ini sistem menerapkan kebijakan 1 USER = 1 CARD untuk keamanan.
                     Pastikan kartu Anda selalu aman.
                   </Text>
@@ -598,9 +581,9 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
             </>
           )}
 
-          <View style={styles.securityInfo}> {/* View kotak info keamanan di bawah */}
-            <Text style={styles.securityIcon}>🛡️</Text> {/* ikon perisai keamanan */}
-            <Text style={styles.securityText}> {/* teks panduan keamanan penggunaan kartu NFC */}
+          <View style={styles.securityInfo}>
+            <Text style={styles.securityIcon}>🛡️</Text>
+            <Text style={styles.securityText}>
               Gunakan kartu NFC untuk pembayaran cepat dan aman. Pastikan kartu Anda
               selalu aman.
             </Text>
@@ -610,3 +593,5 @@ export default function MyCardsScreen({ user, onBack, onRegisterNew }: MyCardsSc
     </SafeAreaView>
   );
 }
+
+

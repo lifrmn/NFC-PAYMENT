@@ -35,9 +35,9 @@
 // ============================================================================
 
 // const membuat variabel tetap; { exec } adalah destructuring — mengambil hanya fungsi exec dari module child_process; require('child_process') memanggil module bawaan Node.js untuk menjalankan perintah terminal dari dalam skrip
-const fs = require('fs');
+const fs = require('fs'); // require('fs') memanggil module File System bawaan Node.js; fs menyediakan fun...
 // require('fs') memanggil module File System bawaan Node.js; fs menyediakan fungsi baca/tulis file (readFile, writeFile, existsSync, dll) — disiapkan untuk penggunaan masa depan
-const path = require('path');
+const path = require('path'); // require('path') memanggil module Path bawaan Node.js; path menyediakan fungsi...
 // require('path') memanggil module Path bawaan Node.js; path menyediakan fungsi manipulasi path file secara lintas platform (join, resolve, dirname, dll)
 
 console.log('🚀 Setting up NFC Payment Backend...\n');
@@ -47,9 +47,9 @@ console.log('🚀 Setting up NFC Payment Backend...\n');
 // ============================================================================
 // Validate Node.js version sebelum proceed dengan setup
 // Minimum requirement: Node.js v16 (untuk ES2021 features & Prisma compatibility)
-const nodeVersion = process.version;
+const nodeVersion = process.version; // process adalah objek global Node.js; process.version mengembalikan string ver...
 // process adalah objek global Node.js; process.version mengembalikan string versi Node.js yang sedang berjalan, contoh: "v18.17.0"
-const majorVersion = parseInt(nodeVersion.split('.')[0].slice(1));
+const majorVersion = parseInt(nodeVersion.split('.')[0].slice(1)); // split('.') memecah string menjadi array berdasarkan karakter titik; [0] menga...
 // split('.') memecah string menjadi array berdasarkan karakter titik; [0] mengambil elemen pertama ("v18"); slice(1) memotong karakter pertama 'v' sehingga tersisa "18"; parseInt() mengubah string "18" menjadi angka 18
 
 if (majorVersion < 16) {
@@ -58,7 +58,7 @@ if (majorVersion < 16) {
   console.error('\n💡 Solution:');
   console.error('   Download Node.js v18 LTS from https://nodejs.org');
   console.error('   Or use nvm: nvm install 18 && nvm use 18\n');
-  process.exit(1);
+  process.exit(1); // process.exit() menghentikan proses Node.js sepenuhnya; argument 1 adalah exit...
   // process.exit() menghentikan proses Node.js sepenuhnya; argument 1 adalah exit code — 0 berarti sukses, angka selain 0 menandakan error (konvensi Unix/Linux)
 }
 
@@ -70,7 +70,7 @@ console.log(`✅ Node.js version: ${nodeVersion}`);
 // Install semua packages yang di-define di package.json
 // Termasuk: express, prisma, cors, bcrypt, jsonwebtoken, dll
 console.log('\n📦 Installing dependencies...');
-exec('npm install', (error, stdout, stderr) => {
+exec('npm install', (error, stdout, stderr) => { // exec() menjalankan perintah 'npm install' di terminal; menerima callback(erro...
   // exec() menjalankan perintah 'npm install' di terminal; menerima callback(error, stdout, stderr); error berisi objek Error jika perintah gagal; stdout berisi output teks normal; stderr berisi pesan error dari perintah
   if (error) {
     console.error('❌ Failed to install dependencies:', error.message);
@@ -79,7 +79,7 @@ exec('npm install', (error, stdout, stderr) => {
     console.error('   • npm registry unreachable');
     console.error('   • Corrupted package-lock.json');
     console.error('\n💡 Try: rm package-lock.json && npm install\n');
-    return;
+    return; // return di dalam callback menghentikan eksekusi fungsi callback ini saja — tid...
     // return di dalam callback menghentikan eksekusi fungsi callback ini saja — tidak melanjutkan ke step berikutnya jika ada error
   }
   
@@ -91,7 +91,7 @@ exec('npm install', (error, stdout, stderr) => {
   // Generate TypeScript/JavaScript client dari prisma/schema.prisma
   // Output: node_modules/.prisma/client/
   console.log('\n🗄️  Setting up database...');
-  exec('npx prisma generate', (error, stdout, stderr) => {
+  exec('npx prisma generate', (error, stdout, stderr) => { // exec() menjalankan perintah 'npx prisma generate'; npx menjalankan package ta...
     // exec() menjalankan perintah 'npx prisma generate'; npx menjalankan package tanpa install global; prisma generate membaca schema.prisma dan menghasilkan Prisma Client JavaScript di node_modules/.prisma/client/
     if (error) {
       console.error('❌ Failed to generate Prisma client:', error.message);
@@ -109,7 +109,7 @@ exec('npm install', (error, stdout, stderr) => {
     // ========================================================================
     // Create tables di SQLite database berdasarkan schema.prisma
     // Equivalent to: CREATE TABLE IF NOT EXISTS ...
-      exec('npx prisma db push', (error, stdout, stderr) => {
+      exec('npx prisma db push', (error, stdout, stderr) => { // exec() menjalankan 'npx prisma db push'; perintah ini membaca schema.prisma d...
         // exec() menjalankan 'npx prisma db push'; perintah ini membaca schema.prisma dan membuat tabel-tabel di database SQLite — setara dengan menjalankan CREATE TABLE IF NOT EXISTS untuk setiap model di schema
       if (error) {
         console.error('❌ Failed to push database schema:', error.message);
@@ -129,13 +129,13 @@ exec('npm install', (error, stdout, stderr) => {
       // Populate database dengan initial data untuk testing
       // Command ini run script yang defined di package.json "scripts.db:seed"
       console.log('\n🌱 Seeding database...');
-        exec('npm run db:seed', (error, stdout, stderr) => {
+        exec('npm run db:seed', (error, stdout, stderr) => { // exec() menjalankan script 'db:seed' yang didefinisikan di package.json; scrip...
           // exec() menjalankan script 'db:seed' yang didefinisikan di package.json; script ini mengisi database dengan data awal (sample users, dll) untuk keperluan testing dan development
         if (error) {
           console.error('❌ Failed to seed database:', error.message);
           console.error('\n⚠️ Note: Seeding error is non-critical.');
           console.error('   You can manually create users later.');
-          console.error('\n💡 Try running seed script manually:\n');
+          console.error('\n💡 Try running seed script manually:\n'); // Setup masih considered success meski seeding gagal
           // Setup masih considered success meski seeding gagal
         }
         
