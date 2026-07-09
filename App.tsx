@@ -107,17 +107,17 @@
 //
 // ==================================================================================
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'; // import React (wajib untuk JSX); useState untuk state authState, currentUser, ...
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // import React (wajib untuk JSX); useState untuk state authState, currentUser, error; useEffect untuk inisialisasi app saat mount; useCallback untuk memoize fungsi navigateToScreen agar tidak dibuat ulang setiap render; useRef untuk menyimpan referensi stabil ke navigationRef dan authStateRef
 // import React (wajib untuk JSX); useState untuk state authState, currentUser, error; useEffect untuk inisialisasi app saat mount; useCallback untuk memoize fungsi navigateToScreen agar tidak dibuat ulang setiap render; useRef untuk menyimpan referensi stabil ke navigationRef dan authStateRef
-import { StatusBar } from 'expo-status-bar'; // import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian at...
+import { StatusBar } from 'expo-status-bar'; // import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian atas layar (warna, style dark/light)
 // import StatusBar dari Expo \u2014 mengontrol tampilan status bar di bagian atas layar (warna, style dark/light)
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationCon...
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'; // import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationContainerRef (tipe TypeScript untuk ref navigasi programatik)
 // import NavigationContainer (wajib sebagai wrapper navigasi) dan NavigationContainerRef (tipe TypeScript untuk ref navigasi programatik)
-import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // import createStackNavigator untuk membuat navigator stack (tumpukan layar); S...
+import { createStackNavigator, StackNavigationProp } from '@react-navigation/stack'; // import createStackNavigator untuk membuat navigator stack (tumpukan layar); StackNavigationProp adalah tipe TypeScript untuk prop navigation di tiap screen
 // import createStackNavigator untuk membuat navigator stack (tumpukan layar); StackNavigationProp adalah tipe TypeScript untuk prop navigation di tiap screen
-import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digu...
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digunakan untuk menyimpan userId dan deviceId agar sesi tidak hilang saat app ditutup
 // import AsyncStorage \u2014 penyimpanan key-value persisten di perangkat; digunakan untuk menyimpan userId dan deviceId agar sesi tidak hilang saat app ditutup
-import { registerRootComponent } from 'expo'; // import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebag...
+import { registerRootComponent } from 'expo'; // import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebagai entry point utama aplikasi Expo
 // import registerRootComponent dari Expo \u2014 mendaftarkan komponen App sebagai entry point utama aplikasi Expo
 import { // import beberapa komponen sekaligus dari satu modul menggunakan destructuring
   ActivityIndicator, // Spinner loading yang tampil saat startup
@@ -199,9 +199,9 @@ export type RootStackParamList = { // Definisi semua route yang ada di navigatio
   // Screen top-up saldo kartu NFC
 };
 
-export type NavigationProp = StackNavigationProp<RootStackParamList>; // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigati...
+export type NavigationProp = StackNavigationProp<RootStackParamList>; // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
 // export type mengekspor tipe ini agar bisa diimport screen lain; StackNavigationProp<RootStackParamList> menghasilkan tipe prop navigation yang type-safe — memastikan navigator.navigate() hanya bisa dipanggil dengan nama route yang valid
-const Stack = createStackNavigator<RootStackParamList>(); // const membuat variabel tetap; createStackNavigator<RootStackParamList>() memb...
+const Stack = createStackNavigator<RootStackParamList>(); // const membuat variabel tetap; createStackNavigator<RootStackParamList>() membuat instance stack navigator bertipe — semua Screen.name harus sesuai dengan key di RootStackParamList
 // const membuat variabel tetap; createStackNavigator<RootStackParamList>() membuat instance stack navigator bertipe — semua Screen.name harus sesuai dengan key di RootStackParamList
 
 // ==================================================================================
@@ -332,7 +332,7 @@ export default function App() { // =============================================
   // - Memastikan registry device tetap terbaru
   // - Membantu monitoring penggunaan aplikasi di lapangan
   // ================================================================================
-  const handleAppStateChange = async (nextAppState: AppStateStatus) => { // Fungsi async: dipanggil otomatis saat status app berubah (active/background/i...
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => { // Fungsi async: dipanggil otomatis saat status app berubah (active/background/inactive)
     // Fungsi async: dipanggil otomatis saat status app berubah (active/background/inactive)
     if (nextAppState === 'active') { // if = pengecekan kondisi; berjalan saat app kembali aktif dari background
       console.log('📱 App aktif kembali, sync status device...');
@@ -396,7 +396,7 @@ export default function App() { // =============================================
   // - Tahap 3-4 dibuat non-blocking agar aplikasi lebih tahan gangguan
   // - Tahap 5 selalu dijalankan dengan fallback ke signedOut
   // ================================================================================
-  const initializeApp = async () => { // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health ...
+  const initializeApp = async () => { // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health → device → auth)
     // Fungsi async: menjalankan 5 tahap startup berurutan (database → API → health → device → auth)
     try { // try = mencoba proses aman; error akan ditangkap oleh catch
       setError(null); // Error lama dibersihkan dulu agar startup baru dimulai dari kondisi bersih.
@@ -480,7 +480,7 @@ export default function App() { // =============================================
 
       console.log('✅ Aplikasi siap digunakan!');
     } catch (err: any) {
-      console.error('❌ Initialization error:', err); // Jika startup gagal, aplikasi tetap diarahkan ke login agar tidak buntu di loa...
+      console.error('❌ Initialization error:', err); // Jika startup gagal, aplikasi tetap diarahkan ke login agar tidak buntu di loading.
       // Jika startup gagal, aplikasi tetap diarahkan ke login agar tidak buntu di loading.
       setAuthState('signedOut'); // Fallback aman: jika startup bermasalah, tampilkan login saja.
       // Fallback aman: jika startup bermasalah, tampilkan login saja.
@@ -502,7 +502,7 @@ export default function App() { // =============================================
   // - Berhasil: user masuk ke Dashboard
   // - Gagal: user diarahkan ke Login
   // ================================================================================
-  const checkAuthState = async () => { // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi ...
+  const checkAuthState = async () => { // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi login
     // Fungsi async: membaca AsyncStorage lalu query database untuk memulihkan sesi login
     try { // try = mencoba proses aman; error akan ditangkap oleh catch
       const storedUserId = await AsyncStorage.getItem('userId'); // Mengambil ID user yang disimpan saat login sebelumnya.
@@ -555,7 +555,7 @@ export default function App() { // =============================================
   // - reset() dipakai agar layar login tidak tersisa di stack
   // - Tombol back tidak akan membawa user kembali ke form login
   // ================================================================================
-  const handleLogin = async (userData: { // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Das...
+  const handleLogin = async (userData: { // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Dashboard
     // Fungsi async: menyimpan sesi login ke AsyncStorage lalu reset navigasi ke Dashboard
     id: number;
     name: string;
@@ -612,7 +612,7 @@ export default function App() { // =============================================
   // - Resource hardware dirilis
   // - Navigasi di-reset agar user tidak bisa kembali ke area privat lewat back
   // ================================================================================
-  const handleLogout = async () => { // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan k...
+  const handleLogout = async () => { // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan ke Login
     // Fungsi async: hapus sesi dari AsyncStorage lalu bersihkan state dan arahkan ke Login
     try { // try = mencoba proses aman; error akan ditangkap oleh catch
       await AsyncStorage.removeItem('userId'); // Menghapus penanda sesi dari penyimpanan lokal.

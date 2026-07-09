@@ -19,16 +19,16 @@
 // 3. REAL-TIME SYNC: Perubahan data langsung dikirim ke client via Socket.IO
 // ============================================================
 
-const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js ...
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js yang sudah terinstall di node_modules; digunakan untuk membuat router HTTP
 // const membuat variabel tetap; require('express') memanggil module Express.js yang sudah terinstall di node_modules; digunakan untuk membuat router HTTP
-const { body, validationResult } = require('express-validator'); // const dengan destructuring { body, validationResult }; body adalah fungsi unt...
+const { body, validationResult } = require('express-validator'); // const dengan destructuring { body, validationResult }; body adalah fungsi untuk mendefinisikan aturan validasi input; validationResult mengambil hasil validasi dari request
 // const dengan destructuring { body, validationResult }; body adalah fungsi untuk mendefinisikan aturan validasi input; validationResult mengambil hasil validasi dari request
-const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adala...
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman
 // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman
 
-const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru y...
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/users
 // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/users
-const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke ...
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke database; operator new memanggil constructor class PrismaClient
 // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke database; operator new memanggil constructor class PrismaClient
 
 // ============================================================
@@ -59,15 +59,15 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   }
 // ]
 // ============================================================
-router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handle...
+router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handler ini adalah fungsi asynchronous yang bisa menggunakan await; req adalah objek request dari client; res adalah objek response untuk mengirim data balik
   // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handler ini adalah fungsi asynchronous yang bisa menggunakan await; req adalah objek request dari client; res adalah objek response untuk mengirim data balik
-  try { // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi...
+  try { // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi loncat ke blok catch
     // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi loncat ke blok catch
     // STEP 1: Query database untuk ambil semua user
     // Gunakan Prisma ORM - lebih aman dari SQL injection
-    const users = await prisma.user.findMany({ // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; ...
+    const users = await prisma.user.findMany({ // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; prisma.user.findMany() adalah method Prisma ORM yang setara SQL SELECT * FROM users
       // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; prisma.user.findMany() adalah method Prisma ORM yang setara SQL SELECT * FROM users
-      select: { // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — ...
+      select: { // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — seperti SELECT id, name, ... di SQL
         // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — seperti SELECT id, name, ... di SQL
         id: true, // true berarti kolom id IKUT dikembalikan
         // true berarti kolom id IKUT dikembalikan
@@ -83,9 +83,9 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
         // Status aktif/diblokir
         createdAt: true, // Tanggal registrasi
         // Tanggal registrasi
-        _count: { // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() d...
+        _count: { // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
           // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
-          select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+          select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
             // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
             sentTransactions: true, // Hitung jumlah transaksi yang dikirim user
             // Hitung jumlah transaksi yang dikirim user
@@ -94,21 +94,21 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
           }
         }
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya ...
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        createdAt: 'desc' // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di S...
+        createdAt: 'desc' // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
         // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
       }
     });
 
     // STEP 2: Kirim response berupa array JSON ke client
-    res.json(users); // res.json() mengirim respons dengan Content-Type: application/json dan mengonv...
+    res.json(users); // res.json() mengirim respons dengan Content-Type: application/json dan mengonversi array users ke string JSON otomatis
     // res.json() mengirim respons dengan Content-Type: application/json dan mengonversi array users ke string JSON otomatis
-  } catch (error) { // catch menangkap error yang terjadi di dalam blok try; variabel error berisi o...
+  } catch (error) { // catch menangkap error yang terjadi di dalam blok try; variabel error berisi objek Error
     // catch menangkap error yang terjadi di dalam blok try; variabel error berisi objek Error
     console.error('\u274c Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal server dengan format merah
     // console.error mencetak pesan error ke terminal server dengan format merah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() men...
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() mengirim pesan error sebagai JSON
     // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() mengirim pesan error sebagai JSON
   }
 });
@@ -122,7 +122,7 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
 // ============================================================
 router.get('/username/:username', async (req, res) => { // GET /username/:username → cari user berdasarkan username
   // GET /username/:username → cari user berdasarkan username
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil username dari URL parameter
     const { username } = req.params; // Destructure: ambil value username dari URL params
@@ -132,7 +132,7 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
       // Query: cari user unik berdasarkan username
       where: { username }, // Shorthand ES6: sama dengan { username: username }
       // Shorthand ES6: sama dengan { username: username }
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // ID numerik user di database
         // ID numerik user di database
@@ -157,9 +157,9 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
     // Kirim data user sebagai JSON response
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -170,18 +170,18 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
 // URL PARAMETER:
 // - id: integer (contoh: /api/users/5)
 // ============================================================
-router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
+router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis
     // destructuring req.params: mengambil parameter URL dinamis
     
     const user = await prisma.user.findUnique({ // const user: menyimpan data user yang diambil dari database secara async
       // const user: menyimpan data user yang diambil dari database secara async
-      where: { id: parseInt(id) }, // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karen...
+      where: { id: parseInt(id) }, // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karena req.params selalu string
       // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karena req.params selalu string
-      select: { // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif...
+      select: { // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif seperti password
         // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif seperti password
         id: true, name: true, username: true, balance: true, // field dasar profil user
         // field dasar profil user
@@ -200,7 +200,7 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
     // Masalah sebelumnya: admin top-up menambah saldo kartu (NFCCard.balance) tapi
     // user.balance di tabel User tidak selalu ikut update → mobile app tampilkan Rp 0.
     // Solusi: setiap GET /api/users/:id, cek kartu aktif user, update user.balance jika berbeda.
-    const cards = await prisma.nFCCard.findMany({ // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk penge...
+    const cards = await prisma.nFCCard.findMany({ // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk pengecekan saldo
       // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk pengecekan saldo
       where: { userId: parseInt(id), cardStatus: 'ACTIVE' }, // ambil semua kartu aktif milik user ini
       // ambil semua kartu aktif milik user ini
@@ -265,7 +265,7 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
 // ============================================================
 router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua kartu NFC milik user
   // GET /:id/cards → ambil semua kartu NFC milik user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL param
     // Ambil ID user dari URL param
@@ -281,9 +281,9 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
       // Jika user tidak ditemukan
       return res.status(404).json({ // Return 404 Not Found
         // Return 404 Not Found
-        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
         // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
-        error: 'Pengguna tidak ditemukan' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend u...
+        error: 'Pengguna tidak ditemukan' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
         // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       });
     }
@@ -293,7 +293,7 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
       // Query: ambil semua kartu NFC milik user ini
       where: { userId: parseInt(id) }, // Filter: hanya kartu yang dimiliki user ini
       // Filter: hanya kartu yang dimiliki user ini
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         cardId: true, // UID kartu (hex string, misal "04A1B2C3D4E5F6")
         // UID kartu (hex string, misal "04A1B2C3D4E5F6")
@@ -306,7 +306,7 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
         lastUsed: true // Tanggal terakhir kartu digunakan
         // Tanggal terakhir kartu digunakan
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya ...
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         registeredAt: 'desc' // Urutkan: yang terbaru didaftarkan di atas
         // Urutkan: yang terbaru didaftarkan di atas
@@ -322,13 +322,13 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
     });
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal mendapatkan kartu pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c Gagal mendapatkan kartu pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesa...
+    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
       // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
-      success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+      success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
       // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
-      error: 'Gagal mendapatkan kartu pengguna' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend u...
+      error: 'Gagal mendapatkan kartu pengguna' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
     });
   }
@@ -372,9 +372,9 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
   // amount harus berupa angka
   body('adminPassword').notEmpty().withMessage('Password admin diperlukan') // adminPassword wajib ada
   // adminPassword wajib ada
-], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan ...
+], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
   // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi dari middleware di atas
     // Cek hasil validasi dari middleware di atas
@@ -410,7 +410,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
       // Identifikasi user berdasarkan ID
       data: { balance: amount }, // Set saldo ke nilai baru (bukan increment)
       // Set saldo ke nilai baru (bukan increment)
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         // Kembalikan ID
@@ -426,7 +426,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
     // Catat aksi admin
     await prisma.adminLog.create({ // Simpan log ke tabel AdminLog
       // Simpan log ke tabel AdminLog
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'BALANCE_UPDATE', // Jenis aksi
         // Jenis aksi
@@ -462,7 +462,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 
     res.json({ // Return response sukses
       // Return response sukses
-      message: 'Saldo berhasil diperbarui', // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperba...
+      message: 'Saldo berhasil diperbarui', // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperbarui di database
       // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperbarui di database
       user // Data user dengan saldo baru
       // Data user dengan saldo baru
@@ -470,9 +470,9 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal memperbarui saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c Gagal memperbarui saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui saldo' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal memperbarui saldo' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -513,7 +513,7 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 // ============================================================
 router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions → riwayat transaksi user
   // GET /:id/transactions → riwayat transaksi user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL param
     // Ambil ID user dari URL param
@@ -522,7 +522,7 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
 
     const transactions = await prisma.transaction.findMany({ // Query: ambil transaksi yang melibatkan user
       // Query: ambil transaksi yang melibatkan user
-      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         OR: [ // Kondisi OR: user bisa sebagai sender ATAU receiver
         // Kondisi OR: user bisa sebagai sender ATAU receiver
@@ -532,7 +532,7 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
           // Transaksi yang diterima user (user = penerima)
         ]
       },
-      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambi...
+      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         sender: { // Sertakan data pengirim
           // Sertakan data pengirim
@@ -541,11 +541,11 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
         },
         receiver: { // Sertakan data penerima
           // Sertakan data penerima
-          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak me...
+          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
           // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
         }
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya ...
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         createdAt: 'desc' // Terbaru di atas
         // Terbaru di atas
@@ -560,9 +560,9 @@ router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions �
     // Kirim array transaksi sebagai JSON
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('Get user transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('Get user transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Failed to get transactions' }); // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 me...
+    res.status(500).json({ error: 'Failed to get transactions' }); // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 menandakan error server
     // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 menandakan error server
   }
 });
@@ -572,9 +572,9 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
 // PUT /:id → update profil user (nama)
   body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter') // Nama opsional, min 2 char
   // Nama opsional, min 2 char
-], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan ...
+], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
   // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const errors = validationResult(req); // Cek hasil validasi
     // Cek hasil validasi
@@ -602,7 +602,7 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
       // Identifikasi user berdasarkan ID
       data: { name }, // Update hanya field nama
       // Update hanya field nama
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         // Kembalikan ID
@@ -617,7 +617,7 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
 
     res.json({ // Return response sukses
       // Return response sukses
-      message: 'Profil berhasil diperbarui', // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbaru...
+      message: 'Profil berhasil diperbarui', // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbarui di database
       // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbarui di database
       user // Data user dengan nama baru
       // Data user dengan nama baru
@@ -625,9 +625,9 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal memperbarui profil:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c Gagal memperbarui profil:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui profil' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal memperbarui profil' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -635,7 +635,7 @@ router.put('/:id', [ // PUT /:id → update profil user (nama)
 // Nonaktifkan pengguna (khusus admin)
 router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → blokir akun user
   // PUT /:id/deactivate → blokir akun user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL
     // Ambil ID user dari URL
@@ -655,7 +655,7 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
       // Identifikasi user berdasarkan ID
       data: { isActive: false }, // Set isActive = false (menonaktifkan akun)
       // Set isActive = false (menonaktifkan akun)
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Kembalikan ID
         // Kembalikan ID
@@ -671,7 +671,7 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
     // Catat aksi admin
     await prisma.adminLog.create({ // Simpan log ke tabel AdminLog untuk audit trail
       // Simpan log ke tabel AdminLog untuk audit trail
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'USER_DEACTIVATE', // Jenis aksi: nonaktifkan user
         // Jenis aksi: nonaktifkan user
@@ -698,7 +698,7 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 
     res.json({ // Return response sukses
       // Return response sukses
-      message: 'Pengguna berhasil dinonaktifkan', // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi...
+      message: 'Pengguna berhasil dinonaktifkan', // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi INACTIVE di database
       // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi INACTIVE di database
       user // Data user dengan isActive = false
       // Data user dengan isActive = false
@@ -706,9 +706,9 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal menonaktifkan pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c Gagal menonaktifkan pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -756,14 +756,14 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 // ============================================================
 router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user permanen beserta semua data terkait
   // DELETE /:id → hapus user permanen beserta semua data terkait
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { id } = req.params; // Ambil ID user dari URL
     // Ambil ID user dari URL
     const userId = parseInt(id); // Konversi string → integer untuk query Prisma
     // Konversi string → integer untuk query Prisma
 
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Check if user exists
@@ -771,7 +771,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
       // Cari user yang akan dihapus
       where: { id: userId }, // Filter berdasarkan ID
       // Filter berdasarkan ID
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // ID untuk referensi di log
         // ID untuk referensi di log
@@ -784,20 +784,20 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
 
     if (!user) { // Jika user tidak ditemukan
       // Jika user tidak ditemukan
-      console.log(`\u274c [Backend] User ${userId} not found`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`\u274c [Backend] User ${userId} not found`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return res.status(404).json({ error: 'User tidak ditemukan' }); // Return 404
       // Return 404
     }
 
-    console.log(`\u2705 [Backend] User found: ${user.username}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\u2705 [Backend] User found: ${user.username}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // CASCADE DELETE: Hapus semua record terkait terlebih dahulu
     // URUTAN PENTING: Hapus dari tabel anak ke tabel induk
     
     // 1. Hapus transaksi NFC (anak dari NFCCard)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     const userCards = await prisma.nFCCard.findMany({ // Ambil semua kartu NFC milik user
       // Ambil semua kartu NFC milik user
@@ -816,12 +816,12 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
         where: { cardId: { in: cardIds } } // Filter: cardId ada di array cardIds
         // Filter: cardId ada di array cardIds
       });
-      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
     
     // 2. Hapus kartu NFC pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.nFCCard.deleteMany({ // Hapus semua kartu NFC milik user
       // Hapus semua kartu NFC milik user
@@ -830,11 +830,11 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 3. Hapus transaksi pengguna (yang dikirim dan diterima)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.transaction.deleteMany({ // Hapus semua transaksi yang melibatkan user
       // Hapus semua transaksi yang melibatkan user
-      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         OR: [ // User bisa sebagai sender ATAU receiver
         // User bisa sebagai sender ATAU receiver
@@ -847,7 +847,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 4. Hapus peringatan fraud pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.fraudAlert.deleteMany({ // Hapus semua fraud alert milik user
       // Hapus semua fraud alert milik user
@@ -856,7 +856,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 5. Hapus sesi pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.userSession.deleteMany({ // Hapus semua sesi login user
       // Hapus semua sesi login user
@@ -865,7 +865,7 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 6. Hapus pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.user.delete({ // Hapus record user dari tabel User
       // Hapus record user dari tabel User
@@ -874,11 +874,11 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
     });
 
     // 7. Catat aksi admin
-    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     await prisma.adminLog.create({ // Simpan log aksi delete ke tabel AdminLog
       // Simpan log aksi delete ke tabel AdminLog
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'USER_DELETE', // Jenis aksi: hapus user
         // Jenis aksi: hapus user
@@ -905,14 +905,14 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
       // Notifikasi ke admin dashboard
     }
 
-    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     res.json({ // Return response sukses
       // Return response sukses
       success: true, // Flag sukses
       // Flag sukses
-      message: 'Pengguna berhasil dihapus', // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dar...
+      message: 'Pengguna berhasil dihapus', // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dari database
       // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dari database
       user: { // Data user yang dihapus (untuk konfirmasi)
         // Data user yang dihapus (untuk konfirmasi)
@@ -927,17 +927,17 @@ router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user perman
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    console.error('\u274c [Backend] Detail kesalahan:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c [Backend] Detail kesalahan:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    console.error('\u274c [Backend] Stack trace:', error.stack); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('\u274c [Backend] Stack trace:', error.stack); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     res.status(500).json({ // Return 500 dengan detail error untuk debugging
       // Return 500 dengan detail error untuk debugging
-      error: 'Gagal menghapus pengguna', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend u...
+      error: 'Gagal menghapus pengguna', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
-      details: error.message // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungka...
+      details: error.message // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungkap penyebab teknis error
       // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungkap penyebab teknis error
     });
   }

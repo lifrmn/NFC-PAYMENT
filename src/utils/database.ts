@@ -30,11 +30,11 @@
 //
 // ==================================================================================
 
-import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; di...
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk cache data user agar akses lebih cepat tanpa perlu request API setiap saat
 // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk cache data user agar akses lebih cepat tanpa perlu request API setiap saat
-import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk mendeteksi platform Andro...
+import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk mendeteksi platform Android/iOS, berguna saat format atau logika berbeda tiap platform
 // import Platform dari React Native — digunakan untuk mendeteksi platform Android/iOS, berguna saat format atau logika berbeda tiap platform
-import { apiService } from './apiService'; // import apiService Singleton dari apiService.ts — semua operasi HTTP (login, r...
+import { apiService } from './apiService'; // import apiService Singleton dari apiService.ts — semua operasi HTTP (login, register, getUser, dll) dilakukan melalui service ini
 // import apiService Singleton dari apiService.ts — semua operasi HTTP (login, register, getUser, dll) dilakukan melalui service ini
 
 // ==================================================================================
@@ -54,7 +54,7 @@ import { apiService } from './apiService'; // import apiService Singleton dari a
 
 // Interface untuk User object
 // Describes structure dari user data yang diterima dari backend
-export interface User { // export interface User: mendefinisikan tipe data User untuk TypeScript; memast...
+export interface User { // export interface User: mendefinisikan tipe data User untuk TypeScript; memastikan semua fungsi menggunakan properti user yang konsisten
   // export interface User: mendefinisikan tipe data User untuk TypeScript; memastikan semua fungsi menggunakan properti user yang konsisten
   id: number; // Unique user ID (primary key di database)
   // Unique user ID (primary key di database)
@@ -70,7 +70,7 @@ export interface User { // export interface User: mendefinisikan tipe data User 
 
 // Interface untuk Transaction object
 // Describes structure dari transaction data yang diterima dari backend
-export interface Transaction { // export interface Transaction: mendefinisikan tipe data Transaction; TypeScrip...
+export interface Transaction { // export interface Transaction: mendefinisikan tipe data Transaction; TypeScript akan error jika properti tidak sesuai interface ini
   // export interface Transaction: mendefinisikan tipe data Transaction; TypeScript akan error jika properti tidak sesuai interface ini
   id: number; // Unique transaction ID (primary key)
   // Unique transaction ID (primary key)
@@ -122,15 +122,15 @@ export interface Transaction { // export interface Transaction: mendefinisikan t
 // RETURN:
 // - Promise<User> - User object jika berhasil
 // ================================================================================
-export const registerUser = async ( // registerUser: fungsi async untuk registrasi user baru; mengirim data ke backe...
+export const registerUser = async ( // registerUser: fungsi async untuk registrasi user baru; mengirim data ke backend dan menyimpan session lokal
 // registerUser: fungsi async untuk registrasi user baru; mengirim data ke backend dan menyimpan session lokal
-  name: string, // parameter name: nama lengkap user; tipe string TypeScript memastikan hanya te...
+  name: string, // parameter name: nama lengkap user; tipe string TypeScript memastikan hanya teks yang diterima; dikirim ke backend
   // parameter name: nama lengkap user; tipe string TypeScript memastikan hanya teks yang diterima; dikirim ke backend
-  username: string, // parameter username: nama pengguna unik untuk login; backend validasi apakah s...
+  username: string, // parameter username: nama pengguna unik untuk login; backend validasi apakah sudah digunakan sebelumnya
   // parameter username: nama pengguna unik untuk login; backend validasi apakah sudah digunakan sebelumnya
-  password: string // parameter password: kata sandi plain text; backend akan hash dengan bcrypt se...
+  password: string // parameter password: kata sandi plain text; backend akan hash dengan bcrypt sebelum simpan ke database
   // parameter password: kata sandi plain text; backend akan hash dengan bcrypt sebelum simpan ke database
-): Promise<User> => { // return type Promise<User>: fungsi ini async (return Promise) dan hasilnya ada...
+): Promise<User> => { // return type Promise<User>: fungsi ini async (return Promise) dan hasilnya adalah objek User setelah berhasil
   // return type Promise<User>: fungsi ini async (return Promise) dan hasilnya adalah objek User setelah berhasil
   // Panggil method register dari apiService yang akan kirim data ke backend
   // Backend akan validasi data, hash password, dan simpan user baru ke database
@@ -161,15 +161,15 @@ export const registerUser = async ( // registerUser: fungsi async untuk registra
 // RETURN:
 // - Promise<User | null> - User object jika berhasil, null jika gagal
 // ================================================================================
-export const loginUser = async ( // loginUser: fungsi async untuk autentikasi user; mengirim credentials ke backe...
+export const loginUser = async ( // loginUser: fungsi async untuk autentikasi user; mengirim credentials ke backend dan menyimpan sesi di lokal
 // loginUser: fungsi async untuk autentikasi user; mengirim credentials ke backend dan menyimpan sesi di lokal
-  username: string, // parameter username: string — nama pengguna untuk mencari akun di database bac...
+  username: string, // parameter username: string — nama pengguna untuk mencari akun di database backend
   // parameter username: string — nama pengguna untuk mencari akun di database backend
-  password: string // parameter password: string — kata sandi yang diverifikasi dengan bcrypt.compa...
+  password: string // parameter password: string — kata sandi yang diverifikasi dengan bcrypt.compare di backend
   // parameter password: string — kata sandi yang diverifikasi dengan bcrypt.compare di backend
-): Promise<User | null> => { // Promise<User | null>: fungsi mengembalikan User jika berhasil atau null jika ...
+): Promise<User | null> => { // Promise<User | null>: fungsi mengembalikan User jika berhasil atau null jika login gagal
   // Promise<User | null>: fungsi mengembalikan User jika berhasil atau null jika login gagal
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Kirim credentials ke backend API untuk authentication
     // Backend akan validate username/password di database dan generate JWT token
@@ -179,7 +179,7 @@ export const loginUser = async ( // loginUser: fungsi async untuk autentikasi us
     // STEP 2: Validasi respons dari backend
     // Pastikan response mengandung token (JWT) dan user data lengkap
     // Optional chaining (?.) mencegah error jika response null/undefined
-    if (response?.token && response?.user?.id) { // optional chaining ?.token dan ?.user?.id: memastikan kedua properti ada sebel...
+    if (response?.token && response?.user?.id) { // optional chaining ?.token dan ?.user?.id: memastikan kedua properti ada sebelum menyimpan sesi; mencegah error jika struktur respons tidak lengkap
       // optional chaining ?.token dan ?.user?.id: memastikan kedua properti ada sebelum menyimpan sesi; mencegah error jika struktur respons tidak lengkap
       // SUBSTEP 2a: Simpan JWT token ke AsyncStorage untuk persistent session
       // Token ini akan otomatis diload saat app restart (auto-login)
@@ -207,7 +207,7 @@ export const loginUser = async ( // loginUser: fungsi async untuk autentikasi us
     return null; // Null = login gagal (invalid credentials atau backend error)
     // Null = login gagal (invalid credentials atau backend error)
     
-  } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi t...
+  } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
     // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
     // STEP 4: Error handling untuk semua jenis error
     // Error bisa dari:
@@ -239,9 +239,9 @@ export const loginUser = async ( // loginUser: fungsi async untuk autentikasi us
 // RETURN:
 // - Promise<void> - No return value
 // ================================================================================
-export const logoutUser = async (): Promise<void> => { // logoutUser: fungsi async untuk proses logout; menghapus token dari backend da...
+export const logoutUser = async (): Promise<void> => { // logoutUser: fungsi async untuk proses logout; menghapus token dari backend dan membersihkan storage lokal
   // logoutUser: fungsi async untuk proses logout; menghapus token dari backend dan membersihkan storage lokal
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Cek apakah ada token tersimpan (user sedang login)
     const token = await AsyncStorage.getItem('token'); // Ambil token dari storage
@@ -249,20 +249,20 @@ export const logoutUser = async (): Promise<void> => { // logoutUser: fungsi asy
     
     // STEP 2: Jika ada token, beritahu backend bahwa user logout
     // Backend akan menambahkan token ke blacklist agar tidak bisa dipakai lagi
-    if (token) { // memeriksa apakah token ada sebelum mengirim request logout ke backend; jika t...
+    if (token) { // memeriksa apakah token ada sebelum mengirim request logout ke backend; jika tidak ada token, cukup bersihkan storage lokal
       // memeriksa apakah token ada sebelum mengirim request logout ke backend; jika tidak ada token, cukup bersihkan storage lokal
       await apiService.logout(); // Kirim request logout ke backend
       // Kirim request logout ke backend
     }
     
-  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // STEP 3: Abaikan error dari backend logout
     // Meskipun backend gagal, kita tetap harus hapus data lokal
     // Prioritas: logout selalu berhasil dari sisi user
     console.warn('⚠️ Backend logout failed, continuing with local cleanup'); // Log warning
     // Log warning
-  } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap...
+  } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
     // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
     // STEP 4: Selalu jalankan cleanup lokal (bahkan jika backend gagal)
     // Hapus token dan userId dari AsyncStorage
@@ -295,9 +295,9 @@ export const logoutUser = async (): Promise<void> => { // logoutUser: fungsi asy
 // RETURN:
 // - Promise<User | null> - User object jika session valid, null jika tidak
 // ================================================================================
-export const restoreSession = async (): Promise<User | null> => { // restoreSession: fungsi async untuk memulihkan sesi user saat aplikasi dibuka ...
+export const restoreSession = async (): Promise<User | null> => { // restoreSession: fungsi async untuk memulihkan sesi user saat aplikasi dibuka kembali; membaca token dari AsyncStorage
   // restoreSession: fungsi async untuk memulihkan sesi user saat aplikasi dibuka kembali; membaca token dari AsyncStorage
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Coba load session credentials dari AsyncStorage
     // Jika user pernah login dan belum logout, data ini akan ada
@@ -324,7 +324,7 @@ export const restoreSession = async (): Promise<User | null> => { // restoreSess
     
     // STEP 4: Jika berhasil fetch user, berarti token masih valid
     // Auto-login berhasil, user bisa langsung ke dashboard
-    if (user) { // memeriksa apakah data user berhasil didapatkan; jika null berarti sesi tidak ...
+    if (user) { // memeriksa apakah data user berhasil didapatkan; jika null berarti sesi tidak valid atau token sudah kadaluarsa
       // memeriksa apakah data user berhasil didapatkan; jika null berarti sesi tidak valid atau token sudah kadaluarsa
       console.log('✅ Session restored successfully for user:', user.username); // Log with username
       // Log with username
@@ -388,7 +388,7 @@ export const restoreSession = async (): Promise<User | null> => { // restoreSess
 // ✅ DIPERBAIKI: getUserById sekarang SELALU fetch dari backend terlebih dahulu.
 // Sebelumnya: return cached data → saldo lama (0) ditampilkan meski backend sudah update (misalnya setelah top-up).
 // Sesudahnya : fetch backend → simpan cache → fallback ke cache hanya jika backend gagal (network error/429).
-export const getUserById = async (id: number): Promise<User | null> => { // fungsi async untuk mendapatkan data user berdasarkan ID; prioritas backend AP...
+export const getUserById = async (id: number): Promise<User | null> => { // fungsi async untuk mendapatkan data user berdasarkan ID; prioritas backend API, fallback ke cache AsyncStorage jika offline/error
 // fungsi async untuk mendapatkan data user berdasarkan ID; prioritas backend API, fallback ke cache AsyncStorage jika offline/error
   const cacheKey = `user_${id}`; // key unik per user untuk AsyncStorage, format: 'user_5'
   // key unik per user untuk AsyncStorage, format: 'user_5'
@@ -398,7 +398,7 @@ export const getUserById = async (id: number): Promise<User | null> => { // fung
     // HTTP GET /api/users/:id ke backend
 
     // Handle dua format response: { user: {...} } atau langsung objek user { id, name, balance, ... }
-    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null); // ekstrak objek user dari response; API bisa kembalikan { user: {...} } atau la...
+    const userObj = (res && (res as any).user) ? (res as any).user : (res && (res as any).id !== undefined ? res : null); // ekstrak objek user dari response; API bisa kembalikan { user: {...} } atau langsung { id, name, balance, ... }
     // ekstrak objek user dari response; API bisa kembalikan { user: {...} } atau langsung { id, name, balance, ... }
     if (userObj) { // Simpan ke cache agar tersedia saat offline/error berikutnya
       // Simpan ke cache agar tersedia saat offline/error berikutnya
@@ -410,7 +410,7 @@ export const getUserById = async (id: number): Promise<User | null> => { // fung
 
     return null; // return null = mengembalikan null jika data tidak tersedia atau proses gagal
 
-  } catch (err) { // ✅ Backend gagal (misal: 429 rate limit, network error) → gunakan cache sebaga...
+  } catch (err) { // ✅ Backend gagal (misal: 429 rate limit, network error) → gunakan cache sebagai fallback
     // ✅ Backend gagal (misal: 429 rate limit, network error) → gunakan cache sebagai fallback
     console.error('❌ getUserById error:', err);
     try { // try = mencoba proses aman; error akan ditangkap oleh catch
@@ -450,9 +450,9 @@ export const getUserById = async (id: number): Promise<User | null> => { // fung
 // RETURN:
 // - Promise<User[]> - Array of users (empty array jika error)
 // ================================================================================
-export const getAllUsers = async (): Promise<User[]> => { // getAllUsers: fungsi async untuk mengambil semua user; Promise<User[]> mengemb...
+export const getAllUsers = async (): Promise<User[]> => { // getAllUsers: fungsi async untuk mengambil semua user; Promise<User[]> mengembalikan array objek User
   // getAllUsers: fungsi async untuk mengambil semua user; Promise<User[]> mengembalikan array objek User
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Call apiService.getAllUsers()
     // Endpoint: GET /api/admin/users
@@ -460,17 +460,17 @@ export const getAllUsers = async (): Promise<User[]> => { // getAllUsers: fungsi
     const res = await apiService.getAllUsers(); // await memanggil HTTP GET /api/admin/users untuk mengambil semua data user
     // await memanggil HTTP GET /api/admin/users untuk mengambil semua data user
     
-    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: jika ya kemba...
+    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: jika ya kembalikan, jika bukan kembalikan array kosong
     // Array.isArray() memeriksa apakah respons adalah array; ternary: jika ya kembalikan, jika bukan kembalikan array kosong
     
-  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // STEP 3: Handle errors dengan silent failure
     // Return empty array instead of throwing error
     // UI akan display "No users found" instead of error message
-    console.error('❌ getAllUsers error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ getAllUsers error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah cras...
+    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
     // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
   }
 };
@@ -516,19 +516,19 @@ export const getAllUsers = async (): Promise<User[]> => { // getAllUsers: fungsi
 // Backend memerlukan receiverId, tapi function ini hanya punya receiverUsername.
 // Solusi: Backend harus implement endpoint untuk lookup user by username.
 // ================================================================================
-export const processPayment = async ( // processPayment: fungsi async utama untuk pemrosesan pembayaran NFC; mengirim ...
+export const processPayment = async ( // processPayment: fungsi async utama untuk pemrosesan pembayaran NFC; mengirim data ke backend dan menunggu konfirmasi
 // processPayment: fungsi async utama untuk pemrosesan pembayaran NFC; mengirim data ke backend dan menunggu konfirmasi
-  senderId: number, // parameter senderId: ID integer pengirim; backend debit saldo dari akun dengan...
+  senderId: number, // parameter senderId: ID integer pengirim; backend debit saldo dari akun dengan ID ini
   // parameter senderId: ID integer pengirim; backend debit saldo dari akun dengan ID ini
-  receiverUsername: string, // parameter receiverUsername: username penerima; backend lookup ID dari usernam...
+  receiverUsername: string, // parameter receiverUsername: username penerima; backend lookup ID dari username dan credit saldo ke akun tersebut
   // parameter receiverUsername: username penerima; backend lookup ID dari username dan credit saldo ke akun tersebut
-  amount: number, // parameter amount: jumlah uang yang ditransfer dalam rupiah; harus positif dan...
+  amount: number, // parameter amount: jumlah uang yang ditransfer dalam rupiah; harus positif dan tidak melebihi saldo pengirim
   // parameter amount: jumlah uang yang ditransfer dalam rupiah; harus positif dan tidak melebihi saldo pengirim
-  description = '' // parameter description dengan default value kosong; keterangan opsional untuk ...
+  description = '' // parameter description dengan default value kosong; keterangan opsional untuk catatan transaksi
   // parameter description dengan default value kosong; keterangan opsional untuk catatan transaksi
-): Promise<boolean> => { // Promise<boolean>: fungsi mengembalikan true jika pembayaran berhasil atau fal...
+): Promise<boolean> => { // Promise<boolean>: fungsi mengembalikan true jika pembayaran berhasil atau false jika gagal
   // Promise<boolean>: fungsi mengembalikan true jika pembayaran berhasil atau false jika gagal
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Build payload dengan transaction data
     const payload = { // const membuat objek tetap; berisi semua data yang diperlukan untuk transaksi
@@ -551,9 +551,9 @@ export const processPayment = async ( // processPayment: fungsi async utama untu
     // Then: const receiver = await apiService.getUserByUsername(receiverUsername);
     // Then: payload.receiverId = receiver.id;
     
-    console.log('⚠️ Backend transaction creation skipped - need receiverId lookup'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('⚠️ Backend transaction creation skipped - need receiverId lookup'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    console.log('📋 Payload that would be sent:', payload); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('📋 Payload that would be sent:', payload); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // STEP 3: Return false karena implementation incomplete
@@ -564,10 +564,10 @@ export const processPayment = async ( // processPayment: fungsi async utama untu
     // const result = await apiService.createTransaction(payload);
     // return result.success;
     
-  } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi t...
+  } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
     // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
     // STEP 4: Handle errors
-    console.error('❌ Payment error:', error.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Payment error:', error.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     return false; // return false mengembalikan nilai gagal ke pemanggil fungsi
     // return false mengembalikan nilai gagal ke pemanggil fungsi
@@ -597,30 +597,30 @@ export const processPayment = async ( // processPayment: fungsi async utama untu
 // RETURN:
 // - Promise<Transaction[]> - Array of transactions
 // ================================================================================
-export const getUserTransactions = async ( // getUserTransactions: fungsi async untuk mengambil riwayat transaksi user tert...
+export const getUserTransactions = async ( // getUserTransactions: fungsi async untuk mengambil riwayat transaksi user tertentu
 // getUserTransactions: fungsi async untuk mengambil riwayat transaksi user tertentu
-  userId: number // parameter userId: integer ID user; backend filter transaksi WHERE senderId=us...
+  userId: number // parameter userId: integer ID user; backend filter transaksi WHERE senderId=userId OR receiverId=userId
   // parameter userId: integer ID user; backend filter transaksi WHERE senderId=userId OR receiverId=userId
-): Promise<Transaction[]> => { // Promise<Transaction[]>: mengembalikan array objek Transaction; array kosong j...
+): Promise<Transaction[]> => { // Promise<Transaction[]>: mengembalikan array objek Transaction; array kosong jika tidak ada transaksi
   // Promise<Transaction[]>: mengembalikan array objek Transaction; array kosong jika tidak ada transaksi
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Call apiService wrapper
     // Endpoint: GET /api/transactions/user/{userId}
     // Backend akan query: WHERE senderId = userId OR receiverId = userId
-    const res = await apiService.getUserTransactions(userId); // await memanggil HTTP GET ke backend; userId diteruskan untuk mengambil riwaya...
+    const res = await apiService.getUserTransactions(userId); // await memanggil HTTP GET ke backend; userId diteruskan untuk mengambil riwayat transaksi user tersebut
     // await memanggil HTTP GET ke backend; userId diteruskan untuk mengambil riwayat transaksi user tersebut
     
-    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: kembalikan ar...
+    return Array.isArray(res) ? res : []; // Array.isArray() memeriksa apakah respons adalah array; ternary: kembalikan array jika ya, atau array kosong sebagai fallback
     // Array.isArray() memeriksa apakah respons adalah array; ternary: kembalikan array jika ya, atau array kosong sebagai fallback
     
-  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // STEP 3: Handle errors dengan silent failure
     // Return empty array instead of throwing
-    console.error('❌ getUserTransactions error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ getUserTransactions error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah cras...
+    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
     // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
   }
 };
@@ -644,26 +644,26 @@ export const getUserTransactions = async ( // getUserTransactions: fungsi async 
 // RETURN:
 // - Promise<Transaction[]> - Array of all transactions
 // ================================================================================
-export const getAllTransactions = async (): Promise<Transaction[]> => { // getAllTransactions: mengambil semua transaksi dari backend; digunakan untuk l...
+export const getAllTransactions = async (): Promise<Transaction[]> => { // getAllTransactions: mengambil semua transaksi dari backend; digunakan untuk laporan admin
   // getAllTransactions: mengambil semua transaksi dari backend; digunakan untuk laporan admin
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Call admin API endpoint
     // Endpoint: GET /api/admin/transactions
     // Requires admin role (backend validates token)
-    const res = await apiService.getAllTransactions(); // await apiService.getAllTransactions(): memanggil metode getAllTransactions da...
+    const res = await apiService.getAllTransactions(); // await apiService.getAllTransactions(): memanggil metode getAllTransactions dari instance APIService; await menunggu respons
     // await apiService.getAllTransactions(): memanggil metode getAllTransactions dari instance APIService; await menunggu respons
     
     // STEP 2: Return array atau empty array
-    return Array.isArray(res) ? res : []; // Array.isArray: memastikan respons adalah array; ternary mengembalikan array r...
+    return Array.isArray(res) ? res : []; // Array.isArray: memastikan respons adalah array; ternary mengembalikan array respons atau array kosong sebagai fallback
     // Array.isArray: memastikan respons adalah array; ternary mengembalikan array respons atau array kosong sebagai fallback
     
-  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // STEP 3: Silent failure
-    console.error('❌ getAllTransactions error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ getAllTransactions error, returning empty array'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah cras...
+    return []; // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
     // mengembalikan array kosong sebagai fallback saat terjadi error; mencegah crash di komponen yang mengiterasi data
   }
 };
@@ -702,39 +702,39 @@ export const getAllTransactions = async (): Promise<Transaction[]> => { // getAl
 //     totalBalance: number
 //   }>
 // ================================================================================
-export const getAdminStats = async () => { // getAdminStats: fungsi async untuk mengambil statistik admin dari backend; dig...
+export const getAdminStats = async () => { // getAdminStats: fungsi async untuk mengambil statistik admin dari backend; digunakan di dashboard admin
   // getAdminStats: fungsi async untuk mengambil statistik admin dari backend; digunakan di dashboard admin
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Call admin dashboard API
     // Endpoint: GET /api/admin/dashboard
     // Requires admin token (backend checks role)
-    const res = await apiService.getAdminDashboard(); // await apiService.getAdminDashboard(): memanggil endpoint /api/admin/dashboard...
+    const res = await apiService.getAdminDashboard(); // await apiService.getAdminDashboard(): memanggil endpoint /api/admin/dashboard; await menunggu respons HTTP dari backend
     // await apiService.getAdminDashboard(): memanggil endpoint /api/admin/dashboard; await menunggu respons HTTP dari backend
     
     // STEP 2: Return stats atau default object jika error
-    return res || { // return res || {}: jika res tidak null kembalikan respons; jika null/undefined...
+    return res || { // return res || {}: jika res tidak null kembalikan respons; jika null/undefined kembalikan objek default dengan semua nilai 0
       // return res || {}: jika res tidak null kembalikan respons; jika null/undefined kembalikan objek default dengan semua nilai 0
-      totalUsers: 0, // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat ...
+      totalUsers: 0, // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat atau terjadi error
       // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat atau terjadi error
-      totalTransactions: 0, // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika dat...
+      totalTransactions: 0, // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika data tidak tersedia
       // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika data tidak tersedia
-      totalBalance: 0, // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika ...
+      totalBalance: 0, // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika data tidak tersedia
       // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika data tidak tersedia
     };
     
-  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+  } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
     // STEP 3: Fallback to default stats jika backend error
-    console.error('❌ getAdminStats error, returning default stats'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ getAdminStats error, returning default stats'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fu...
+    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
-      totalUsers: 0, // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat ...
+      totalUsers: 0, // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat atau terjadi error
       // totalUsers: 0 — nilai default fallback; menampilkan 0 jika data belum dimuat atau terjadi error
-      totalTransactions: 0, // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika dat...
+      totalTransactions: 0, // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika data tidak tersedia
       // totalTransactions: 0 — nilai default fallback untuk jumlah transaksi jika data tidak tersedia
-      totalBalance: 0, // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika ...
+      totalBalance: 0, // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika data tidak tersedia
       // totalBalance: 0 — nilai default fallback untuk total saldo seluruh user jika data tidak tersedia
     };
   }
@@ -776,46 +776,46 @@ export const getAdminStats = async () => { // getAdminStats: fungsi async untuk 
 // RETURN:
 // - Promise<boolean> - true jika berhasil, false jika gagal
 // ================================================================================
-export const updateUserBalance = async (userId: number, newBalance: number): Promise<boolean> => { // updateUserBalance: memperbarui saldo user di cache lokal dan backend; mengemb...
+export const updateUserBalance = async (userId: number, newBalance: number): Promise<boolean> => { // updateUserBalance: memperbarui saldo user di cache lokal dan backend; mengembalikan true jika berhasil
   // updateUserBalance: memperbarui saldo user di cache lokal dan backend; mengembalikan true jika berhasil
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Build cache key untuk user ini
-    const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; me...
+    const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
     // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
     
     // STEP 2: Load user data dari cache
-    const userData = await AsyncStorage.getItem(cacheKey); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara a...
+    const userData = await AsyncStorage.getItem(cacheKey); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
     // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
     
     // STEP 3: Jika user ada di cache, update balance
-    if (userData) { // memeriksa apakah data user ada di cache sebelum diperbarui; jika cache tidak ...
+    if (userData) { // memeriksa apakah data user ada di cache sebelum diperbarui; jika cache tidak ada skip update cache
       // memeriksa apakah data user ada di cache sebelum diperbarui; jika cache tidak ada skip update cache
       // Parse JSON string → JavaScript object
-      const user = JSON.parse(userData); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca dat...
+      const user = JSON.parse(userData); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
       // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
       
       // Update balance property dengan value baru
-      user.balance = newBalance; // mengupdate properti balance langsung di objek user di cache; perubahan ini ak...
+      user.balance = newBalance; // mengupdate properti balance langsung di objek user di cache; perubahan ini akan disimpan kembali ke cache
       // mengupdate properti balance langsung di objek user di cache; perubahan ini akan disimpan kembali ke cache
       
       // Add timestamp untuk track when balance was updated
-      user.updatedAt = new Date().toISOString(); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari ni...
+      user.updatedAt = new Date().toISOString(); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       
       // STEP 4: Save updated user back to cache
       // JSON.stringify() convert object → JSON string
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(user)); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara a...
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(user)); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
-      console.log(`💰 Updated local balance for user ${userId}: ${newBalance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`💰 Updated local balance for user ${userId}: ${newBalance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       return true; // Success!
       // Success!
     }
     
     // STEP 5: Jika user tidak ada di cache, log warning
-    console.warn(`⚠️ User ${userId} not found in local cache`); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu d...
+    console.warn(`⚠️ User ${userId} not found in local cache`); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
     // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
     return false; // return false mengembalikan nilai gagal ke pemanggil fungsi
     // return false mengembalikan nilai gagal ke pemanggil fungsi
@@ -823,7 +823,7 @@ export const updateUserBalance = async (userId: number, newBalance: number): Pro
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // STEP 6: Handle errors
-    console.error('❌ Failed to update local balance:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Failed to update local balance:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     return false; // return false mengembalikan nilai gagal ke pemanggil fungsi
     // return false mengembalikan nilai gagal ke pemanggil fungsi
@@ -854,76 +854,76 @@ export const updateUserBalance = async (userId: number, newBalance: number): Pro
 // RETURN:
 // - Promise<number | null> - Balance baru jika berhasil, null jika gagal
 // ================================================================================
-export const syncBalanceFromBackend = async (userId: number): Promise<number | null> => { // syncBalanceFromBackend: mengambil saldo terbaru dari backend dan memperbarui ...
+export const syncBalanceFromBackend = async (userId: number): Promise<number | null> => { // syncBalanceFromBackend: mengambil saldo terbaru dari backend dan memperbarui cache lokal; Promise<number|null> bisa null jika gagal
   // syncBalanceFromBackend: mengambil saldo terbaru dari backend dan memperbarui cache lokal; Promise<number|null> bisa null jika gagal
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    console.log(`💰 Syncing balance for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`💰 Syncing balance for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 1: Fetch user data dari backend
     // Endpoint: GET /api/users/{userId}/public
     // Backend akan return latest user data from database
-    const response = await apiService.getUserById(userId); // const response: menyimpan response dari HTTP request; await menunggu response...
+    const response = await apiService.getUserById(userId); // const response: menyimpan response dari HTTP request; await menunggu response diterima
     // const response: menyimpan response dari HTTP request; await menunggu response diterima
     
     // STEP 2: Validate response dan check balance
-    if (response && typeof response.balance === 'number') { // memeriksa respons valid DAN saldo bertipe number; typeof mencegah error jika ...
+    if (response && typeof response.balance === 'number') { // memeriksa respons valid DAN saldo bertipe number; typeof mencegah error jika balance berupa string atau undefined
       // memeriksa respons valid DAN saldo bertipe number; typeof mencegah error jika balance berupa string atau undefined
-      const newBalance = response.balance; // const newBalance: menyimpan saldo dari respons ke variabel lokal; const karen...
+      const newBalance = response.balance; // const newBalance: menyimpan saldo dari respons ke variabel lokal; const karena nilai tidak berubah dalam scope ini
       // const newBalance: menyimpan saldo dari respons ke variabel lokal; const karena nilai tidak berubah dalam scope ini
       
       // STEP 3: Update cache lokal dengan data user terbaru
-      const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; me...
+      const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
       // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
       
       // Save full user object (not just balance) untuk consistency
-      await AsyncStorage.setItem(cacheKey, JSON.stringify(response)); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara a...
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(response)); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
-      console.log(`✅ Balance synced from backend for user ${userId}: ${newBalance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`✅ Balance synced from backend for user ${userId}: ${newBalance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return newBalance; // mengembalikan saldo terbaru ke pemanggil; diperlukan untuk memperbarui state ...
+      return newBalance; // mengembalikan saldo terbaru ke pemanggil; diperlukan untuk memperbarui state di komponen React
       // mengembalikan saldo terbaru ke pemanggil; diperlukan untuk memperbarui state di komponen React
     }
     
     // STEP 4: Handle invalid response (no balance field)
-    console.warn('⚠️ Invalid balance response from backend'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu d...
+    console.warn('⚠️ Invalid balance response from backend'); // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
     // console.warn mencetak peringatan ke terminal; bukan error kritis tapi perlu diperhatikan
-    return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak ...
+    return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
     // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
     
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // STEP 5: Handle errors (network error, backend down, dll)
-    console.error('❌ Failed to sync balance from backend:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Failed to sync balance from backend:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     
     // STEP 6: Fallback to cached balance (better than nothing!)
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-      const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; me...
+      const cacheKey = `user_${userId}`; // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
       // cacheKey: kunci unik untuk cache setiap user menggunakan template literal; memastikan cache terpisah per user
-      const cachedUser = await AsyncStorage.getItem(cacheKey); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara a...
+      const cachedUser = await AsyncStorage.getItem(cacheKey); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
       // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
       
-      if (cachedUser) { // memeriksa apakah data user ada di cache lokal; jika ada, gunakan cache untuk ...
+      if (cachedUser) { // memeriksa apakah data user ada di cache lokal; jika ada, gunakan cache untuk menghindari request jaringan yang tidak perlu
         // memeriksa apakah data user ada di cache lokal; jika ada, gunakan cache untuk menghindari request jaringan yang tidak perlu
-        const user = JSON.parse(cachedUser); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca dat...
+        const user = JSON.parse(cachedUser); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
         // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
-        console.log(`💾 Fallback: using cached balance ${user.balance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`💾 Fallback: using cached balance ${user.balance}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         return user.balance; // Return stale balance dari cache
         // Return stale balance dari cache
       }
-    } catch (cacheError) { // catch cacheError: menangkap error saat membaca cache; cache error tidak kriti...
+    } catch (cacheError) { // catch cacheError: menangkap error saat membaca cache; cache error tidak kritis; fallback ke request API normal
       // catch cacheError: menangkap error saat membaca cache; cache error tidak kritis; fallback ke request API normal
-      console.error('❌ Cache fallback error:', cacheError); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('❌ Cache fallback error:', cacheError); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     }
     
     // STEP 7: Ultimate fallback: return null
-    return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak ...
+    return null; // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
     // return null: komponen tidak merender apapun ke layar (kondisi tertentu tidak menampilkan UI)
   }
 };
@@ -959,11 +959,11 @@ export const syncBalanceFromBackend = async (userId: number): Promise<number | n
 // RETURN:
 // - Promise<boolean> - true jika backend connected, false jika offline
 // ================================================================================
-export const initDatabase = async (): Promise<boolean> => { // initDatabase: menginisialisasi koneksi database saat aplikasi startup; memeri...
+export const initDatabase = async (): Promise<boolean> => { // initDatabase: menginisialisasi koneksi database saat aplikasi startup; memeriksa apakah backend bisa dijangkau
   // initDatabase: menginisialisasi koneksi database saat aplikasi startup; memeriksa apakah backend bisa dijangkau
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    console.log('🔗 Connecting to backend...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('🔗 Connecting to backend...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
     // STEP 1: In mobile app, there's no direct database connection
@@ -977,23 +977,23 @@ export const initDatabase = async (): Promise<boolean> => { // initDatabase: men
     // const connected = health.status === 'ok';
     
     // STEP 2: Log connection status
-    if (connected) { // memeriksa apakah koneksi ke backend berhasil; jika true muat data awal; jika ...
+    if (connected) { // memeriksa apakah koneksi ke backend berhasil; jika true muat data awal; jika false aplikasi berjalan dalam mode offline
       // memeriksa apakah koneksi ke backend berhasil; jika true muat data awal; jika false aplikasi berjalan dalam mode offline
-      console.log('✅ Backend connected and ready'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('✅ Backend connected and ready'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
       // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
-      console.log('⚠️ Backend not available, running in offline mode'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('⚠️ Backend not available, running in offline mode'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
     
-    return connected; // mengembalikan status koneksi; true berarti online dan data dimuat, false bera...
+    return connected; // mengembalikan status koneksi; true berarti online dan data dimuat, false berarti offline
     // mengembalikan status koneksi; true berarti online dan data dimuat, false berarti offline
     
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // STEP 3: Handle errors (network down, backend offline, dll)
-    console.error('❌ initDatabase error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ initDatabase error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     return false; // Offline mode
     // Offline mode
@@ -1013,10 +1013,10 @@ export const initDatabase = async (): Promise<boolean> => { // initDatabase: men
 // RETURN:
 // - Promise<void> - No return value
 // ================================================================================
-export const closeDatabase = async (): Promise<void> => { // closeDatabase: membersihkan koneksi database saat aplikasi ditutup; Promise<v...
+export const closeDatabase = async (): Promise<void> => { // closeDatabase: membersihkan koneksi database saat aplikasi ditutup; Promise<void> karena tidak mengembalikan nilai
   // closeDatabase: membersihkan koneksi database saat aplikasi ditutup; Promise<void> karena tidak mengembalikan nilai
   // STEP 1: Log closure (no actual cleanup needed)
-  console.log('📦 Database connection closed (cleanup complete)'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+  console.log('📦 Database connection closed (cleanup complete)'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   
   // In mobile app: No database connection to close

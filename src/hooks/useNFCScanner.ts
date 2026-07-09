@@ -45,13 +45,13 @@
 //
 // ==================================================================================
 
-import { useState } from 'react'; // import mengambil module; { useState } destructuring mengambil hook useState d...
+import { useState } from 'react'; // import mengambil module; { useState } destructuring mengambil hook useState dari library react; useState digunakan untuk membuat state lokal isScanning dan lastScannedCard di dalam hook kustom ini
 // import mengambil module; { useState } destructuring mengambil hook useState dari library react; useState digunakan untuk membuat state lokal isScanning dan lastScannedCard di dalam hook kustom ini
-import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog popup nat...
+import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog popup native saat kartu tidak terdaftar, tidak aktif, atau scan gagal
 // import Alert dari React Native — digunakan untuk menampilkan dialog popup native saat kartu tidak terdaftar, tidak aktif, atau scan gagal
-import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts — menyediakan method untuk membaca UID kar...
+import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts — menyediakan method untuk membaca UID kartu NFC dari hardware perangkat Android
 // import NFCService dari file nfc.ts — menyediakan method untuk membaca UID kartu NFC dari hardware perangkat Android
-import { apiService } from '../utils/apiService'; // import apiService dari file apiService.ts — digunakan untuk HTTP GET validasi...
+import { apiService } from '../utils/apiService'; // import apiService dari file apiService.ts — digunakan untuk HTTP GET validasi kartu ke backend dan POST log tap analytics
 // import apiService dari file apiService.ts — digunakan untuk HTTP GET validasi kartu ke backend dan POST log tap analytics
 
 // ==================================================================================
@@ -69,13 +69,13 @@ import { apiService } from '../utils/apiService'; // import apiService dari file
 export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScannedCard - Menyimpan UID kartu terakhir yang berhasil di-scan
   // STATE 1: lastScannedCard - Menyimpan UID kartu terakhir yang berhasil di-scan
   // Berguna untuk mencegah scan duplikat dan menampilkan info "terakhir scan"
-  const [lastScannedCard, setLastScannedCard] = useState<string>(''); // const membuat variabel tetap; useState<string>('') membuat state string koson...
+  const [lastScannedCard, setLastScannedCard] = useState<string>(''); // const membuat variabel tetap; useState<string>('') membuat state string kosong; <string> adalah type annotation TypeScript; lastScannedCard menyimpan UID kartu terakhir yang berhasil di-scan
   // const membuat variabel tetap; useState<string>('') membuat state string kosong; <string> adalah type annotation TypeScript; lastScannedCard menyimpan UID kartu terakhir yang berhasil di-scan
   
   // STATE 2: isScanning - Flag lock untuk mencegah multiple scan bersamaan
   // NFC hardware hanya bisa handle 1 operasi pada satu waktu
   // true = sedang scan, false = siap scan baru
-  const [isScanning, setIsScanning] = useState(false); // useState(false) membuat state boolean dengan nilai awal false; isScanning=tru...
+  const [isScanning, setIsScanning] = useState(false); // useState(false) membuat state boolean dengan nilai awal false; isScanning=true mengunci scanner agar tidak bisa dipanggil dua kali bersamaan
   // useState(false) membuat state boolean dengan nilai awal false; isScanning=true mengunci scanner agar tidak bisa dipanggil dua kali bersamaan
 
   // ================================================================================
@@ -120,7 +120,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
   // - Error baca NFC → Peringatan "Gagal membaca kartu"
   // - Error jaringan → Pesan peringatan error
   // ================================================================================
-  const scanAndValidateCard = async (): Promise<string | null> => { // const membuat variabel tetap; async menandai fungsi asynchronous; : Promise<s...
+  const scanAndValidateCard = async (): Promise<string | null> => { // const membuat variabel tetap; async menandai fungsi asynchronous; : Promise<string | null> adalah return type TypeScript — mengembalikan string (UID kartu) atau null jika gagal
     // const membuat variabel tetap; async menandai fungsi asynchronous; : Promise<string | null> adalah return type TypeScript — mengembalikan string (UID kartu) atau null jika gagal
     if (isScanning) { // if memeriksa kondisi; isScanning=true berarti sudah ada scan yang berjalan
       // if memeriksa kondisi; isScanning=true berarti sudah ada scan yang berjalan
@@ -141,7 +141,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
       // 2. Wait for card detection (auto-detect mode)
       // 3. Read UID dari NDEF atau ISO15693 tag
       // 4. Return UID as string or null if failed
-      const cardInfo = await NFCService.readPhysicalCard(); // await menunggu hasil pembacaan kartu NFC dari hardware; NFCService.readPhysic...
+      const cardInfo = await NFCService.readPhysicalCard(); // await menunggu hasil pembacaan kartu NFC dari hardware; NFCService.readPhysicalCard() mengaktifkan sensor NFC dan menunggu kartu ditempelkan
       // await menunggu hasil pembacaan kartu NFC dari hardware; NFCService.readPhysicalCard() mengaktifkan sensor NFC dan menunggu kartu ditempelkan
 
       if (!cardInfo) { // ! membalik boolean; !cardInfo berarti null/undefined — pembacaan gagal
@@ -178,7 +178,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
       //     }
       //   }
       // }
-      const checkResult = await apiService.get(`/api/nfc-cards/info/${cardInfo.id}`); // await menunggu HTTP GET ke backend; template literal ${cardInfo.id} menyisipk...
+      const checkResult = await apiService.get(`/api/nfc-cards/info/${cardInfo.id}`); // await menunggu HTTP GET ke backend; template literal ${cardInfo.id} menyisipkan UID kartu ke URL
       // await menunggu HTTP GET ke backend; template literal ${cardInfo.id} menyisipkan UID kartu ke URL
 
       if (!checkResult.success) { // ! membalik boolean; success=false berarti kartu belum terdaftar di database
@@ -197,7 +197,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
       const cardData = checkResult.card; // mengambil property card dari objek respons backend
       // mengambil property card dari objek respons backend
 
-      if (cardData.userId !== currentUserId) { // !== berarti tidak sama; membandingkan ID pemilik kartu dengan ID user yang se...
+      if (cardData.userId !== currentUserId) { // !== berarti tidak sama; membandingkan ID pemilik kartu dengan ID user yang sedang login
         // !== berarti tidak sama; membandingkan ID pemilik kartu dengan ID user yang sedang login
         Alert.alert(
           '⚠️ Kartu Milik Akun Lain',
@@ -208,7 +208,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
         // Early return: wrong owner
       }
 
-      if (cardData.cardStatus !== 'ACTIVE') { // !== berarti tidak sama persis; hanya kartu dengan status 'ACTIVE' yang bisa d...
+      if (cardData.cardStatus !== 'ACTIVE') { // !== berarti tidak sama persis; hanya kartu dengan status 'ACTIVE' yang bisa digunakan bertransaksi
         // !== berarti tidak sama persis; hanya kartu dengan status 'ACTIVE' yang bisa digunakan bertransaksi
         Alert.alert(
           '🚫 Kartu Tidak Aktif',
@@ -233,7 +233,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
       // - deviceId: Identifier device (untuk detect multi-device fraud)
       // - signalStrength: Kekuatan sinyal NFC (untuk detect card cloning)
       // - readTime: Timestamp tap (untuk analisis pola transaksi)
-      await apiService.post('/api/nfc-cards/tap', { // await menunggu HTTP POST ke backend untuk mencatat data tap kartu ke log anal...
+      await apiService.post('/api/nfc-cards/tap', { // await menunggu HTTP POST ke backend untuk mencatat data tap kartu ke log analytics
         // await menunggu HTTP POST ke backend untuk mencatat data tap kartu ke log analytics
         cardId: cardInfo.id, // UID kartu yang ditap
         // UID kartu yang ditap
@@ -282,7 +282,7 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
       // optional chaining (?.) aman; || fallback jika error.message tidak ada
       return null; // return null memberitahu pemanggil bahwa scan gagal
       // return null memberitahu pemanggil bahwa scan gagal
-    } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk melepas k...
+    } finally { // finally selalu dijalankan baik ada error maupun tidak — cocok untuk melepas kunci
       // finally selalu dijalankan baik ada error maupun tidak — cocok untuk melepas kunci
       setIsScanning(false); // setIsScanning(false) melepas kunci scanner agar bisa menerima scan berikutnya
       // setIsScanning(false) melepas kunci scanner agar bisa menerima scan berikutnya
@@ -307,11 +307,11 @@ export const useNFCScanner = (currentUserId: number) => { // STATE 1: lastScanne
   // ================================================================================
   const resetScanner = () => { // arrow function sederhana tanpa async; hanya mereset state lokal
     // arrow function sederhana tanpa async; hanya mereset state lokal
-    setLastScannedCard(''); // setLastScannedCard('') mengosongkan UID terakhir; memicu re-render komponen y...
+    setLastScannedCard(''); // setLastScannedCard('') mengosongkan UID terakhir; memicu re-render komponen yang menggunakan state ini
     // setLastScannedCard('') mengosongkan UID terakhir; memicu re-render komponen yang menggunakan state ini
   };
 
-  return { // return objek — komponen yang menggunakan hook ini bisa destructuring nilai ya...
+  return { // return objek — komponen yang menggunakan hook ini bisa destructuring nilai yang dibutuhkan
     // return objek — komponen yang menggunakan hook ini bisa destructuring nilai yang dibutuhkan
     lastScannedCard, // UID kartu terakhir yang berhasil di-scan
     // UID kartu terakhir yang berhasil di-scan

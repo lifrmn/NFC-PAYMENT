@@ -42,24 +42,24 @@ const { PrismaClient } = require('@prisma/client'); // Prisma ORM untuk database
 // RETURN: void (exit via normal completion atau error)
 // ============================================================================
 async function checkBalances() {
-    const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneks...
+    const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
     // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
     
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // ====================================================================
         // STEP 1: QUERY SEMUA USER
         // ====================================================================
-        console.log('=== Checking Database Users ===\n'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log('=== Checking Database Users ===\n'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        const users = await prisma.user.findMany(); // const users: menyimpan semua data user dari database; await menunggu query se...
+        const users = await prisma.user.findMany(); // const users: menyimpan semua data user dari database; await menunggu query selesai
         // const users: menyimpan semua data user dari database; await menunggu query selesai
         
         // ====================================================================
         // STEP 2: DISPLAY SETIAP USER DENGAN DETAIL
         // ====================================================================
         // Variabel untuk calculate summary statistics
-        let totalBalance = 0; // let membuat variabel yang bisa diubah; accumulator untuk total saldo seluruh ...
+        let totalBalance = 0; // let membuat variabel yang bisa diubah; accumulator untuk total saldo seluruh user
         // let membuat variabel yang bisa diubah; accumulator untuk total saldo seluruh user
         let activeUsers = 0; // let membuat variabel yang bisa diubah; counter user yang masih aktif
         // let membuat variabel yang bisa diubah; counter user yang masih aktif
@@ -71,7 +71,7 @@ async function checkBalances() {
             // template literal ${} menyisipkan username ke string log
             console.log(`Balance: Rp ${user.balance.toLocaleString('id-ID')}`); // .toLocaleString('id-ID') memformat angka saldo dengan titik ribuan Indonesia
             // .toLocaleString('id-ID') memformat angka saldo dengan titik ribuan Indonesia
-            console.log(`Active: ${user.isActive ? '\u2705 Yes' : '\u274c No'}`); // ternary operator: jika isActive=true tampilkan centang hijau, jika false tamp...
+            console.log(`Active: ${user.isActive ? '\u2705 Yes' : '\u274c No'}`); // ternary operator: jika isActive=true tampilkan centang hijau, jika false tampilkan silang merah
             // ternary operator: jika isActive=true tampilkan centang hijau, jika false tampilkan silang merah
             console.log(`Created: ${new Date(user.createdAt).toLocaleString('id-ID')}`); // new Date() membuat objek tanggal; toLocaleString format tanggal Indonesia
             // new Date() membuat objek tanggal; toLocaleString format tanggal Indonesia
@@ -88,7 +88,7 @@ async function checkBalances() {
         // ====================================================================
         // STEP 3: DISPLAY SUMMARY STATISTICS
         // ====================================================================
-        console.log(`\n\ud83d\udcca SUMMARY:`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`\n\ud83d\udcca SUMMARY:`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         console.log(`Total users: ${users.length}`); // .length mengembalikan jumlah elemen array users
         // .length mengembalikan jumlah elemen array users
@@ -116,7 +116,7 @@ async function checkBalances() {
         // ====================================================================
         // ERROR HANDLING
         // ====================================================================
-        console.error('\u274c Error checking balances:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('\u274c Error checking balances:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         console.error('\n\ud83d\udd0d Possible causes:'); // log daftar kemungkinan penyebab error
         // log daftar kemungkinan penyebab error
@@ -136,14 +136,14 @@ async function checkBalances() {
         // solusi 2: push schema ke database
         console.error('   3. Check .env database configuration\n'); // solusi 3: cek konfigurasi .env
         // solusi 3: cek konfigurasi .env
-        process.exit(1); // process.exit(1) menghentikan proses Node.js dengan exit code 1 yang menandaka...
+        process.exit(1); // process.exit(1) menghentikan proses Node.js dengan exit code 1 yang menandakan error
         // process.exit(1) menghentikan proses Node.js dengan exit code 1 yang menandakan error
-    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap...
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
         // ====================================================================
         // CLEANUP - DISCONNECT PRISMA CLIENT
         // ====================================================================
-        await prisma.$disconnect(); // await prisma.$disconnect() menutup koneksi ke database; penting untuk mencega...
+        await prisma.$disconnect(); // await prisma.$disconnect() menutup koneksi ke database; penting untuk mencegah process Node.js tetap berjalan
         // await prisma.$disconnect() menutup koneksi ke database; penting untuk mencegah process Node.js tetap berjalan
     }
 }

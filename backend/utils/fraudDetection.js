@@ -27,7 +27,7 @@
 //   Data ke-21 hanya digunakan sebagai nilai X pada rumus Z-Score
 // ============================================================================
 
-const HISTORY_SIZE = 20; // const membuat variabel tetap; HISTORY_SIZE adalah konstanta yang menyimpan ju...
+const HISTORY_SIZE = 20; // const membuat variabel tetap; HISTORY_SIZE adalah konstanta yang menyimpan jumlah transaksi historis
 // const membuat variabel tetap; HISTORY_SIZE adalah konstanta yang menyimpan jumlah transaksi historis
 // yang digunakan sebagai window baseline untuk perhitungan Z-Score; nilai 20 dipilih berdasarkan
 // prinsip statistik: cukup untuk menghitung mean dan standar deviasi yang representatif
@@ -52,17 +52,17 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
   // .slice(0, HISTORY_SIZE) → ambil maksimal 20 elemen pertama dari array historis
   // Jika array lebih dari 20, sisanya diabaikan — hanya 20 terbaru yang dipakai sebagai baseline
-  const last20 = historicalTxs.slice(0, HISTORY_SIZE); // .slice(0,20) mengambil 20 elemen pertama; jika array < 20 elemen, ambil semua...
+  const last20 = historicalTxs.slice(0, HISTORY_SIZE); // .slice(0,20) mengambil 20 elemen pertama; jika array < 20 elemen, ambil semua — ini adalah window histori baseline
   // .slice(0,20) mengambil 20 elemen pertama; jika array < 20 elemen, ambil semua — ini adalah window histori baseline
 
   // .map(tx => tx.amount) → ekstrak hanya field `amount` dari setiap objek transaksi
   // Hasilnya array angka murni, misalnya [10000, 12000, ...] — lebih mudah dihitung
-  const amounts = last20.map(tx => tx.amount); // .map() mengekstrak hanya field amount dari setiap objek transaksi; menghasilk...
+  const amounts = last20.map(tx => tx.amount); // .map() mengekstrak hanya field amount dari setiap objek transaksi; menghasilkan array angka murni untuk perhitungan statistik
   // .map() mengekstrak hanya field amount dari setiap objek transaksi; menghasilkan array angka murni untuk perhitungan statistik
 
   // .length → jumlah elemen array setelah di-slice
   // n adalah n pada rumus statistik — mewakili jumlah data historis yang tersedia
-  const n = amounts.length; // n = jumlah data historis yang tersedia; ini adalah 'n' dalam rumus statistik ...
+  const n = amounts.length; // n = jumlah data historis yang tersedia; ini adalah 'n' dalam rumus statistik μ = ΣXi/n dan σ² = Σ(Xi-μ)²/(n-1)
   // n = jumlah data historis yang tersedia; ini adalah 'n' dalam rumus statistik μ = ΣXi/n dan σ² = Σ(Xi-μ)²/(n-1)
 
   // ============================================================================
@@ -72,19 +72,19 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   //   - Hasil Z-Score akan terlalu tidak stabil untuk dijadikan dasar keputusan
   // Seluruh kondisi n < 20 (termasuk n = 0) dikembalikan sebagai ALLOW sementara
   // ============================================================================
-  if (n < HISTORY_SIZE) { // guard check: jika data historis belum mencapai 20 transaksi, Z-Score tidak da...
+  if (n < HISTORY_SIZE) { // guard check: jika data historis belum mencapai 20 transaksi, Z-Score tidak dapat dihitung secara valid; kembalikan ALLOW sementara
     // guard check: jika data historis belum mencapai 20 transaksi, Z-Score tidak dapat dihitung secara valid; kembalikan ALLOW sementara
     return {
       zScore: 0, // Z tidak dihitung — dikembalikan 0 sebagai nilai aman
       // Z tidak dihitung — dikembalikan 0 sebagai nilai aman
       decision: 'ALLOW', // Transaksi diizinkan karena belum ada cukup baseline
       // Transaksi diizinkan karena belum ada cukup baseline
-      riskLevel: 'NORMAL', // riskLevel NORMAL diberikan saat histori belum cukup; bukan karena Z aman, tap...
+      riskLevel: 'NORMAL', // riskLevel NORMAL diberikan saat histori belum cukup; bukan karena Z aman, tapi karena baseline belum ada
       // riskLevel NORMAL diberikan saat histori belum cukup; bukan karena Z aman, tapi karena baseline belum ada
 
       // Hitung mean parsial hanya jika ada data (n > 0), jika tidak kembalikan 0
       // Operator ternary: kondisi ? nilai_jika_benar : nilai_jika_salah
-      mean: n > 0 ? parseFloat((amounts.reduce((s, x) => s + x, 0) / n).toFixed(2)) : 0, // parseFloat() mengubah hasil toFixed(2) dari string ke number; menghasilkan me...
+      mean: n > 0 ? parseFloat((amounts.reduce((s, x) => s + x, 0) / n).toFixed(2)) : 0, // parseFloat() mengubah hasil toFixed(2) dari string ke number; menghasilkan mean parsial jika ada data, 0 jika tidak ada
       // parseFloat() mengubah hasil toFixed(2) dari string ke number; menghasilkan mean parsial jika ada data, 0 jika tidak ada
 
       variance: 0, // Variance tidak dihitung, tidak cukup data
@@ -98,13 +98,13 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
       // Array reasons berisi pesan yang akan ditampilkan di dashboard admin
       // String concatenation (+) dipakai untuk menyisipkan nilai variabel ke dalam pesan
-      reasons: [ // array reasons berisi 3 pesan yang ditampilkan di dashboard admin saat histori...
+      reasons: [ // array reasons berisi 3 pesan yang ditampilkan di dashboard admin saat histori belum cukup
         // array reasons berisi 3 pesan yang ditampilkan di dashboard admin saat histori belum cukup
-        'INSUFFICIENT_HISTORY: Baseline belum cukup (' + n + '/' + HISTORY_SIZE + ' transaksi)', // pesan 1: string concatenation menggabungkan nilai n dan HISTORY_SIZE untuk me...
+        'INSUFFICIENT_HISTORY: Baseline belum cukup (' + n + '/' + HISTORY_SIZE + ' transaksi)', // pesan 1: string concatenation menggabungkan nilai n dan HISTORY_SIZE untuk menampilkan progres histori
         // pesan 1: string concatenation menggabungkan nilai n dan HISTORY_SIZE untuk menampilkan progres histori
-        'Transaksi diizinkan sementara sambil membangun histori', // pesan 2: menjelaskan alasan ALLOW meski baseline belum cukup — bukan karena a...
+        'Transaksi diizinkan sementara sambil membangun histori', // pesan 2: menjelaskan alasan ALLOW meski baseline belum cukup — bukan karena aman, tapi karena belum ada referensi
         // pesan 2: menjelaskan alasan ALLOW meski baseline belum cukup — bukan karena aman, tapi karena belum ada referensi
-        'Klasifikasi Z-Score aktif setelah histori mencapai ' + HISTORY_SIZE + ' transaksi', // pesan 3: informasi kapan deteksi Z-Score mulai aktif sepenuhnya (setelah 20 t...
+        'Klasifikasi Z-Score aktif setelah histori mencapai ' + HISTORY_SIZE + ' transaksi', // pesan 3: informasi kapan deteksi Z-Score mulai aktif sepenuhnya (setelah 20 transaksi)
         // pesan 3: informasi kapan deteksi Z-Score mulai aktif sepenuhnya (setelah 20 transaksi)
       ],
 
@@ -112,7 +112,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
       // Data amount mentah dikembalikan untuk keperluan audit
       deviations: [], // Kosong karena perhitungan deviasi tidak dilakukan
       // Kosong karena perhitungan deviasi tidak dilakukan
-      algorithm: 'Z-Score Based Anomaly Detection', // label nama algoritma yang digunakan; disertakan di response untuk transparans...
+      algorithm: 'Z-Score Based Anomaly Detection', // label nama algoritma yang digunakan; disertakan di response untuk transparansi sistem ke admin
       // label nama algoritma yang digunakan; disertakan di response untuk transparansi sistem ke admin
       historySize: HISTORY_SIZE, // Konstanta 20 — jumlah minimum data yang dibutuhkan
       // Konstanta 20 — jumlah minimum data yang dibutuhkan
@@ -129,11 +129,11 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
   // .reduce((sum, x) => sum + x, 0) → akumulasi: mulai dari 0, tambahkan tiap elemen
   // Hasilnya adalah total penjumlahan semua amount historis → Σ(Xi)
-  const sumAmounts = amounts.reduce((sum, x) => sum + x, 0); // .reduce() menjumlahkan semua elemen; (sum,x)=>sum+x adalah accumulator; mulai...
+  const sumAmounts = amounts.reduce((sum, x) => sum + x, 0); // .reduce() menjumlahkan semua elemen; (sum,x)=>sum+x adalah accumulator; mulai dari 0; hasilnya Σ(Xi)
   // .reduce() menjumlahkan semua elemen; (sum,x)=>sum+x adalah accumulator; mulai dari 0; hasilnya Σ(Xi)
 
   // Bagi total dengan jumlah data → menghasilkan rata-rata (μ = Σ(Xi) / n)
-  const mean = sumAmounts / n; // rumus mean: μ = Σ(Xi) / n; membagi total dengan jumlah data; mean adalah pusa...
+  const mean = sumAmounts / n; // rumus mean: μ = Σ(Xi) / n; membagi total dengan jumlah data; mean adalah pusat distribusi transaksi historis user
   // rumus mean: μ = Σ(Xi) / n; membagi total dengan jumlah data; mean adalah pusat distribusi transaksi historis user
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
   // .map((xi, i) => ...) → transformasi setiap elemen array menjadi objek baru
   // xi = nilai amount pada indeks ke-i, i = indeks (mulai dari 0)
-  const deviations = amounts.map((xi, i) => ({ // .map() dengan dua parameter: xi=nilai, i=indeks; menghasilkan objek deviasi u...
+  const deviations = amounts.map((xi, i) => ({ // .map() dengan dua parameter: xi=nilai, i=indeks; menghasilkan objek deviasi untuk setiap transaksi historis
     // .map() dengan dua parameter: xi=nilai, i=indeks; menghasilkan objek deviasi untuk setiap transaksi historis
     index: i + 1, // Nomor urut 1-based (i dimulai dari 0, jadi +1)
     // Nomor urut 1-based (i dimulai dari 0, jadi +1)
@@ -158,7 +158,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
   // Jumlahkan semua kuadrat deviasi menggunakan reduce → menghasilkan Σ(Xi - μ)²
   // d.devSq adalah kuadrat deviasi dari setiap elemen yang sudah dihitung di atas
-  const sumSquaredDiff = deviations.reduce((sum, d) => sum + d.devSq, 0); // .reduce() menjumlahkan semua kuadrat deviasi (d.devSq); menghasilkan Σ(Xi-μ)²...
+  const sumSquaredDiff = deviations.reduce((sum, d) => sum + d.devSq, 0); // .reduce() menjumlahkan semua kuadrat deviasi (d.devSq); menghasilkan Σ(Xi-μ)² untuk perhitungan variance
   // .reduce() menjumlahkan semua kuadrat deviasi (d.devSq); menghasilkan Σ(Xi-μ)² untuk perhitungan variance
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
 
   // Math.sqrt() → fungsi akar kuadrat bawaan JavaScript → σ = √σ²
   // Jika variance = 0, maka stdDev = √0 = 0 → masuk ke edge case di langkah 5
-  const stdDev = Math.sqrt(variance); // Math.sqrt() menghitung akar kuadrat; σ = √σ²; mengubah satuan kembali ke Rupi...
+  const stdDev = Math.sqrt(variance); // Math.sqrt() menghitung akar kuadrat; σ = √σ²; mengubah satuan kembali ke Rupiah dari Rp² (kuadrat)
   // Math.sqrt() menghitung akar kuadrat; σ = √σ²; mengubah satuan kembali ke Rupiah dari Rp² (kuadrat)
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -191,21 +191,21 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // ─────────────────────────────────────────────────────────────────────────
 
   // Deklarasi `let` (bukan `const`) karena nilai zScore ditentukan secara kondisional
-  let zScore; // deklarasi let (bukan const) karena nilai ditentukan secara kondisional di baw...
+  let zScore; // deklarasi let (bukan const) karena nilai ditentukan secara kondisional di bawah; let memungkinkan reassignment setelah deklarasi
   // deklarasi let (bukan const) karena nilai ditentukan secara kondisional di bawah; let memungkinkan reassignment setelah deklarasi
 
   // Flag boolean untuk menandai apakah Z-Score tidak terdefinisi (kasus σ = 0, X ≠ μ)
   // Dipakai di langkah 6 untuk paksa decision = BLOCK tanpa perlu membandingkan nilai null
-  let zScoreIsUndefined = false; // flag boolean untuk kasus edge case σ=0; false=Z bisa dihitung, true=Z tidak t...
+  let zScoreIsUndefined = false; // flag boolean untuk kasus edge case σ=0; false=Z bisa dihitung, true=Z tidak terdefinisi secara matematis karena σ=0 dan X≠μ
   // flag boolean untuk kasus edge case σ=0; false=Z bisa dihitung, true=Z tidak terdefinisi secara matematis karena σ=0 dan X≠μ
 
   if (stdDev === 0) { // edge case: σ=0 berarti semua 20 transaksi historis bernilai SAMA PERSIS;
     // edge case: σ=0 berarti semua 20 transaksi historis bernilai SAMA PERSIS;
     // pembagian dengan 0 menghasilkan Infinity di JavaScript — harus ditangani khusus
 
-    if (currentAmount === mean) { // jika transaksi baru sama persis dengan mean (dan σ=0): tidak ada penyimpangan...
+    if (currentAmount === mean) { // jika transaksi baru sama persis dengan mean (dan σ=0): tidak ada penyimpangan, Z=0, transaksi dianggap normal
       // jika transaksi baru sama persis dengan mean (dan σ=0): tidak ada penyimpangan, Z=0, transaksi dianggap normal
-      zScore = 0; // Z=0 ditetapkan manual: transaksi identik dengan mean, penyimpangan nol, tidak...
+      zScore = 0; // Z=0 ditetapkan manual: transaksi identik dengan mean, penyimpangan nol, tidak ada anomali
       // Z=0 ditetapkan manual: transaksi identik dengan mean, penyimpangan nol, tidak ada anomali
     } else { // X berbeda dari μ → ada penyimpangan, tapi σ = 0 sehingga Z tidak bisa dihitung
       // X berbeda dari μ → ada penyimpangan, tapi σ = 0 sehingga Z tidak bisa dihitung
@@ -218,7 +218,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   } else { // σ > 0 → kondisi normal, Z bisa dihitung dengan rumus standar
     // σ > 0 → kondisi normal, Z bisa dihitung dengan rumus standar
     // Math.abs() → nilai absolut agar Z selalu positif (tidak peduli di atas/bawah mean)
-    zScore = Math.abs(currentAmount - mean) / stdDev; // rumus Z-Score: Z = |X - μ| / σ; Math.abs() memastikan Z selalu positif; mengu...
+    zScore = Math.abs(currentAmount - mean) / stdDev; // rumus Z-Score: Z = |X - μ| / σ; Math.abs() memastikan Z selalu positif; mengukur berapa kali lipat penyimpangan dari σ
     // rumus Z-Score: Z = |X - μ| / σ; Math.abs() memastikan Z selalu positif; mengukur berapa kali lipat penyimpangan dari σ
   }
 
@@ -231,7 +231,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // ─────────────────────────────────────────────────────────────────────────
 
   // Deklarasi `let` karena nilai decision ditentukan oleh kondisi di bawah
-  let decision; // deklarasi let karena nilai ditentukan oleh kondisi if-else di bawah; menyimpa...
+  let decision; // deklarasi let karena nilai ditentukan oleh kondisi if-else di bawah; menyimpan keputusan akhir: ALLOW, REVIEW, atau BLOCK
   // deklarasi let karena nilai ditentukan oleh kondisi if-else di bawah; menyimpan keputusan akhir: ALLOW, REVIEW, atau BLOCK
 
   if (zScoreIsUndefined)   decision = 'BLOCK'; // σ=0 & X≠μ: anomali matematis, paksa BLOCK
@@ -253,7 +253,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // Array kosong, akan diisi dengan .push() sesuai kondisi
 
   // Format nilai Z-Score untuk ditampilkan: 4 desimal, atau teks khusus jika undefined
-  const zFormatted = zScoreIsUndefined ? 'tidak terdefinisi (σ=0)' : zScore.toFixed(4);  // format Z untuk tampilan: ternary cek flag; .toFixed(4) membatasi 4 desimal ag...
+  const zFormatted = zScoreIsUndefined ? 'tidak terdefinisi (σ=0)' : zScore.toFixed(4); // format Z untuk tampilan: ternary cek flag; .toFixed(4) membatasi 4 desimal agar mudah dibaca di dashboard
   // format Z untuk tampilan: ternary cek flag; .toFixed(4) membatasi 4 desimal agar mudah dibaca di dashboard
 
   // Math.round() → bulatkan ke bilangan bulat terdekat sebelum diformat sebagai string
@@ -262,24 +262,24 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // format mean dengan titik ribuan gaya Indonesia untuk pesan reasons
 
   // .toFixed(2) → format angka dengan 2 desimal (standar tampilan nilai statistik)
-  const stdFormatted = stdDev.toFixed(2); // .toFixed(2) memformat standar deviasi dengan 2 desimal; digunakan dalam strin...
+  const stdFormatted = stdDev.toFixed(2); // .toFixed(2) memformat standar deviasi dengan 2 desimal; digunakan dalam string pesan reasons untuk menampilkan nilai σ
   // .toFixed(2) memformat standar deviasi dengan 2 desimal; digunakan dalam string pesan reasons untuk menampilkan nilai σ
 
   // Format amount transaksi baru untuk pesan yang mudah dibaca manusia
-  const currentFormatted = currentAmount.toLocaleString('id-ID'); // format nominal transaksi baru dengan titik ribuan gaya Indonesia untuk pesan ...
+  const currentFormatted = currentAmount.toLocaleString('id-ID'); // format nominal transaksi baru dengan titik ribuan gaya Indonesia untuk pesan reasons
   // format nominal transaksi baru dengan titik ribuan gaya Indonesia untuk pesan reasons
 
-  if (zScoreIsUndefined) { // memeriksa flag edge case σ=0; jika true masuk blok ini untuk membuat pesan pe...
+  if (zScoreIsUndefined) { // memeriksa flag edge case σ=0; jika true masuk blok ini untuk membuat pesan penjelasan khusus kasus matematis tidak terdefinisi
     // memeriksa flag edge case σ=0; jika true masuk blok ini untuk membuat pesan penjelasan khusus kasus matematis tidak terdefinisi
-    reasons.push( // mengisi array reasons dengan 4 pesan penjelasan keputusan BLOCK akibat edge c...
+    reasons.push( // mengisi array reasons dengan 4 pesan penjelasan keputusan BLOCK akibat edge case σ=0
       // mengisi array reasons dengan 4 pesan penjelasan keputusan BLOCK akibat edge case σ=0
-      'EDGE CASE: Standar deviasi σ = 0 (semua transaksi historis identik = Rp' + meanFormatted + ')', // pesan 1: menjelaskan bahwa σ=0 karena semua 20 transaksi historis bernilai sa...
+      'EDGE CASE: Standar deviasi σ = 0 (semua transaksi historis identik = Rp' + meanFormatted + ')', // pesan 1: menjelaskan bahwa σ=0 karena semua 20 transaksi historis bernilai sama persis
       // pesan 1: menjelaskan bahwa σ=0 karena semua 20 transaksi historis bernilai sama persis
-      'Transaksi baru Rp' + currentFormatted + ' menyimpang dari pola identik — Z tidak terdefinisi secara matematis', // pesan 2: menjelaskan anomali — ada penyimpangan dari pola identik tapi Z tida...
+      'Transaksi baru Rp' + currentFormatted + ' menyimpang dari pola identik — Z tidak terdefinisi secara matematis', // pesan 2: menjelaskan anomali — ada penyimpangan dari pola identik tapi Z tidak bisa dihitung karena σ=0
       // pesan 2: menjelaskan anomali — ada penyimpangan dari pola identik tapi Z tidak bisa dihitung karena σ=0
-      'Keputusan BLOCK berdasarkan logika statistik: distribusi degenerasi tidak dapat menoleransi penyimpangan apapun', // pesan 3: alasan BLOCK — distribusi degenerasi (semua identik) tidak bisa tole...
+      'Keputusan BLOCK berdasarkan logika statistik: distribusi degenerasi tidak dapat menoleransi penyimpangan apapun', // pesan 3: alasan BLOCK — distribusi degenerasi (semua identik) tidak bisa toleransi penyimpangan apapun
       // pesan 3: alasan BLOCK — distribusi degenerasi (semua identik) tidak bisa toleransi penyimpangan apapun
-      'Threshold yang berlaku tetap Z > 3; edge case ini bukan threshold baru', // pesan 4: klarifikasi — BLOCK bukan karena Z > 3, tapi karena kondisi matemati...
+      'Threshold yang berlaku tetap Z > 3; edge case ini bukan threshold baru', // pesan 4: klarifikasi — BLOCK bukan karena Z > 3, tapi karena kondisi matematis σ=0; threshold tidak berubah
       // pesan 4: klarifikasi — BLOCK bukan karena Z > 3, tapi karena kondisi matematis σ=0; threshold tidak berubah
     );
   } else if (decision === 'ALLOW') { // Z ≤ 2: transaksi dalam batas normal — masuk blok pesan ALLOW
@@ -299,7 +299,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
       // pesan 1: menampilkan Z antara 2 dan 3 sigma — perlu ditinjau admin
       'Nominal Rp' + currentFormatted + ' menyimpang antara 2-sigma dan 3-sigma dari baseline (mu = Rp' + meanFormatted + ', sigma = Rp' + stdFormatted + ')', // pesan 2: detail nominal vs baseline; posisi penyimpangan antara 2σ dan 3σ
       // pesan 2: detail nominal vs baseline; posisi penyimpangan antara 2σ dan 3σ
-      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)', // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ...
+      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)', // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ribuan Indonesia
       // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ribuan Indonesia
     );
   } else { // Z > 3: transaksi anomali — masuk blok pesan BLOCK
@@ -310,9 +310,9 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
       // pesan 1: menampilkan nilai Z > 3 sebagai konfirmasi anomali
       'Nominal Rp' + currentFormatted + ' menyimpang melampaui 3-sigma dari baseline (mu = Rp' + meanFormatted + ', sigma = Rp' + stdFormatted + ')', // pesan 2: detail nominal vs baseline; jelas melampaui 3σ
       // pesan 2: detail nominal vs baseline; jelas melampaui 3σ
-      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)', // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ...
+      'Deviasi dari mean: Rp' + Math.round(Math.abs(currentAmount - mean)).toLocaleString('id-ID') + ' (' + zFormatted + 'x standar deviasi)', // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ribuan Indonesia
       // pesan 3: Math.abs() agar deviasi selalu positif; toLocaleString format titik ribuan Indonesia
-      'Indikasi kuat anomali transaksi - saldo tidak berubah, fraud alert dibuat', // pesan 4: akibat BLOCK — transaksi ditolak, saldo tidak berubah, fraud alert d...
+      'Indikasi kuat anomali transaksi - saldo tidak berubah, fraud alert dibuat', // pesan 4: akibat BLOCK — transaksi ditolak, saldo tidak berubah, fraud alert dibuat di database
       // pesan 4: akibat BLOCK — transaksi ditolak, saldo tidak berubah, fraud alert dibuat di database
     );
   }
@@ -323,7 +323,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // riskLevel (NORMAL/SUSPICIOUS/ANOMALY) adalah istilah yang ditampilkan di UI
   // Operator ternary berantai: evaluasi dari kiri ke kanan
   // ─────────────────────────────────────────────────────────────────────────
-  const riskLevel = decision === 'ALLOW' ? 'NORMAL' : decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY'; // ternary berantai: memetakan decision ke label UI; ALLOW→NORMAL, REVIEW→SUSPIC...
+  const riskLevel = decision === 'ALLOW' ? 'NORMAL' : decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY'; // ternary berantai: memetakan decision ke label UI; ALLOW→NORMAL, REVIEW→SUSPICIOUS, BLOCK→ANOMALY
   // ternary berantai: memetakan decision ke label UI; ALLOW→NORMAL, REVIEW→SUSPICIOUS, BLOCK→ANOMALY
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ function analyzeZScoreAnomaly(currentAmount, historicalTxs) { // fungsi utama de
   // Objek ini diterima oleh fraud.js (routes) dan diteruskan ke response API
   // ─────────────────────────────────────────────────────────────────────────
   return {
-    zScore: zScoreIsUndefined ? null : parseFloat(zScore.toFixed(6)), // parseFloat() mengubah hasil toFixed(6) dari string ke number; null jika Z tid...
+    zScore: zScoreIsUndefined ? null : parseFloat(zScore.toFixed(6)), // parseFloat() mengubah hasil toFixed(6) dari string ke number; null jika Z tidak terdefinisi
     // parseFloat() mengubah hasil toFixed(6) dari string ke number; null jika Z tidak terdefinisi
 
     decision, // Keputusan akhir: ALLOW / REVIEW / BLOCK

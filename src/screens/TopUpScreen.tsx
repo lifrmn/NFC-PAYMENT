@@ -1,5 +1,5 @@
 ﻿// src/screens/TopUpScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react'; // import React (wajib untuk JSX); useState untuk state kartu, seleksi, dan load...
+import React, { useState, useEffect, useCallback } from 'react'; // import React (wajib untuk JSX); useState untuk state kartu, seleksi, dan loading; useEffect untuk load data saat mount; useCallback untuk memoize loadCards agar tidak dibuat ulang setiap render
 // import React (wajib untuk JSX); useState untuk state kartu, seleksi, dan loading; useEffect untuk load data saat mount; useCallback untuk memoize loadCards agar tidak dibuat ulang setiap render
 import { // import beberapa komponen sekaligus dari satu modul menggunakan destructuring
   // import beberapa komponen sekaligus dari satu modul menggunakan destructuring
@@ -31,15 +31,15 @@ import styles from './TopUpScreen.styles'; // import stylesheet dari file terpis
 // import stylesheet dari file terpisah
 
 // ── Nominal preset top-up ──
-const PRESET_AMOUNTS = [10000, 25000, 50000, 100000, 200000, 500000]; // array konstanta nominal top-up yang sudah ditentukan; ditampilkan sebagai tom...
+const PRESET_AMOUNTS = [10000, 25000, 50000, 100000, 200000, 500000]; // array konstanta nominal top-up yang sudah ditentukan; ditampilkan sebagai tombol preset agar user tidak perlu mengetik sendiri
 // array konstanta nominal top-up yang sudah ditentukan; ditampilkan sebagai tombol preset agar user tidak perlu mengetik sendiri
 
-const formatCurrency = (amount: number) => // fungsi helper untuk format angka menjadi string Rupiah Indonesia; (amount: nu...
+const formatCurrency = (amount: number) => // fungsi helper untuk format angka menjadi string Rupiah Indonesia; (amount: number) adalah parameter bertipe number
 // fungsi helper untuk format angka menjadi string Rupiah Indonesia; (amount: number) adalah parameter bertipe number
-  'Rp ' + amount.toLocaleString('id-ID'); // toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan s...
+  'Rp ' + amount.toLocaleString('id-ID'); // toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia
   // toLocaleString('id-ID') memformat angka dengan titik sebagai pemisah ribuan sesuai format Indonesia
 
-interface TopUpScreenProps { // interface TypeScript mendefinisikan struktur props yang diterima komponen Top...
+interface TopUpScreenProps { // interface TypeScript mendefinisikan struktur props yang diterima komponen TopUpScreen
   // interface TypeScript mendefinisikan struktur props yang diterima komponen TopUpScreen
   user: any; // props user bertipe any — berisi data user yang sedang login (id, name, balance)
   // props user bertipe any — berisi data user yang sedang login (id, name, balance)
@@ -59,9 +59,9 @@ interface NFCCard { // interface TypeScript mendefinisikan struktur data kartu N
   // status kartu: 'ACTIVE', 'BLOCKED', dll
 }
 
-export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProps) { // export default function: komponen utama TopUpScreen; destructuring props sesu...
+export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProps) { // export default function: komponen utama TopUpScreen; destructuring props sesuai TopUpScreenProps
   // export default function: komponen utama TopUpScreen; destructuring props sesuai TopUpScreenProps
-  const [cards, setCards] = useState<NFCCard[]>([]); // state: array kartu NFC aktif milik user; <NFCCard[]> tipe TypeScript array of...
+  const [cards, setCards] = useState<NFCCard[]>([]); // state: array kartu NFC aktif milik user; <NFCCard[]> tipe TypeScript array of NFCCard
   // state: array kartu NFC aktif milik user; <NFCCard[]> tipe TypeScript array of NFCCard
   const [selectedCard, setSelectedCard] = useState<NFCCard | null>(null); // state: kartu yang dipilih untuk di-top-up; null jika belum ada pilihan
   // state: kartu yang dipilih untuk di-top-up; null jika belum ada pilihan
@@ -77,10 +77,10 @@ export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProp
   // state: flag pull-to-refresh untuk RefreshControl
 
   // ── Nominal yang akan dipakai ──
-  const amount = selectedPreset ?? (customAmount ? parseInt(customAmount.replace(/\D/g, ''), 10) : 0); // ?? adalah nullish coalescing: gunakan selectedPreset jika tidak null, jika nu...
+  const amount = selectedPreset ?? (customAmount ? parseInt(customAmount.replace(/\D/g, ''), 10) : 0); // ?? adalah nullish coalescing: gunakan selectedPreset jika tidak null, jika null hitung dari customAmount; replace(/\D/g,'') menghapus karakter bukan angka
   // ?? adalah nullish coalescing: gunakan selectedPreset jika tidak null, jika null hitung dari customAmount; replace(/\D/g,'') menghapus karakter bukan angka
 
-  const loadCards = useCallback(async () => { // useCallback: memoize fungsi agar referensinya stabil; async karena HTTP reque...
+  const loadCards = useCallback(async () => { // useCallback: memoize fungsi agar referensinya stabil; async karena HTTP request; diperlukan agar useEffect tidak loop tak terbatas
     // useCallback: memoize fungsi agar referensinya stabil; async karena HTTP request; diperlukan agar useEffect tidak loop tak terbatas
     if (!user?.id) return; // guard: hentikan jika tidak ada user ID yang valid
     // guard: hentikan jika tidak ada user ID yang valid
@@ -88,7 +88,7 @@ export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProp
       // try: membungkus operasi yang berisiko error
       const res = await apiService.getUserCards(user.id); // await HTTP GET untuk mendapatkan daftar kartu user dari backend
       // await HTTP GET untuk mendapatkan daftar kartu user dari backend
-      const list: NFCCard[] = Array.isArray(res) ? res : (res?.cards ?? []); // normalisasi response: bisa berupa array langsung atau objek {cards: []}; ?? [...
+      const list: NFCCard[] = Array.isArray(res) ? res : (res?.cards ?? []); // normalisasi response: bisa berupa array langsung atau objek {cards: []}; ?? [] sebagai fallback
       // normalisasi response: bisa berupa array langsung atau objek {cards: []}; ?? [] sebagai fallback
       // Hanya tampilkan kartu ACTIVE
       const active = list.filter((c) => c.cardStatus === 'ACTIVE'); // filter hanya kartu dengan status ACTIVE; kartu BLOCKED/EXPIRED tidak ditampilkan
@@ -135,10 +135,10 @@ export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProp
     // kosongkan input kustom agar tidak konflik dengan preset
   };
 
-  const handleCustomAmount = (text: string) => { // fungsi handler saat user mengetik nominal kustom; (text: string) adalah teks ...
+  const handleCustomAmount = (text: string) => { // fungsi handler saat user mengetik nominal kustom; (text: string) adalah teks dari TextInput
     // fungsi handler saat user mengetik nominal kustom; (text: string) adalah teks dari TextInput
     // Hanya angka
-    const numeric = text.replace(/\D/g, ''); // replace(/\D/g,'') menggunakan regex untuk menghapus semua karakter bukan digi...
+    const numeric = text.replace(/\D/g, ''); // replace(/\D/g,'') menggunakan regex untuk menghapus semua karakter bukan digit; memastikan hanya angka yang tersimpan
     // replace(/\D/g,'') menggunakan regex untuk menghapus semua karakter bukan digit; memastikan hanya angka yang tersimpan
     setCustomAmount(numeric); // simpan angka ke state
     // simpan angka ke state
@@ -146,7 +146,7 @@ export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProp
     // reset pilihan preset karena user memilih nominal kustom
   };
 
-  const handleTopUp = async () => { // fungsi async handler tombol Top Up; async karena melakukan HTTP request ke ba...
+  const handleTopUp = async () => { // fungsi async handler tombol Top Up; async karena melakukan HTTP request ke backend
     // fungsi async handler tombol Top Up; async karena melakukan HTTP request ke backend
     if (!selectedCard) { // guard: hentikan jika belum ada kartu dipilih
       // guard: hentikan jika belum ada kartu dipilih
@@ -244,7 +244,7 @@ export default function TopUpScreen({ user, onBack, onSuccess }: TopUpScreenProp
     );
   }
 
-  return ( // return JSX utama — konten screen top-up yang ditampilkan saat data kartu suda...
+  return ( // return JSX utama — konten screen top-up yang ditampilkan saat data kartu sudah dimuat
   // return JSX utama — konten screen top-up yang ditampilkan saat data kartu sudah dimuat
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>

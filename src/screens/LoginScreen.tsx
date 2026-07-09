@@ -91,37 +91,37 @@
 // - loginUser: Offline login via SQLite (from database.ts)
 // - apiService: HTTP client untuk backend API (from apiService.ts)
 // ==================================================================================
-import React, { useState } from 'react'; // import React diperlukan di setiap file TSX/JSX agar fitur JSX dan hooks bisa ...
+import React, { useState } from 'react'; // import React diperlukan di setiap file TSX/JSX agar fitur JSX dan hooks bisa digunakan
 // import React diperlukan di setiap file TSX/JSX agar fitur JSX dan hooks bisa digunakan
-import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
-  View, // View: komponen container dasar React Native setara div HTML; untuk mengelompo...
+  View, // View: komponen container dasar React Native setara div HTML; untuk mengelompokkan elemen UI
   // View: komponen container dasar React Native setara div HTML; untuk mengelompokkan elemen UI
   Text, // Text: komponen untuk menampilkan teks di layar; setiap teks harus dibungkus Text
   // Text: komponen untuk menampilkan teks di layar; setiap teks harus dibungkus Text
-  TextInput, // TextInput: kolom input teks; setara input[type=text] di HTML; mendukung keybo...
+  TextInput, // TextInput: kolom input teks; setara input[type=text] di HTML; mendukung keyboard native Android/iOS
   // TextInput: kolom input teks; setara input[type=text] di HTML; mendukung keyboard native Android/iOS
-  TouchableOpacity, // TouchableOpacity: tombol dengan efek transparansi saat ditekan; dipakai untuk...
+  TouchableOpacity, // TouchableOpacity: tombol dengan efek transparansi saat ditekan; dipakai untuk semua tombol interaktif
   // TouchableOpacity: tombol dengan efek transparansi saat ditekan; dipakai untuk semua tombol interaktif
   Alert, // Alert: API React Native untuk menampilkan dialog popup native kepada user
   // Alert: API React Native untuk menampilkan dialog popup native kepada user
-  KeyboardAvoidingView, // KeyboardAvoidingView: wrapper yang menggeser konten ke atas saat keyboard mun...
+  KeyboardAvoidingView, // KeyboardAvoidingView: wrapper yang menggeser konten ke atas saat keyboard muncul agar form tidak tertutup
   // KeyboardAvoidingView: wrapper yang menggeser konten ke atas saat keyboard muncul agar form tidak tertutup
-  Platform // Platform: objek utilitas untuk deteksi OS (Android/iOS); Platform.OS mengemba...
+  Platform // Platform: objek utilitas untuk deteksi OS (Android/iOS); Platform.OS mengembalikan string "android" atau "ios"
   // Platform: objek utilitas untuk deteksi OS (Android/iOS); Platform.OS mengembalikan string "android" atau "ios"
-} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library react-native-safe-area-context; memberikan p...
+import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library react-native-safe-area-context; memberikan padding aman di area notch/status bar
 // import SafeAreaView dari library react-native-safe-area-context; memberikan padding aman di area notch/status bar
-import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage: penyimpanan key-value lokal persisten di perangkat Andro...
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage: penyimpanan key-value lokal persisten di perangkat Android/iOS
 // import AsyncStorage: penyimpanan key-value lokal persisten di perangkat Android/iOS
-import CustomButton from '../components/CustomButton'; // import komponen CustomButton dari folder components; tombol yang sudah dikust...
+import CustomButton from '../components/CustomButton'; // import komponen CustomButton dari folder components; tombol yang sudah dikustomisasi dengan style aplikasi
 // import komponen CustomButton dari folder components; tombol yang sudah dikustomisasi dengan style aplikasi
-import { loginUser } from '../utils/database'; // import fungsi loginUser dari database.ts; fungsi untuk autentikasi user ke SQ...
+import { loginUser } from '../utils/database'; // import fungsi loginUser dari database.ts; fungsi untuk autentikasi user ke SQLite lokal
 // import fungsi loginUser dari database.ts; fungsi untuk autentikasi user ke SQLite lokal
 import { apiService } from '../utils/apiService'; // import apiService: singleton HTTP client untuk komunikasi dengan backend Express
 // import apiService: singleton HTTP client untuk komunikasi dengan backend Express
-import styles from './LoginScreen.styles'; // import objek styles dari file styles terpisah; memisahkan logika dan tampilan...
+import styles from './LoginScreen.styles'; // import objek styles dari file styles terpisah; memisahkan logika dan tampilan agar kode lebih terorganisasi
 // import objek styles dari file styles terpisah; memisahkan logika dan tampilan agar kode lebih terorganisasi
 
 // ==================================================================================
@@ -136,7 +136,7 @@ import styles from './LoginScreen.styles'; // import objek styles dari file styl
 //   No parameters
 //   Use case: User tap "Belum punya akun? Daftar di sini"
 // ==================================================================================
-interface LoginScreenProps { // interface TypeScript mendefinisikan struktur dan tipe props yang diterima kom...
+interface LoginScreenProps { // interface TypeScript mendefinisikan struktur dan tipe props yang diterima komponen
   // interface TypeScript mendefinisikan struktur dan tipe props yang diterima komponen
   onLogin: (user: any) => void; // onLogin: prop fungsi callback yang dipanggil komponen induk saat login berhasil
   // onLogin: prop fungsi callback yang dipanggil komponen induk saat login berhasil
@@ -153,7 +153,7 @@ interface LoginScreenProps { // interface TypeScript mendefinisikan struktur dan
 // @param onLogin - Callback saat login berhasil
 // @param onNavigateToRegister - Callback untuk navigate ke RegisterScreen
 // ==================================================================================
-export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScreenProps) { // export default function: mendefinisikan dan mengekspor komponen React fungsio...
+export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScreenProps) { // export default function: mendefinisikan dan mengekspor komponen React fungsional utama file ini
   // export default function: mendefinisikan dan mengekspor komponen React fungsional utama file ini
   // STATE 1: username input
   // Pattern controlled component: value={username} onChangeText={setUsername}
@@ -203,7 +203,7 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   // - Seamless: User tidak perlu tahu mode apa yang aktif
   // - Resilient: App tetap bisa digunakan meski backend down
   // ================================================================================
-  const handleLogin = async () => { // handleLogin async: memproses login user; async karena perlu request API dan t...
+  const handleLogin = async () => { // handleLogin async: memproses login user; async karena perlu request API dan tulis AsyncStorage
     // handleLogin async: memproses login user; async karena perlu request API dan tulis AsyncStorage
     // STEP 1: Validasi input - pastikan tidak ada field yang kosong
     // trim() menghapus spasi di awal/akhir string
@@ -221,14 +221,14 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
     setLoading(true); // State berubah dari false → true, trigger re-render komponen
     // State berubah dari false → true, trigger re-render komponen
     
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       console.log('🔐 Attempting login for:', username); // Log untuk debugging di console
       // Log untuk debugging di console
 
       // STEP 3: Coba login melalui backend API terlebih dahulu (metode utama)
       // Jika backend offline atau error, kita akan fallback ke database lokal
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // Memanggil API login ke backend server
         // Backend akan cek username/password di database, lalu kirim token JWT jika valid
@@ -281,7 +281,7 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
       if (localUser) { // memeriksa apakah user ditemukan di database lokal; null berarti ID tidak valid
         // memeriksa apakah user ditemukan di database lokal; null berarti ID tidak valid
         // Jika data user ditemukan di database lokal, login berhasil
-        console.log('✅ Login success (offline):', localUser.username); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log('✅ Login success (offline):', localUser.username); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         
         // Panggil callback onLogin dengan data dari database lokal
@@ -302,7 +302,7 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
       // Log detail error ke console
       Alert.alert('Error', 'Terjadi kesalahan saat login'); // Tampilkan pesan umum ke user
       // Tampilkan pesan umum ke user
-    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap...
+    } finally { // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       // finally: blok yang selalu dijalankan baik try berhasil maupun catch menangkap error
       // Block finally selalu dijalankan, baik sukses maupun error
       // Penting untuk reset loading state agar UI tidak stuck
@@ -321,9 +321,9 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   // - User tap "Belum punya akun? Daftar di sini" link
   // - Navigate to RegisterScreen untuk create new account
   // ================================================================================
-  const handleNavigateToRegister = () => { // fungsi handler navigasi: membungkus prop navigasi agar bisa dipanggil dari ev...
+  const handleNavigateToRegister = () => { // fungsi handler navigasi: membungkus prop navigasi agar bisa dipanggil dari event handler
     // fungsi handler navigasi: membungkus prop navigasi agar bisa dipanggil dari event handler
-    onNavigateToRegister(); // memanggil prop fungsi navigasi yang diberikan komponen induk untuk pindah ke ...
+    onNavigateToRegister(); // memanggil prop fungsi navigasi yang diberikan komponen induk untuk pindah ke halaman daftar
     // memanggil prop fungsi navigasi yang diberikan komponen induk untuk pindah ke halaman daftar
   };
 
@@ -359,9 +359,9 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
   // return JSX: mengembalikan elemen UI yang akan dirender oleh React ke layar
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // behavior: menentukan cara KeyboardAvoidingView bereaksi; "padding" untuk iOS,...
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // behavior: menentukan cara KeyboardAvoidingView bereaksi; "padding" untuk iOS, "height" untuk Android
         // behavior: menentukan cara KeyboardAvoidingView bereaksi; "padding" untuk iOS, "height" untuk Android
-        style={styles.container} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+        style={styles.container} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
         // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
       >
         <View style={styles.content}>
@@ -382,41 +382,41 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
             <Text style={styles.cardTitle}>Masuk</Text>
             <View style={styles.inputContainer}>
               <Text style={styles.inputIcon}>👤</Text>
-              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyb...
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
               // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
-                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                placeholder="Masukkan username" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada inp...
+                placeholder="Masukkan username" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
                 // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
-                placeholderTextColor="#94a3b8" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras d...
+                placeholderTextColor="#94a3b8" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
                 // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
-                value={username} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled ...
+                value={username} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
                 // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
-                onChangeText={setUsername} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; d...
+                onChangeText={setUsername} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
                 // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
-                autoCapitalize="none" // autoCapitalize none: menonaktifkan auto-kapitalisasi; penting untuk field use...
+                autoCapitalize="none" // autoCapitalize none: menonaktifkan auto-kapitalisasi; penting untuk field username dan email
                 // autoCapitalize none: menonaktifkan auto-kapitalisasi; penting untuk field username dan email
-                autoComplete="username" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form l...
+                autoComplete="username" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
                 // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
             <View style={styles.inputContainer}>
               <Text style={styles.inputIcon}>🔒</Text>
-              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyb...
+              <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
               // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
-                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+                style={styles.input} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                placeholder="Masukkan kata sandi" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada inp...
+                placeholder="Masukkan kata sandi" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
                 // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
-                placeholderTextColor="#94a3b8" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras d...
+                placeholderTextColor="#94a3b8" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
                 // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
-                value={password} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled ...
+                value={password} // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
                 // value={} mengikat nilai input ke state; membuat TextInput menjadi controlled component
-                onChangeText={setPassword} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; d...
+                onChangeText={setPassword} // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
                 // onChangeText dipanggil setiap user mengetik; parameter berisi teks terbaru; digunakan untuk update state
-                secureTextEntry // secureTextEntry: prop boolean true menyembunyikan karakter menjadi titik-titi...
+                secureTextEntry // secureTextEntry: prop boolean true menyembunyikan karakter menjadi titik-titik; digunakan untuk field password
                 // secureTextEntry: prop boolean true menyembunyikan karakter menjadi titik-titik; digunakan untuk field password
-                autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form l...
+                autoComplete="password" // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
                 // autoComplete: petunjuk ke sistem untuk autofill; membantu user mengisi form lebih cepat
               />
             </View>
@@ -427,17 +427,17 @@ export default function LoginScreen({ onLogin, onNavigateToRegister }: LoginScre
             // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
               style={[styles.loginButton, loading && styles.loginButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
               // style={} prop untuk menerapkan styling ke elemen React Native
-              onPress={handleLogin} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi han...
+              onPress={handleLogin} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
-              disabled={loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau fo...
+              disabled={loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
               // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
             >
-              {loading ? ( // ternary JSX: jika state loading=true tampilkan spinner ActivityIndicator, jik...
+              {loading ? ( // ternary JSX: jika state loading=true tampilkan spinner ActivityIndicator, jika false tampilkan elemen normal
               // ternary JSX: jika state loading=true tampilkan spinner ActivityIndicator, jika false tampilkan elemen normal
                 <View style={styles.processingRow}>
                   <Text style={styles.loginButtonText}>Memproses </Text>
                 </View>
-              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary b...
+              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
               // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
                 <Text style={styles.loginButtonText}>Login</Text> // teks tombol login normal
                 // teks tombol login normal

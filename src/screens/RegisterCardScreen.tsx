@@ -89,9 +89,9 @@
 // - NFCService: Utilitas NFC (init, read physical card, cleanup)
 // - apiService: HTTP client (getCardInfo, registerCard)
 // ==================================================================================
-import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 6 state variable...
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 6 state variable (nfcSupported, nfcEnabled, loading, scanning, scannedCardId, registrationStatus); useEffect untuk init NFC dan cleanup saat unmount
 // import React (wajib untuk JSX) dan dua hooks: useState untuk 6 state variable (nfcSupported, nfcEnabled, loading, scanning, scannedCardId, registrationStatus); useEffect untuk init NFC dan cleanup saat unmount
-import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah container dasar React Native — setara div di HTML
   // View adalah container dasar React Native — setara div di HTML
@@ -99,17 +99,17 @@ import { // import beberapa komponen atau fungsi sekaligus dari satu modul mengg
   // Text menampilkan teks di UI
   TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan saat ditekan
   // TouchableOpacity adalah tombol dengan efek transparan saat ditekan
-  Alert, // Alert menampilkan dialog popup native — untuk pesan sukses, error, dan konfir...
+  Alert, // Alert menampilkan dialog popup native — untuk pesan sukses, error, dan konfirmasi registrasi kartu
   // Alert menampilkan dialog popup native — untuk pesan sukses, error, dan konfirmasi registrasi kartu
-  ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat proses registrasi...
+  ActivityIndicator // ActivityIndicator adalah spinner animasi — ditampilkan saat proses registrasi atau scanning berlangsung
   // ActivityIndicator adalah spinner animasi — ditampilkan saat proses registrasi atau scanning berlangsung
-} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 // menutup blok import dari library react-native yang menyediakan komponen UI native
 import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch atau status bar
 // SafeAreaView memastikan konten tidak tertutup notch atau status bar
-import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — menyediakan method initNFC, readPh...
+import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — menyediakan method initNFC, readPhysicalCard untuk scan kartu NFC, dan cleanup resource
 // import NFCService dari file lokal nfc.ts — menyediakan method initNFC, readPhysicalCard untuk scan kartu NFC, dan cleanup resource
-import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil endpoint backend: get...
+import { apiService } from '../utils/apiService'; // import apiService Singleton — digunakan untuk memanggil endpoint backend: getCardInfo (cek kartu sudah terdaftar) dan registerCard (daftarkan kartu baru)
 // import apiService Singleton — digunakan untuk memanggil endpoint backend: getCardInfo (cek kartu sudah terdaftar) dan registerCard (daftarkan kartu baru)
 import styles from './RegisterCardScreen.styles'; // import stylesheet dari file terpisah
 // import stylesheet dari file terpisah
@@ -119,37 +119,37 @@ interface RegisterCardScreenProps { // interface adalah blueprint TypeScript unt
   // interface adalah blueprint TypeScript untuk mendefinisikan struktur props
   user: any; // props user bertipe any — berisi data user yang login (id, name, deviceId, dll)
   // props user bertipe any — berisi data user yang login (id, name, deviceId, dll)
-  onBack: () => void; // callback function () => void — dipanggil saat user tekan tombol kembali ke sc...
+  onBack: () => void; // callback function () => void — dipanggil saat user tekan tombol kembali ke screen sebelumnya
   // callback function () => void — dipanggil saat user tekan tombol kembali ke screen sebelumnya
-  onSuccess?: () => void; // tanda ? berarti props opsional — jika disediakan, dipanggil setelah registras...
+  onSuccess?: () => void; // tanda ? berarti props opsional — jika disediakan, dipanggil setelah registrasi kartu berhasil
   // tanda ? berarti props opsional — jika disediakan, dipanggil setelah registrasi kartu berhasil
 }
 
-export default function RegisterCardScreen({ user, onBack, onSuccess }: RegisterCardScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama; destructuring pr...
+export default function RegisterCardScreen({ user, onBack, onSuccess }: RegisterCardScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama; destructuring props sesuai interface
   // export default mengekspor komponen ini sebagai ekspor utama; destructuring props sesuai interface
   // STATE 1: nfcSupported - Apakah perangkat mendukung NFC secara hardware
   // false → tampilkan screen "NFC Tidak Didukung"
-  const [nfcSupported, setNfcSupported] = useState(false); // useState(false) membuat state boolean; false berarti belum dicek; setNfcSuppo...
+  const [nfcSupported, setNfcSupported] = useState(false); // useState(false) membuat state boolean; false berarti belum dicek; setNfcSupported digunakan untuk memperbarui hasil cek hardware
   // useState(false) membuat state boolean; false berarti belum dicek; setNfcSupported digunakan untuk memperbarui hasil cek hardware
 
   // STATE 2: nfcEnabled - Apakah user sudah mengaktifkan NFC di Settings
   // false → tampilkan instruksi cara mengaktifkan NFC
-  const [nfcEnabled, setNfcEnabled] = useState(false); // false berarti NFC belum aktif saat screen dibuka; diperbarui setelah initNFC(...
+  const [nfcEnabled, setNfcEnabled] = useState(false); // false berarti NFC belum aktif saat screen dibuka; diperbarui setelah initNFC() berhasil
   // false berarti NFC belum aktif saat screen dibuka; diperbarui setelah initNFC() berhasil
 
   // STATE 3: loading - Flag saat proses registrasi API berlangsung
   // true → tampilkan spinner, disable tombol
-  const [loading, setLoading] = useState(false); // false berarti tidak sedang loading; setLoading(true) dipanggil saat request k...
+  const [loading, setLoading] = useState(false); // false berarti tidak sedang loading; setLoading(true) dipanggil saat request ke backend dimulai
   // false berarti tidak sedang loading; setLoading(true) dipanggil saat request ke backend dimulai
 
   // STATE 4: scanning - Flag saat sedang scan kartu NFC
   // true → sedang menunggu user tempelkan kartu ke HP
-  const [scanning, setScanning] = useState(false); // false berarti tidak sedang dalam mode scan NFC; setScanning(true) dipanggil s...
+  const [scanning, setScanning] = useState(false); // false berarti tidak sedang dalam mode scan NFC; setScanning(true) dipanggil saat readPhysicalCard() dimulai
   // false berarti tidak sedang dalam mode scan NFC; setScanning(true) dipanggil saat readPhysicalCard() dimulai
 
   // STATE 5: scannedCardId - Menyimpan UID kartu yang berhasil di-scan
   // Digunakan untuk ditampilkan ke user & dikirim ke backend
-  const [scannedCardId, setScannedCardId] = useState(''); // const membuat variabel tetap; useState('') nilai awal string kosong; scannedC...
+  const [scannedCardId, setScannedCardId] = useState(''); // const membuat variabel tetap; useState('') nilai awal string kosong; scannedCardId menyimpan UID kartu yang berhasil dibaca NFC; setScannedCardId memperbarui state
   // const membuat variabel tetap; useState('') nilai awal string kosong; scannedCardId menyimpan UID kartu yang berhasil dibaca NFC; setScannedCardId memperbarui state
 
   // STATE 6: registrationStatus - Status proses registrasi kartu
@@ -157,7 +157,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
   // 'scanning' → Sedang scan kartu NFC
   // 'success'  → Registrasi berhasil
   // 'error'    → Registrasi gagal
-  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle'); // useState dengan union type TypeScript; hanya bisa berisi salah satu dari empa...
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle'); // useState dengan union type TypeScript; hanya bisa berisi salah satu dari empat string tersebut; 'idle' adalah nilai awal
   // useState dengan union type TypeScript; hanya bisa berisi salah satu dari empat string tersebut; 'idle' adalah nilai awal
 
   // useEffect: Inisialisasi NFC saat screen mount
@@ -178,7 +178,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
   // Dipanggil saat screen pertama kali dibuka
   const initializeNFC = async () => { // const membuat variabel tetap; async karena mengakses hardware NFC
     // const membuat variabel tetap; async karena mengakses hardware NFC
-    const supported = await NFCService.initNFC(); // await menunggu inisialisasi; mengembalikan true jika device mendukung NFC har...
+    const supported = await NFCService.initNFC(); // await menunggu inisialisasi; mengembalikan true jika device mendukung NFC hardware
     // await menunggu inisialisasi; mengembalikan true jika device mendukung NFC hardware
     setNfcSupported(supported); // setNfcSupported memperbarui state; false = tampilkan layar "tidak didukung"
     // setNfcSupported memperbarui state; false = tampilkan layar "tidak didukung"
@@ -194,11 +194,11 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
 
   // Fungsi: Handler utama saat tombol "Scan Kartu NFC" ditekan
   // Flow: Tampilkan alert → scan kartu → validasi → daftarkan
-  const handleScanCard = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerl...
+  const handleScanCard = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
     // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
     if (!nfcEnabled) { // ! membalik boolean; jika NFC tidak aktif, tampilkan pesan dan hentikan
       // ! membalik boolean; jika NFC tidak aktif, tampilkan pesan dan hentikan
-      Alert.alert('NFC Tidak Aktif', 'Aktifkan NFC untuk melanjutkan'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+      Alert.alert('NFC Tidak Aktif', 'Aktifkan NFC untuk melanjutkan'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       return; // return menghentikan fungsi lebih awal
       // return menghentikan fungsi lebih awal
@@ -221,7 +221,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
         // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
       );
 
-      const cardData = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; mengembalikan objek { id, type, ma...
+      const cardData = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; mengembalikan objek { id, type, manufacturer }
       // await menunggu user menempelkan kartu NFC; mengembalikan objek { id, type, manufacturer }
       
       if (!cardData || !cardData.id) { // !cardData berarti null/undefined; !cardData.id berarti UID kosong
@@ -240,11 +240,11 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
         
         if (cardInfo && cardInfo.card?.userId === user.id) { // optional chaining (?.) aman; === operator kesamaan strict
           // optional chaining (?.) aman; === operator kesamaan strict
-          Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+          Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
           // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
             'Kartu Sudah Terdaftar', // judul Alert ketika kartu yang discan sudah terdaftar di akun user ini
             // judul Alert ketika kartu yang discan sudah terdaftar di akun user ini
-            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`, // template literal ${} menyisipkan nilai dinamis; toLocaleString('id-ID') memfo...
+            `Kartu ini sudah terdaftar di akun Anda.\n\nUID: ${cardData.id}\nStatus: ${cardInfo.card?.cardStatus}\nSaldo: Rp${cardInfo.card?.balance?.toLocaleString('id-ID') || 0}`, // template literal ${} menyisipkan nilai dinamis; toLocaleString('id-ID') memformat angka ke format Indonesia
             // template literal ${} menyisipkan nilai dinamis; toLocaleString('id-ID') memformat angka ke format Indonesia
             [{ text: 'OK', onPress: () => setRegistrationStatus('success') }] // onPress callback mengubah status ke 'success'
             // onPress callback mengubah status ke 'success'
@@ -253,21 +253,21 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
           // return menghentikan proses registrasi lebih awal
         } else if (cardInfo && cardInfo.card?.userId !== user.id) { // !== berarti tidak sama persis
           // !== berarti tidak sama persis
-          Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+          Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
           // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-            'Kartu Sudah Digunakan', // judul Alert ketika kartu sudah terdaftar di akun user lain; kartu tidak bisa ...
+            'Kartu Sudah Digunakan', // judul Alert ketika kartu sudah terdaftar di akun user lain; kartu tidak bisa dibagi
             // judul Alert ketika kartu sudah terdaftar di akun user lain; kartu tidak bisa dibagi
-            'Kartu ini sudah terdaftar di akun pengguna lain', // pesan penjelasan bahwa kartu ini sudah dimiliki akun lain; kartu NFC tidak bi...
+            'Kartu ini sudah terdaftar di akun pengguna lain', // pesan penjelasan bahwa kartu ini sudah dimiliki akun lain; kartu NFC tidak bisa dipakai bersama
             // pesan penjelasan bahwa kartu ini sudah dimiliki akun lain; kartu NFC tidak bisa dipakai bersama
-            [{ text: 'OK', onPress: () => setRegistrationStatus('error') }] // array tombol Alert; onPress mengeset status ke 'error' agar UI menampilkan st...
+            [{ text: 'OK', onPress: () => setRegistrationStatus('error') }] // array tombol Alert; onPress mengeset status ke 'error' agar UI menampilkan state gagal
             // array tombol Alert; onPress mengeset status ke 'error' agar UI menampilkan state gagal
           );
-          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
           // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
         }
       } catch (error: any) { // catch bersarang menangkap error dari getCardInfo
         // catch bersarang menangkap error dari getCardInfo
-        if (!error.message?.includes('404')) { // optional chaining (?.) aman; includes('404') cek apakah HTTP 404 (kartu belum...
+        if (!error.message?.includes('404')) { // optional chaining (?.) aman; includes('404') cek apakah HTTP 404 (kartu belum terdaftar)
           // optional chaining (?.) aman; includes('404') cek apakah HTTP 404 (kartu belum terdaftar)
           throw error; // throw melempar ulang error agar ditangkap catch luar jika bukan 404
           // throw melempar ulang error agar ditangkap catch luar jika bukan 404
@@ -293,11 +293,11 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
         // && berarti AND; kedua kondisi harus benar
         setRegistrationStatus('success'); // mengubah status ke 'success' untuk memperbarui tampilan UI
         // mengubah status ke 'success' untuk memperbarui tampilan UI
-        Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+        Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
         // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
           'Berhasil!', // judul Alert sukses; tanda seru menekankan keberhasilan registrasi kartu
           // judul Alert sukses; tanda seru menekankan keberhasilan registrasi kartu
-          `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`, // pesan sukses dengan UID kartu; UID adalah identitas unik kartu NFC yang tidak...
+          `Kartu NFC berhasil didaftarkan\n\nUID: ${cardData.id}`, // pesan sukses dengan UID kartu; UID adalah identitas unik kartu NFC yang tidak bisa diubah
           // pesan sukses dengan UID kartu; UID adalah identitas unik kartu NFC yang tidak bisa diubah
           [
             {
@@ -320,7 +320,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
       }
     } catch (error: any) { // catch luar menangkap semua error yang tidak tertangani
       // catch luar menangkap semua error yang tidak tertangani
-      console.error('Error registering card:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('Error registering card:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       setRegistrationStatus('error'); // setRegistrationStatus('error') menampilkan UI error
       // setRegistrationStatus('error') menampilkan UI error
@@ -427,12 +427,12 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
           </Text>
         </View>
 
-        {registrationStatus === 'success' ? ( // ternary rendering: tampilan berbeda berdasarkan status registrasi (success at...
+        {registrationStatus === 'success' ? ( // ternary rendering: tampilan berbeda berdasarkan status registrasi (success atau proses)
         // ternary rendering: tampilan berbeda berdasarkan status registrasi (success atau proses)
           <View style={styles.successCard}>
             <Text style={styles.successIcon}>✅</Text>
             <Text style={styles.successTitle}>Kartu terdeteksi</Text>
-            {scannedCardId && ( // conditional rendering: menampilkan detail kartu hanya jika sudah ada UID yang...
+            {scannedCardId && ( // conditional rendering: menampilkan detail kartu hanya jika sudah ada UID yang terscan
             // conditional rendering: menampilkan detail kartu hanya jika sudah ada UID yang terscan
               <View style={styles.cardIdContainer}>
                 <Text style={styles.cardIdLabel}>UID Kartu</Text>
@@ -455,7 +455,7 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
               <Text style={styles.registerButtonText}>Daftarkan Kartu</Text>
             </TouchableOpacity>
           </View>
-        ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary b...
+        ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
         // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
           <View style={styles.scanCard}>
             <View style={styles.nfcAnimation}>
@@ -490,15 +490,15 @@ export default function RegisterCardScreen({ user, onBack, onSuccess }: Register
             // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
               style={[styles.scanButton, (scanning || loading) && styles.scanButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
               // style={} prop untuk menerapkan styling ke elemen React Native
-              onPress={handleScanCard} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi han...
+              onPress={handleScanCard} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
               // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
-              disabled={scanning || loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau fo...
+              disabled={scanning || loading} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
               // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
             >
               {scanning || loading ? ( // ternary JSX: jika sedang scanning atau loading tampilkan spinner aktivitas
               // ternary JSX: jika sedang scanning atau loading tampilkan spinner aktivitas
                 <ActivityIndicator color="#fff" />
-              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary b...
+              ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
               // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
                 <Text style={styles.scanButtonText}>Scan Kartu NFC</Text>
               )}

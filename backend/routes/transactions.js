@@ -1,10 +1,10 @@
-﻿const express = require('express'); // require = mengambil package Node.js; Express dipakai untuk membuat router dan...
+﻿const express = require('express'); // require = mengambil package Node.js; Express dipakai untuk membuat router dan endpoint
 // require = mengambil package Node.js; Express dipakai untuk membuat router dan endpoint
-const { body, validationResult } = require('express-validator'); // require = mengambil package Node.js; body untuk aturan validasi; validationRe...
+const { body, validationResult } = require('express-validator'); // require = mengambil package Node.js; body untuk aturan validasi; validationResult untuk mengambil hasilnya
 // require = mengambil package Node.js; body untuk aturan validasi; validationResult untuk mengambil hasilnya
-const { PrismaClient } = require('@prisma/client'); // require = mengambil package Node.js; PrismaClient adalah ORM untuk akses data...
+const { PrismaClient } = require('@prisma/client'); // require = mengambil package Node.js; PrismaClient adalah ORM untuk akses database SQLite
 // require = mengambil package Node.js; PrismaClient adalah ORM untuk akses database SQLite
-const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'); // require = mengambil file lokal; analyzeZScoreAnomaly menghitung risiko transa...
+const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection'); // require = mengambil file lokal; analyzeZScoreAnomaly menghitung risiko transaksi; HISTORY_SIZE = jumlah histori baseline Z-Score
 // require = mengambil file lokal; analyzeZScoreAnomaly menghitung risiko transaksi; HISTORY_SIZE = jumlah histori baseline Z-Score
 
 const router = express.Router(); // express.Router() = membuat route terpisah agar endpoint transaksi lebih rapi
@@ -37,11 +37,11 @@ const prisma = new PrismaClient(); // PrismaClient = koneksi ORM; dipakai untuk 
 // --------------------------------------------------------------------------
 // DAPATKAN SEMUA TRANSAKSI
 // --------------------------------------------------------------------------
-router.get('/', async (req, res) => { // GET = mengambil data; endpoint untuk mengambil semua transaksi dengan filter ...
+router.get('/', async (req, res) => { // GET = mengambil data; endpoint untuk mengambil semua transaksi dengan filter opsional
 // GET = mengambil data; endpoint untuk mengambil semua transaksi dengan filter opsional
   try { // try = mencoba proses aman; error akan ditangkap oleh catch
   // try = mencoba proses aman; error akan ditangkap oleh catch
-    const { limit = 20, offset = 0, userId, status } = req.query; // req.query = query URL; mengambil limit, offset, userId, status dari parameter...
+    const { limit = 20, offset = 0, userId, status } = req.query; // req.query = query URL; mengambil limit, offset, userId, status dari parameter URL
     // req.query = query URL; mengambil limit, offset, userId, status dari parameter URL
 
     const where = {}; // const = variabel tetap; objek filter WHERE yang akan dibangun secara dinamis
@@ -52,14 +52,14 @@ router.get('/', async (req, res) => { // GET = mengambil data; endpoint untuk me
       // parseInt = mengubah nilai menjadi angka bulat; mengubah userId string ke integer
       if (!Number.isNaN(uid)) { // if = pengecekan kondisi; berjalan jika konversi berhasil (bukan NaN)
       // if = pengecekan kondisi; berjalan jika konversi berhasil (bukan NaN)
-        where.OR = [{ senderId: uid }, { receiverId: uid }]; // where = kondisi query; OR memfilter transaksi di mana user sebagai pengirim A...
+        where.OR = [{ senderId: uid }, { receiverId: uid }]; // where = kondisi query; OR memfilter transaksi di mana user sebagai pengirim ATAU penerima
         // where = kondisi query; OR memfilter transaksi di mana user sebagai pengirim ATAU penerima
       }
     }
     if (status) where.status = status; // if = pengecekan kondisi; tambahkan filter status ke WHERE jika disertakan
     // if = pengecekan kondisi; tambahkan filter status ke WHERE jika disertakan
 
-    const transactions = await prisma.transaction.findMany({ // await = menunggu proses selesai; findMany = mengambil banyak transaksi dari d...
+    const transactions = await prisma.transaction.findMany({ // await = menunggu proses selesai; findMany = mengambil banyak transaksi dari database
     // await = menunggu proses selesai; findMany = mengambil banyak transaksi dari database
       where, // Gunakan filter dinamis yang dibangun di atas
       // Gunakan filter dinamis yang dibangun di atas
@@ -91,7 +91,7 @@ router.get('/', async (req, res) => { // GET = mengambil data; endpoint untuk me
 // --------------------------------------------------------------------------
 // DAPATKAN TRANSAKSI BERDASARKAN ID PENGGUNA
 // --------------------------------------------------------------------------
-router.get('/user/:userId', async (req, res) => { // GET = mengambil data; endpoint untuk mengambil transaksi milik satu user tert...
+router.get('/user/:userId', async (req, res) => { // GET = mengambil data; endpoint untuk mengambil transaksi milik satu user tertentu
 // GET = mengambil data; endpoint untuk mengambil transaksi milik satu user tertentu
   try { // try = mencoba proses aman; error akan ditangkap oleh catch
   // try = mencoba proses aman; error akan ditangkap oleh catch
@@ -307,23 +307,23 @@ router.post(
       // Ambil 20 transaksi historis terakhir pengguna sebagai baseline
       // Transaksi baru (amountNum) adalah X = transaksi ke-21
       // ======================================================================
-      const historicalTxs = await prisma.transaction.findMany({ // await = menunggu proses selesai; findMany = mengambil 20 transaksi historis s...
+      const historicalTxs = await prisma.transaction.findMany({ // await = menunggu proses selesai; findMany = mengambil 20 transaksi historis sebagai baseline Z-Score
       // await = menunggu proses selesai; findMany = mengambil 20 transaksi historis sebagai baseline Z-Score
-        where: { senderId: Number(senderId), status: 'completed' }, // where = kondisi query; hanya ambil transaksi completed milik sender sebagai b...
+        where: { senderId: Number(senderId), status: 'completed' }, // where = kondisi query; hanya ambil transaksi completed milik sender sebagai baseline
         // where = kondisi query; hanya ambil transaksi completed milik sender sebagai baseline
-        select: { amount: true, createdAt: true }, // select = memilih field tertentu; hanya amount dan createdAt yang diperlukan u...
+        select: { amount: true, createdAt: true }, // select = memilih field tertentu; hanya amount dan createdAt yang diperlukan untuk Z-Score
         // select = memilih field tertentu; hanya amount dan createdAt yang diperlukan untuk Z-Score
         orderBy: { createdAt: 'desc' }, // Terbaru di atas (paling relevan untuk baseline)
         // Terbaru di atas (paling relevan untuk baseline)
-        take: HISTORY_SIZE, // take = membatasi jumlah data; HISTORY_SIZE = 20 transaksi historis untuk base...
+        take: HISTORY_SIZE, // take = membatasi jumlah data; HISTORY_SIZE = 20 transaksi historis untuk baseline Z-Score
         // take = membatasi jumlah data; HISTORY_SIZE = 20 transaksi historis untuk baseline Z-Score
       });
 
-      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs); // analyzeZScoreAnomaly = menghitung risiko transaksi dengan Z-Score; mengembali...
+      const fraudResult = analyzeZScoreAnomaly(amountNum, historicalTxs); // analyzeZScoreAnomaly = menghitung risiko transaksi dengan Z-Score; mengembalikan zScore, decision, mean, stdDev
       // analyzeZScoreAnomaly = menghitung risiko transaksi dengan Z-Score; mengembalikan zScore, decision, mean, stdDev
-      const zScoreLevel = (fraudResult.zScore === null) // const = variabel tetap; zScoreLevel = tingkat risiko hasil deteksi fraud berd...
+      const zScoreLevel = (fraudResult.zScore === null) // const = variabel tetap; zScoreLevel = tingkat risiko hasil deteksi fraud berdasarkan Z-Score
       // const = variabel tetap; zScoreLevel = tingkat risiko hasil deteksi fraud berdasarkan Z-Score
-        ? 'ANOMALY' // ANOMALY = transaksi anomali tinggi; terjadi saat sigma=0 dan amount berbeda d...
+        ? 'ANOMALY' // ANOMALY = transaksi anomali tinggi; terjadi saat sigma=0 dan amount berbeda dari rata-rata
         // ANOMALY = transaksi anomali tinggi; terjadi saat sigma=0 dan amount berbeda dari rata-rata
         : (fraudResult.zScore <= 2 ? 'NORMAL' : fraudResult.zScore <= 3 ? 'SUSPICIOUS' : 'ANOMALY'); // NORMAL = Z≤2; SUSPICIOUS = 2<Z≤3; ANOMALY = Z>3 berdasarkan Three-Sigma Rule
         // NORMAL = Z≤2; SUSPICIOUS = 2<Z≤3; ANOMALY = Z>3 berdasarkan Three-Sigma Rule
@@ -331,7 +331,7 @@ router.post(
       // BLOCK: Tolak transaksi, catat sebagai percobaan fraud
       if (fraudResult.decision === 'BLOCK') { // if = pengecekan kondisi; BLOCK = transaksi anomali tinggi dan ditolak (Z > 3)
       // if = pengecekan kondisi; BLOCK = transaksi anomali tinggi dan ditolak (Z > 3)
-        await prisma.fraudAlert.create({ // await = menunggu proses selesai; create = membuat data fraud alert baru di da...
+        await prisma.fraudAlert.create({ // await = menunggu proses selesai; create = membuat data fraud alert baru di database
         // await = menunggu proses selesai; create = membuat data fraud alert baru di database
           data: {
             userId: Number(senderId), // User yang melakukan transaksi mencurigakan
@@ -375,7 +375,7 @@ router.post(
             // Browser/app info
           },
         });
-        return res.status(403).json({ // return = menghentikan fungsi; 403 = akses ditolak; transaksi anomali tidak da...
+        return res.status(403).json({ // return = menghentikan fungsi; 403 = akses ditolak; transaksi anomali tidak dapat diproses
         // return = menghentikan fungsi; 403 = akses ditolak; transaksi anomali tidak dapat diproses
           error: 'Transaksi diblokir \u2013 anomali terdeteksi (Z-Score > 3)',
           zScore: fraudResult.zScore, // Nilai Z untuk informasi user
@@ -396,23 +396,23 @@ router.post(
       }
 
       // ALLOW / REVIEW: Proses transaksi, perbarui saldo
-      const transaction = await prisma.$transaction(async (tx) => { // $transaction = menjalankan beberapa query satu paket agar data konsisten; rol...
+      const transaction = await prisma.$transaction(async (tx) => { // $transaction = menjalankan beberapa query satu paket agar data konsisten; rollback otomatis jika ada error
       // $transaction = menjalankan beberapa query satu paket agar data konsisten; rollback otomatis jika ada error
         // hanya satu yang berhasil karena updateMany dengan WHERE balance >= amount.
-        const deducted = await tx.user.updateMany({ // await = menunggu proses selesai; updateMany = memperbarui saldo sender secara...
+        const deducted = await tx.user.updateMany({ // await = menunggu proses selesai; updateMany = memperbarui saldo sender secara atomik
         // await = menunggu proses selesai; updateMany = memperbarui saldo sender secara atomik
           where: { id: Number(senderId), balance: { gte: amountNum } }, // where = kondisi query; hanya kurangi saldo jika saldo >= amount (cek atomik)
           // where = kondisi query; hanya kurangi saldo jika saldo >= amount (cek atomik)
           data: { balance: { decrement: amountNum } }, // data = nilai yang diperbarui; decrement mengurangi saldo secara atomik
           // data = nilai yang diperbarui; decrement mengurangi saldo secara atomik
         });
-        if (deducted.count === 0) { // if = pengecekan kondisi; count = 0 berarti saldo tidak cukup atau kondisi WHE...
+        if (deducted.count === 0) { // if = pengecekan kondisi; count = 0 berarti saldo tidak cukup atau kondisi WHERE tidak terpenuhi
         // if = pengecekan kondisi; count = 0 berarti saldo tidak cukup atau kondisi WHERE tidak terpenuhi
-          throw new Error('INSUFFICIENT_BALANCE'); // throw new Error = membuat error; memicu rollback seluruh $transaction agar da...
+          throw new Error('INSUFFICIENT_BALANCE'); // throw new Error = membuat error; memicu rollback seluruh $transaction agar data konsisten
           // throw new Error = membuat error; memicu rollback seluruh $transaction agar data konsisten
         }
 
-        await tx.user.update({ // await = menunggu proses selesai; update = memperbarui saldo receiver secara a...
+        await tx.user.update({ // await = menunggu proses selesai; update = memperbarui saldo receiver secara atomik
         // await = menunggu proses selesai; update = memperbarui saldo receiver secara atomik
           where: { id: receiver.id }, // WHERE id = receiver.id — identifikasi receiver berdasarkan ID
           // WHERE id = receiver.id — identifikasi receiver berdasarkan ID
@@ -420,7 +420,7 @@ router.post(
           // data = nilai yang diperbarui; increment menambah saldo receiver secara atomik
         });
 
-        const created = await tx.transaction.create({ // await = menunggu proses selesai; create = membuat data transaksi baru di data...
+        const created = await tx.transaction.create({ // await = menunggu proses selesai; create = membuat data transaksi baru di database
         // await = menunggu proses selesai; create = membuat data transaksi baru di database
           data: {
             senderId: Number(senderId), // Number() mengkonversi nilai ke tipe number untuk memastikan tipe data benar
@@ -433,11 +433,11 @@ router.post(
             // shorthand ES6: description: description — catatan transaksi opsional
             deviceId, // shorthand ES6: deviceId: deviceId — ID perangkat Android
             // shorthand ES6: deviceId: deviceId — ID perangkat Android
-            fraudRiskScore: fraudResult.zScore ?? null, // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float?...
+            fraudRiskScore: fraudResult.zScore ?? null, // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float? di schema Prisma — kolom nullable
             // ?? adalah nullish coalescing: jika zScore null/undefined gunakan null; Float? di schema Prisma — kolom nullable
             fraudRiskLevel: zScoreLevel, // level risiko: NORMAL/SUSPICIOUS/ANOMALY
             // level risiko: NORMAL/SUSPICIOUS/ANOMALY
-            fraudReasons: JSON.stringify(fraudResult.reasons), // JSON.stringify = mengubah object menjadi teks JSON untuk disimpan di kolom da...
+            fraudReasons: JSON.stringify(fraudResult.reasons), // JSON.stringify = mengubah object menjadi teks JSON untuk disimpan di kolom database
             // JSON.stringify = mengubah object menjadi teks JSON untuk disimpan di kolom database
             ipAddress: req.ip, // IP address client untuk audit keamanan
             // IP address client untuk audit keamanan
@@ -460,9 +460,9 @@ router.post(
       });
 
       // REVIEW: Buat fraud alert untuk admin
-      if (fraudResult.decision === 'REVIEW') { // if = pengecekan kondisi; REVIEW = transaksi mencurigakan dan dicatat sebagai ...
+      if (fraudResult.decision === 'REVIEW') { // if = pengecekan kondisi; REVIEW = transaksi mencurigakan dan dicatat sebagai fraud alert
       // if = pengecekan kondisi; REVIEW = transaksi mencurigakan dan dicatat sebagai fraud alert
-        await prisma.fraudAlert.create({ // await = menunggu proses selesai; create = membuat data fraud alert untuk diti...
+        await prisma.fraudAlert.create({ // await = menunggu proses selesai; create = membuat data fraud alert untuk ditinjau admin
         // await = menunggu proses selesai; create = membuat data fraud alert untuk ditinjau admin
           data: {
             userId: Number(senderId), // User yang melakukan transaksi mencurigakan
@@ -510,13 +510,13 @@ router.post(
       }
 
       // Emit realtime
-      if (req.io) { // if = pengecekan kondisi; berjalan jika Socket.IO tersedia untuk kirim notifik...
+      if (req.io) { // if = pengecekan kondisi; berjalan jika Socket.IO tersedia untuk kirim notifikasi real-time
       // if = pengecekan kondisi; berjalan jika Socket.IO tersedia untuk kirim notifikasi real-time
-        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult }); // emit = mengirim event real-time ke dashboard admin berisi data transaksi dan ...
+        req.io.to('admin-room').emit('new-transaction', { transaction, fraudResult }); // emit = mengirim event real-time ke dashboard admin berisi data transaksi dan hasil fraud detection
         // emit = mengirim event real-time ke dashboard admin berisi data transaksi dan hasil fraud detection
-        if (transaction.sender?.deviceId) { // ?. adalah optional chaining — mencegah error jika sender null; mengecek apaka...
+        if (transaction.sender?.deviceId) { // ?. adalah optional chaining — mencegah error jika sender null; mengecek apakah sender punya deviceId
           // ?. adalah optional chaining — mencegah error jika sender null; mengecek apakah sender punya deviceId
-          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', { // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit...
+          req.io.to(`device-${transaction.sender.deviceId}`).emit('balance-updated', { // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit mengirim event update saldo
             // template literal backtick untuk membuat room name dinamis: device-XXXX; .emit mengirim event update saldo
             balance: transaction.sender.balance, // saldo sender setelah dikurangi (sudah diupdate dalam $transaction)
             // saldo sender setelah dikurangi (sudah diupdate dalam $transaction)
@@ -532,7 +532,7 @@ router.post(
         }
       }
 
-      res.status(201).json({ // return = mengembalikan hasil; 201 = data berhasil dibuat; mengirim hasil tran...
+      res.status(201).json({ // return = mengembalikan hasil; 201 = data berhasil dibuat; mengirim hasil transaksi ke client
       // return = mengembalikan hasil; 201 = data berhasil dibuat; mengirim hasil transaksi ke client
         success: true, // success = status berhasil; memberi tahu client proses sukses
         // success = status berhasil; memberi tahu client proses sukses
@@ -540,11 +540,11 @@ router.post(
         // pesan konfirmasi yang ditampilkan ke user
         transaction, // shorthand ES6: mengirim data transaksi lengkap (include sender & receiver)
         // shorthand ES6: mengirim data transaksi lengkap (include sender & receiver)
-        fraudResult, // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt t...
+        fraudResult, // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt transaksi
         // shorthand ES6: mengirim hasil analisis Z-Score untuk ditampilkan di receipt transaksi
       });
     } catch (error) {
-      console.error('\u274c Kesalahan membuat transaksi:', error); // Tangani error INSUFFICIENT_BALANCE yang dilempar dari dalam $transaction (rac...
+      console.error('\u274c Kesalahan membuat transaksi:', error); // Tangani error INSUFFICIENT_BALANCE yang dilempar dari dalam $transaction (race condition)
       // Tangani error INSUFFICIENT_BALANCE yang dilempar dari dalam $transaction (race condition)
       if (error.message === 'INSUFFICIENT_BALANCE') {
         return res.status(400).json({ error: 'Insufficient balance' });

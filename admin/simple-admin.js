@@ -301,13 +301,13 @@ const NGROK_URL = 'https://contrite-unhappily-custodian.ngrok-free.dev'; // URL 
 //
 // FALLBACK:
 // Jika URL tidak valid ? return localhost:4000
-function parseBackendUrl() { // fungsi helper: mem-parse BACKEND_URL menjadi komponen hostname/port/protocol;...
+function parseBackendUrl() { // fungsi helper: mem-parse BACKEND_URL menjadi komponen hostname/port/protocol; dipanggil sebelum setiap HTTP request ke backend
   // fungsi helper: mem-parse BACKEND_URL menjadi komponen hostname/port/protocol; dipanggil sebelum setiap HTTP request ke backend
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const url = new URL(BACKEND_URL); // Parse string URL menjadi objek URL
     // Parse string URL menjadi objek URL
-    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fu...
+    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       hostname: url.hostname, // Ambil hostname (misal: 'localhost')
       // Ambil hostname (misal: 'localhost')
@@ -319,7 +319,7 @@ function parseBackendUrl() { // fungsi helper: mem-parse BACKEND_URL menjadi kom
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // Fallback ke localhost jika URL tidak valid
-    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fu...
+    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       hostname: 'localhost', // Default hostname
       // Default hostname
@@ -377,25 +377,25 @@ function parseBackendUrl() { // fungsi helper: mem-parse BACKEND_URL menjadi kom
 //   headers: { 'Content-Type': 'application/json' }
 // };
 // const data = await makeHttpRequest(options);
-function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request() dalam Promise dengan error handling...
+function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request() dalam Promise dengan error handling; dipanggil di semua HTTP call ke backend
   // fungsi wrapper: membungkus http.request() dalam Promise dengan error handling; dipanggil di semua HTTP call ke backend
-  return new Promise((resolve, reject) => { // membungkus request dalam Promise agar bisa digunakan dengan async/await; meng...
+  return new Promise((resolve, reject) => { // membungkus request dalam Promise agar bisa digunakan dengan async/await; mengembalikan data atau melempar error
     // membungkus request dalam Promise agar bisa digunakan dengan async/await; mengembalikan data atau melempar error
     // Determine which client to use based on protocol
-    const isHttps = options.protocol === 'https' || options.protocol === 'https:'; // memeriksa apakah koneksi harus menggunakan HTTPS; mendukung URL dengan atau t...
+    const isHttps = options.protocol === 'https' || options.protocol === 'https:'; // memeriksa apakah koneksi harus menggunakan HTTPS; mendukung URL dengan atau tanpa titik dua
     // memeriksa apakah koneksi harus menggunakan HTTPS; mendukung URL dengan atau tanpa titik dua
-    const client = isHttps ? https : http; // memilih modul http atau https berdasarkan protocol; memastikan koneksi sesuai...
+    const client = isHttps ? https : http; // memilih modul http atau https berdasarkan protocol; memastikan koneksi sesuai dengan URL backend
     // memilih modul http atau https berdasarkan protocol; memastikan koneksi sesuai dengan URL backend
     
     // Remove protocol and body from options untuk client.request()
     const requestOptions = { ...options }; // menyalin opsi request menggunakan spread operator; menghindari mutasi objek asli
     // menyalin opsi request menggunakan spread operator; menghindari mutasi objek asli
-    delete requestOptions.protocol; // menghapus field protocol dari requestOptions; http.request() tidak mengenal f...
+    delete requestOptions.protocol; // menghapus field protocol dari requestOptions; http.request() tidak mengenal field ini
     // menghapus field protocol dari requestOptions; http.request() tidak mengenal field ini
     delete requestOptions.body; // menghapus field body dari requestOptions; body dikirim terpisah via req.write()
     // menghapus field body dari requestOptions; body dikirim terpisah via req.write()
     
-    const req = client.request(requestOptions, (response) => { // membuat HTTP request ke backend dengan callback response; memanggil modul htt...
+    const req = client.request(requestOptions, (response) => { // membuat HTTP request ke backend dengan callback response; memanggil modul http/https native Node.js
       // membuat HTTP request ke backend dengan callback response; memanggil modul http/https native Node.js
       let data = ''; // Buffer untuk menampung potongan data response
       // Buffer untuk menampung potongan data response
@@ -411,26 +411,26 @@ function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request()
         // Check if response is HTML (ngrok error page)
         if (data.trim().startsWith('<') || data.includes('<!DOCTYPE')) { // Deteksi halaman HTML (bukan JSON)
           // Deteksi halaman HTML (bukan JSON)
-          console.error('? Received HTML instead of JSON (ngrok might be down or URL changed)'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+          console.error('? Received HTML instead of JSON (ngrok might be down or URL changed)'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
           // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-          reject(new Error('Backend returned HTML instead of JSON. Check if ngrok is running and URL is correct.')); // reject Promise: server mengembalikan HTML bukan JSON; biasanya terjadi saat n...
+          reject(new Error('Backend returned HTML instead of JSON. Check if ngrok is running and URL is correct.')); // reject Promise: server mengembalikan HTML bukan JSON; biasanya terjadi saat ngrok halaman error
           // reject Promise: server mengembalikan HTML bukan JSON; biasanya terjadi saat ngrok halaman error
-          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
           // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
         }
 
         // Check if response is empty
         if (!data || data.trim().length === 0) { // Response kosong tidak bisa di-parse
           // Response kosong tidak bisa di-parse
-          console.error('? Received empty response from backend'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+          console.error('? Received empty response from backend'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
           // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-          reject(new Error('Backend returned empty response')); // reject Promise: response kosong tidak bisa di-parse; backend mungkin mengalam...
+          reject(new Error('Backend returned empty response')); // reject Promise: response kosong tidak bisa di-parse; backend mungkin mengalami error
           // reject Promise: response kosong tidak bisa di-parse; backend mungkin mengalami error
-          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
           // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
         }
 
-        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           const jsonData = JSON.parse(data); // Parse string JSON menjadi objek JavaScript
           // Parse string JSON menjadi objek JavaScript
@@ -438,7 +438,7 @@ function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request()
           // Selesaikan Promise dengan data hasil parse
         } catch (parseError) { // menangkap error JSON.parse(); terjadi jika response bukan JSON valid
           // menangkap error JSON.parse(); terjadi jika response bukan JSON valid
-          console.error('? JSON parse error:', parseError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+          console.error('? JSON parse error:', parseError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
           // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
           console.error('? Response data preview:', data.substring(0, 200)); // Tampilkan 200 karakter awal untuk debug
           // Tampilkan 200 karakter awal untuk debug
@@ -450,7 +450,7 @@ function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request()
 
     req.on('error', (error) => { // Event saat terjadi error koneksi HTTP
       // Event saat terjadi error koneksi HTTP
-      console.error('? HTTP request error:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? HTTP request error:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       reject(error); // Selesaikan Promise dengan error
       // Selesaikan Promise dengan error
@@ -468,7 +468,7 @@ function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request()
       // Jika ada body data (POST/PUT/DELETE request)
       const bodyData = JSON.stringify(options.body); // Serialize body ke JSON string
       // Serialize body ke JSON string
-      console.log(`?? Writing body to request:`, bodyData); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Writing body to request:`, bodyData); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       req.setHeader('Content-Length', Buffer.byteLength(bodyData)); // Set header Content-Length
       // Set header Content-Length
@@ -499,7 +499,7 @@ function makeHttpRequest(options) { // fungsi wrapper: membungkus http.request()
 // - Hanya IPv4 (skip IPv6)
 // - Skip localhost (127.0.0.1)
 // - Hanya external interfaces (Wi-Fi, Ethernet)
-function getLocalIPAddress() { // fungsi helper: mendapatkan semua IP address lokal perangkat; dipanggil saat s...
+function getLocalIPAddress() { // fungsi helper: mendapatkan semua IP address lokal perangkat; dipanggil saat server start untuk menampilkan alamat akses
   // fungsi helper: mendapatkan semua IP address lokal perangkat; dipanggil saat server start untuk menampilkan alamat akses
   const interfaces = os.networkInterfaces(); // Ambil semua network interface
   // Ambil semua network interface
@@ -507,9 +507,9 @@ function getLocalIPAddress() { // fungsi helper: mendapatkan semua IP address lo
   // Array untuk menyimpan IP
   
   // Loop semua network interface
-  for (const name of Object.keys(interfaces)) { // iterasi semua nama network interface (WiFi, Ethernet, dll); untuk mencari IP ...
+  for (const name of Object.keys(interfaces)) { // iterasi semua nama network interface (WiFi, Ethernet, dll); untuk mencari IP yang aktif
     // iterasi semua nama network interface (WiFi, Ethernet, dll); untuk mencari IP yang aktif
-    for (const iface of interfaces[name]) { // iterasi setiap konfigurasi dalam satu interface; interface bisa punya beberap...
+    for (const iface of interfaces[name]) { // iterasi setiap konfigurasi dalam satu interface; interface bisa punya beberapa IP
       // iterasi setiap konfigurasi dalam satu interface; interface bisa punya beberapa IP
       // Skip localhost dan ambil hanya IPv4
       if (iface.family === 'IPv4' && !iface.internal) { // filter: hanya ambil IPv4 yang bukan loopback; skip IPv6 dan 127.0.0.1
@@ -548,7 +548,7 @@ function getLocalIPAddress() { // fungsi helper: mendapatkan semua IP address lo
 //
 // USAGE:
 // Di middleware protectAPI() untuk filter request
-function isValidAppRequest(req) { // fungsi keamanan: memvalidasi apakah request berasal dari aplikasi mobile resm...
+function isValidAppRequest(req) { // fungsi keamanan: memvalidasi apakah request berasal dari aplikasi mobile resmi; memeriksa x-app-key header
   // fungsi keamanan: memvalidasi apakah request berasal dari aplikasi mobile resmi; memeriksa x-app-key header
   const appKey = req.headers['x-app-key']; // Ambil app key dari header
   // Ambil app key dari header
@@ -556,7 +556,7 @@ function isValidAppRequest(req) { // fungsi keamanan: memvalidasi apakah request
   // Ambil user agent
   
   // Cek key aplikasi (harus sama dengan APP_SECRET)
-  if (appKey !== APP_SECRET) { // memeriksa apakah x-app-key header cocok dengan APP_SECRET; berbeda berarti re...
+  if (appKey !== APP_SECRET) { // memeriksa apakah x-app-key header cocok dengan APP_SECRET; berbeda berarti request bukan dari aplikasi resmi
     // memeriksa apakah x-app-key header cocok dengan APP_SECRET; berbeda berarti request bukan dari aplikasi resmi
     return false; // Tolak jika key salah
     // Tolak jika key salah
@@ -605,17 +605,17 @@ function isValidAppRequest(req) { // fungsi keamanan: memvalidasi apakah request
 // - Prevent unauthorized API access
 // - Allow dashboard dari browser local
 // - Allow mobile app dengan valid app key
-function protectAPI(req, res, next) { // middleware keamanan: melindungi semua endpoint API dari akses tidak sah; dipa...
+function protectAPI(req, res, next) { // middleware keamanan: melindungi semua endpoint API dari akses tidak sah; dipanggil sebelum setiap route handler
   // middleware keamanan: melindungi semua endpoint API dari akses tidak sah; dipanggil sebelum setiap route handler
   // Skip proteksi untuk dashboard HTML (halaman utama)
-  if (req.method === 'GET' && req.path === '/') { // skip proteksi untuk halaman dashboard utama; tidak perlu app key untuk meliha...
+  if (req.method === 'GET' && req.path === '/') { // skip proteksi untuk halaman dashboard utama; tidak perlu app key untuk melihat dashboard
     // skip proteksi untuk halaman dashboard utama; tidak perlu app key untuk melihat dashboard
     return next(); // Lanjut tanpa validasi
     // Lanjut tanpa validasi
   }
   
   // Skip proteksi untuk file static (CSS, JS, images)
-  if (req.method === 'GET' && !req.path.startsWith('/api/')) { // skip proteksi untuk file statis (CSS, JS, HTML); hanya endpoint /api/* yang d...
+  if (req.method === 'GET' && !req.path.startsWith('/api/')) { // skip proteksi untuk file statis (CSS, JS, HTML); hanya endpoint /api/* yang diproteksi
     // skip proteksi untuk file statis (CSS, JS, HTML); hanya endpoint /api/* yang diproteksi
     return next(); // Lanjut tanpa validasi
     // Lanjut tanpa validasi
@@ -625,7 +625,7 @@ function protectAPI(req, res, next) { // middleware keamanan: melindungi semua e
   // Allow all local network IPs (10.x.x.x, 192.168.x.x, 172.16.x.x, 169.254.x.x, localhost)
   const ipStr = req.ip || ''; // mengambil IP address dari request; atau string kosong jika tidak ada
   // mengambil IP address dari request; atau string kosong jika tidak ada
-  const isLocalNetwork = // variabel boolean: menentukan apakah request berasal dari jaringan lokal (LAN/...
+  const isLocalNetwork = // variabel boolean: menentukan apakah request berasal dari jaringan lokal (LAN/localhost)
   // variabel boolean: menentukan apakah request berasal dari jaringan lokal (LAN/localhost)
     ipStr.includes('127.0.0.1') || // IPv4 localhost; akses dari komputer yang menjalankan server
     // IPv4 localhost; akses dari komputer yang menjalankan server
@@ -670,9 +670,9 @@ function protectAPI(req, res, next) { // middleware keamanan: melindungi semua e
     ipStr.includes('169.254.'); // Link-local address
     // Link-local address
     
-  if (req.path.startsWith('/api/') && isLocalNetwork) { // akses dari jaringan lokal ke endpoint API diizinkan; admin dashboard tidak pe...
+  if (req.path.startsWith('/api/') && isLocalNetwork) { // akses dari jaringan lokal ke endpoint API diizinkan; admin dashboard tidak perlu app key
     // akses dari jaringan lokal ke endpoint API diizinkan; admin dashboard tidak perlu app key
-    console.log(`? Admin dashboard access allowed from ${req.ip} to ${req.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`? Admin dashboard access allowed from ${req.ip} to ${req.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     return next(); // Lanjut tanpa validasi untuk admin dashboard
     // Lanjut tanpa validasi untuk admin dashboard
@@ -683,14 +683,14 @@ function protectAPI(req, res, next) { // middleware keamanan: melindungi semua e
     // untuk akses dari luar LAN ke endpoint API; wajib validasi app key
     if (!isValidAppRequest(req)) { // Cek apakah request valid
       // Cek apakah request valid
-      console.log(`?? Unauthorized access blocked from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Unauthorized access blocked from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return res.status(401).json({ error: 'Akses ditolak - Bukan aplikasi resmi' }); // tolak request dengan 401 Unauthorized jika app key tidak valid; bukan dari ap...
+      return res.status(401).json({ error: 'Akses ditolak - Bukan aplikasi resmi' }); // tolak request dengan 401 Unauthorized jika app key tidak valid; bukan dari aplikasi mobile resmi
       // tolak request dengan 401 Unauthorized jika app key tidak valid; bukan dari aplikasi mobile resmi
     }
   }
   
-  console.log(`? Valid app request from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+  console.log(`? Valid app request from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   next(); // Lanjut ke endpoint
   // Lanjut ke endpoint
@@ -758,7 +758,7 @@ function protectAPI(req, res, next) { // middleware keamanan: melindungi semua e
 // - blockNFCCard()          ? Block card (POST /api/nfc-cards/block)
 // - topupNFCCard()          ? Top-up card (POST /api/nfc-cards/topup)
 // - deleteNFCCard()         ? Delete card (DELETE /api/nfc-cards/:cardId)
-class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsionalitas server NFC Payment...
+class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsionalitas server NFC Payment Admin
   // class utama admin server: mengelola seluruh fungsionalitas server NFC Payment Admin
   //
   // CONSTRUCTOR
@@ -853,10 +853,10 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // - NFC Card Management: 6 endpoints
   // - System: 2 endpoints (ping, health)
   // - Dashboard: 1 endpoint (/) ? HTML
-  setupExpress() { // method setup: mengkonfigurasi semua middleware dan route handler untuk Expres...
+  setupExpress() { // method setup: mengkonfigurasi semua middleware dan route handler untuk Express server
     // method setup: mengkonfigurasi semua middleware dan route handler untuk Express server
     // Security headers dengan Helmet (proteksi dari serangan web)
-    this.app.use(helmet({ // helmet: middleware keamanan yang menambahkan HTTP security headers; mencegah ...
+    this.app.use(helmet({ // helmet: middleware keamanan yang menambahkan HTTP security headers; mencegah serangan web umum
       // helmet: middleware keamanan yang menambahkan HTTP security headers; mencegah serangan web umum
       contentSecurityPolicy: false, // Dimatikan agar dashboard jalan
       // Dimatikan agar dashboard jalan
@@ -865,7 +865,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
     }));
     
     // CORS: Izinkan akses dari semua origin (HP bisa akses)
-    this.app.use(cors({ // cors middleware: mengizinkan akses lintas domain/origin; diperlukan agar mobi...
+    this.app.use(cors({ // cors middleware: mengizinkan akses lintas domain/origin; diperlukan agar mobile app bisa akses API
       // cors middleware: mengizinkan akses lintas domain/origin; diperlukan agar mobile app bisa akses API
       origin: '*', // Semua origin boleh (diperlukan untuk mobile app)
       // Semua origin boleh (diperlukan untuk mobile app)
@@ -879,13 +879,13 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
     // Parse JSON body (max 1MB)
     
     // Middleware keamanan: Validasi app key untuk API
-    this.app.use(protectAPI); // daftarkan middleware protectAPI sebelum semua route handler; memfilter reques...
+    this.app.use(protectAPI); // daftarkan middleware protectAPI sebelum semua route handler; memfilter request masuk
     // daftarkan middleware protectAPI sebelum semua route handler; memfilter request masuk
     
     // Middleware logging: Catat semua request yang masuk
-    this.app.use((req, res, next) => { // custom middleware logging: mencatat setiap request yang masuk ke console untu...
+    this.app.use((req, res, next) => { // custom middleware logging: mencatat setiap request yang masuk ke console untuk monitoring
       // custom middleware logging: mencatat setiap request yang masuk ke console untuk monitoring
-      console.log(`?? ${req.method} ${req.path} from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? ${req.method} ${req.path} from ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       next(); // Lanjut ke route handler
       // Lanjut ke route handler
@@ -899,7 +899,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
     // Route utama: Tampilkan dashboard HTML (unified dashboard dengan tab navigation)
     this.app.get('/', (req, res) => { // route GET /: menampilkan halaman utama dashboard HTML ke browser admin
       // route GET /: menampilkan halaman utama dashboard HTML ke browser admin
-      res.sendFile(path.join(__dirname, 'dashboard.html')); // mengirim file dashboard.html ke browser; path.join memastikan path benar di s...
+      res.sendFile(path.join(__dirname, 'dashboard.html')); // mengirim file dashboard.html ke browser; path.join memastikan path benar di semua OS
       // mengirim file dashboard.html ke browser; path.join memastikan path benar di semua OS
     });
     
@@ -959,9 +959,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
     // Delete card
     
     // Ping endpoint (penting untuk APK agar bisa deteksi server)
-    this.app.get('/api/ping', (req, res) => { // route GET /api/ping: endpoint health check yang digunakan APK untuk mendeteks...
+    this.app.get('/api/ping', (req, res) => { // route GET /api/ping: endpoint health check yang digunakan APK untuk mendeteksi server aktif
       // route GET /api/ping: endpoint health check yang digunakan APK untuk mendeteksi server aktif
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         status: 'ok', // Status server
         // Status server
@@ -977,9 +977,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
     });
     
     // Health check endpoint (untuk cek kesehatan server)
-    this.app.get('/api/health', (req, res) => { // route GET /api/health: endpoint lengkap cek kesehatan server dengan statistik...
+    this.app.get('/api/health', (req, res) => { // route GET /api/health: endpoint lengkap cek kesehatan server dengan statistik perangkat
       // route GET /api/health: endpoint lengkap cek kesehatan server dengan statistik perangkat
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         status: 'OK', // Status server
         // Status server
@@ -1049,9 +1049,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // - Manual refresh (pull-to-refresh)
   // - After transaction completed
   // - Periodic background sync (every 5 min)
-  async syncDevice(req, res) { // method async: endpoint POST /api/sync-device untuk menerima data sync dari ap...
+  async syncDevice(req, res) { // method async: endpoint POST /api/sync-device untuk menerima data sync dari aplikasi mobile Android
     // method async: endpoint POST /api/sync-device untuk menerima data sync dari aplikasi mobile Android
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { device, users, recentTransactions, stats } = req.body; // Ambil data dari request
       // Ambil data dari request
@@ -1059,7 +1059,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi: deviceId wajib ada
       if (!device || !device.deviceId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'Device ID is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Device ID is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -1067,7 +1067,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Waktu sekarang
       
       // Simpan data device ke Map (deviceId sebagai key)
-      this.devices.set(device.deviceId, { // menyimpan data device ke Map cache; Map.set() mengganti data lama jika device...
+      this.devices.set(device.deviceId, { // menyimpan data device ke Map cache; Map.set() mengganti data lama jika deviceId sudah ada
         // menyimpan data device ke Map cache; Map.set() mengganti data lama jika deviceId sudah ada
         deviceId: device.deviceId, // ID unik device (dari HP)
         // ID unik device (dari HP)
@@ -1098,10 +1098,10 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       });
 
       // Update waktu terakhir device terlihat
-      this.deviceLastSeen.set(device.deviceId, now); // mencatat waktu terakhir device melakukan sync; digunakan untuk mendeteksi dev...
+      this.deviceLastSeen.set(device.deviceId, now); // mencatat waktu terakhir device melakukan sync; digunakan untuk mendeteksi device offline
       // mencatat waktu terakhir device melakukan sync; digunakan untuk mendeteksi device offline
 
-      console.log(`?? Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
       // Cek apakah ada update balance yang menunggu (pending)
@@ -1109,7 +1109,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // mengambil antrian update balance yang belum dikirim ke device ini
       
       // Kirim response ke HP dengan info sync berhasil
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         success: true, // Status berhasil
         // Status berhasil
@@ -1124,7 +1124,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       });
 
       // Hapus pending updates setelah dikirim ke HP
-      this.clearPendingUpdates(device.deviceId); // menghapus pending updates setelah berhasil dikirim ke device; mencegah duplik...
+      this.clearPendingUpdates(device.deviceId); // menghapus pending updates setelah berhasil dikirim ke device; mencegah duplikasi update
       // menghapus pending updates setelah berhasil dikirim ke device; mencegah duplikasi update
       
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
@@ -1166,7 +1166,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   //     ipAddress: string,
   //     users: User[]              // Full user data
   //   },
-  //   ...
+ // ]
   // ]
   //
   // ONLINE STATUS:
@@ -1179,16 +1179,16 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // - Monitor online/offline status
   // - Show total balance per user
   // - Admin select user for top-up
-  async getDevices(req, res) { // method async: endpoint GET /api/devices untuk menampilkan daftar perangkat/us...
+  async getDevices(req, res) { // method async: endpoint GET /api/devices untuk menampilkan daftar perangkat/user di dashboard
     // method async: endpoint GET /api/devices untuk menampilkan daftar perangkat/user di dashboard
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // AMBIL DATA USER DARI BACKEND (hitung user unik saja)
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendConfig = parseBackendUrl(); // mem-parse URL backend menjadi komponen untuk HTTP request
         // mem-parse URL backend menjadi komponen untuk HTTP request
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // hostname tujuan request; bisa localhost atau domain ngrok
           // hostname tujuan request; bisa localhost atau domain ngrok
@@ -1196,7 +1196,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // port backend; default 4000 untuk development lokal
           path: '/api/debug/users', // Endpoint user backend
           // Endpoint user backend
-          method: 'GET', // method 'GET': HTTP method untuk mengambil data; tidak mengubah state server; ...
+          method: 'GET', // method 'GET': HTTP method untuk mengambil data; tidak mengubah state server; bisa di-cache oleh browser
           // method 'GET': HTTP method untuk mengambil data; tidak mengubah state server; bisa di-cache oleh browser
           headers: { // HTTP headers yang dikirim bersama request ke backend
             // HTTP headers yang dikirim bersama request ke backend
@@ -1227,7 +1227,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai diterima
               // Event saat response selesai diterima
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON string menjadi objek
                 // Parse JSON string menjadi objek
@@ -1265,7 +1265,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           const uniqueUsers = new Map(); // Map untuk menyimpan user unik berdasarkan username; mencegah duplikasi
           // Map untuk menyimpan user unik berdasarkan username; mencegah duplikasi
           
-          backendData.users.forEach(user => { // iterasi semua user dari backend; forEach() memanggil callback untuk setiap el...
+          backendData.users.forEach(user => { // iterasi semua user dari backend; forEach() memanggil callback untuk setiap elemen
             // iterasi semua user dari backend; forEach() memanggil callback untuk setiap elemen
             const userKey = user.username || user.name || `user_${user.id}`; // kunci unik user: prioritas username, lalu nama, lalu ID sebagai fallback
             // kunci unik user: prioritas username, lalu nama, lalu ID sebagai fallback
@@ -1297,17 +1297,17 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           
           const devices = Array.from(uniqueUsers.values()); // konversi Map ke Array; Array.from().values() mengambil semua value dari Map
           // konversi Map ke Array; Array.from().values() mengambil semua value dari Map
-          console.log(`?? API call: /api/devices - Returning ${devices.length} unique users from backend`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`?? API call: /api/devices - Returning ${devices.length} unique users from backend`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-          res.json(devices); // mengirim array devices ke dashboard; res.json() otomatis set Content-Type app...
+          res.json(devices); // mengirim array devices ke dashboard; res.json() otomatis set Content-Type application/json
           // mengirim array devices ke dashboard; res.json() otomatis set Content-Type application/json
-          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+          return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
           // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
         }
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend users error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend users error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       }
       
@@ -1322,7 +1322,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         // 5 menit = 300000 ms
         
         // Return object device dengan semua info
-        return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fu...
+        return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
           // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
           deviceId: device.deviceId, // ID device
           // ID device
@@ -1349,13 +1349,13 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         };
       });
 
-      console.log(`?? API call: /api/devices (fallback) - Returning ${devices.length} devices from cache`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? API call: /api/devices (fallback) - Returning ${devices.length} devices from cache`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       res.json(devices); // Kirim array devices ke dashboard
       // Kirim array devices ke dashboard
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Get devices error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Get devices error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: error.message }); // mengirim response error 500 dengan pesan asli dari Error object untuk debugging
       // mengirim response error 500 dengan pesan asli dari Error object untuk debugging
@@ -1428,9 +1428,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // 3. Input admin password
   // 4. Submit top-up
   // 5. Mobile app sync ? receive update ? apply balance
-  async updateBalanceSecure(req, res) { // method async: endpoint POST /api/update-balance untuk admin top-up saldo deng...
+  async updateBalanceSecure(req, res) { // method async: endpoint POST /api/update-balance untuk admin top-up saldo dengan proteksi password
     // method async: endpoint POST /api/update-balance untuk admin top-up saldo dengan proteksi password
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { deviceId, amount, adminPassword } = req.body; // Ambil data dari request
       // Ambil data dari request
@@ -1440,23 +1440,23 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi password admin (keamanan sederhana)
       if (adminPassword !== ADMIN_PASSWORD) { // memeriksa apakah password admin cocok; mencegah top-up tidak sah
         // memeriksa apakah password admin cocok; mencegah top-up tidak sah
-        console.log(`?? Wrong admin password from ${clientIP}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`?? Wrong admin password from ${clientIP}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        return res.status(401).json({ error: 'Password admin salah!' }); // tolak request 401 jika password admin tidak valid; mencegah unauthorized bala...
+        return res.status(401).json({ error: 'Password admin salah!' }); // tolak request 401 jika password admin tidak valid; mencegah unauthorized balance manipulation
         // tolak request 401 jika password admin tidak valid; mencegah unauthorized balance manipulation
       }
       
       // Validasi deviceId dan amount harus ada dan valid
       if (!deviceId || !amount || amount <= 0) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'Device ID dan jumlah saldo harus diisi!' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Device ID dan jumlah saldo harus diisi!' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // Batasi maksimal top-up per transaksi (Rp 500.000)
-      if (amount > 500000) { // batasi maksimal top-up Rp 500.000 per transaksi; mencegah money laundering da...
+      if (amount > 500000) { // batasi maksimal top-up Rp 500.000 per transaksi; mencegah money laundering dan fraud
         // batasi maksimal top-up Rp 500.000 per transaksi; mencegah money laundering dan fraud
-        return res.status(400).json({ error: 'Maksimal top-up Rp 500,000' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Maksimal top-up Rp 500,000' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -1465,7 +1465,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // mengambil data device dari Map cache berdasarkan deviceId
       if (!device || !device.users) { // Jika device tidak ditemukan
         // Jika device tidak ditemukan
-        return res.status(404).json({ error: 'Device tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke...
+        return res.status(404).json({ error: 'Device tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
         // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
       }
 
@@ -1489,14 +1489,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         });
       });
 
-      console.log(`?? Admin added Rp ${amount.toLocaleString('id-ID')} to device ${deviceId.substring(0, 8)}... for ${device.users.length} users`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Admin added Rp ${amount.toLocaleString('id-ID')} to device ${deviceId.substring(0, 8)}... for ${device.users.length} users`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-        message: `Berhasil menambah saldo Rp ${amount.toLocaleString('id-ID')} untuk ${device.users.length} users`, // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemi...
+        message: `Berhasil menambah saldo Rp ${amount.toLocaleString('id-ID')} untuk ${device.users.length} users`, // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
         // .toLocaleString() memformat angka sesuai locale Indonesia (titik sebagai pemisah ribuan)
         usersUpdated: device.users.length // jumlah user yang saldo-nya diperbarui; untuk konfirmasi ke admin
         // jumlah user yang saldo-nya diperbarui; untuk konfirmasi ke admin
@@ -1504,7 +1504,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Update balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Update balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Terjadi kesalahan server' }); // response error 500 dengan pesan bahasa Indonesia; untuk endpoint update balance
       // response error 500 dengan pesan bahasa Indonesia; untuk endpoint update balance
@@ -1512,16 +1512,16 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Update balance user dari admin - LEGACY (akan dihapus)
-  async updateBalance(req, res) { // method async: versi legacy endpoint update balance tanpa proteksi password; a...
+  async updateBalance(req, res) { // method async: versi legacy endpoint update balance tanpa proteksi password; akan dihapus
     // method async: versi legacy endpoint update balance tanpa proteksi password; akan dihapus
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { deviceId, amount } = req.body; // Ambil deviceId dan amount dari request body
       // Ambil deviceId dan amount dari request body
       
       if (!deviceId || !amount) { // Validasi field wajib
         // Validasi field wajib
-        return res.status(400).json({ error: 'Missing deviceId or amount' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Missing deviceId or amount' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -1530,7 +1530,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Cari device di cache
       if (!device || !device.users) { // Device tidak ditemukan
         // Device tidak ditemukan
-        return res.status(404).json({ error: 'Device not found or no users' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke...
+        return res.status(404).json({ error: 'Device not found or no users' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
         // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
       }
 
@@ -1554,14 +1554,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         });
       });
 
-      console.log(`?? Balance update queued for device ${deviceId.substring(0, 8)}... | Amount: +${amount} for ${device.users.length} users`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Balance update queued for device ${deviceId.substring(0, 8)}... | Amount: +${amount} for ${device.users.length} users`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
       res.json({ // Kirim response sukses ke client
         // Kirim response sukses ke client
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-        message: `Balance update queued for ${device.users.length} users`, // pesan sukses dengan jumlah user yang diperbarui; template literal menampilkan...
+        message: `Balance update queued for ${device.users.length} users`, // pesan sukses dengan jumlah user yang diperbarui; template literal menampilkan nilai dinamis
         // pesan sukses dengan jumlah user yang diperbarui; template literal menampilkan nilai dinamis
         usersUpdated: device.users.length // Jumlah user yang di-update
         // Jumlah user yang di-update
@@ -1569,7 +1569,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Update balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Update balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: error.message }); // mengirim response error 500 dengan pesan asli dari Error object untuk debugging
       // mengirim response error 500 dengan pesan asli dari Error object untuk debugging
@@ -1601,12 +1601,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   //
   // USE CASE:
   // Called di syncDevice() untuk kirim updates ke mobile app
-  getPendingUpdates(deviceId) { // method sync: mengambil semua update balance yang menunggu untuk dikirim ke de...
+  getPendingUpdates(deviceId) { // method sync: mengambil semua update balance yang menunggu untuk dikirim ke device tertentu
     // method sync: mengambil semua update balance yang menunggu untuk dikirim ke device tertentu
     const updates = []; // Array untuk menyimpan updates
     // Array untuk menyimpan updates
     // Loop semua pending updates
-    for (const [key, update] of this.pendingUpdates.entries()) { // iterasi semua pending updates menggunakan destructuring; .entries() mengembal...
+    for (const [key, update] of this.pendingUpdates.entries()) { // iterasi semua pending updates menggunakan destructuring; .entries() mengembalikan [key, value] pairs
       // iterasi semua pending updates menggunakan destructuring; .entries() mengembalikan [key, value] pairs
       if (update.deviceId === deviceId) { // Jika deviceId cocok
         // Jika deviceId cocok
@@ -1640,7 +1640,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   clearPendingUpdates(deviceId) { // method sync: menghapus semua pending updates setelah berhasil dikirim ke device
     // method sync: menghapus semua pending updates setelah berhasil dikirim ke device
     // Loop semua pending updates
-    for (const [key, update] of this.pendingUpdates.entries()) { // iterasi semua pending updates menggunakan destructuring; .entries() mengembal...
+    for (const [key, update] of this.pendingUpdates.entries()) { // iterasi semua pending updates menggunakan destructuring; .entries() mengembalikan [key, value] pairs
       // iterasi semua pending updates menggunakan destructuring; .entries() mengembalikan [key, value] pairs
       if (update.deviceId === deviceId) { // Jika deviceId cocok
         // Jika deviceId cocok
@@ -1680,14 +1680,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Jalankan tiap 5 menit
       const now = new Date(); // Waktu sekarang
       // Waktu sekarang
-      for (const [deviceId, device] of this.devices.entries()) { // iterasi semua device dalam cache menggunakan destructuring; untuk memeriksa s...
+      for (const [deviceId, device] of this.devices.entries()) { // iterasi semua device dalam cache menggunakan destructuring; untuk memeriksa status aktif
         // iterasi semua device dalam cache menggunakan destructuring; untuk memeriksa status aktif
         // Hapus device yang offline lebih dari 10 menit
         if ((now - device.lastSyncAt) > 600000) { // 10 menit = 600000 ms
           // 10 menit = 600000 ms
           this.devices.delete(deviceId); // Hapus dari Map
           // Hapus dari Map
-          console.log(`??? Removed inactive device: ${deviceId.substring(0, 8)}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`??? Removed inactive device: ${deviceId.substring(0, 8)}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         }
       }
@@ -1746,9 +1746,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // USE CASE:
   // Mobile app AI detect fraud ? send alert ke admin server
   // ? Dashboard show alert ? Admin review ? Take action
-  async handleFraudAlert(req, res) { // method async: endpoint POST /api/fraud-alert untuk menerima fraud alert dari ...
+  async handleFraudAlert(req, res) { // method async: endpoint POST /api/fraud-alert untuk menerima fraud alert dari AI mobile app
     // method async: endpoint POST /api/fraud-alert untuk menerima fraud alert dari AI mobile app
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { device, fraudDetection } = req.body; // Ambil data fraud dari HP
       // Ambil data fraud dari HP
@@ -1756,13 +1756,13 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi: fraud data wajib ada
       if (!fraudDetection) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'Fraud detection data required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Fraud detection data required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       if (!device || !device.deviceId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'Device data required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Device data required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -1813,26 +1813,26 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         // memeriksa keputusan AI: BLOCK berarti transaksi berbahaya harus dihentikan
         this.fraudStats.blockedTransactions++; // Tambah blocked transactions
         // Tambah blocked transactions
-      } else if (fraudDetection.decision === 'REVIEW') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak t...
+      } else if (fraudDetection.decision === 'REVIEW') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
         // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
         this.fraudStats.reviewTransactions++; // Tambah review transactions
         // Tambah review transactions
       }
 
-      console.log(`?? FRAUD ALERT: ${fraudDetection.riskLevel} risk (Z=${fraudDetection.riskScore}) from device ${device.deviceId.slice(-8)}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? FRAUD ALERT: ${fraudDetection.riskLevel} risk (Z=${fraudDetection.riskScore}) from device ${device.deviceId.slice(-8)}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`   Decision: ${fraudDetection.decision}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`   Decision: ${fraudDetection.decision}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`   Reasons: ${Array.isArray(fraudDetection.reasons) ? fraudDetection.reasons.join(', ') : fraudDetection.reasons}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`   Reasons: ${Array.isArray(fraudDetection.reasons) ? fraudDetection.reasons.join(', ') : fraudDetection.reasons}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`   Confidence: ${Math.round(fraudDetection.confidence * 100)}%`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`   Confidence: ${Math.round(fraudDetection.confidence * 100)}%`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-        message: 'Fraud alert received and stored', // pesan konfirmasi penerimaan fraud alert; dikirim ke mobile app sebagai acknow...
+        message: 'Fraud alert received and stored', // pesan konfirmasi penerimaan fraud alert; dikirim ke mobile app sebagai acknowledgment
         // pesan konfirmasi penerimaan fraud alert; dikirim ke mobile app sebagai acknowledgment
         alertId: alertId // ID alert yang dibuat; dikembalikan agar mobile app bisa track alert ini
         // ID alert yang dibuat; dikembalikan agar mobile app bisa track alert ini
@@ -1840,7 +1840,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Fraud alert error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Fraud alert error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to process fraud alert' }); // response error 500 jika proses penerimaan fraud alert gagal
       // response error 500 jika proses penerimaan fraud alert gagal
@@ -1869,33 +1869,33 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   //
   // SORTING: Terbaru di atas (descending by timestamp)
   // LIMIT: 50 alerts (avoid overload)
-  async getFraudAlerts(req, res) { // method async: endpoint GET /api/fraud-alerts untuk dashboard melihat semua fr...
+  async getFraudAlerts(req, res) { // method async: endpoint GET /api/fraud-alerts untuk dashboard melihat semua fraud alerts
     // method async: endpoint GET /api/fraud-alerts untuk dashboard melihat semua fraud alerts
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // Ambil semua alerts, sort terbaru di atas, ambil 50 teratas
-      const alerts = Array.from(this.fraudAlerts.values()) // konversi Map ke Array kemudian di-sort dan di-limit; Array.from() untuk opera...
+      const alerts = Array.from(this.fraudAlerts.values()) // konversi Map ke Array kemudian di-sort dan di-limit; Array.from() untuk operasi array
       // konversi Map ke Array kemudian di-sort dan di-limit; Array.from() untuk operasi array
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort descending
         // Sort descending
         .slice(0, 50); // Max 50 alerts
         // Max 50 alerts
 
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-        alerts: alerts, // array fraud alerts yang sudah di-sort dan di-limit; siap ditampilkan di dashb...
+        alerts: alerts, // array fraud alerts yang sudah di-sort dan di-limit; siap ditampilkan di dashboard
         // array fraud alerts yang sudah di-sort dan di-limit; siap ditampilkan di dashboard
         stats: this.fraudStats, // statistik fraud: total, blocked, review, lastAlert; untuk overview di dashboard
         // statistik fraud: total, blocked, review, lastAlert; untuk overview di dashboard
-        timestamp: new Date().toISOString() // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari ni...
+        timestamp: new Date().toISOString() // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
         // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       });
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Get fraud alerts error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Get fraud alerts error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to get fraud alerts' }); // response error 500 jika query fraud alerts gagal
       // response error 500 jika query fraud alerts gagal
@@ -1903,9 +1903,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Get semua transaksi dari semua device (GET /api/transactions)
-  async getAllTransactions(req, res) { // method async: endpoint GET /api/transactions untuk menampilkan semua transaks...
+  async getAllTransactions(req, res) { // method async: endpoint GET /api/transactions untuk menampilkan semua transaksi dari semua device
     // method async: endpoint GET /api/transactions untuk menampilkan semua transaksi dari semua device
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const limit = parseInt(req.query.limit) || 50; // Limit hasil (default 50)
       // Limit hasil (default 50)
@@ -1917,10 +1917,10 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // array akumulator: menampung transaksi dari semua device; dimulai kosong
       
       // Loop semua device dan ambil transactionnya
-      for (const [deviceId, deviceData] of this.devices.entries()) { // iterasi semua device untuk mengumpulkan transaksi; destructuring key-value pa...
+      for (const [deviceId, deviceData] of this.devices.entries()) { // iterasi semua device untuk mengumpulkan transaksi; destructuring key-value pair dari Map
         // iterasi semua device untuk mengumpulkan transaksi; destructuring key-value pair dari Map
         // Jika device punya transaksi
-        if (deviceData.recentTransactions && deviceData.recentTransactions.length > 0) { // memeriksa apakah device punya transaksi sebelum diproses; mencegah error unde...
+        if (deviceData.recentTransactions && deviceData.recentTransactions.length > 0) { // memeriksa apakah device punya transaksi sebelum diproses; mencegah error undefined
           // memeriksa apakah device punya transaksi sebelum diproses; mencegah error undefined
           // Tambah info device ke setiap transaksi
           const txsWithDevice = deviceData.recentTransactions.map(tx => ({ // transformasi setiap transaksi: tambahkan info device (deviceId dan deviceName)
@@ -1938,7 +1938,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
 
       // Sort transaksi berdasarkan waktu (terbaru di atas)
-      allTransactions.sort((a, b) => { // sort transaksi dari semua device; comparator function mengembalikan negatif/0...
+      allTransactions.sort((a, b) => { // sort transaksi dari semua device; comparator function mengembalikan negatif/0/positif
         // sort transaksi dari semua device; comparator function mengembalikan negatif/0/positif
         const dateA = new Date(a.createdAt || 0); // Parse tanggal A
         // Parse tanggal A
@@ -1949,9 +1949,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       });
 
       // Filter berdasarkan risk level jika ada parameter
-      if (riskLevel && riskLevel !== 'ALL') { // filter opsional berdasarkan risk level; skip filter jika parameter 'ALL' atau...
+      if (riskLevel && riskLevel !== 'ALL') { // filter opsional berdasarkan risk level; skip filter jika parameter 'ALL' atau tidak ada
         // filter opsional berdasarkan risk level; skip filter jika parameter 'ALL' atau tidak ada
-        allTransactions = allTransactions.filter(tx => tx.fraudRiskLevel === riskLevel); // filter transaksi berdasarkan risk level yang diminta; .filter() membuat array...
+        allTransactions = allTransactions.filter(tx => tx.fraudRiskLevel === riskLevel); // filter transaksi berdasarkan risk level yang diminta; .filter() membuat array baru
         // filter transaksi berdasarkan risk level yang diminta; .filter() membuat array baru
       }
 
@@ -1960,7 +1960,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // batasi jumlah transaksi sesuai limit; .slice() mengambil N elemen pertama
 
       // Calculate statistics
-      const stats = { // objek statistik transaksi: menghitung distribusi risk level dan rata-rata ris...
+      const stats = { // objek statistik transaksi: menghitung distribusi risk level dan rata-rata risk score
         // objek statistik transaksi: menghitung distribusi risk level dan rata-rata risk score
         total: allTransactions.length, // total semua transaksi (sebelum limit); untuk info pagination
         // total semua transaksi (sebelum limit); untuk info pagination
@@ -1972,19 +1972,19 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         // jumlah transaksi normal (Z-Score ≤ 2)
         averageRiskScore: allTransactions.length > 0 // menghitung rata-rata risk score jika ada transaksi; kondisi agar tidak bagi nol
         // menghitung rata-rata risk score jika ada transaksi; kondisi agar tidak bagi nol
-          ? allTransactions.reduce((sum, tx) => sum + (tx.fraudRiskScore || 0), 0) / allTransactions.length // .reduce() menjumlahkan semua risk score lalu dibagi total untuk mendapat rata...
+          ? allTransactions.reduce((sum, tx) => sum + (tx.fraudRiskScore || 0), 0) / allTransactions.length // .reduce() menjumlahkan semua risk score lalu dibagi total untuk mendapat rata-rata
           // .reduce() menjumlahkan semua risk score lalu dibagi total untuk mendapat rata-rata
           : 0
       };
 
-      console.log(`?? Transactions requested: ${limitedTransactions.length} of ${allTransactions.length} total`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Transactions requested: ${limitedTransactions.length} of ${allTransactions.length} total`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-        transactions: limitedTransactions, // array transaksi yang sudah di-filter dan di-limit; untuk ditampilkan di dashb...
+        transactions: limitedTransactions, // array transaksi yang sudah di-filter dan di-limit; untuk ditampilkan di dashboard
         // array transaksi yang sudah di-filter dan di-limit; untuk ditampilkan di dashboard
         stats: stats, // objek statistik untuk overview risk distribution di dashboard
         // objek statistik untuk overview risk distribution di dashboard
@@ -1996,7 +1996,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Get transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Get transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to get transactions' }); // response error 500 jika query transaksi gagal
       // response error 500 jika query transaksi gagal
@@ -2051,15 +2051,15 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   //   balance, isActive, status,
   //   deviceId, lastSeen, createdAt, updatedAt
   // }
-  async getUsersEndpoint(req, res) { // method async: endpoint GET /api/users untuk mendapatkan daftar user dari back...
+  async getUsersEndpoint(req, res) { // method async: endpoint GET /api/users untuk mendapatkan daftar user dari backend atau cache
     // method async: endpoint GET /api/users untuk mendapatkan daftar user dari backend atau cache
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // GUNAKAN HTTP MODULE BAWAAN NODE.JS (bukan fetch)
-      const backendUrl = `${BACKEND_URL}/api/debug/users`; // URL lengkap endpoint users di backend; template literal menggabungkan base UR...
+      const backendUrl = `${BACKEND_URL}/api/debug/users`; // URL lengkap endpoint users di backend; template literal menggabungkan base URL dan path
       // URL lengkap endpoint users di backend; template literal menggabungkan base URL dan path
       
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // HTTP request menggunakan module bawaan Node.js
         const backendData = await new Promise((resolve, reject) => { // membungkus HTTP request dalam Promise untuk digunakan dengan await
@@ -2070,12 +2070,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           const client = backendConfig.protocol === 'https' ? https : http; // memilih modul http atau https berdasarkan protocol URL backend
           // memilih modul http atau https berdasarkan protocol URL backend
           
-          const request = client.get(backendUrl, (response) => { // membuat HTTP GET request ke backend; .get() adalah shorthand untuk request de...
+          const request = client.get(backendUrl, (response) => { // membuat HTTP GET request ke backend; .get() adalah shorthand untuk request dengan method GET
             // membuat HTTP GET request ke backend; .get() adalah shorthand untuk request dengan method GET
             let data = ''; // buffer string untuk menampung chunk-chunk data response HTTP
             // buffer string untuk menampung chunk-chunk data response HTTP
             
-            response.on('data', (chunk) => { // event listener 'data': dipanggil setiap kali ada potongan data baru dari resp...
+            response.on('data', (chunk) => { // event listener 'data': dipanggil setiap kali ada potongan data baru dari response
               // event listener 'data': dipanggil setiap kali ada potongan data baru dari response
               data += chunk; // menggabungkan chunk ke buffer; HTTP response datang dalam potongan-potongan
               // menggabungkan chunk ke buffer; HTTP response datang dalam potongan-potongan
@@ -2083,9 +2083,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // event listener 'end': dipanggil saat semua response sudah diterima
               // event listener 'end': dipanggil saat semua response sudah diterima
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-                const jsonData = JSON.parse(data); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca dat...
+                const jsonData = JSON.parse(data); // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
                 // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
                 resolve(jsonData); // selesaikan Promise dengan data hasil parse; value ini dikembalikan ke await
                 // selesaikan Promise dengan data hasil parse; value ini dikembalikan ke await
@@ -2112,15 +2112,15 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           });
         });
         
-        console.log(`? Loaded ${backendData.users?.length || 0} users from backend database`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Loaded ${backendData.users?.length || 0} users from backend database`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         
         // Format untuk dashboard display
         const formattedData = { // objek data yang sudah diformat ulang sesuai kebutuhan dashboard
           // objek data yang sudah diformat ulang sesuai kebutuhan dashboard
-          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
           // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-          users: backendData.users.map(user => ({ // transformasi array users dari backend; .map() membuat array baru dengan forma...
+          users: backendData.users.map(user => ({ // transformasi array users dari backend; .map() membuat array baru dengan format yang berbeda
             // transformasi array users dari backend; .map() membuat array baru dengan format yang berbeda
             ...user, // spread semua property user asli; menyalin semua field dari data backend
             // spread semua property user asli; menyalin semua field dari data backend
@@ -2140,7 +2140,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.log('?? Backend tidak tersedia, gunakan cache device:', backendError.message); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log('?? Backend tidak tersedia, gunakan cache device:', backendError.message); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       }
       
@@ -2175,9 +2175,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       });
 
       // Kirim response dengan array users
-      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+      res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
         // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         users: allUsers, // Array semua user
         // Array semua user
@@ -2187,7 +2187,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Get users error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Get users error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to get users' }); // response error 500 jika query daftar user gagal
       // response error 500 jika query daftar user gagal
@@ -2195,9 +2195,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Create user baru (POST /api/users) - Belum diimplementasi
-  async createUserEndpoint(req, res) { // method async: endpoint POST /api/users untuk membuat user baru; saat ini teri...
+  async createUserEndpoint(req, res) { // method async: endpoint POST /api/users untuk membuat user baru; saat ini terintegrasi sebagian
     // method async: endpoint POST /api/users untuk membuat user baru; saat ini terintegrasi sebagian
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { username, name, password, balance = 1000000 } = req.body; // Ambil data user dari request body
       // Ambil data user dari request body
@@ -2205,18 +2205,18 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi input wajib
       if (!username || !name || !password) { // Semua field wajib diisi
         // Semua field wajib diisi
-        return res.status(400).json({ error: 'Username, name, and password required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Username, name, and password required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // TODO: Implementasi logic create user
       // Ini harus terintegrasi dengan backend database (Prisma)
-      console.log('?? Create user requested:', { username, name, balance }); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('?? Create user requested:', { username, name, balance }); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
       res.json({ // Kirim response sementara (belum terintegrasi)
         // Kirim response sementara (belum terintegrasi)
-        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+        success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
         message: 'User creation endpoint ready - needs backend integration', // pesan placeholder; endpoint belum terintegrasi penuh dengan backend database
         // pesan placeholder; endpoint belum terintegrasi penuh dengan backend database
@@ -2226,7 +2226,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Create user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Create user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to create user' }); // response error 500 jika pembuatan user gagal
       // response error 500 jika pembuatan user gagal
@@ -2234,9 +2234,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Update user (PUT /api/users/:id) - Integrasi dengan backend
-  async updateUserEndpoint(req, res) { // method async: endpoint PUT /api/users/:id untuk memperbarui data user via bac...
+  async updateUserEndpoint(req, res) { // method async: endpoint PUT /api/users/:id untuk memperbarui data user via backend proxy
     // method async: endpoint PUT /api/users/:id untuk memperbarui data user via backend proxy
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const userId = parseInt(req.params.id); // Ambil user ID dari URL
       // Ambil user ID dari URL
@@ -2246,7 +2246,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi userId wajib ada
       if (!userId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -2254,7 +2254,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       const backendUrl = `${BACKEND_URL}/api/users/${userId}`; // URL endpoint backend untuk update user
       // URL endpoint backend untuk update user
       
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendData = await new Promise((resolve, reject) => { // membungkus HTTP request dalam Promise untuk digunakan dengan await
           // membungkus HTTP request dalam Promise untuk digunakan dengan await
@@ -2263,7 +2263,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           
           const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
           // Parse URL backend menjadi komponen
-          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             hostname: backendConfig.hostname, // Hostname backend
             // Hostname backend
@@ -2287,7 +2287,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // Select correct client based on protocol
           const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           // Pilih http atau https
-          const request = client.request(options, (response) => { // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk mena...
+          const request = client.request(options, (response) => { // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk menangani response
             // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk menangani response
             let data = ''; // Buffer untuk menampung chunk response
             // Buffer untuk menampung chunk response
@@ -2300,7 +2300,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -2334,14 +2334,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // Kirim request ke backend
         });
         
-        console.log(`? Updated user ${userId} in backend`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Updated user ${userId} in backend`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Kirim response backend langsung ke client
         // Kirim response backend langsung ke client
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('Backend update error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('Backend update error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         res.status(500).json({ error: 'Failed to update user in backend' }); // response error 500 khusus untuk error dari backend saat update user
         // response error 500 khusus untuk error dari backend saat update user
@@ -2349,7 +2349,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Update user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Update user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to update user' }); // response error 500 umum jika update user gagal di level method
       // response error 500 umum jika update user gagal di level method
@@ -2357,37 +2357,37 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Delete user (DELETE /api/users/:id) - Integrasi dengan backend
-  async deleteUserEndpoint(req, res) { // method async: endpoint DELETE /api/users/:id untuk menghapus user via backend...
+  async deleteUserEndpoint(req, res) { // method async: endpoint DELETE /api/users/:id untuk menghapus user via backend proxy
     // method async: endpoint DELETE /api/users/:id untuk menghapus user via backend proxy
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const userId = parseInt(req.params.id); // Ambil user ID dari URL
       // Ambil user ID dari URL
       
-      console.log(`??? DELETE request for user ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`??? DELETE request for user ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       
       // Validasi userId wajib ada
       if (!userId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        console.log('? No user ID provided'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log('? No user ID provided'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // Parse backend URL
       const backendConfig = parseBackendUrl(); // mem-parse URL backend menjadi komponen untuk HTTP request
       // mem-parse URL backend menjadi komponen untuk HTTP request
-      console.log(`?? Connecting to backend: ${backendConfig.protocol}://${backendConfig.hostname}:${backendConfig.port}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Connecting to backend: ${backendConfig.protocol}://${backendConfig.hostname}:${backendConfig.port}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
       // Kirim delete ke backend
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendData = await new Promise((resolve, reject) => { // membungkus HTTP request dalam Promise untuk digunakan dengan await
           // membungkus HTTP request dalam Promise untuk digunakan dengan await
-          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             hostname: backendConfig.hostname, // Hostname backend
             // Hostname backend
@@ -2408,18 +2408,18 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             }
           };
           
-          console.log(`?? Sending DELETE to: ${options.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`?? Sending DELETE to: ${options.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
           // Select correct client based on protocol
           const client = backendConfig.protocol === 'https' ? https : http; // Pilih http atau https
           // Pilih http atau https
-          const request = client.request(options, (response) => { // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk mena...
+          const request = client.request(options, (response) => { // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk menangani response
             // membuat HTTP request ke backend dengan method PUT/DELETE; callback untuk menangani response
             let data = ''; // Buffer untuk menampung chunk response
             // Buffer untuk menampung chunk response
             
-            console.log(`?? Response status: ${response.statusCode}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+            console.log(`?? Response status: ${response.statusCode}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
             // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
             
             response.on('data', (chunk) => { // Event tiap ada potongan data
@@ -2430,9 +2430,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              console.log(`?? Response data:`, data.substring(0, 200)); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+              console.log(`?? Response data:`, data.substring(0, 200)); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
               // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -2440,7 +2440,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
                 // Selesaikan Promise
               } catch (parseError) { // menangkap error JSON.parse(); terjadi jika response bukan JSON valid
                 // menangkap error JSON.parse(); terjadi jika response bukan JSON valid
-                console.error('? JSON parse error:', parseError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+                console.error('? JSON parse error:', parseError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
                 // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
                 reject(new Error(`Parse error: ${data.substring(0, 100)}`)); // Reject dengan info awal data
                 // Reject dengan info awal data
@@ -2450,7 +2450,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           
           request.on('error', (error) => { // Event error koneksi
             // Event error koneksi
-            console.error('? Request error:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+            console.error('? Request error:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
             // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
             reject(error); // Reject Promise
             // Reject Promise
@@ -2458,7 +2458,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           
           request.setTimeout(5000, () => { // Timeout 5 detik
             // Timeout 5 detik
-            console.error('? Request timeout'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+            console.error('? Request timeout'); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
             // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
             request.destroy(); // Batalkan request timeout
             // Batalkan request timeout
@@ -2470,14 +2470,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // Kirim request DELETE (tanpa body)
         });
         
-        console.log(`? Deleted user ${userId} from backend:`, backendData); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Deleted user ${userId} from backend:`, backendData); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Kirim response backend ke client
         // Kirim response backend ke client
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend delete error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend delete error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         res.status(500).json({ error: 'Failed to delete user from backend', details: backendError.message }); // response error 500 khusus untuk error dari backend saat delete user
         // response error 500 khusus untuk error dari backend saat delete user
@@ -2485,7 +2485,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Delete user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Delete user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to delete user', details: error.message }); // response error 500 umum jika delete user gagal di level method
       // response error 500 umum jika delete user gagal di level method
@@ -2493,9 +2493,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Block user (POST /api/block-user) - Integrasi dengan backend
-  async blockUserEndpoint(req, res) { // method async: endpoint POST /api/block-user untuk memblokir akun user via bac...
+  async blockUserEndpoint(req, res) { // method async: endpoint POST /api/block-user untuk memblokir akun user via backend
     // method async: endpoint POST /api/block-user untuk memblokir akun user via backend
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { userId, password } = req.body; // Ambil data dari request
       // Ambil data dari request
@@ -2503,26 +2503,26 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi: userId wajib ada
       if (!userId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // Validasi password admin
       if (password !== ADMIN_PASSWORD) { // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
         // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
-        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset...
+        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
         // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
       }
 
       // IMPLEMENTASI BLOCK USER LANGSUNG KE BACKEND
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         // Parse URL backend menjadi komponen
-        const postData = JSON.stringify({ userId: parseInt(userId), password }); // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau ju...
+        const postData = JSON.stringify({ userId: parseInt(userId), password }); // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
         // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
         
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // hostname tujuan request; bisa localhost atau domain ngrok
           // hostname tujuan request; bisa localhost atau domain ngrok
@@ -2530,7 +2530,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // port backend; default 4000 untuk development lokal
           path: '/api/admin/block-user', // endpoint di backend untuk memblokir user
           // endpoint di backend untuk memblokir user
-          method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+          method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
           // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
           headers: { // HTTP headers yang dikirim bersama request ke backend
             // HTTP headers yang dikirim bersama request ke backend
@@ -2565,7 +2565,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -2601,14 +2601,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
         if (backendData.success) { // memeriksa apakah backend melaporkan operasi berhasil
           // memeriksa apakah backend melaporkan operasi berhasil
-          console.log(`?? User blocked: ${userId} (${backendData.user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`?? User blocked: ${userId} (${backendData.user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-            message: `User ${backendData.user.username} has been blocked`, // pesan sukses dengan username user yang diblokir; template literal untuk pesan...
+            message: `User ${backendData.user.username} has been blocked`, // pesan sukses dengan username user yang diblokir; template literal untuk pesan dinamis
             // pesan sukses dengan username user yang diblokir; template literal untuk pesan dinamis
             user: backendData.user // Data user yang diblokir
             // Data user yang diblokir
@@ -2621,12 +2621,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend block user error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend block user error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         
-        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
           // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           error: `Failed to block user: ${backendError.message}` // Pesan error ke client
           // Pesan error ke client
@@ -2635,7 +2635,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Block user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Block user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to block user' }); // response error 500 jika operasi block user gagal
       // response error 500 jika operasi block user gagal
@@ -2643,9 +2643,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Unblock user (POST /api/unblock-user) - Integrasi dengan backend
-  async unblockUserEndpoint(req, res) { // method async: endpoint POST /api/unblock-user untuk membuka blokir akun user ...
+  async unblockUserEndpoint(req, res) { // method async: endpoint POST /api/unblock-user untuk membuka blokir akun user via backend
     // method async: endpoint POST /api/unblock-user untuk membuka blokir akun user via backend
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { userId, password } = req.body; // Ambil data dari request
       // Ambil data dari request
@@ -2653,26 +2653,26 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi: userId wajib ada
       if (!userId) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // Validasi password admin
       if (password !== ADMIN_PASSWORD) { // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
         // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
-        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset...
+        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
         // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
       }
 
       // IMPLEMENTASI UNBLOCK USER LANGSUNG KE BACKEND
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         // Parse URL backend menjadi komponen
         const postData = JSON.stringify({ userId: parseInt(userId), password }); // Serialize body request ke JSON
         // Serialize body request ke JSON
         
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // Hostname backend
           // Hostname backend
@@ -2715,7 +2715,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -2751,12 +2751,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
         if (backendData.success) { // Jika backend berhasil membuka blokir
           // Jika backend berhasil membuka blokir
-          console.log(`? User unblocked: ${userId} (${backendData.user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`? User unblocked: ${userId} (${backendData.user.username})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             message: `User ${backendData.user.username} has been unblocked`, // pesan sukses dengan username user yang dibuka blokirnya
             // pesan sukses dengan username user yang dibuka blokirnya
@@ -2771,12 +2771,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend unblock user error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend unblock user error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         
-        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
           // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           error: `Failed to unblock user: ${backendError.message}` // Pesan error ke client
           // Pesan error ke client
@@ -2785,7 +2785,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Unblock user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Unblock user error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to unblock user' }); // response error 500 jika operasi unblock user gagal
       // response error 500 jika operasi unblock user gagal
@@ -2793,9 +2793,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Bulk top-up ke semua user (POST /api/bulk-topup) - Belum diimplementasi
-  async bulkTopupEndpoint(req, res) { // method async: endpoint POST /api/bulk-topup untuk top-up saldo semua user sek...
+  async bulkTopupEndpoint(req, res) { // method async: endpoint POST /api/bulk-topup untuk top-up saldo semua user sekaligus
     // method async: endpoint POST /api/bulk-topup untuk top-up saldo semua user sekaligus
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { amount, password } = req.body; // Ambil amount dan password
       // Ambil amount dan password
@@ -2803,19 +2803,19 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi amount wajib ada
       if (!amount || amount <= 0) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
         // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-        return res.status(400).json({ error: 'Valid amount required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'Valid amount required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // Validasi password admin
       if (password !== ADMIN_PASSWORD) { // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
         // memeriksa password admin sebelum eksekusi aksi sensitif; validasi otorisasi
-        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset...
+        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
         // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
       }
 
       // IMPLEMENTASI BULK TOPUP LANGSUNG KE BACKEND
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendUrl = `${BACKEND_URL}/api/admin/bulk-topup`; // URL endpoint bulk topup backend
         // URL endpoint bulk topup backend
@@ -2828,7 +2828,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           const postData = JSON.stringify({ amount: parseInt(amount) }); // Serialize body request
           // Serialize body request
           
-          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+          const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
             hostname: backendConfig.hostname, // Hostname backend
             // Hostname backend
@@ -2869,7 +2869,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -2905,16 +2905,16 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
         if (backendData.success) { // Jika backend berhasil bulk topup
           // Jika backend berhasil bulk topup
-          console.log(`? Bulk topup berhasil: ${backendData.updatedUsers} users, amount: ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`? Bulk topup berhasil: ${backendData.updatedUsers} users, amount: ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             message: `Bulk topup berhasil untuk ${backendData.updatedUsers} users`, // pesan sukses bulk topup dengan jumlah user yang berhasil diperbarui
             // pesan sukses bulk topup dengan jumlah user yang berhasil diperbarui
-            data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+            data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
               // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
               amount: amount, // Jumlah top-up per user
               // Jumlah top-up per user
@@ -2932,7 +2932,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend bulk topup error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend bulk topup error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         
         // FALLBACK: Update di device cache (temporary)
@@ -2954,16 +2954,16 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           }
         });
         
-        console.log(`?? Fallback bulk topup: ${updatedCount} users in cache, amount: ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`?? Fallback bulk topup: ${updatedCount} users in cache, amount: ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         
-        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
           // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
           // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
           message: `Bulk topup applied to ${updatedCount} users (cache only - backend unavailable)`, // pesan fallback: bulk topup hanya di cache lokal karena backend tidak tersedia
           // pesan fallback: bulk topup hanya di cache lokal karena backend tidak tersedia
-          data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+          data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
             // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
             amount: amount, // Jumlah top-up
             // Jumlah top-up
@@ -2977,7 +2977,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Bulk topup error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Bulk topup error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to perform bulk topup' }); // response error 500 jika operasi bulk topup gagal
       // response error 500 jika operasi bulk topup gagal
@@ -2985,9 +2985,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Reset balance user tertentu (POST /api/reset-balance)
-  async resetBalanceEndpoint(req, res) { // method async: endpoint POST /api/reset-balance untuk reset saldo user ke nila...
+  async resetBalanceEndpoint(req, res) { // method async: endpoint POST /api/reset-balance untuk reset saldo user ke nilai tertentu
     // method async: endpoint POST /api/reset-balance untuk reset saldo user ke nilai tertentu
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { userId, newBalance, password } = req.body; // Ambil userId, newBalance, dan password dari request
       // Ambil userId, newBalance, dan password dari request
@@ -2995,32 +2995,32 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Validasi password admin
       if (password !== ADMIN_PASSWORD) { // Password admin wajib cocok
         // Password admin wajib cocok
-        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset...
+        return res.status(401).json({ error: 'Invalid admin password' }); // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
         // tolak dengan 401 jika password admin tidak valid; hanya admin yang bisa reset saldo
       }
 
       // Validasi userId dan newBalance
       if (!userId) { // userId wajib ada
         // userId wajib ada
-        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'User ID required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
       
       if (newBalance === undefined || newBalance === null) { // newBalance wajib ada
         // newBalance wajib ada
-        return res.status(400).json({ error: 'New balance required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'New balance required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       // IMPLEMENTASI RESET BALANCE LANGSUNG KE BACKEND
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         // Parse URL backend menjadi komponen
         const postData = JSON.stringify({ userId: parseInt(userId), newBalance: parseInt(newBalance), password }); // Serialize body request
         // Serialize body request
         
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // Hostname backend
           // Hostname backend
@@ -3063,7 +3063,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -3099,12 +3099,12 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
         if (backendData.success || backendData.user) { // Jika backend berhasil reset balance
           // Jika backend berhasil reset balance
-          console.log(`? Reset balance success for user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`? Reset balance success for user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             message: `Balance reset untuk user ${userId}`, // pesan sukses reset saldo dengan ID user; template literal untuk pesan dinamis
             // pesan sukses reset saldo dengan ID user; template literal untuk pesan dinamis
@@ -3119,7 +3119,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend reset balance error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend reset balance error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         
         // FALLBACK: Update di device cache (temporary)
@@ -3145,11 +3145,11 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
         if (userFound) { // Jika user ditemukan di cache
           // Jika user ditemukan di cache
-          console.log(`?? Fallback reset balance for user ${userId} (cache only)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`?? Fallback reset balance for user ${userId} (cache only)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             message: `Reset balance untuk user ${userId} (cache only - backend unavailable)`, // pesan fallback: reset saldo hanya di cache lokal karena backend tidak tersedia
             // pesan fallback: reset saldo hanya di cache lokal karena backend tidak tersedia
@@ -3165,7 +3165,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Reset balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Reset balance error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to reset balance' }); // response error 500 jika operasi reset saldo gagal
       // response error 500 jika operasi reset saldo gagal
@@ -3173,19 +3173,19 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Clear semua fraud alerts (POST /api/clear-fraud-alerts)
-  async clearFraudAlertsEndpoint(req, res) { // method async: endpoint POST /api/clear-fraud-alerts untuk menghapus semua fra...
+  async clearFraudAlertsEndpoint(req, res) { // method async: endpoint POST /api/clear-fraud-alerts untuk menghapus semua fraud alerts
     // method async: endpoint POST /api/clear-fraud-alerts untuk menghapus semua fraud alerts
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // IMPLEMENTASI CLEAR FRAUD ALERTS LANGSUNG KE BACKEND
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
         // Parse URL backend menjadi komponen
         const postData = JSON.stringify({}); // Body kosong untuk request clear
         // Body kosong untuk request clear
         
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // Hostname backend
           // Hostname backend
@@ -3228,7 +3228,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             
             response.on('end', () => { // Event saat response selesai
               // Event saat response selesai
-              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+              try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
                 const jsonData = JSON.parse(data); // Parse JSON response
                 // Parse JSON response
@@ -3264,7 +3264,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
         if (backendData.success) { // Jika backend berhasil menghapus fraud alerts
           // Jika backend berhasil menghapus fraud alerts
-          console.log(`? Backend cleared ${backendData.clearedCount} fraud alerts`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`? Backend cleared ${backendData.clearedCount} fraud alerts`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           
           // Also clear local cache
@@ -3284,9 +3284,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
             // Reset timestamp alert terakhir
           };
           
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             message: `Cleared ${backendData.clearedCount} fraud alerts from backend, ${localClearedCount} from local cache`, // pesan sukses dengan jumlah alert yang dihapus dari backend dan cache lokal
             // pesan sukses dengan jumlah alert yang dihapus dari backend dan cache lokal
@@ -3301,7 +3301,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend clear fraud alerts error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend clear fraud alerts error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         
         // FALLBACK: Clear local cache only
@@ -3321,14 +3321,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           // Reset timestamp alert terakhir
         };
 
-        console.log(`?? Fallback clear fraud alerts: ${clearedCount} alerts from local cache`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`?? Fallback clear fraud alerts: ${clearedCount} alerts from local cache`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         
-        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
           // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+          success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
           // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-          message: `Cleared ${clearedCount} fraud alerts (local cache only - backend unavailable)`, // pesan fallback: alert hanya dihapus dari cache lokal karena backend tidak ter...
+          message: `Cleared ${clearedCount} fraud alerts (local cache only - backend unavailable)`, // pesan fallback: alert hanya dihapus dari cache lokal karena backend tidak tersedia
           // pesan fallback: alert hanya dihapus dari cache lokal karena backend tidak tersedia
           clearedCount: clearedCount, // Jumlah alert yang dihapus dari cache
           // Jumlah alert yang dihapus dari cache
@@ -3339,7 +3339,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Clear fraud alerts error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Clear fraud alerts error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to clear fraud alerts' }); // response error 500 jika operasi clear fraud alerts gagal
       // response error 500 jika operasi clear fraud alerts gagal
@@ -3381,18 +3381,18 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // ENDPOINT: GET /api/nfc-cards
   // FUNGSI: List all NFC cards
   // Proxy ke backend GET /api/nfc-cards/list
-  async getNFCCards(req, res) { // method async: endpoint GET /api/nfc-cards untuk mendapatkan semua kartu NFC d...
+  async getNFCCards(req, res) { // method async: endpoint GET /api/nfc-cards untuk mendapatkan semua kartu NFC dari backend
     // method async: endpoint GET /api/nfc-cards untuk mendapatkan semua kartu NFC dari backend
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const backendConfig = parseBackendUrl(); // Parse URL backend menjadi komponen
       // Parse URL backend menjadi komponen
       const backendUrl = `${BACKEND_URL}/api/nfc-cards/list`; // URL lengkap endpoint list kartu
       // URL lengkap endpoint list kartu
       
-      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+      try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
         // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+        const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
           hostname: backendConfig.hostname, // Hostname backend
           // Hostname backend
@@ -3413,18 +3413,18 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
           }
         };
 
-        console.log(`?? Fetching ALL NFC cards from: ${BACKEND_URL}/api/nfc-cards/list`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`?? Fetching ALL NFC cards from: ${BACKEND_URL}/api/nfc-cards/list`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         const backendData = await makeHttpRequest(options); // Kirim request ke backend
         // Kirim request ke backend
         
         if (backendData.success) { // Jika backend berhasil
           // Jika backend berhasil
-          console.log(`? Loaded ${backendData.cards?.length || 0} NFC cards from backend (Total in DB: ${backendData.total})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log(`? Loaded ${backendData.cards?.length || 0} NFC cards from backend (Total in DB: ${backendData.total})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+          res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
             // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+            success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
             cards: backendData.cards || [], // Array kartu NFC
             // Array kartu NFC
@@ -3438,11 +3438,11 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         }
       } catch (backendError) { // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
         // menangkap error dari HTTP request ke backend; bisa karena network atau timeout
-        console.error('? Backend get NFC cards error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+        console.error('? Backend get NFC cards error:', backendError.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+        res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
           // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+          success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
           cards: [], // Kembalikan array kosong jika error
           // Kembalikan array kosong jika error
@@ -3454,11 +3454,11 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Get NFC cards error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Get NFC cards error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      res.status(500).json({ // mengirim response error 500 dengan detail error untuk debugging NFC cards end...
+      res.status(500).json({ // mengirim response error 500 dengan detail error untuk debugging NFC cards endpoint
         // mengirim response error 500 dengan detail error untuk debugging NFC cards endpoint
-        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk m...
+        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
         // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
         error: `Server error: ${error.message}`, // Pesan error server
         // Pesan error server
@@ -3471,16 +3471,16 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Register new NFC card (POST /api/nfc-cards/register)
-  async registerNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/register untuk mendaftarkan kartu ...
+  async registerNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/register untuk mendaftarkan kartu NFC baru
     // method async: endpoint POST /api/nfc-cards/register untuk mendaftarkan kartu NFC baru
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { cardId, userId, cardType } = req.body; // Ambil data kartu dari request body
       // Ambil data kartu dari request body
       
       if (!cardId || !userId) { // Validasi field wajib
         // Validasi field wajib
-        return res.status(400).json({ error: 'cardId and userId are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'cardId and userId are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -3489,7 +3489,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       const postData = JSON.stringify({ cardId, userId, cardType: cardType || 'NTag215' }); // Serialize body request
       // Serialize body request
       
-      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         hostname: backendConfig.hostname, // Hostname backend
         // Hostname backend
@@ -3515,7 +3515,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       
       if (backendData.success) { // Jika pendaftaran berhasil
         // Jika pendaftaran berhasil
-        console.log(`? Registered NFC card: ${cardId} for user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Registered NFC card: ${cardId} for user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Teruskan response backend ke client
         // Teruskan response backend ke client
@@ -3526,7 +3526,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Register NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Register NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to register NFC card' }); // response error 500 jika pendaftaran kartu NFC gagal
       // response error 500 jika pendaftaran kartu NFC gagal
@@ -3534,22 +3534,22 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   }
 
   // Link NFC card to user (POST /api/nfc-cards/link)
-  async linkNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/link untuk menghubungkan kartu ke ...
+  async linkNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/link untuk menghubungkan kartu ke user
     // method async: endpoint POST /api/nfc-cards/link untuk menghubungkan kartu ke user
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { cardId, userId } = req.body; // Ambil cardId dan userId dari request body
       // Ambil cardId dan userId dari request body
       
       if (!cardId || !userId) { // Validasi field wajib
         // Validasi field wajib
-        return res.status(400).json({ error: 'cardId and userId are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'cardId and userId are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       const backendConfig = parseBackendUrl(); // Parse URL backend
       // Parse URL backend
-      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         hostname: backendConfig.hostname, // Hostname backend
         // Hostname backend
@@ -3570,7 +3570,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       
       if (backendData.success) { // Jika linking berhasil
         // Jika linking berhasil
-        console.log(`? Linked NFC card: ${cardId} to user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Linked NFC card: ${cardId} to user ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Teruskan response backend
         // Teruskan response backend
@@ -3581,7 +3581,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Link NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Link NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to link NFC card' }); // response error 500 jika linking kartu ke user gagal
       // response error 500 jika linking kartu ke user gagal
@@ -3591,20 +3591,20 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // Block NFC card (POST /api/nfc-cards/block)
   async blockNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/block untuk memblokir kartu NFC
     // method async: endpoint POST /api/nfc-cards/block untuk memblokir kartu NFC
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { cardId, reason } = req.body; // Ambil cardId dan alasan blokir dari request body
       // Ambil cardId dan alasan blokir dari request body
       
       if (!cardId) { // Validasi cardId wajib ada
         // Validasi cardId wajib ada
-        return res.status(400).json({ error: 'cardId is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'cardId is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
       const backendConfig = parseBackendUrl(); // Parse URL backend
       // Parse URL backend
-      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         hostname: backendConfig.hostname, // Hostname backend
         // Hostname backend
@@ -3625,7 +3625,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       
       if (backendData.success) { // Jika kartu berhasil diblokir
         // Jika kartu berhasil diblokir
-        console.log(`? Blocked NFC card: ${cardId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Blocked NFC card: ${cardId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Teruskan response backend
         // Teruskan response backend
@@ -3636,7 +3636,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Block NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Block NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to block NFC card' }); // response error 500 jika pemblokiran kartu NFC gagal
       // response error 500 jika pemblokiran kartu NFC gagal
@@ -3646,14 +3646,14 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // Top-up NFC card balance (POST /api/nfc-cards/topup)
   async topupNFCCard(req, res) { // method async: endpoint POST /api/nfc-cards/topup untuk menambah saldo kartu NFC
     // method async: endpoint POST /api/nfc-cards/topup untuk menambah saldo kartu NFC
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { cardId, amount, adminPassword } = req.body; // Ambil cardId, amount, dan password dari request body
       // Ambil cardId, amount, dan password dari request body
       
       if (!cardId || !amount) { // Validasi field wajib
         // Validasi field wajib
-        return res.status(400).json({ error: 'cardId and amount are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'cardId and amount are required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -3665,7 +3665,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
       const backendConfig = parseBackendUrl(); // Parse URL backend
       // Parse URL backend
-      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         hostname: backendConfig.hostname, // Hostname backend
         // Hostname backend
@@ -3684,7 +3684,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       
       if (backendData.success) { // Jika top-up berhasil
         // Jika top-up berhasil
-        console.log(`? Topped up NFC card: ${cardId} with ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`? Topped up NFC card: ${cardId} with ${amount}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Teruskan response backend ke client
         // Teruskan response backend ke client
@@ -3695,7 +3695,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Top-up NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Top-up NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to top-up NFC card' }); // response error 500 jika operasi top-up kartu NFC gagal
       // response error 500 jika operasi top-up kartu NFC gagal
@@ -3705,7 +3705,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   // Delete NFC card (DELETE /api/nfc-cards/:cardId)
   async deleteNFCCard(req, res) { // method async: endpoint DELETE /api/nfc-cards/:cardId untuk menghapus kartu NFC
     // method async: endpoint DELETE /api/nfc-cards/:cardId untuk menghapus kartu NFC
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const { cardId } = req.params; // Ambil cardId dari URL parameter
       // Ambil cardId dari URL parameter
@@ -3714,7 +3714,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       
       if (!cardId) { // Validasi cardId wajib ada
         // Validasi cardId wajib ada
-        return res.status(400).json({ error: 'cardId is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+        return res.status(400).json({ error: 'cardId is required' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
         // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       }
 
@@ -3728,7 +3728,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Parse URL backend
       const bodyData = JSON.stringify({ adminPassword }); // Serialize body request
       // Serialize body request
-      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua paramete...
+      const options = { // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         // objek konfigurasi HTTP request yang dikirim ke backend; berisi semua parameter koneksi
         hostname: backendConfig.hostname, // Hostname backend
         // Hostname backend
@@ -3753,20 +3753,20 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
         // Include body for DELETE request - sertakan password di body
       };
 
-      console.log(`??? Attempting to delete card ${cardId} from backend...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`??? Attempting to delete card ${cardId} from backend...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`?? Admin password check: ${adminPassword === ADMIN_PASSWORD ? 'VALID' : 'INVALID'}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Admin password check: ${adminPassword === ADMIN_PASSWORD ? 'VALID' : 'INVALID'}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`?? Sending to: ${backendConfig.hostname}${options.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Sending to: ${backendConfig.hostname}${options.path}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log(`?? Body:`, options.body); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(`?? Body:`, options.body); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       const backendData = await makeHttpRequest(options); // Kirim request DELETE ke backend
       // Kirim request DELETE ke backend
       
       if (backendData.success) { // Jika penghapusan berhasil
         // Jika penghapusan berhasil
-        console.log(`??? Deleted NFC card: ${cardId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log(`??? Deleted NFC card: ${cardId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         res.json(backendData); // Teruskan response backend ke client
         // Teruskan response backend ke client
@@ -3777,7 +3777,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       }
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-      console.error('? Delete NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('? Delete NFC card error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       res.status(500).json({ error: 'Failed to delete NFC card' }); // response error 500 jika operasi hapus kartu NFC gagal
       // response error 500 jika operasi hapus kartu NFC gagal
@@ -3816,23 +3816,23 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
   //    - Backend: node server.js (port 4000)
   //    - Ngrok: ngrok http 4000
   //    - Admin: node simple-admin.js (port 3000)
-  start() { // method sync: memulai Express server listening pada PORT dan menampilkan info ...
+  start() { // method sync: memulai Express server listening pada PORT dan menampilkan info startup ke console
     // method sync: memulai Express server listening pada PORT dan menampilkan info startup ke console
     this.app.listen(PORT, () => { // Listen di port 3000 dan mulai menerima koneksi
       // Listen di port 3000 dan mulai menerima koneksi
-      console.log('?? Simple NFC Payment Admin started!'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('?? Simple NFC Payment Admin started!'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       console.log(`?? Dashboard: http://localhost:${PORT}`); // URL dashboard admin
       // URL dashboard admin
-      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log('?? Backend Connection:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('?? Backend Connection:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       console.log(`   ?? Ngrok URL: ${NGROK_URL}`); // URL ngrok yang digunakan
       // URL ngrok yang digunakan
-      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log('?? Cara menggunakan:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('?? Cara menggunakan:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       console.log('   1. Pastikan ngrok tunnel aktif di terminal lain'); // Langkah 1
       // Langkah 1
@@ -3840,9 +3840,9 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
       // Langkah 2
       console.log('   3. Monitor pengguna dan transaksi dari dashboard ini'); // Langkah 3
       // Langkah 3
-      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log(''); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      console.log('?? Setup:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('?? Setup:'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       console.log('   - Backend: node server.js (port 4000)'); // Perintah menjalankan backend
       // Perintah menjalankan backend
@@ -3858,7 +3858,7 @@ class SimpleNFCAdmin { // class utama admin server: mengelola seluruh fungsional
 
 // ==================== START SERVER ====================
 // Buat instance admin server dan jalankan
-const admin = new SimpleNFCAdmin(); // buat instance tunggal admin server; constructor otomatis inisialisasi semua k...
+const admin = new SimpleNFCAdmin(); // buat instance tunggal admin server; constructor otomatis inisialisasi semua komponen
 // buat instance tunggal admin server; constructor otomatis inisialisasi semua komponen
 admin.start(); // jalankan server: mulai listen port 3000 dan tampilkan info startup di console
 // jalankan server: mulai listen port 3000 dan tampilkan info startup di console

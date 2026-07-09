@@ -88,13 +88,13 @@
 //
 // ==================================================================================
 
-import { useState } from 'react'; // import digunakan untuk mengambil module; useState adalah hook React untuk mem...
+import { useState } from 'react'; // import digunakan untuk mengambil module; useState adalah hook React untuk membuat state lokal dalam komponen atau hook kustom
 // import digunakan untuk mengambil module; useState adalah hook React untuk membuat state lokal dalam komponen atau hook kustom
-import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog konfirmas...
+import { Alert } from 'react-native'; // import Alert dari React Native — digunakan untuk menampilkan dialog konfirmasi dan pesan error ke user dalam format native Android/iOS
 // import Alert dari React Native — digunakan untuk menampilkan dialog konfirmasi dan pesan error ke user dalam format native Android/iOS
-import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — service yang menangani inisialisas...
+import { NFCService } from '../utils/nfc'; // import NFCService dari file lokal nfc.ts — service yang menangani inisialisasi, pembacaan kartu NFC, dan cleanup resource hardware
 // import NFCService dari file lokal nfc.ts — service yang menangani inisialisasi, pembacaan kartu NFC, dan cleanup resource hardware
-import { apiService } from '../utils/apiService'; // import apiService — HTTP client Singleton yang menangani semua komunikasi den...
+import { apiService } from '../utils/apiService'; // import apiService — HTTP client Singleton yang menangani semua komunikasi dengan backend Express (validasi kartu, proses payment, refresh saldo)
 // import apiService — HTTP client Singleton yang menangani semua komunikasi dengan backend Express (validasi kartu, proses payment, refresh saldo)
 
 // ==================================================================================
@@ -110,7 +110,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
   // true = pembayaran sedang diproses, tombol dinonaktifkan
   // false = siap proses pembayaran baru
   // Penting untuk mencegah pengguna mengetuk tombol bayar berkali-kali
-  const [isProcessing, setIsProcessing] = useState(false); // const membuat variabel tetap; useState(false) membuat state boolean; isProces...
+  const [isProcessing, setIsProcessing] = useState(false); // const membuat variabel tetap; useState(false) membuat state boolean; isProcessing=true mengunci hook agar tidak memproses dua pembayaran sekaligus
   // const membuat variabel tetap; useState(false) membuat state boolean; isProcessing=true mengunci hook agar tidak memproses dua pembayaran sekaligus
 
   // ================================================================================
@@ -183,20 +183,20 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
   // - Rate limiting (429): Terlalu banyak request
   // - Account banned: User di-ban karena fraud
   // ================================================================================
-  const processTapToPayTransfer = async ( // const processTapToPayTransfer: deklarasi fungsi async utama pemroses pembayar...
+  const processTapToPayTransfer = async ( // const processTapToPayTransfer: deklarasi fungsi async utama pemroses pembayaran NFC
   // const processTapToPayTransfer: deklarasi fungsi async utama pemroses pembayaran NFC
     currentUserId: number, // tipe number: ID user penjual yang menerima pembayaran
     // tipe number: ID user penjual yang menerima pembayaran
     amount: number, // tipe number: nominal transaksi dalam Rupiah
     // tipe number: nominal transaksi dalam Rupiah
-    onSuccess?: () => void // ? berarti opsional; callback dipanggil setelah transaksi berhasil untuk refre...
+    onSuccess?: () => void // ? berarti opsional; callback dipanggil setelah transaksi berhasil untuk refresh saldo
     // ? berarti opsional; callback dipanggil setelah transaksi berhasil untuk refresh saldo
-  ): Promise<boolean> => { // : Promise<boolean> adalah return type — fungsi ini mengembalikan true jika be...
+  ): Promise<boolean> => { // : Promise<boolean> adalah return type — fungsi ini mengembalikan true jika berhasil, false jika gagal
     // : Promise<boolean> adalah return type — fungsi ini mengembalikan true jika berhasil, false jika gagal
     setIsProcessing(true); // setIsProcessing(true) mengaktifkan kunci — mencegah double-tap tombol bayar
     // setIsProcessing(true) mengaktifkan kunci — mencegah double-tap tombol bayar
 
-    try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh b...
+    try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
       // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
       // STEP 1: User Confirmation Alert
       // Show alert untuk konfirmasi sebelum scan
@@ -207,7 +207,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       // - Resolve jika user tap "Siap"
       // - Reject dengan error 'USER_CANCELLED' jika user tap "Batal"
       // - await Promise akan block execution sampai user pilih
-      await new Promise<void>((resolve, reject) => { // new Promise(executor) membuat Promise baru; <void> berarti Promise tidak meng...
+      await new Promise<void>((resolve, reject) => { // new Promise(executor) membuat Promise baru; <void> berarti Promise tidak mengembalikan nilai; (resolve, reject) adalah dua callback: resolve=sukses, reject=error
         // new Promise(executor) membuat Promise baru; <void> berarti Promise tidak mengembalikan nilai; (resolve, reject) adalah dua callback: resolve=sukses, reject=error
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -219,7 +219,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
               // mendefinisikan tombol Batal pada dialog Alert
               style: 'cancel', // style cancel memberi tampilan khusus tombol batal (merah di iOS)
               // style cancel memberi tampilan khusus tombol batal (merah di iOS)
-              onPress: () => reject(new Error('USER_CANCELLED')) // reject(new Error('USER_CANCELLED')) menandai Promise sebagai gagal; error aka...
+              onPress: () => reject(new Error('USER_CANCELLED')) // reject(new Error('USER_CANCELLED')) menandai Promise sebagai gagal; error akan ditangkap oleh catch
               // reject(new Error('USER_CANCELLED')) menandai Promise sebagai gagal; error akan ditangkap oleh catch
             },
             { text: 'Siap', onPress: () => resolve() } // resolve() menandai Promise sebagai berhasil; eksekusi lanjut ke baris berikutnya
@@ -235,10 +235,10 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       // 2. Wait for card detection (blocking)
       // 3. Read UID dari NFC chip
       // 4. Return object { id: "UID_STRING" } atau null jika gagal
-      const buyerCard = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; NFCService.readPhysicalCard() meng...
+      const buyerCard = await NFCService.readPhysicalCard(); // await menunggu user menempelkan kartu NFC; NFCService.readPhysicalCard() mengaktifkan hardware NFC dan menunggu deteksi kartu
       // await menunggu user menempelkan kartu NFC; NFCService.readPhysicalCard() mengaktifkan hardware NFC dan menunggu deteksi kartu
       
-      if (!buyerCard) { // !buyerCard berarti null/undefined — pembacaan gagal (tidak ada kartu atau har...
+      if (!buyerCard) { // !buyerCard berarti null/undefined — pembacaan gagal (tidak ada kartu atau hardware error)
         // !buyerCard berarti null/undefined — pembacaan gagal (tidak ada kartu atau hardware error)
         Alert.alert('\u274c Kartu Pembeli Tidak Terbaca', 'Coba lagi.'); // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -273,10 +273,10 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       //     }
       //   }
       // }
-      const buyerCheck = await apiService.get(`/api/nfc-cards/info/${buyerCard.id}`); // await HTTP GET; template literal ${buyerCard.id} menyisipkan UID kartu ke URL...
+      const buyerCheck = await apiService.get(`/api/nfc-cards/info/${buyerCard.id}`); // await HTTP GET; template literal ${buyerCard.id} menyisipkan UID kartu ke URL endpoint
       // await HTTP GET; template literal ${buyerCard.id} menyisipkan UID kartu ke URL endpoint
       
-      if (!buyerCheck.success) { // ! membalik boolean; success=false berarti kartu pembeli belum terdaftar di da...
+      if (!buyerCheck.success) { // ! membalik boolean; success=false berarti kartu pembeli belum terdaftar di database
         // ! membalik boolean; success=false berarti kartu pembeli belum terdaftar di database
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -284,13 +284,13 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           'Kartu pembeli harus terdaftar di sistem terlebih dahulu.',
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: card not registered
         // Early return: card not registered
       }
 
-      if (buyerCheck.card.cardStatus !== 'ACTIVE') { // !== berarti tidak sama; hanya kartu berstatus ACTIVE yang bisa digunakan untu...
+      if (buyerCheck.card.cardStatus !== 'ACTIVE') { // !== berarti tidak sama; hanya kartu berstatus ACTIVE yang bisa digunakan untuk transaksi
         // !== berarti tidak sama; hanya kartu berstatus ACTIVE yang bisa digunakan untuk transaksi
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -298,13 +298,13 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           `Status: ${buyerCheck.card.cardStatus}\n\nPembeli harus mengaktifkan kartu.`,
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: card not active
         // Early return: card not active
       }
 
-      if (buyerCheck.card.userId === currentUserId) { // === berarti sama persis; jika ID pemilik kartu sama dengan ID user saat ini b...
+      if (buyerCheck.card.userId === currentUserId) { // === berarti sama persis; jika ID pemilik kartu sama dengan ID user saat ini berarti bayar ke diri sendiri — tidak diizinkan
         // === berarti sama persis; jika ID pemilik kartu sama dengan ID user saat ini berarti bayar ke diri sendiri — tidak diizinkan
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -312,7 +312,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           'Kartu pembeli tidak boleh sama dengan kartu Anda.',
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: self-payment
         // Early return: self-payment
@@ -337,7 +337,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           `Saldo Pembeli: Rp ${buyerBalance.toLocaleString('id-ID')}\nJumlah bayar: Rp ${amount.toLocaleString('id-ID')}\n\nPembeli tidak memiliki saldo yang cukup.`,
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: insufficient balance
         // Early return: insufficient balance
@@ -362,23 +362,23 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       console.log('🔍 Getting receiver card info...'); // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
       // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
       
-      let receiverCardsResponse; // let dipakai karena nilai diisi di dalam blok try; tidak bisa const karena dek...
+      let receiverCardsResponse; // let dipakai karena nilai diisi di dalam blok try; tidak bisa const karena deklarasi terpisah dari assignment
       // let dipakai karena nilai diisi di dalam blok try; tidak bisa const karena deklarasi terpisah dari assignment
-      try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh b...
+      try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
         // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
         // Ambil kartu aktif dari user yang login (penerima/penjual)
         receiverCardsResponse = await apiService.get(`/api/users/${currentUserId}/cards`); // mengambil daftar kartu penerima dari backend berdasarkan userId penjual
         // mengambil daftar kartu penerima dari backend berdasarkan userId penjual
         console.log('📥 Receiver cards response:', JSON.stringify(receiverCardsResponse)); // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
         // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
-      } catch (error: any) { // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe Typ...
+      } catch (error: any) { // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe TypeScript
         // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe TypeScript
         // ERROR: Gagal fetch receiver cards
         // Possible causes:
         // - Network error: Backend down atau no internet
         // - Authentication error: Token expired
         // - Server error (500): Database query failed
-        console.error('❌ Failed to get receiver cards:', error); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debug...
+        console.error('❌ Failed to get receiver cards:', error); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -386,7 +386,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           `Gagal mengambil data kartu Anda.\n\nDetail: ${error?.message || 'Unknown error'}\n\nPastikan Anda sudah login dan koneksi internet stabil.`,
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: network error
         // Early return: network error
@@ -398,9 +398,9 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       // - Backend bisa return response yang unexpected
       // - Network error bisa return HTML error page instead of JSON
       // - Prevent "Cannot read property of undefined" errors
-      if (!receiverCardsResponse || typeof receiverCardsResponse !== 'object') { // validasi struktur response; defensive programming mencegah akses properti dar...
+      if (!receiverCardsResponse || typeof receiverCardsResponse !== 'object') { // validasi struktur response; defensive programming mencegah akses properti dari nilai null
         // validasi struktur response; defensive programming mencegah akses properti dari nilai null
-        console.error('❌ Invalid response structure:', receiverCardsResponse); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debug...
+        console.error('❌ Invalid response structure:', receiverCardsResponse); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -408,7 +408,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           'Format response dari server tidak valid. Hubungi admin.',
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: invalid response
         // Early return: invalid response
@@ -436,7 +436,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           'Daftarkan kartu Anda terlebih dahulu di menu "Daftar Kartu" sebelum menerima pembayaran.',
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: no cards
         // Early return: no cards
@@ -448,16 +448,16 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       //
       // Policy sistem: setiap user hanya memiliki SATU kartu NFC aktif (1 user = 1 kartu)
       // find() mengambil kartu pertama yang ACTIVE — seharusnya hanya ada satu.
-      const receiverCard = receiverCardsResponse.cards.find((c: any) => c.cardStatus === 'ACTIVE'); // .find() mencari elemen pertama yang memenuhi kondisi; (c: any) adalah paramet...
+      const receiverCard = receiverCardsResponse.cards.find((c: any) => c.cardStatus === 'ACTIVE'); // .find() mencari elemen pertama yang memenuhi kondisi; (c: any) adalah parameter arrow function; c.cardStatus === 'ACTIVE' adalah kondisi pencarian
       // .find() mencari elemen pertama yang memenuhi kondisi; (c: any) adalah parameter arrow function; c.cardStatus === 'ACTIVE' adalah kondisi pencarian
       
       // Check apakah ada kartu ACTIVE
       // Jika tidak, berarti user punya cards tapi semua tidak active
       if (!receiverCard) { // jika tidak ada kartu yang berstatus ACTIVE; user punya kartu tapi semua nonaktif
         // jika tidak ada kartu yang berstatus ACTIVE; user punya kartu tapi semua nonaktif
-        const totalCards = receiverCardsResponse.cards.length; // totalCards menyimpan jumlah kartu yang ditemukan; digunakan dalam pesan error...
+        const totalCards = receiverCardsResponse.cards.length; // totalCards menyimpan jumlah kartu yang ditemukan; digunakan dalam pesan error untuk user
         // totalCards menyimpan jumlah kartu yang ditemukan; digunakan dalam pesan error untuk user
-        const cardStatuses = receiverCardsResponse.cards.map((c: any) => c.cardStatus).join(', '); // cardStatuses menggabungkan semua status kartu menjadi satu string dengan .map...
+        const cardStatuses = receiverCardsResponse.cards.map((c: any) => c.cardStatus).join(', '); // cardStatuses menggabungkan semua status kartu menjadi satu string dengan .map().join()
         // cardStatuses menggabungkan semua status kartu menjadi satu string dengan .map().join()
         console.log(`⚠️ User has ${totalCards} cards but none are ACTIVE. Statuses: ${cardStatuses}`); // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
         // console.log mencetak pesan debug ke terminal untuk melacak alur eksekusi
@@ -467,7 +467,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           `Anda memiliki ${totalCards} kartu terdaftar, tapi tidak ada yang aktif.\n\nStatus kartu: ${cardStatuses}\n\nAktifkan kartu Anda terlebih dahulu untuk menerima pembayaran.`,
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: no active card
         // Early return: no active card
@@ -509,9 +509,9 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       
       let paymentResult; // let dipakai karena nilai diisi di dalam blok try terpisah dari deklarasi
       // let dipakai karena nilai diisi di dalam blok try terpisah dari deklarasi
-      try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh b...
+      try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
         // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
-        paymentResult = await apiService.post('/api/nfc-cards/payment', { // await HTTP POST ke backend; mengirim data kartu pembeli, penerima, dan nomina...
+        paymentResult = await apiService.post('/api/nfc-cards/payment', { // await HTTP POST ke backend; mengirim data kartu pembeli, penerima, dan nominal transaksi
           // await HTTP POST ke backend; mengirim data kartu pembeli, penerima, dan nominal transaksi
           cardId: buyerCard.id, // UID kartu pembeli yang di-scan
           // UID kartu pembeli yang di-scan
@@ -534,7 +534,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
         // - Concurrent payment conflict (race condition)
         // - Server error (500)
         // - Network timeout
-        console.error('❌ Payment API error:', paymentError); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debug...
+        console.error('❌ Payment API error:', paymentError); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
@@ -542,7 +542,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           `Terjadi kesalahan saat memproses pembayaran.\n\nDetail: ${paymentError?.message || 'Unknown error'}`,
           [{ text: 'OK' }]
         );
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Early return: payment failed
         // Early return: payment failed
@@ -550,20 +550,20 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
 
       // STEP 6: Handle Payment Success & Z-Score Fraud Detection
       // Check paymentResult.success untuk determine result
-      if (paymentResult && paymentResult.success) { // if memeriksa dua kondisi: paymentResult tidak null DAN properti success berni...
+      if (paymentResult && paymentResult.success) { // if memeriksa dua kondisi: paymentResult tidak null DAN properti success bernilai true
         // if memeriksa dua kondisi: paymentResult tidak null DAN properti success bernilai true
         // STEP 6.1: Refresh balance setelah transaksi berhasil
         // Call onSuccess() callback untuk update UI
         // onSuccess biasanya fetch latest balance dari backend
         if (onSuccess) { // if memeriksa apakah callback onSuccess diberikan (tidak undefined)
           // if memeriksa apakah callback onSuccess diberikan (tidak undefined)
-          try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh b...
+          try { // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
             // try membungkus kode yang berisiko error; jika error terjadi, ditangkap oleh blok catch
-            await onSuccess(); // await memanggil callback untuk memperbarui saldo di UI setelah transaksi berh...
+            await onSuccess(); // await memanggil callback untuk memperbarui saldo di UI setelah transaksi berhasil
             // await memanggil callback untuk memperbarui saldo di UI setelah transaksi berhasil
           } catch (refreshError) { // catch menangkap error dari proses refresh saldo; tidak menghentikan alur sukses
             // catch menangkap error dari proses refresh saldo; tidak menghentikan alur sukses
-            console.error('⚠️ Balance refresh failed:', refreshError); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debug...
+            console.error('⚠️ Balance refresh failed:', refreshError); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
             // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
             // Don't block success flow if refresh fails
             // User will see updated balance on next screen refresh
@@ -575,12 +575,12 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
         // - Z > 3 (ANOMALY/BLOCK): Transaksi diblokir, tidak sampai di sini
         // - Z > 2 (SUSPICIOUS/REVIEW): Transaksi diproses, ditandai untuk review admin
         // - Z ≤ 2 (NORMAL/ALLOW): Transaksi normal, tidak ada alert
-        const riskLevel = paymentResult.transaction?.fraudRiskLevel || 'NORMAL'; // optional chaining (?.) aman jika transaction null; || 'NORMAL' fallback jika ...
+        const riskLevel = paymentResult.transaction?.fraudRiskLevel || 'NORMAL'; // optional chaining (?.) aman jika transaction null; || 'NORMAL' fallback jika tidak ada riskLevel
         // optional chaining (?.) aman jika transaction null; || 'NORMAL' fallback jika tidak ada riskLevel
-        const zScore = paymentResult.transaction?.fraudRiskScore; // mengambil nilai Z-Score dari hasil deteksi anomali; akan undefined jika tidak...
+        const zScore = paymentResult.transaction?.fraudRiskScore; // mengambil nilai Z-Score dari hasil deteksi anomali; akan undefined jika tidak ada
         // mengambil nilai Z-Score dari hasil deteksi anomali; akan undefined jika tidak ada
         
-        if (riskLevel === 'SUSPICIOUS') { // if memeriksa apakah Z-Score masuk kategori SUSPICIOUS (2 < Z <= 3); perlu rev...
+        if (riskLevel === 'SUSPICIOUS') { // if memeriksa apakah Z-Score masuk kategori SUSPICIOUS (2 < Z <= 3); perlu review admin
           // if memeriksa apakah Z-Score masuk kategori SUSPICIOUS (2 < Z <= 3); perlu review admin
           // REVIEW: Transaksi diproses tapi perlu ditinjau admin
           Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
@@ -625,17 +625,17 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
           Alert.alert('❌ Pembayaran Gagal', paymentResult.error || 'Terjadi kesalahan'); // Alert.alert() menampilkan dialog popup native kepada user
           // Alert.alert() menampilkan dialog popup native kepada user
         }
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // Payment failed
         // Payment failed
       }
 
-    } catch (error: any) { // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe Typ...
+    } catch (error: any) { // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe TypeScript
       // catch (error: any) menangkap semua error; any berarti tidak dibatasi tipe TypeScript
       // GLOBAL ERROR HANDLER
       // Catch semua unhandled errors dari try block
-      console.error('Payment error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debug...
+      console.error('Payment error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
       // console.error mencetak pesan error ke terminal dengan tanda merah untuk debugging
       
       // ERROR 1: User Cancellation
@@ -644,7 +644,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
         // optional chaining (?.) aman jika error null; === memastikan perbandingan ketat
         Alert.alert('🚫 Transfer Dibatalkan', 'Transfer telah dibatalkan.', [{ text: 'OK' }]); // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user
-        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutny...
+        setIsProcessing(false); // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         // setIsProcessing(false) melepas kunci pemrosesan sehingga pembayaran berikutnya bisa diproses
         return false; // return false mengembalikan nilai gagal ke komponen pemanggil
         // return false mengembalikan nilai gagal ke komponen pemanggil
@@ -653,7 +653,7 @@ export const usePayment = () => { // export const: ekspor hook ke komponen lain;
       // ERROR 2: Rate Limiting (429 Too Many Requests)
       // Backend rate limiter blocked request
       // User send terlalu banyak payment dalam waktu singkat
-      if (error?.message?.includes('429')) { // .includes() memeriksa apakah string mengandung substring tertentu; '429' adal...
+      if (error?.message?.includes('429')) { // .includes() memeriksa apakah string mengandung substring tertentu; '429' adalah kode HTTP Too Many Requests
         // .includes() memeriksa apakah string mengandung substring tertentu; '429' adalah kode HTTP Too Many Requests
         Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user
         // Alert.alert() menampilkan dialog popup native kepada user

@@ -26,13 +26,13 @@
 //
 // ==================================================================================
 
-import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; di...
+import AsyncStorage from '@react-native-async-storage/async-storage'; // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk menyimpan dan membaca JWT token serta userId agar sesi tidak hilang saat aplikasi ditutup
 // import AsyncStorage — penyimpanan key-value persisten di perangkat mobile; digunakan untuk menyimpan dan membaca JWT token serta userId agar sesi tidak hilang saat aplikasi ditutup
-import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk membedakan platform ('and...
+import { Platform } from 'react-native'; // import Platform dari React Native — digunakan untuk membedakan platform ('android' atau 'ios') saat mengirim informasi device ke backend
 // import Platform dari React Native — digunakan untuk membedakan platform ('android' atau 'ios') saat mengirim informasi device ke backend
-import Constants from 'expo-constants'; // import Constants dari expo-constants — menyediakan metadata aplikasi seperti ...
+import Constants from 'expo-constants'; // import Constants dari expo-constants — menyediakan metadata aplikasi seperti nama app dan versi yang dipakai saat registrasi device
 // import Constants dari expo-constants — menyediakan metadata aplikasi seperti nama app dan versi yang dipakai saat registrasi device
-import { API_URL, APP_SECRET } from './configuration'; // import dua konstanta dari file configuration.ts — API_URL adalah base URL bac...
+import { API_URL, APP_SECRET } from './configuration'; // import dua konstanta dari file configuration.ts — API_URL adalah base URL backend Ngrok; APP_SECRET adalah kunci rahasia untuk autentikasi device
 // import dua konstanta dari file configuration.ts — API_URL adalah base URL backend Ngrok; APP_SECRET adalah kunci rahasia untuk autentikasi device
 
 // ==================================================================================
@@ -51,7 +51,7 @@ import { API_URL, APP_SECRET } from './configuration'; // import dua konstanta d
 // const api = APIService.getInstance(); // Selalu return instance yang sama
 //
 // ==================================================================================
-export class APIService { // kelas utama APIService menggunakan Singleton Pattern; satu instance mengelola...
+export class APIService { // kelas utama APIService menggunakan Singleton Pattern; satu instance mengelola semua komunikasi HTTP ke backend
   // kelas utama APIService menggunakan Singleton Pattern; satu instance mengelola semua komunikasi HTTP ke backend
   // Property static untuk menyimpan satu instance tunggal (Singleton Pattern)
   // Semua file yang memanggil getInstance() akan dapat instance yang sama
@@ -82,7 +82,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - Jika SUDAH: Langsung return instance yang sudah ada
   // - Result: Semua file mendapat instance yang sama (shared state)
   // ================================================================================
-  static getInstance(): APIService { // static getInstance: metode Singleton; dipanggil untuk mendapatkan satu instan...
+  static getInstance(): APIService { // static getInstance: metode Singleton; dipanggil untuk mendapatkan satu instance bersama yang sama di seluruh aplikasi
     // static getInstance: metode Singleton; dipanggil untuk mendapatkan satu instance bersama yang sama di seluruh aplikasi
     // Cek apakah instance sudah pernah dibuat sebelumnya
     if (!APIService.instance) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
@@ -113,9 +113,9 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - true: Initialization berhasil (token loaded atau tidak ada token)
   // - false: Initialization gagal (error reading AsyncStorage)
   // ================================================================================
-  async initialize(): Promise<boolean> { // async initialize: memuat token dan userId dari AsyncStorage saat aplikasi sta...
+  async initialize(): Promise<boolean> { // async initialize: memuat token dan userId dari AsyncStorage saat aplikasi startup; Promise<boolean> karena async
     // async initialize: memuat token dan userId dari AsyncStorage saat aplikasi startup; Promise<boolean> karena async
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Load JWT token dari AsyncStorage (penyimpanan lokal device)
       // Token ini disimpan saat user login berhasil
@@ -129,7 +129,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
       // Ambil userId yang tersimpan
       
       // STEP 3: Log hasil initialization untuk debugging
-      const hasToken = this.token ? 'Yes' : 'No'; // ternary operator: jika this.token ada (bukan null) tampilkan 'Yes', jika null...
+      const hasToken = this.token ? 'Yes' : 'No'; // ternary operator: jika this.token ada (bukan null) tampilkan 'Yes', jika null tampilkan 'No'; untuk log informatif
       // ternary operator: jika this.token ada (bukan null) tampilkan 'Yes', jika null tampilkan 'No'; untuk log informatif
       console.log('🔧 API Service initialized'); // Konfirmasi init berhasil
       // Konfirmasi init berhasil
@@ -177,18 +177,18 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - Success: Response body (JSON object atau text)
   // - Error: Throw exception dengan pesan error
   // ================================================================================
-  private async makeRequest(endpoint: string, options: any = {}): Promise<any> { // makeRequest: metode inti HTTP; semua panggilan API melewati fungsi ini; menan...
+  private async makeRequest(endpoint: string, options: any = {}): Promise<any> { // makeRequest: metode inti HTTP; semua panggilan API melewati fungsi ini; menangani token, timeout, error, dan parse respons
     // makeRequest: metode inti HTTP; semua panggilan API melewati fungsi ini; menangani token, timeout, error, dan parse respons
     // STEP 1: Gabungkan base URL dengan endpoint untuk membuat URL lengkap
     // Contoh: baseUrl='https://xyz.ngrok.io' + endpoint='/api/auth/login'
     // Hasil: 'https://xyz.ngrok.io/api/auth/login'
     // Cek apakah endpoint sudah dimulai dengan '/', jika belum tambahkan
-    const sep = endpoint.startsWith('/') ? '' : '/'; // sep: separator antara baseUrl dan endpoint; jika endpoint sudah dimulai '/' t...
+    const sep = endpoint.startsWith('/') ? '' : '/'; // sep: separator antara baseUrl dan endpoint; jika endpoint sudah dimulai '/' tidak perlu tambah '/' lagi
     // sep: separator antara baseUrl dan endpoint; jika endpoint sudah dimulai '/' tidak perlu tambah '/' lagi
     const fullUrl = `${this.baseUrl}${sep}${endpoint}`; // Build URL lengkap
     // Build URL lengkap
     
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 2: Setup timeout dengan AbortController agar request tidak hang selamanya
       // AbortController = Web API untuk membatalkan fetch request yang sedang berjalan
@@ -201,7 +201,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
       // Auto-cancel setelah 15 detik
       
       // STEP 3: Build konfigurasi untuk HTTP request
-      const headers: any = { // headers: objek berisi semua HTTP header yang akan dikirim; termasuk Content-T...
+      const headers: any = { // headers: objek berisi semua HTTP header yang akan dikirim; termasuk Content-Type, Authorization, dan custom headers
         // headers: objek berisi semua HTTP header yang akan dikirim; termasuk Content-Type, Authorization, dan custom headers
         'Content-Type': 'application/json', // Kirim data dalam format JSON
         // Kirim data dalam format JSON
@@ -225,14 +225,14 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
       // Custom header userId
 
       // Merge dengan custom headers jika ada
-      if (options.headers) Object.assign(headers, options.headers); // Object.assign: menggabungkan custom headers dari parameter dengan headers def...
+      if (options.headers) Object.assign(headers, options.headers); // Object.assign: menggabungkan custom headers dari parameter dengan headers default; opsi headers dari caller diutamakan
       // Object.assign: menggabungkan custom headers dari parameter dengan headers default; opsi headers dari caller diutamakan
 
-      const requestConfig: any = { // requestConfig: konfigurasi lengkap untuk fetch(); berisi method, headers, bod...
+      const requestConfig: any = { // requestConfig: konfigurasi lengkap untuk fetch(); berisi method, headers, body, dan AbortController signal
         // requestConfig: konfigurasi lengkap untuk fetch(); berisi method, headers, body, dan AbortController signal
         method: options.method || 'GET', // Method HTTP: GET, POST, PUT, DELETE (default: GET)
         // Method HTTP: GET, POST, PUT, DELETE (default: GET)
-        headers, // headers: shorthand property ES6; setara headers: headers; menyertakan objek h...
+        headers, // headers: shorthand property ES6; setara headers: headers; menyertakan objek headers ke dalam requestConfig
         // headers: shorthand property ES6; setara headers: headers; menyertakan objek headers ke dalam requestConfig
         // Jika ada body data (untuk POST/PUT), convert object JavaScript ke JSON string
         body: options.body ? JSON.stringify(options.body) : undefined, // Serialize body
@@ -271,7 +271,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
         
         // SUBSTEP 8b: Jika error authentication (401/403), logout user otomatis
         // 401 = Token invalid/expired, 403 = Token valid tapi no permission
-        if (response.status === 401 || response.status === 403) { // memeriksa status 401 (Unauthorized) atau 403 (Forbidden); keduanya menandakan...
+        if (response.status === 401 || response.status === 403) { // memeriksa status 401 (Unauthorized) atau 403 (Forbidden); keduanya menandakan token bermasalah; auto-logout dipicu
           // memeriksa status 401 (Unauthorized) atau 403 (Forbidden); keduanya menandakan token bermasalah; auto-logout dipicu
           console.warn('🚪 Authentication error, logging out...'); // Log peringatan
           // Log peringatan
@@ -280,13 +280,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
         }
         
         // SUBSTEP 8c: Parse error text sebagai JSON jika memungkinkan
-        let errorData: any; // let errorData: variabel untuk menyimpan data error dari respons; let karena n...
+        let errorData: any; // let errorData: variabel untuk menyimpan data error dari respons; let karena nilainya akan diubah oleh try/catch
         // let errorData: variabel untuk menyimpan data error dari respons; let karena nilainya akan diubah oleh try/catch
-        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+        try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
           errorData = JSON.parse(errorText); // Coba parse JSON
           // Coba parse JSON
-        } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek error...
+        } catch { // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
           // catch tanpa binding: menangkap error yang terjadi tanpa menyimpan objek errornya; digunakan saat detail error tidak diperlukan
           errorData = { error: errorText }; // Jika bukan JSON, wrap dalam object
           // Jika bukan JSON, wrap dalam object
@@ -294,15 +294,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
         
         // SUBSTEP 8d: Log error (kecuali 404 untuk card info check - itu expected)
         // 404 pada /api/nfc-cards/info adalah normal behavior untuk kartu yang belum terdaftar
-        const isCardCheck = endpoint.includes('/api/nfc-cards/info'); // isCardCheck: flag untuk deteksi apakah ini request cek kartu; 404 pada endpoi...
+        const isCardCheck = endpoint.includes('/api/nfc-cards/info'); // isCardCheck: flag untuk deteksi apakah ini request cek kartu; 404 pada endpoint ini adalah behavior normal (kartu belum terdaftar)
         // isCardCheck: flag untuk deteksi apakah ini request cek kartu; 404 pada endpoint ini adalah behavior normal (kartu belum terdaftar)
-        const is404 = response.status === 404; // is404: flag boolean untuk memeriksa apakah error adalah 404 Not Found; dipaka...
+        const is404 = response.status === 404; // is404: flag boolean untuk memeriksa apakah error adalah 404 Not Found; dipakai untuk suppress log error yang tidak diperlukan
         // is404: flag boolean untuk memeriksa apakah error adalah 404 Not Found; dipakai untuk suppress log error yang tidak diperlukan
         
         if (!(isCardCheck && is404)) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
           // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
           // Log sebagai error untuk kasus lain
-          console.error(`❌ API Request failed: API Error ${response.status}: ${JSON.stringify(errorData)}`); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+          console.error(`❌ API Request failed: API Error ${response.status}: ${JSON.stringify(errorData)}`); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
           // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
         } // Untuk card check 404, tidak perlu log error karena itu expected behavior
         // Untuk card check 404, tidak perlu log error karena itu expected behavior
@@ -317,7 +317,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
       // Ambil MIME type
       
       // SUBSTEP 9a: Jika respons adalah JSON, parse sebagai object JavaScript
-      if (contentType.includes('application/json')) { // memeriksa Content-Type header apakah JSON; hanya parse sebagai JSON jika back...
+      if (contentType.includes('application/json')) { // memeriksa Content-Type header apakah JSON; hanya parse sebagai JSON jika backend mengirim 'application/json'
         // memeriksa Content-Type header apakah JSON; hanya parse sebagai JSON jika backend mengirim 'application/json'
         const result = await response.json(); // Parse JSON string → JavaScript object
         // Parse JSON string → JavaScript object
@@ -325,13 +325,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
         // SUBSTEP 9b: Check apakah response mengandung token baru
         // Backend bisa kirim token baru saat login atau refresh token
         // Jika ada token, save ke memory dan AsyncStorage
-        if (result?.token) { // optional chaining ?.token: cek apakah respons berisi token baru; dipakai untu...
+        if (result?.token) { // optional chaining ?.token: cek apakah respons berisi token baru; dipakai untuk auto-save token setelah login atau refresh
           // optional chaining ?.token: cek apakah respons berisi token baru; dipakai untuk auto-save token setelah login atau refresh
           this.token = result.token; // Save ke memory (untuk request berikutnya)
           // Save ke memory (untuk request berikutnya)
           await AsyncStorage.setItem('token', result.token); // Save ke storage (persistent)
           // Save ke storage (persistent)
-          console.log('🔑 New token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+          console.log('🔑 New token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
           // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         }
         
@@ -340,19 +340,23 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
       }
 
       // SUBSTEP 9c: Jika bukan JSON, return sebagai plain text
-      return await response.text(); // response.text(): parse respons sebagai plain text; digunakan saat Content-Typ...
+      return await response.text(); // response.text(): parse respons sebagai plain text; digunakan saat Content-Type bukan JSON
       // response.text(): parse respons sebagai plain text; digunakan saat Content-Type bukan JSON
       
-    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi t...
+    } catch (error: any) { // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       // catch (error: any): menangkap semua jenis error; any berarti tidak dibatasi tipe TypeScript
       // STEP 10: Handle semua errors (network error, timeout, dll)
       // error.name === 'AbortError': Request timeout (lebih dari 15 detik)
       // error.message: Error message lainnya (network down, DNS error, dll)
-      console.error('❌ API Request failed:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
-      // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+      // HTTP errors (4xx/5xx) sudah di-log di STEP 8d — jangan log ulang di sini
+      const isHttpError = error.message?.startsWith('API Error ');
+      const isExpectedCardCheck404 = isHttpError && endpoint.includes('nfc-cards/info') && error.message?.includes('404');
+      if (!isHttpError && !isExpectedCardCheck404) {
+        console.error('❌ API Request failed:', error.message); // Hanya log untuk network/timeout errors
+      }
       
       // Re-throw error agar caller bisa handle (misal tampilkan error ke user)
-      throw error; // throw error: melempar ulang error yang sama ke pemanggil (caller) agar error ...
+      throw error; // throw error: melempar ulang error yang sama ke pemanggil (caller) agar error bisa ditangani di level atas
       // throw error: melempar ulang error yang sama ke pemanggil (caller) agar error bisa ditangani di level atas
     }
   }
@@ -381,7 +385,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // POST Request: Untuk membuat data baru di backend (create operation)
   // HTTP POST = NOT idempotent (multiple calls buat multiple records)
   // Contoh: await api.post('/api/auth/login', { username, password }) → login
-  async post(endpoint: string, body?: any) { // async post: wrapper untuk HTTP POST request; body adalah data yang dikirim ke...
+  async post(endpoint: string, body?: any) { // async post: wrapper untuk HTTP POST request; body adalah data yang dikirim ke server
     // async post: wrapper untuk HTTP POST request; body adalah data yang dikirim ke server
     return await this.makeRequest(endpoint, { method: 'POST', body }); // Kirim body sebagai JSON
     // Kirim body sebagai JSON
@@ -390,7 +394,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // PUT Request: Untuk update data yang sudah ada (update operation)
   // HTTP PUT = idempotent (multiple calls dengan data sama = hasil sama)
   // Contoh: await api.put('/api/users/123', { name: 'New Name' }) → update user
-  async put(endpoint: string, body?: any) { // async put: wrapper untuk HTTP PUT request; digunakan untuk update data yang s...
+  async put(endpoint: string, body?: any) { // async put: wrapper untuk HTTP PUT request; digunakan untuk update data yang sudah ada
     // async put: wrapper untuk HTTP PUT request; digunakan untuk update data yang sudah ada
     return await this.makeRequest(endpoint, { method: 'PUT', body }); // Kirim body untuk update
     // Kirim body untuk update
@@ -399,7 +403,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // DELETE Request: Untuk hapus data (delete operation)
   // HTTP DELETE = idempotent (hapus 2x = hasil sama dengan hapus 1x)
   // Contoh: await api.delete('/api/users/123') → hapus user ID 123
-  async delete(endpoint: string) { // async delete: wrapper untuk HTTP DELETE request; digunakan untuk menghapus da...
+  async delete(endpoint: string) { // async delete: wrapper untuk HTTP DELETE request; digunakan untuk menghapus data di server
     // async delete: wrapper untuk HTTP DELETE request; digunakan untuk menghapus data di server
     return await this.makeRequest(endpoint, { method: 'DELETE' }); // No body needed
     // No body needed
@@ -441,13 +445,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - Success: { token: string, user: { id, name, username, balance } }
   // - Error: Throw exception dengan error message dari backend
   // ================================================================================
-  async login(credentials: { username: string; password: string }) { // async login: mengirim credentials ke backend; mendapatkan JWT token; menyimpa...
+  async login(credentials: { username: string; password: string }) { // async login: mengirim credentials ke backend; mendapatkan JWT token; menyimpan token ke AsyncStorage
     // async login: mengirim credentials ke backend; mendapatkan JWT token; menyimpan token ke AsyncStorage
     // STEP 1: Send POST request ke backend auth endpoint
     // makeRequest() akan handle semua HTTP logic (headers, timeout, dll)
-    const response = await this.makeRequest('/api/auth/login', { // const response: menyimpan response dari HTTP request; await menunggu response...
+    const response = await this.makeRequest('/api/auth/login', { // const response: menyimpan response dari HTTP request; await menunggu response diterima
       // const response: menyimpan response dari HTTP request; await menunggu response diterima
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       body: credentials, // { username: "john", password: "secret123" }
       // { username: "john", password: "secret123" }
@@ -455,34 +459,34 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     
     // STEP 2: Check apakah response mengandung token
     // Backend response format: { success: true, token: "eyJhbGc...", user: {...} }
-    if (response?.token) { // optional chaining ?.token: memeriksa apakah respons berisi JWT token; hanya s...
+    if (response?.token) { // optional chaining ?.token: memeriksa apakah respons berisi JWT token; hanya simpan jika token ada
       // optional chaining ?.token: memeriksa apakah respons berisi JWT token; hanya simpan jika token ada
       // SUBSTEP 2a: Save token ke memory (untuk dipakai di request berikutnya)
-      this.token = response.token; // menyimpan token JWT baru ke property instance; token ini dipakai di header Au...
+      this.token = response.token; // menyimpan token JWT baru ke property instance; token ini dipakai di header Authorization request berikutnya
       // menyimpan token JWT baru ke property instance; token ini dipakai di header Authorization request berikutnya
       
       // SUBSTEP 2b: Save userId ke memory
       // userId.toString() convert number → string (AsyncStorage hanya terima string)
-      this.userId = response.user.id.toString(); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari ni...
+      this.userId = response.user.id.toString(); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
       
       // SUBSTEP 2c: Save token ke AsyncStorage (persistent storage)
       // Persistent = data tidak hilang saat app ditutup
       // Saat app dibuka lagi, token di-load dari storage (lihat initialize())
-      await AsyncStorage.setItem('token', response.token); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara a...
+      await AsyncStorage.setItem('token', response.token); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
       // SUBSTEP 2d: Save userId ke AsyncStorage
-      await AsyncStorage.setItem('userId', response.user.id.toString()); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara a...
+      await AsyncStorage.setItem('userId', response.user.id.toString()); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
       
-      console.log('✅ Login successful, token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('✅ Login successful, token saved'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     }
     
     // STEP 3: Return full response object
     // Caller bisa akses response.user untuk informasi user (name, balance, dll)
-    return response; // mengembalikan data respons ke pemanggil (caller); caller bisa mengambil prope...
+    return response; // mengembalikan data respons ke pemanggil (caller); caller bisa mengambil properti yang diperlukan dari response
     // mengembalikan data respons ke pemanggil (caller); caller bisa mengambil properti yang diperlukan dari response
   }
 
@@ -506,13 +510,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - Success: { success: true, user: { id, name, username, balance } }
   // - Error: Throw exception (contoh: "Username already exists")
   // ================================================================================
-  async register(userData: { name: string; username: string; password: string }) { // async register: mengirim data registrasi ke endpoint /api/auth/register untuk...
+  async register(userData: { name: string; username: string; password: string }) { // async register: mengirim data registrasi ke endpoint /api/auth/register untuk membuat akun baru
     // async register: mengirim data registrasi ke endpoint /api/auth/register untuk membuat akun baru
     // STEP 1: Send POST request ke backend register endpoint
     // Backend akan validate dan save user ke database
-    return await this.makeRequest('/api/auth/register', { // memanggil makeRequest dengan endpoint /api/auth/register; POST untuk membuat ...
+    return await this.makeRequest('/api/auth/register', { // memanggil makeRequest dengan endpoint /api/auth/register; POST untuk membuat akun baru di database
       // memanggil makeRequest dengan endpoint /api/auth/register; POST untuk membuat akun baru di database
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       body: userData, // { name: "John Doe", username: "john", password: "secret123" }
       // { name: "John Doe", username: "john", password: "secret123" }
@@ -536,11 +540,11 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //
   // RETURN: void (tidak return apa-apa)
   // ================================================================================
-  async logout() { // async logout: membersihkan token dan userId dari memory dan AsyncStorage; mem...
+  async logout() { // async logout: membersihkan token dan userId dari memory dan AsyncStorage; memaksa user login ulang
     // async logout: membersihkan token dan userId dari memory dan AsyncStorage; memaksa user login ulang
     // STEP 1: Clear token dan userId dari memory
     // Setting ke null agar makeRequest() tidak include Authorization header
-    this.token = null; // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP...
+    this.token = null; // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP berikutnya
     // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP berikutnya
     this.userId = null; // mengeset userId ke null di memory; user tidak lagi dikenali oleh service ini
     // mengeset userId ke null di memory; user tidak lagi dikenali oleh service ini
@@ -548,10 +552,10 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // STEP 2: Clear token dan userId dari AsyncStorage (persistent storage)
     // multiRemove() adalah efficient way untuk delete multiple keys sekaligus
     // Alternative: await AsyncStorage.removeItem('token'); await AsyncStorage.removeItem('userId');
-    await AsyncStorage.multiRemove(['token', 'userId']); // multiRemove: menghapus beberapa item AsyncStorage sekaligus; lebih efisien da...
+    await AsyncStorage.multiRemove(['token', 'userId']); // multiRemove: menghapus beberapa item AsyncStorage sekaligus; lebih efisien daripada dua kali removeItem
     // multiRemove: menghapus beberapa item AsyncStorage sekaligus; lebih efisien daripada dua kali removeItem
     
-    console.log('🚪 User logged out, session cleared'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('🚪 User logged out, session cleared'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   }
 
@@ -586,16 +590,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { id, name, username, balance, createdAt }
   // ================================================================================
-  async getUserById(id: number) { // async getUserById: mengambil data user berdasarkan ID; dipanggil saat perlu d...
+  async getUserById(id: number) { // async getUserById: mengambil data user berdasarkan ID; dipanggil saat perlu detail profil user tertentu
     // async getUserById: mengambil data user berdasarkan ID; dipanggil saat perlu detail profil user tertentu
     // Endpoint: GET /api/users/{id}
     // Backend response format: { id, name, username, balance, ... } (raw user object)
-    const response = await this.makeRequest(`/api/users/${id}`); // const response: menyimpan response dari HTTP request; await menunggu response...
+    const response = await this.makeRequest(`/api/users/${id}`); // const response: menyimpan response dari HTTP request; await menunggu response diterima
     // const response: menyimpan response dari HTTP request; await menunggu response diterima
     
     // Backend GET /:id returns raw user object (not wrapped in { user: {...} })
     // Fallback ke response.user jika format berbeda
-    return response?.user || response; // optional chaining ?.user: mengambil properti user dari respons; || response s...
+    return response?.user || response; // optional chaining ?.user: mengambil properti user dari respons; || response sebagai fallback jika respons langsung berupa objek user
     // optional chaining ?.user: mengambil properti user dari respons; || response sebagai fallback jika respons langsung berupa objek user
   }
 
@@ -614,20 +618,20 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { id, name, username, balance, createdAt }
   // ================================================================================
-  async getCurrentUser() { // async getCurrentUser: mengambil profil user yang sedang login menggunakan tok...
+  async getCurrentUser() { // async getCurrentUser: mengambil profil user yang sedang login menggunakan token yang tersimpan
     // async getCurrentUser: mengambil profil user yang sedang login menggunakan token yang tersimpan
     // STEP 1: Call authenticated endpoint
     // Endpoint: GET /api/users/me
     // Token akan auto di-include di header (lihat makeRequest())
     // Backend akan decode token → extract userId → query database
-    const response = await this.makeRequest('/api/users/me'); // const response: menyimpan response dari HTTP request; await menunggu response...
+    const response = await this.makeRequest('/api/users/me'); // const response: menyimpan response dari HTTP request; await menunggu response diterima
     // const response: menyimpan response dari HTTP request; await menunggu response diterima
     
     // STEP 2: Extract user object
     // Backend response format: { success: true, user: {...} }
-    console.log('📥 getCurrentUser raw response:', response); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('📥 getCurrentUser raw response:', response); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    return response?.user || response; // optional chaining ?.user: mengambil properti user dari respons; || response s...
+    return response?.user || response; // optional chaining ?.user: mengambil properti user dari respons; || response sebagai fallback jika respons langsung berupa objek user
     // optional chaining ?.user: mengambil properti user dari respons; || response sebagai fallback jika respons langsung berupa objek user
   }
 
@@ -649,16 +653,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, user: {...} } jika berhasil
   // ================================================================================
-  async updateUserBalance(userId: number, newBalance: number) { // async updateUserBalance: mengupdate saldo user di backend; dipanggil setelah ...
+  async updateUserBalance(userId: number, newBalance: number) { // async updateUserBalance: mengupdate saldo user di backend; dipanggil setelah transaksi berhasil
     // async updateUserBalance: mengupdate saldo user di backend; dipanggil setelah transaksi berhasil
     // STEP 1: Send PUT request ke balance endpoint
     // Endpoint: PUT /api/users/{userId}/balance
     // Body: { balance: 100000 } ← Balance baru (bukan increment!)
-    return await this.makeRequest(`/api/users/${userId}/balance`, { // memanggil makeRequest ke endpoint balance dengan userId dinamis via template ...
+    return await this.makeRequest(`/api/users/${userId}/balance`, { // memanggil makeRequest ke endpoint balance dengan userId dinamis via template literal
       // memanggil makeRequest ke endpoint balance dengan userId dinamis via template literal
-      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untu...
+      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
       // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
-      body: { balance: newBalance }, // body: mengirim saldo baru sebagai JSON {balance: X} ke backend; backend akan ...
+      body: { balance: newBalance }, // body: mengirim saldo baru sebagai JSON {balance: X} ke backend; backend akan update field balance di database
       // body: mengirim saldo baru sebagai JSON {balance: X} ke backend; backend akan update field balance di database
     });
   }
@@ -696,12 +700,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - Array of transactions: [{ id, senderId, receiverId, amount, createdAt }, ...]
   // ================================================================================
-  async getUserTransactions(userId: number) { // async getUserTransactions: mengambil riwayat transaksi user dari backend untu...
+  async getUserTransactions(userId: number) { // async getUserTransactions: mengambil riwayat transaksi user dari backend untuk ditampilkan di dashboard
     // async getUserTransactions: mengambil riwayat transaksi user dari backend untuk ditampilkan di dashboard
     // STEP 1: Call transaction history endpoint
     // Endpoint: GET /api/transactions/user/{userId}
     // Backend akan query semua transaksi where senderId = userId OR receiverId = userId
-    return await this.makeRequest(`/api/transactions/user/${userId}`); // GET request ke endpoint transactions/user/:userId; mengambil semua transaksi ...
+    return await this.makeRequest(`/api/transactions/user/${userId}`); // GET request ke endpoint transactions/user/:userId; mengambil semua transaksi milik user dengan ID tersebut
     // GET request ke endpoint transactions/user/:userId; mengambil semua transaksi milik user dengan ID tersebut
   }
 
@@ -718,12 +722,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - Array of transactions dengan detail sender/receiver
   // ================================================================================
-  async getTransactionHistory() { // async getTransactionHistory: mengambil riwayat transaksi semua user; biasanya...
+  async getTransactionHistory() { // async getTransactionHistory: mengambil riwayat transaksi semua user; biasanya digunakan untuk laporan admin
     // async getTransactionHistory: mengambil riwayat transaksi semua user; biasanya digunakan untuk laporan admin
     // STEP 1: Call authenticated transaction history endpoint
     // Endpoint: GET /api/transactions/history
     // Token di-decode di backend → extract userId → query transactions
-    return await this.makeRequest('/api/transactions/history'); // GET request ke endpoint transactions/history; mengambil histori transaksi glo...
+    return await this.makeRequest('/api/transactions/history'); // GET request ke endpoint transactions/history; mengambil histori transaksi global dari backend
     // GET request ke endpoint transactions/history; mengambil histori transaksi global dari backend
   }
 
@@ -757,7 +761,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - { success: true, transaction: {...} } jika berhasil
   // - Throw error jika gagal (insufficient balance, fraud detected, dll)
   // ================================================================================
-  async createTransaction(transactionData: { // async createTransaction: membuat transaksi baru di database; dipanggil setela...
+  async createTransaction(transactionData: { // async createTransaction: membuat transaksi baru di database; dipanggil setelah pembayaran NFC berhasil diproses
     // async createTransaction: membuat transaksi baru di database; dipanggil setelah pembayaran NFC berhasil diproses
     senderId: number; // senderId: ID user pengirim uang; digunakan backend untuk debit saldo pengirim
     // senderId: ID user pengirim uang; digunakan backend untuk debit saldo pengirim
@@ -765,9 +769,9 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // receiverId: ID user penerima uang; digunakan backend untuk credit saldo penerima
     amount: number; // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
     // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
-    description?: string; // description: keterangan opsional untuk transaksi; tanda ? berarti properti in...
+    description?: string; // description: keterangan opsional untuk transaksi; tanda ? berarti properti ini boleh tidak ada
     // description: keterangan opsional untuk transaksi; tanda ? berarti properti ini boleh tidak ada
-    location?: any; // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem...
+    location?: any; // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem fraud detection
     // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem fraud detection
   }) { // STEP 1: Send POST request ke transaction endpoint
     // STEP 1: Send POST request ke transaction endpoint
@@ -775,9 +779,9 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // Backend akan process transaction dengan atomic database operation
     return await this.makeRequest('/api/transactions', { // POST ke /api/transactions untuk membuat record transaksi baru di database
       // POST ke /api/transactions untuk membuat record transaksi baru di database
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: transactionData, // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan ...
+      body: transactionData, // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan validasi dan simpan ke database
       // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan validasi dan simpan ke database
     });
   }
@@ -829,24 +833,24 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - { success: true, transaction: {...} } jika berhasil
   // - Throw error jika fraud detected atau validation failed
   // ================================================================================
-  async processNFCPayment(paymentData: { // async processNFCPayment: memproses pembayaran NFC end-to-end; mengirim data N...
+  async processNFCPayment(paymentData: { // async processNFCPayment: memproses pembayaran NFC end-to-end; mengirim data NFC ke backend untuk validasi dan transfer saldo
     // async processNFCPayment: memproses pembayaran NFC end-to-end; mengirim data NFC ke backend untuk validasi dan transfer saldo
-    receiverNFCData: any; // receiverNFCData: data NFC tag yang dibaca dari kartu penerima; berisi UID dan...
+    receiverNFCData: any; // receiverNFCData: data NFC tag yang dibaca dari kartu penerima; berisi UID dan informasi kartu
     // receiverNFCData: data NFC tag yang dibaca dari kartu penerima; berisi UID dan informasi kartu
     amount: number; // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
     // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
-    description?: string; // description: keterangan opsional untuk transaksi; tanda ? berarti properti in...
+    description?: string; // description: keterangan opsional untuk transaksi; tanda ? berarti properti ini boleh tidak ada
     // description: keterangan opsional untuk transaksi; tanda ? berarti properti ini boleh tidak ada
-    location?: { latitude: number; longitude: number }; // location: koordinat GPS opsional untuk geolocation fraud detection; null jika...
+    location?: { latitude: number; longitude: number }; // location: koordinat GPS opsional untuk geolocation fraud detection; null jika permission tidak diberikan
     // location: koordinat GPS opsional untuk geolocation fraud detection; null jika permission tidak diberikan
   }) { // STEP 1: Send POST request ke NFC payment endpoint
     // STEP 1: Send POST request ke NFC payment endpoint
     // Endpoint: POST /api/nfc-cards/payment (backend aktif di route ini)
-    return await this.makeRequest('/api/nfc-cards/payment', { // POST ke /api/nfc-cards/payment untuk proses transfer saldo antar kartu NFC le...
+    return await this.makeRequest('/api/nfc-cards/payment', { // POST ke /api/nfc-cards/payment untuk proses transfer saldo antar kartu NFC lewat backend
       // POST ke /api/nfc-cards/payment untuk proses transfer saldo antar kartu NFC lewat backend
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: paymentData, // body: mengirim semua data pembayaran sebagai JSON; backend akan debit pengiri...
+      body: paymentData, // body: mengirim semua data pembayaran sebagai JSON; backend akan debit pengirim dan credit penerima
       // body: mengirim semua data pembayaran sebagai JSON; backend akan debit pengirim dan credit penerima
     });
   }
@@ -869,15 +873,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - { valid: boolean, user: {...} } jika NFC valid
   // - Throw error jika NFC invalid atau user blocked
   // ================================================================================
-  async validateNFCReceiver(nfcData: any) { // async validateNFCReceiver: memvalidasi kartu NFC penerima sebelum pembayaran;...
+  async validateNFCReceiver(nfcData: any) { // async validateNFCReceiver: memvalidasi kartu NFC penerima sebelum pembayaran; mengecek kartu terdaftar dan aktif
     // async validateNFCReceiver: memvalidasi kartu NFC penerima sebelum pembayaran; mengecek kartu terdaftar dan aktif
     // STEP 1: Send POST request ke NFC tap endpoint untuk validasi kartu penerima
     // Endpoint: POST /api/nfc-cards/tap (backend aktif di route ini)
-    return await this.makeRequest('/api/nfc-cards/tap', { // POST ke /api/nfc-cards/tap untuk validasi tap kartu NFC; backend mengembalika...
+    return await this.makeRequest('/api/nfc-cards/tap', { // POST ke /api/nfc-cards/tap untuk validasi tap kartu NFC; backend mengembalikan info pemilik kartu
       // POST ke /api/nfc-cards/tap untuk validasi tap kartu NFC; backend mengembalikan info pemilik kartu
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: { nfcData }, // body: mengirim data NFC sebagai { nfcData: {...} }; shorthand property ES6 se...
+      body: { nfcData }, // body: mengirim data NFC sebagai { nfcData: {...} }; shorthand property ES6 setara { nfcData: nfcData }
       // body: mengirim data NFC sebagai { nfcData: {...} }; shorthand property ES6 setara { nfcData: nfcData }
     });
   }
@@ -924,12 +928,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     ]
   //   }
   // ================================================================================
-  async getUserCards(userId: number) { // async getUserCards: mengambil daftar kartu NFC yang dimiliki user; digunakan ...
+  async getUserCards(userId: number) { // async getUserCards: mengambil daftar kartu NFC yang dimiliki user; digunakan di halaman MyCardsScreen
     // async getUserCards: mengambil daftar kartu NFC yang dimiliki user; digunakan di halaman MyCardsScreen
     // STEP 1: Call user cards endpoint
     // Endpoint: GET /api/users/{userId}/cards
     // Backend akan query semua NFC cards where userId = userId
-    return await this.makeRequest(`/api/users/${userId}/cards`); // GET ke endpoint users/:userId/cards untuk mengambil semua kartu NFC milik use...
+    return await this.makeRequest(`/api/users/${userId}/cards`); // GET ke endpoint users/:userId/cards untuk mengambil semua kartu NFC milik user tersebut
     // GET ke endpoint users/:userId/cards untuk mengambil semua kartu NFC milik user tersebut
   }
 
@@ -951,23 +955,23 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, message: "Card status updated", card: {...} }
   // ================================================================================
-  async updateCardStatus(cardId: string, status: string) { // async updateCardStatus: mengubah status kartu NFC (ACTIVE/BLOCKED/LOST); dipa...
+  async updateCardStatus(cardId: string, status: string) { // async updateCardStatus: mengubah status kartu NFC (ACTIVE/BLOCKED/LOST); dipanggil dari halaman manajemen kartu
     // async updateCardStatus: mengubah status kartu NFC (ACTIVE/BLOCKED/LOST); dipanggil dari halaman manajemen kartu
     // Gunakan endpoint user (/my-status) — tidak perlu admin password, cukup JWT token
-    return await this.makeRequest('/api/nfc-cards/my-status', { // PUT ke endpoint my-status yang dilindungi JWT; user hanya bisa update kartu m...
+    return await this.makeRequest('/api/nfc-cards/my-status', { // PUT ke endpoint my-status yang dilindungi JWT; user hanya bisa update kartu miliknya sendiri
       // PUT ke endpoint my-status yang dilindungi JWT; user hanya bisa update kartu miliknya sendiri
-      method: 'PUT', // method 'PUT': HTTP method untuk mengubah data yang sudah ada; setara UPDATE d...
+      method: 'PUT', // method 'PUT': HTTP method untuk mengubah data yang sudah ada; setara UPDATE di database
       // method 'PUT': HTTP method untuk mengubah data yang sudah ada; setara UPDATE di database
-      body: { cardId, status }, // body: mengirim cardId dan status baru sebagai JSON; shorthand ES6 setara { ca...
+      body: { cardId, status }, // body: mengirim cardId dan status baru sebagai JSON; shorthand ES6 setara { cardId: cardId, status: status }
       // body: mengirim cardId dan status baru sebagai JSON; shorthand ES6 setara { cardId: cardId, status: status }
     });
   }
 
-  async deleteCard(cardId: string) { // async deleteCard: menghapus kartu NFC milik user sendiri; dipanggil dari MyCa...
+  async deleteCard(cardId: string) { // async deleteCard: menghapus kartu NFC milik user sendiri; dipanggil dari MyCardsScreen saat user ingin ganti kartu
     // async deleteCard: menghapus kartu NFC milik user sendiri; dipanggil dari MyCardsScreen saat user ingin ganti kartu
-    return await this.makeRequest(`/api/nfc-cards/my-card/${cardId}`, { // DELETE ke endpoint my-card/:cardId; backend akan hapus kartu berdasarkan UID ...
+    return await this.makeRequest(`/api/nfc-cards/my-card/${cardId}`, { // DELETE ke endpoint my-card/:cardId; backend akan hapus kartu berdasarkan UID yang diberikan
       // DELETE ke endpoint my-card/:cardId; backend akan hapus kartu berdasarkan UID yang diberikan
-      method: 'DELETE', // method 'DELETE': HTTP method untuk menghapus resource; backend akan hapus rec...
+      method: 'DELETE', // method 'DELETE': HTTP method untuk menghapus resource; backend akan hapus record kartu dari database
       // method 'DELETE': HTTP method untuk menghapus resource; backend akan hapus record kartu dari database
     });
   }
@@ -996,12 +1000,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     user: { name, username }
   //   }
   // ================================================================================
-  async getCardInfo(cardId: string) { // async getCardInfo: mengambil informasi kartu NFC berdasarkan UID; digunakan u...
+  async getCardInfo(cardId: string) { // async getCardInfo: mengambil informasi kartu NFC berdasarkan UID; digunakan untuk validasi sebelum registrasi
     // async getCardInfo: mengambil informasi kartu NFC berdasarkan UID; digunakan untuk validasi sebelum registrasi
     // STEP 1: Call card info endpoint
     // Endpoint: GET /api/nfc-cards/info/{cardId}
     // Backend akan return card details dengan user info
-    return await this.makeRequest(`/api/nfc-cards/info/${cardId}`); // GET ke endpoint nfc-cards/info/:cardId untuk cek apakah kartu sudah terdaftar...
+    return await this.makeRequest(`/api/nfc-cards/info/${cardId}`); // GET ke endpoint nfc-cards/info/:cardId untuk cek apakah kartu sudah terdaftar dan info pemiliknya
     // GET ke endpoint nfc-cards/info/:cardId untuk cek apakah kartu sudah terdaftar dan info pemiliknya
   }
 
@@ -1031,15 +1035,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     card: { id, cardId, userId, balance, cardStatus }
   //   }
   // ================================================================================
-  async registerCard(cardData: { // async registerCard: mendaftarkan kartu NFC baru ke akun user; mengirim UID da...
+  async registerCard(cardData: { // async registerCard: mendaftarkan kartu NFC baru ke akun user; mengirim UID dan info kartu ke backend
     // async registerCard: mendaftarkan kartu NFC baru ke akun user; mengirim UID dan info kartu ke backend
-    cardId: string; // cardId: UID unik kartu NFC yang dibaca oleh NfcManager; identifier hardware k...
+    cardId: string; // cardId: UID unik kartu NFC yang dibaca oleh NfcManager; identifier hardware kartu
     // cardId: UID unik kartu NFC yang dibaca oleh NfcManager; identifier hardware kartu
-    userId: number; // userId: ID user yang mendaftarkan kartu; backend akan menghubungkan kartu ke ...
+    userId: number; // userId: ID user yang mendaftarkan kartu; backend akan menghubungkan kartu ke akun user ini
     // userId: ID user yang mendaftarkan kartu; backend akan menghubungkan kartu ke akun user ini
     balance?: number; // balance: saldo awal kartu NFC; opsional (tanda ?); default biasanya 0 di backend
     // balance: saldo awal kartu NFC; opsional (tanda ?); default biasanya 0 di backend
-    deviceId?: string; // deviceId: ID perangkat yang mendaftarkan kartu; opsional; untuk audit trail k...
+    deviceId?: string; // deviceId: ID perangkat yang mendaftarkan kartu; opsional; untuk audit trail keamanan
     // deviceId: ID perangkat yang mendaftarkan kartu; opsional; untuk audit trail keamanan
   }) { // STEP 1: Send POST request ke register endpoint
     // STEP 1: Send POST request ke register endpoint
@@ -1047,9 +1051,9 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // Backend akan create new card record di database
     return await this.makeRequest('/api/nfc-cards/register', { // POST ke /api/nfc-cards/register untuk menyimpan kartu NFC baru ke database
       // POST ke /api/nfc-cards/register untuk menyimpan kartu NFC baru ke database
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: cardData, // body: mengirim seluruh objek cardData sebagai JSON body ke endpoint registras...
+      body: cardData, // body: mengirim seluruh objek cardData sebagai JSON body ke endpoint registrasi kartu
       // body: mengirim seluruh objek cardData sebagai JSON body ke endpoint registrasi kartu
     });
   }
@@ -1095,7 +1099,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     reasons: string[]
   //   }
   // ================================================================================
-  async checkFraudRisk(transactionData: { // async checkFraudRisk: memeriksa risiko fraud sebelum transaksi; mengirim data...
+  async checkFraudRisk(transactionData: { // async checkFraudRisk: memeriksa risiko fraud sebelum transaksi; mengirim data ke sistem Z-score fraud detection
     // async checkFraudRisk: memeriksa risiko fraud sebelum transaksi; mengirim data ke sistem Z-score fraud detection
     senderId: number; // senderId: ID user pengirim uang; digunakan backend untuk debit saldo pengirim
     // senderId: ID user pengirim uang; digunakan backend untuk debit saldo pengirim
@@ -1103,17 +1107,17 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // receiverId: ID user penerima uang; digunakan backend untuk credit saldo penerima
     amount: number; // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
     // amount: jumlah uang yang ditransaksikan dalam rupiah; harus positif
-    location?: any; // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem...
+    location?: any; // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem fraud detection
     // location: koordinat GPS opsional (latitude, longitude); digunakan oleh sistem fraud detection
   }) { // STEP 1: Send POST request ke fraud check endpoint
     // STEP 1: Send POST request ke fraud check endpoint
     // Endpoint: POST /api/fraud/check
     // Backend akan run Z-Score algorithm dan return risk assessment
-    return await this.makeRequest('/api/fraud/check', { // POST ke /api/fraud/check untuk analisis Z-score; backend mengembalikan riskSc...
+    return await this.makeRequest('/api/fraud/check', { // POST ke /api/fraud/check untuk analisis Z-score; backend mengembalikan riskScore, riskLevel, dan decision
       // POST ke /api/fraud/check untuk analisis Z-score; backend mengembalikan riskScore, riskLevel, dan decision
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: transactionData, // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan ...
+      body: transactionData, // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan validasi dan simpan ke database
       // body: mengirim seluruh objek transactionData sebagai JSON body; backend akan validasi dan simpan ke database
     });
   }
@@ -1136,16 +1140,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, message: "Fraud report submitted" }
   // ================================================================================
-  async reportFraudulent(transactionId: number, reason: string) { // async reportFraudulent: melaporkan transaksi sebagai fraud; menyimpan laporan...
+  async reportFraudulent(transactionId: number, reason: string) { // async reportFraudulent: melaporkan transaksi sebagai fraud; menyimpan laporan ke database untuk investigasi
     // async reportFraudulent: melaporkan transaksi sebagai fraud; menyimpan laporan ke database untuk investigasi
     // STEP 1: Send POST request ke fraud report endpoint
     // Endpoint: POST /api/fraud/report
     // Backend akan create fraud alert dan notify admin
-    return await this.makeRequest('/api/fraud/report', { // POST ke /api/fraud/report untuk menyimpan laporan fraud; mengubah status tran...
+    return await this.makeRequest('/api/fraud/report', { // POST ke /api/fraud/report untuk menyimpan laporan fraud; mengubah status transaksi menjadi FLAGGED
       // POST ke /api/fraud/report untuk menyimpan laporan fraud; mengubah status transaksi menjadi FLAGGED
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: { transactionId, reason }, // body: mengirim ID transaksi dan alasan pelaporan fraud ke backend; backend up...
+      body: { transactionId, reason }, // body: mengirim ID transaksi dan alasan pelaporan fraud ke backend; backend update status transaksi
       // body: mengirim ID transaksi dan alasan pelaporan fraud ke backend; backend update status transaksi
     });
   }
@@ -1181,12 +1185,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     fraudAlerts: FraudAlert[]
   //   }
   // ================================================================================
-  async getAdminDashboard() { // async getAdminDashboard: mengambil data ringkasan untuk dashboard admin; stat...
+  async getAdminDashboard() { // async getAdminDashboard: mengambil data ringkasan untuk dashboard admin; statistik user, transaksi, dan fraud
     // async getAdminDashboard: mengambil data ringkasan untuk dashboard admin; statistik user, transaksi, dan fraud
     // STEP 1: Call admin dashboard endpoint
     // Endpoint: GET /api/admin/dashboard
     // Requires admin token (backend validates role)
-    return await this.makeRequest('/api/admin/dashboard'); // GET ke /api/admin/dashboard; hanya bisa diakses dengan admin credentials; men...
+    return await this.makeRequest('/api/admin/dashboard'); // GET ke /api/admin/dashboard; hanya bisa diakses dengan admin credentials; mengembalikan statistik sistem
     // GET ke /api/admin/dashboard; hanya bisa diakses dengan admin credentials; mengembalikan statistik sistem
   }
 
@@ -1199,12 +1203,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - Array of users dengan balance dan status
   // ================================================================================
-  async getAllUsers() { // async getAllUsers: mengambil daftar semua user untuk tampilan admin; diperluk...
+  async getAllUsers() { // async getAllUsers: mengambil daftar semua user untuk tampilan admin; diperlukan admin credentials
     // async getAllUsers: mengambil daftar semua user untuk tampilan admin; diperlukan admin credentials
     // STEP 1: Call admin users endpoint
     // Endpoint: GET /api/admin/users
     // Returns all users termasuk blocked users
-    return await this.makeRequest('/api/admin/users'); // GET ke /api/admin/users; admin-only endpoint untuk mendapatkan seluruh daftar...
+    return await this.makeRequest('/api/admin/users'); // GET ke /api/admin/users; admin-only endpoint untuk mendapatkan seluruh daftar akun user
     // GET ke /api/admin/users; admin-only endpoint untuk mendapatkan seluruh daftar akun user
   }
 
@@ -1222,7 +1226,7 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // STEP 1: Call admin transactions endpoint
     // Endpoint: GET /api/admin/transactions
     // Returns all transactions in system
-    return await this.makeRequest('/api/admin/transactions'); // GET ke /api/admin/transactions; admin-only endpoint untuk melihat semua trans...
+    return await this.makeRequest('/api/admin/transactions'); // GET ke /api/admin/transactions; admin-only endpoint untuk melihat semua transaksi di sistem
     // GET ke /api/admin/transactions; admin-only endpoint untuk melihat semua transaksi di sistem
   }
 
@@ -1239,16 +1243,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, message: "User blocked" }
   // ================================================================================
-  async blockUser(userId: number, reason: string) { // async blockUser: memblokir akun user; admin bisa blokir user yang terdeteksi ...
+  async blockUser(userId: number, reason: string) { // async blockUser: memblokir akun user; admin bisa blokir user yang terdeteksi melakukan fraud
     // async blockUser: memblokir akun user; admin bisa blokir user yang terdeteksi melakukan fraud
     // STEP 1: Send PUT request ke block endpoint
     // Endpoint: PUT /api/admin/users/{userId}/block
     // Backend akan set user.blocked = true dan record reason
     return await this.makeRequest(`/api/admin/users/${userId}/block`, { // PUT ke endpoint block user; mengubah status user menjadi BLOCKED di database
       // PUT ke endpoint block user; mengubah status user menjadi BLOCKED di database
-      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untu...
+      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
       // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
-      body: { reason }, // body: mengirim { reason } ke backend; alasan pemblokiran disimpan di database...
+      body: { reason }, // body: mengirim { reason } ke backend; alasan pemblokiran disimpan di database untuk audit
       // body: mengirim { reason } ke backend; alasan pemblokiran disimpan di database untuk audit
     });
   }
@@ -1265,14 +1269,14 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, message: "User unblocked" }
   // ================================================================================
-  async unblockUser(userId: number) { // async unblockUser: membuka blokir akun user; admin bisa restore akses user ya...
+  async unblockUser(userId: number) { // async unblockUser: membuka blokir akun user; admin bisa restore akses user yang sudah diverifikasi
     // async unblockUser: membuka blokir akun user; admin bisa restore akses user yang sudah diverifikasi
     // STEP 1: Send PUT request ke unblock endpoint
     // Endpoint: PUT /api/admin/users/{userId}/unblock
     // Backend akan set user.blocked = false
     return await this.makeRequest(`/api/admin/users/${userId}/unblock`, { // PUT ke endpoint unblock user; mengubah status user kembali menjadi ACTIVE
       // PUT ke endpoint unblock user; mengubah status user kembali menjadi ACTIVE
-      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untu...
+      method: 'PUT', // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
       // method 'PUT': HTTP method untuk mengganti data yang sudah ada; digunakan untuk update resource secara keseluruhan
     });
   }
@@ -1306,15 +1310,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, device: {...} }
   // ================================================================================
-  async registerDevice(deviceInfo: { // async registerDevice: mendaftarkan perangkat Android ke backend; dipanggil sa...
+  async registerDevice(deviceInfo: { // async registerDevice: mendaftarkan perangkat Android ke backend; dipanggil saat pertama kali app diinstall
     // async registerDevice: mendaftarkan perangkat Android ke backend; dipanggil saat pertama kali app diinstall
-    deviceId: string; // deviceId: identifier unik perangkat Android yang dihasilkan oleh sistem; digu...
+    deviceId: string; // deviceId: identifier unik perangkat Android yang dihasilkan oleh sistem; digunakan untuk tracking perangkat
     // deviceId: identifier unik perangkat Android yang dihasilkan oleh sistem; digunakan untuk tracking perangkat
-    deviceName: string; // deviceName: nama model perangkat (misal: Samsung Galaxy S21); untuk identifik...
+    deviceName: string; // deviceName: nama model perangkat (misal: Samsung Galaxy S21); untuk identifikasi di dashboard admin
     // deviceName: nama model perangkat (misal: Samsung Galaxy S21); untuk identifikasi di dashboard admin
-    platform: string; // platform: sistem operasi perangkat (android/ios); untuk statistik penggunaan ...
+    platform: string; // platform: sistem operasi perangkat (android/ios); untuk statistik penggunaan platform
     // platform: sistem operasi perangkat (android/ios); untuk statistik penggunaan platform
-    appVersion: string; // appVersion: versi aplikasi yang terinstall; untuk memastikan kompatibilitas d...
+    appVersion: string; // appVersion: versi aplikasi yang terinstall; untuk memastikan kompatibilitas dengan backend
     // appVersion: versi aplikasi yang terinstall; untuk memastikan kompatibilitas dengan backend
   }) { // STEP 1: Send POST request ke device register endpoint
     // STEP 1: Send POST request ke device register endpoint
@@ -1322,9 +1326,9 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
     // Backend akan save device info untuk tracking
     return await this.makeRequest('/api/devices/register', { // POST ke /api/devices/register untuk mendaftarkan perangkat baru ke database
       // POST ke /api/devices/register untuk mendaftarkan perangkat baru ke database
-      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untu...
+      method: 'POST', // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
       // method 'POST': HTTP method untuk mengirim data baru ke server; digunakan untuk create resource atau submit data
-      body: deviceInfo, // body: mengirim seluruh informasi perangkat ke backend untuk disimpan di tabel...
+      body: deviceInfo, // body: mengirim seluruh informasi perangkat ke backend untuk disimpan di tabel Device
       // body: mengirim seluruh informasi perangkat ke backend untuk disimpan di tabel Device
     });
   }
@@ -1343,16 +1347,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { balance, transactions, settings }
   // ================================================================================
-  async syncDeviceData() { // async syncDeviceData: menyinkronkan data lokal perangkat dengan server; dijal...
+  async syncDeviceData() { // async syncDeviceData: menyinkronkan data lokal perangkat dengan server; dijalankan secara periodik
     // async syncDeviceData: menyinkronkan data lokal perangkat dengan server; dijalankan secara periodik
     // STEP 1: Get device ID dari storage atau generate baru
-    const deviceId = await this.getDeviceId(); // const deviceId: mengambil ID perangkat yang tersimpan di AsyncStorage; await ...
+    const deviceId = await this.getDeviceId(); // const deviceId: mengambil ID perangkat yang tersimpan di AsyncStorage; await karena operasi async
     // const deviceId: mengambil ID perangkat yang tersimpan di AsyncStorage; await karena operasi async
     
     // STEP 2: Call device sync endpoint
     // Endpoint: GET /api/devices/{deviceId}/sync
     // Backend akan return latest data untuk device ini
-    return await this.makeRequest(`/api/devices/${deviceId}/sync`); // GET ke endpoint sync perangkat untuk menyinkronkan status dan data antara app...
+    return await this.makeRequest(`/api/devices/${deviceId}/sync`); // GET ke endpoint sync perangkat untuk menyinkronkan status dan data antara app dan backend
     // GET ke endpoint sync perangkat untuk menyinkronkan status dan data antara app dan backend
   }
 
@@ -1378,13 +1382,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // - { status: 'ok', timestamp: Date } jika server online
   // - Throw error jika server offline atau unreachable
   // ================================================================================
-  async healthCheck() { // async healthCheck: memeriksa apakah backend server sedang online dan bisa mer...
+  async healthCheck() { // async healthCheck: memeriksa apakah backend server sedang online dan bisa merespons; digunakan saat startup
     // async healthCheck: memeriksa apakah backend server sedang online dan bisa merespons; digunakan saat startup
     // STEP 1: Call health check endpoint
     // Endpoint: GET /api/health
     // Backend akan return status dan timestamp
     // Endpoint ini selalu public (no authentication required)
-    return await this.makeRequest('/api/health'); // GET ke /api/health; endpoint sederhana yang backend beri respons 'OK' jika se...
+    return await this.makeRequest('/api/health'); // GET ke /api/health; endpoint sederhana yang backend beri respons 'OK' jika server berjalan normal
     // GET ke /api/health; endpoint sederhana yang backend beri respons 'OK' jika server berjalan normal
   }
 
@@ -1406,11 +1410,11 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //     userId: string | null
   //   }
   // ================================================================================
-  getConnectionStatus() { // getConnectionStatus: mengembalikan objek status koneksi saat ini; digunakan u...
+  getConnectionStatus() { // getConnectionStatus: mengembalikan objek status koneksi saat ini; digunakan untuk tampilkan indikator koneksi di UI
     // getConnectionStatus: mengembalikan objek status koneksi saat ini; digunakan untuk tampilkan indikator koneksi di UI
     // STEP 1: Return current connection state
     // Ini adalah synchronous method (tidak hit backend)
-    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fu...
+    return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
       url: this.baseUrl, // Backend URL yang sedang digunakan
       // Backend URL yang sedang digunakan
@@ -1435,12 +1439,12 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - string: Unique device ID (contoh: "ios_ABC123...")
   // ================================================================================
-  private async getDeviceId(): Promise<string> { // getDeviceId: mengambil atau menghasilkan ID unik perangkat; disimpan di Async...
+  private async getDeviceId(): Promise<string> { // getDeviceId: mengambil atau menghasilkan ID unik perangkat; disimpan di AsyncStorage agar konsisten lintas session
     // getDeviceId: mengambil atau menghasilkan ID unik perangkat; disimpan di AsyncStorage agar konsisten lintas session
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // STEP 1: Check apakah device ID sudah tersimpan
-      let deviceId = await AsyncStorage.getItem('deviceId'); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara a...
+      let deviceId = await AsyncStorage.getItem('deviceId'); // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
       // AsyncStorage.getItem() membaca data dari penyimpanan lokal perangkat secara async
       
       // STEP 2: Jika belum ada, generate device ID baru
@@ -1450,26 +1454,26 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
         // Platform.OS = 'ios' atau 'android'
         // Constants.deviceId = unique ID dari Expo
         // Math.random().toString(36) = generate random string
-        deviceId = Platform.OS + '_' + Constants.deviceId || Math.random().toString(36); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari ni...
+        deviceId = Platform.OS + '_' + Constants.deviceId || Math.random().toString(36); // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
         // String() mengkonversi nilai ke tipe string; digunakan saat perlu teks dari nilai non-string
         
         // Save ke AsyncStorage agar persistent
-        await AsyncStorage.setItem('deviceId', deviceId); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara a...
+        await AsyncStorage.setItem('deviceId', deviceId); // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
         // AsyncStorage.setItem() menyimpan data ke penyimpanan lokal perangkat secara async
-        console.log('📱 New device ID generated:', deviceId); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+        console.log('📱 New device ID generated:', deviceId); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
         // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       }
       
-      return deviceId; // mengembalikan deviceId ke pemanggil; jika baru dibuat sudah tersimpan di Asyn...
+      return deviceId; // mengembalikan deviceId ke pemanggil; jika baru dibuat sudah tersimpan di AsyncStorage
       // mengembalikan deviceId ke pemanggil; jika baru dibuat sudah tersimpan di AsyncStorage
       
     } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
       // STEP 3: Fallback jika error (generate temporary ID)
       // Format: {platform}_unknown_{timestamp}
-      console.error('❌ Error getting device ID:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('❌ Error getting device ID:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-      return Platform.OS + '_unknown_' + Date.now(); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap wa...
+      return Platform.OS + '_unknown_' + Date.now(); // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
       // Date.now() mengembalikan timestamp milidetik saat ini; digunakan untuk cap waktu operasi
     }
   }
@@ -1489,13 +1493,13 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   // RETURN:
   // - { success: true, card: { cardId, balance, previousBalance } }
   // ================================================================================
-  async topUpCard(cardId: string, amount: number, adminPassword: string) { // async topUpCard: menambahkan saldo ke kartu NFC; memerlukan password admin un...
+  async topUpCard(cardId: string, amount: number, adminPassword: string) { // async topUpCard: menambahkan saldo ke kartu NFC; memerlukan password admin untuk otorisasi
     // async topUpCard: menambahkan saldo ke kartu NFC; memerlukan password admin untuk otorisasi
     return await this.makeRequest('/api/nfc-cards/topup', { // POST ke /api/nfc-cards/topup untuk proses penambahan saldo kartu NFC
       // POST ke /api/nfc-cards/topup untuk proses penambahan saldo kartu NFC
       method: 'POST', // method 'POST': HTTP method untuk mengirim data top-up ke server
       // method 'POST': HTTP method untuk mengirim data top-up ke server
-      body: { cardId, amount, adminPassword }, // body: mengirim cardId, jumlah top-up, dan password admin sebagai JSON; backen...
+      body: { cardId, amount, adminPassword }, // body: mengirim cardId, jumlah top-up, dan password admin sebagai JSON; backend akan validasi dan update saldo kartu
       // body: mengirim cardId, jumlah top-up, dan password admin sebagai JSON; backend akan validasi dan update saldo kartu
     });
   }
@@ -1513,15 +1517,15 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
   //
   // RETURN: void
   // ================================================================================
-  destroy(): void { // destroy: membersihkan state APIService; dipanggil saat aplikasi ditutup atau ...
+  destroy(): void { // destroy: membersihkan state APIService; dipanggil saat aplikasi ditutup atau logout total
     // destroy: membersihkan state APIService; dipanggil saat aplikasi ditutup atau logout total
     // STEP 1: Clear token dan userId dari memory
-    this.token = null; // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP...
+    this.token = null; // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP berikutnya
     // mengeset token ke null di memory; token tidak lagi disertakan di request HTTP berikutnya
     this.userId = null; // mengeset userId ke null di memory; user tidak lagi dikenali oleh service ini
     // mengeset userId ke null di memory; user tidak lagi dikenali oleh service ini
     
-    console.log('🧹 API Service destroyed and cleaned up'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log('🧹 API Service destroyed and cleaned up'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
   }
 }
@@ -1554,16 +1558,16 @@ export class APIService { // kelas utama APIService menggunakan Singleton Patter
 
 // Export singleton instance (recommended usage)
 // Instance ini sudah di-initialize dan ready to use
-export const apiService = APIService.getInstance(); // mengekspor instance tunggal APIService; semua file yang import apiService men...
+export const apiService = APIService.getInstance(); // mengekspor instance tunggal APIService; semua file yang import apiService mendapat objek yang sama (Singleton)
 // mengekspor instance tunggal APIService; semua file yang import apiService mendapat objek yang sama (Singleton)
 
 // Legacy exports untuk backward compatibility
 // Dulu ada 2 class terpisah: adminConnector dan backendAPI
 // Sekarang unified jadi 1 class: APIService
 // Tapi untuk tidak break existing code, kita export dengan nama lama juga
-export const adminConnector = apiService; // adminConnector: alias untuk apiService; nama alternatif untuk penggunaan fitu...
+export const adminConnector = apiService; // adminConnector: alias untuk apiService; nama alternatif untuk penggunaan fitur admin; merujuk ke instance yang sama
 // adminConnector: alias untuk apiService; nama alternatif untuk penggunaan fitur admin; merujuk ke instance yang sama
-export const backendAPI = apiService; // backendAPI: alias lain untuk apiService; nama deskriptif untuk akses backend ...
+export const backendAPI = apiService; // backendAPI: alias lain untuk apiService; nama deskriptif untuk akses backend API; merujuk ke instance yang sama
 // backendAPI: alias lain untuk apiService; nama deskriptif untuk akses backend API; merujuk ke instance yang sama
 
 // ==================================================================================
@@ -1572,5 +1576,5 @@ export const backendAPI = apiService; // backendAPI: alias lain untuk apiService
 // Initialize APIService saat module pertama kali di-import.
 // Ini akan load token dari AsyncStorage jika ada.
 // ==================================================================================
-apiService.initialize(); // memanggil initialize() saat module pertama kali di-import; memastikan token d...
+apiService.initialize(); // memanggil initialize() saat module pertama kali di-import; memastikan token dimuat dari AsyncStorage sebelum ada request
 // memanggil initialize() saat module pertama kali di-import; memastikan token dimuat dari AsyncStorage sebelum ada request

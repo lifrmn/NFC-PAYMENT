@@ -99,86 +99,86 @@
 // - usePayment: Custom hook untuk proses pembayaran
 // - apiService: HTTP client untuk update/get saldo user
 // ==================================================================================
-import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 5 state variable...
+import React, { useState, useEffect } from 'react'; // import React (wajib untuk JSX) dan dua hooks: useState untuk 5 state variable (nfcEnabled, amount, balance, merchant, scanning); useEffect untuk init NFC saat mount dan cleanup saat unmount
 // import React (wajib untuk JSX) dan dua hooks: useState untuk 5 state variable (nfcEnabled, amount, balance, merchant, scanning); useEffect untuk init NFC saat mount dan cleanup saat unmount
-import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   View, // View adalah container dasar React Native \u2014 setara div di HTML
   // View adalah container dasar React Native \u2014 setara div di HTML
   Text, // Text menampilkan teks
   // Text menampilkan teks
-  TextInput, // TextInput adalah input teks dengan keyboard numerik \u2014 digunakan bersama ...
+  TextInput, // TextInput adalah input teks dengan keyboard numerik \u2014 digunakan bersama keypad kustom untuk input nominal pembayaran
   // TextInput adalah input teks dengan keyboard numerik \u2014 digunakan bersama keypad kustom untuk input nominal pembayaran
-  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan \u2014 digunakan untuk ...
+  TouchableOpacity, // TouchableOpacity adalah tombol dengan efek transparan \u2014 digunakan untuk tombol keypad, tombol bayar, dan tombol kembali
   // TouchableOpacity adalah tombol dengan efek transparan \u2014 digunakan untuk tombol keypad, tombol bayar, dan tombol kembali
-  Alert, // Alert menampilkan dialog popup native \u2014 untuk pesan error dan konfirmasi...
+  Alert, // Alert menampilkan dialog popup native \u2014 untuk pesan error dan konfirmasi pembayaran
   // Alert menampilkan dialog popup native \u2014 untuk pesan error dan konfirmasi pembayaran
-  ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan saat NFC processi...
+  ActivityIndicator, // ActivityIndicator adalah spinner animasi \u2014 ditampilkan saat NFC processing berlangsung
   // ActivityIndicator adalah spinner animasi \u2014 ditampilkan saat NFC processing berlangsung
-  Modal // Modal adalah overlay layar penuh \u2014 digunakan untuk menampilkan tampilan ...
+  Modal // Modal adalah overlay layar penuh \u2014 digunakan untuk menampilkan tampilan scan NFC di atas screen utama
   // Modal adalah overlay layar penuh \u2014 digunakan untuk menampilkan tampilan scan NFC di atas screen utama
-} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home in...
+import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
 // SafeAreaView memastikan konten tidak tertutup notch, status bar, atau home indicator
-import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts \u2014 menyediakan initNFC, readPhysicalCa...
+import { NFCService } from '../utils/nfc'; // import NFCService dari file nfc.ts \u2014 menyediakan initNFC, readPhysicalCard, dan cleanup untuk hardware NFC
 // import NFCService dari file nfc.ts \u2014 menyediakan initNFC, readPhysicalCard, dan cleanup untuk hardware NFC
-import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari file usePayment.ts \u2014 menyediakan proc...
+import { usePayment } from '../hooks/usePayment'; // import custom hook usePayment dari file usePayment.ts \u2014 menyediakan processTapToPayTransfer dan isProcessing untuk alur pembayaran NFC
 // import custom hook usePayment dari file usePayment.ts \u2014 menyediakan processTapToPayTransfer dan isProcessing untuk alur pembayaran NFC
-import { apiService } from '../utils/apiService'; // import apiService Singleton \u2014 digunakan untuk mengambil data user dan sa...
+import { apiService } from '../utils/apiService'; // import apiService Singleton \u2014 digunakan untuk mengambil data user dan saldo terbaru setelah transaksi
 // import apiService Singleton \u2014 digunakan untuk mengambil data user dan saldo terbaru setelah transaksi
 import styles from './NFCScreenPayment.styles'; // import stylesheet dari file terpisah
 // import stylesheet dari file terpisah
 
 // Props yang diterima komponen ini dari parent (App.tsx atau DashboardScreen)
-interface NFCScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur props yan...
+interface NFCScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan struktur props yang diterima komponen ini
   // interface adalah blueprint TypeScript untuk mendefinisikan struktur props yang diterima komponen ini
-  user: any; // props user bertipe any (fleksibel) \u2014 berisi data user yang sedang login ...
+  user: any; // props user bertipe any (fleksibel) \u2014 berisi data user yang sedang login (id, name, balance, dll)
   // props user bertipe any (fleksibel) \u2014 berisi data user yang sedang login (id, name, balance, dll)
-  onBack: () => void; // callback function () => void \u2014 tidak menerima argumen dan tidak mengemba...
+  onBack: () => void; // callback function () => void \u2014 tidak menerima argumen dan tidak mengembalikan nilai; dipanggil saat user menekan tombol kembali
   // callback function () => void \u2014 tidak menerima argumen dan tidak mengembalikan nilai; dipanggil saat user menekan tombol kembali
 }
 
-export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama file; destructuri...
+export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export default mengekspor komponen ini sebagai ekspor utama file; destructuring props sesuai NFCScreenProps
   // export default mengekspor komponen ini sebagai ekspor utama file; destructuring props sesuai NFCScreenProps
   // STATE 1: nfcEnabled - Apakah NFC hardware aktif?
   // false = tampilkan instruksi aktifkan NFC
   // true  = tampilkan form pembayaran
-  const [nfcEnabled, setNfcEnabled] = useState(false); // useState(false) membuat state boolean; false berarti NFC dianggap tidak aktif...
+  const [nfcEnabled, setNfcEnabled] = useState(false); // useState(false) membuat state boolean; false berarti NFC dianggap tidak aktif sampai dicek; setNfcEnabled digunakan untuk memperbarui hasil cek
   // useState(false) membuat state boolean; false berarti NFC dianggap tidak aktif sampai dicek; setNfcEnabled digunakan untuk memperbarui hasil cek
 
   // STATE 2: amount - Nominal pembayaran yang diinput user
   // Format string dengan separator: "50.000" (bukan 50000)
-  const [amount, setAmount] = useState(''); // const membuat variabel tetap; useState('') membuat state string kosong; amoun...
+  const [amount, setAmount] = useState(''); // const membuat variabel tetap; useState('') membuat state string kosong; amount menyimpan teks nominal yang diinput user; setAmount memperbarui state
   // const membuat variabel tetap; useState('') membuat state string kosong; amount menyimpan teks nominal yang diinput user; setAmount memperbarui state
 
   // STATE 3: currentBalance - Saldo pembeli saat ini (dari backend)
   // Diinisialisasi dari prop user.balance, lalu diperbarui via fetchBalance()
-  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0); // optional chaining (?.) aman jika user null; || 0 fallback jika balance tidak ...
+  const [currentBalance, setCurrentBalance] = useState(user?.balance || 0); // optional chaining (?.) aman jika user null; || 0 fallback jika balance tidak ada; setCurrentBalance memperbarui saldo yang ditampilkan di layar
   // optional chaining (?.) aman jika user null; || 0 fallback jika balance tidak ada; setCurrentBalance memperbarui saldo yang ditampilkan di layar
 
   // STATE 4: merchant - Info merchant penerima pembayaran
   // Defaultnya adalah user sendiri (nama + tipe toko)
-  const [merchant, setMerchant] = useState({ name: user?.name || 'Merchant', type: 'Toko Retail' }); // useState menerima objek sebagai nilai awal; objek shorthand dengan dua proper...
+  const [merchant, setMerchant] = useState({ name: user?.name || 'Merchant', type: 'Toko Retail' }); // useState menerima objek sebagai nilai awal; objek shorthand dengan dua property: name (nama merchant) dan type (jenis toko)
   // useState menerima objek sebagai nilai awal; objek shorthand dengan dua property: name (nama merchant) dan type (jenis toko)
 
   // STATE 5: scanning - Kontrol visibilitas Modal scan NFC
   // true = Modal scan tampil (sedang proses tap kartu)
   // false = Modal tersembunyi
-  const [scanning, setScanning] = useState(false); // useState(false) nilai awal boolean false; scanning=true menampilkan Modal ove...
+  const [scanning, setScanning] = useState(false); // useState(false) nilai awal boolean false; scanning=true menampilkan Modal overlay saat proses scan NFC berlangsung
   // useState(false) nilai awal boolean false; scanning=true menampilkan Modal overlay saat proses scan NFC berlangsung
 
   // Ambil fungsi & state dari custom hook usePayment
   // isProcessing: boolean - apakah sedang memproses pembayaran
   // processTapToPayTransfer: fungsi utama pembayaran NFC
-  const { isProcessing, processTapToPayTransfer } = usePayment(); // const membuat variabel tetap; destructuring {} mengambil dua property dari ob...
+  const { isProcessing, processTapToPayTransfer } = usePayment(); // const membuat variabel tetap; destructuring {} mengambil dua property dari objek yang dikembalikan hook usePayment; isProcessing adalah boolean status proses; processTapToPayTransfer adalah fungsi utama pembayaran
   // const membuat variabel tetap; destructuring {} mengambil dua property dari objek yang dikembalikan hook usePayment; isProcessing adalah boolean status proses; processTapToPayTransfer adalah fungsi utama pembayaran
 
   // useEffect: Dijalankan 1x saat komponen pertama kali mount
   // Tujuan: Inisialisasi NFC hardware dan bersihkan listener saat unmount
-  useEffect(() => { // useEffect(callback, deps) menjalankan efek samping; tanpa deps array bawaan d...
+  useEffect(() => { // useEffect(callback, deps) menjalankan efek samping; tanpa deps array bawaan di sini deps [] ada di bawah
     // useEffect(callback, deps) menjalankan efek samping; tanpa deps array bawaan di sini deps [] ada di bawah
-    checkNFC(); // memanggil checkNFC() untuk mendeteksi status hardware NFC saat screen pertama...
+    checkNFC(); // memanggil checkNFC() untuk mendeteksi status hardware NFC saat screen pertama kali dibuka
     // memanggil checkNFC() untuk mendeteksi status hardware NFC saat screen pertama kali dibuka
     return () => { // return function adalah cleanup — dijalankan saat komponen di-unmount
       // return function adalah cleanup — dijalankan saat komponen di-unmount
@@ -197,7 +197,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
     // return menghentikan fungsi lebih awal jika NFC tidak didukung
     const enabled = await NFCService.checkNFCEnabled(); // await mengecek apakah user sudah mengaktifkan NFC di pengaturan
     // await mengecek apakah user sudah mengaktifkan NFC di pengaturan
-    setNfcEnabled(enabled); // setNfcEnabled memperbarui state; true = tampilkan form, false = tampilkan ins...
+    setNfcEnabled(enabled); // setNfcEnabled memperbarui state; true = tampilkan form, false = tampilkan instruksi
     // setNfcEnabled memperbarui state; true = tampilkan form, false = tampilkan instruksi
   };
 
@@ -205,11 +205,11 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
   // Dipanggil setelah transaksi berhasil untuk refresh tampilan saldo
   const fetchBalance = async () => { // async karena melakukan HTTP request ke backend API
     // async karena melakukan HTTP request ke backend API
-    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+    try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
       const resp = await apiService.getUserById(user.id); // await menunggu respons GET /api/users/:id dari backend
       // await menunggu respons GET /api/users/:id dari backend
-      const bal = resp?.user?.balance ?? resp?.balance; // optional chaining (?.) untuk akses property aman; ?? (nullish coalescing) men...
+      const bal = resp?.user?.balance ?? resp?.balance; // optional chaining (?.) untuk akses property aman; ?? (nullish coalescing) menggunakan nilai kanan hanya jika kiri null/undefined
       // optional chaining (?.) untuk akses property aman; ?? (nullish coalescing) menggunakan nilai kanan hanya jika kiri null/undefined
       if (typeof bal === 'number') { // typeof === 'number' memastikan tipe data angka sebelum di-set ke state
         // typeof === 'number' memastikan tipe data angka sebelum di-set ke state
@@ -218,38 +218,38 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
       }
     } catch (error: any) { // catch menangkap error; : any agar TypeScript tidak strict tentang tipe error
       // catch menangkap error; : any agar TypeScript tidak strict tentang tipe error
-      console.error('❌ Failed to refresh balance:', error?.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+      console.error('❌ Failed to refresh balance:', error?.message || error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
       // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     }
   };
 
   // Fungsi: Handler utama saat tombol "Lanjutkan Scan" ditekan
   // Validasi input → buka modal scan → proses pembayaran via usePayment hook
-  const handleStartScan = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerl...
+  const handleStartScan = async () => { // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
     // const membuat variabel tetap; async karena proses NFC dan HTTP request memerlukan await
-    if (!user?.id) { // optional chaining (?.) aman jika user null; ! membalik boolean — stop jika ti...
+    if (!user?.id) { // optional chaining (?.) aman jika user null; ! membalik boolean — stop jika tidak ada user valid
       // optional chaining (?.) aman jika user null; ! membalik boolean — stop jika tidak ada user valid
-      Alert.alert('Error', 'User tidak valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+      Alert.alert('Error', 'User tidak valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
       // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
-    const raw = amount.replace(/[^0-9]/g, ''); // .replace() mengganti teks; regex /[^0-9]/g mencocokkan semua karakter non-ang...
+    const raw = amount.replace(/[^0-9]/g, ''); // .replace() mengganti teks; regex /[^0-9]/g mencocokkan semua karakter non-angka; 'g' = global (semua kemunculan); hasilnya hanya digit
     // .replace() mengganti teks; regex /[^0-9]/g mencocokkan semua karakter non-angka; 'g' = global (semua kemunculan); hasilnya hanya digit
     const amountNum = parseFloat(raw); // parseFloat() mengubah string ke bilangan desimal
     // parseFloat() mengubah string ke bilangan desimal
     if (!amountNum || amountNum <= 0) { // !amountNum berarti NaN/0/null; amountNum <= 0 berarti angka tidak valid
       // !amountNum berarti NaN/0/null; amountNum <= 0 berarti angka tidak valid
-      Alert.alert('Error', 'Masukkan jumlah yang valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+      Alert.alert('Error', 'Masukkan jumlah yang valid'); // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan...
+      return; // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
       // return tanpa nilai: menghentikan eksekusi fungsi saat ini tanpa mengembalikan apapun
     }
 
     setScanning(true); // setScanning(true) menampilkan Modal overlay scan NFC
     // setScanning(true) menampilkan Modal overlay scan NFC
-    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance); // await menunggu seluruh proses: scan kartu NFC → validasi kartu di backend → t...
+    const success = await processTapToPayTransfer(user.id, amountNum, fetchBalance); // await menunggu seluruh proses: scan kartu NFC → validasi kartu di backend → transfer saldo → deteksi fraud Z-Score; mengembalikan true jika berhasil
     // await menunggu seluruh proses: scan kartu NFC → validasi kartu di backend → transfer saldo → deteksi fraud Z-Score; mengembalikan true jika berhasil
     setScanning(false); // setScanning(false) menyembunyikan Modal overlay setelah proses selesai
     // setScanning(false) menyembunyikan Modal overlay setelah proses selesai
@@ -264,7 +264,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
     // .replace dengan regex menghapus semua karakter non-angka dari input
     const num = parseInt(digits || '0'); // parseInt() mengubah string ke bilangan bulat; || '0' fallback jika digits kosong
     // parseInt() mengubah string ke bilangan bulat; || '0' fallback jika digits kosong
-    return new Intl.NumberFormat('id-ID').format(num); // Intl.NumberFormat('id-ID') memformat angka dengan titik sebagai separator rib...
+    return new Intl.NumberFormat('id-ID').format(num); // Intl.NumberFormat('id-ID') memformat angka dengan titik sebagai separator ribuan Indonesia
     // Intl.NumberFormat('id-ID') memformat angka dengan titik sebagai separator ribuan Indonesia
   };
 
@@ -343,17 +343,17 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
           <Text style={styles.sectionLabel}>Nominal Pembayaran</Text>
           <View style={styles.amountContainer}>
             <Text style={styles.currencySymbol}>Rp</Text>
-            <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyb...
+            <TextInput // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
             // TextInput: kolom input teks; setara dengan input di HTML; mendukung keyboard native
-              style={styles.amountInput} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+              style={styles.amountInput} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
               value={amount} // Nilai dari state (format: "50.000")
               // Nilai dari state (format: "50.000")
               onChangeText={handleAmountChange} // Handler format otomatis
               // Handler format otomatis
-              placeholder="0" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada inp...
+              placeholder="0" // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
               // placeholder: teks abu-abu yang ditampilkan dalam TextInput saat belum ada input dari user
-              placeholderTextColor="#cbd5e1" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras d...
+              placeholderTextColor="#cbd5e1" // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
               // placeholderTextColor: warna teks placeholder; biasanya abu-abu agar kontras dengan teks input normal
               keyboardType="numeric" // Tampilkan keyboard numerik native
               // Tampilkan keyboard numerik native
@@ -363,39 +363,39 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
 
         <View style={styles.keypad}>
           {[
-            ['1', '2', '3'], // baris keypad atas: angka 1, 2, 3; membuat keypad numerik 4x3 seperti kalkulat...
+            ['1', '2', '3'], // baris keypad atas: angka 1, 2, 3; membuat keypad numerik 4x3 seperti kalkulator atau PIN pad
             // baris keypad atas: angka 1, 2, 3; membuat keypad numerik 4x3 seperti kalkulator atau PIN pad
             ['4', '5', '6'], // baris keypad tengah atas: angka 4, 5, 6 pada keypad numerik custom
             // baris keypad tengah atas: angka 4, 5, 6 pada keypad numerik custom
             ['7', '8', '9'], // baris keypad tengah bawah: angka 7, 8, 9 pada keypad numerik custom
             // baris keypad tengah bawah: angka 7, 8, 9 pada keypad numerik custom
-            ['.', '0', '⌫'] // baris keypad bawah: titik desimal, angka 0, dan tombol hapus (⌫) untuk input ...
+            ['.', '0', '⌫'] // baris keypad bawah: titik desimal, angka 0, dan tombol hapus (⌫) untuk input nominal
             // baris keypad bawah: titik desimal, angka 0, dan tombol hapus (⌫) untuk input nominal
-          ].map((row, rowIndex) => ( // .map() iterasi setiap baris keypad; rowIndex digunakan sebagai key prop untuk...
+          ].map((row, rowIndex) => ( // .map() iterasi setiap baris keypad; rowIndex digunakan sebagai key prop untuk React
           // .map() iterasi setiap baris keypad; rowIndex digunakan sebagai key prop untuk React
             <View key={rowIndex} style={styles.keypadRow}>
-              {row.map((key) => ( // .map() iterasi setiap tombol dalam satu baris keypad; key adalah karakter tom...
+              {row.map((key) => ( // .map() iterasi setiap tombol dalam satu baris keypad; key adalah karakter tombol (1-9, '.', '⌫')
               // .map() iterasi setiap tombol dalam satu baris keypad; key adalah karakter tombol (1-9, '.', '⌫')
                 <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
                 // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                  key={key} // key={key} prop unik untuk setiap elemen dalam list; React membutuhkan key unt...
+                  key={key} // key={key} prop unik untuk setiap elemen dalam list; React membutuhkan key untuk optimasi rendering
                   // key={key} prop unik untuk setiap elemen dalam list; React membutuhkan key untuk optimasi rendering
-                  style={styles.keypadButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+                  style={styles.keypadButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                   // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-                  onPress={() => { // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi han...
+                  onPress={() => { // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
                     // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
                     if (key === '⌫') { // memeriksa apakah tombol yang ditekan adalah tombol hapus (⌫/backspace)
                       // memeriksa apakah tombol yang ditekan adalah tombol hapus (⌫/backspace)
                       // Hapus 1 karakter terakhir dari input
-                      setAmount(amount.slice(0, -1)); // slice(0,-1) menghapus karakter terakhir dari string amount; efek tombol backs...
+                      setAmount(amount.slice(0, -1)); // slice(0,-1) menghapus karakter terakhir dari string amount; efek tombol backspace/hapus
                       // slice(0,-1) menghapus karakter terakhir dari string amount; efek tombol backspace/hapus
-                    } else if (key === '.') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak t...
+                    } else if (key === '.') { // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
                       // else if: kondisi alternatif yang diperiksa jika kondisi if sebelumnya tidak terpenuhi
                       // Ignore decimal for now (tidak support pecahan)
                     } else { // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
                       // else: blok yang dijalankan ketika kondisi if di atasnya tidak terpenuhi (false)
                       // Tambahkan digit ke input dan format ulang
-                      handleAmountChange(amount + key); // menambahkan karakter yang ditekan ke string amount; membangun nominal satu ka...
+                      handleAmountChange(amount + key); // menambahkan karakter yang ditekan ke string amount; membangun nominal satu karakter per tekan
                       // menambahkan karakter yang ditekan ke string amount; membangun nominal satu karakter per tekan
                     }
                   }}
@@ -419,15 +419,15 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
         // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
           style={[styles.scanButton, (!amount || isProcessing) && styles.scanButtonDisabled]} // style={} prop untuk menerapkan styling ke elemen React Native
           // style={} prop untuk menerapkan styling ke elemen React Native
-          onPress={handleStartScan} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi han...
+          onPress={handleStartScan} // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
           // onPress dipanggil saat user menekan elemen; menghubungkan event ke fungsi handler
-          disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau fo...
+          disabled={!amount || isProcessing} // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
           // disabled: jika true tombol tidak bisa ditekan; digunakan saat loading atau form belum lengkap
         >
-          {isProcessing ? ( // ternary JSX: jika isProcessing=true tampilkan spinner, jika false tampilkan t...
+          {isProcessing ? ( // ternary JSX: jika isProcessing=true tampilkan spinner, jika false tampilkan teks tombol normal
           // ternary JSX: jika isProcessing=true tampilkan spinner, jika false tampilkan teks tombol normal
             <ActivityIndicator color="#fff" />
-          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary b...
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
           // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             <Text style={styles.scanButtonText}>Lanjutkan Scan</Text>
           )}
@@ -469,7 +469,7 @@ export default function NFCScreen({ user, onBack }: NFCScreenProps) { // export 
 
               <TouchableOpacity // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
               // TouchableOpacity: tombol interaktif dengan efek transparansi saat ditekan
-                style={styles.cancelButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+                style={styles.cancelButton} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
                 onPress={() => setScanning(false)} // onPress dipanggil saat user menekan elemen; menutup modal scan
                 // onPress dipanggil saat user menekan elemen; menutup modal scan

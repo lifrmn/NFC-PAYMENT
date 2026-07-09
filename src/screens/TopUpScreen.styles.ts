@@ -2,7 +2,7 @@
 import { StyleSheet } from 'react-native'; // import API styling React Native untuk membuat objek style terpusat
 // import API styling React Native untuk membuat objek style terpusat
 
-const styles = StyleSheet.create({ // StyleSheet.create() mengoptimalkan style dan memberikan validasi tipe di Type...
+const styles = StyleSheet.create({ // StyleSheet.create() mengoptimalkan style dan memberikan validasi tipe di TypeScript
   // StyleSheet.create() mengoptimalkan style dan memberikan validasi tipe di TypeScript
 
   // ── Layar utama ──

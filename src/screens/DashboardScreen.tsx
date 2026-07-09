@@ -1,39 +1,39 @@
 ﻿// src/screens/DashboardScreen.tsx
 import React, { useState, useEffect, useRef } from 'react'; // import React (wajib untuk JSX); useState, useEffect, useRef adalah React Hooks yang dipakai di komponen ini
-import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan de...
+import { // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
   // import beberapa komponen atau fungsi sekaligus dari satu modul menggunakan destructuring
-  View, // View adalah komponen container dasar React Native — setara dengan <div> di HT...
+  View, // View adalah komponen container dasar React Native — setara dengan <div> di HTML web
   // View adalah komponen container dasar React Native — setara dengan <div> di HTML web
-  Text, // Text adalah komponen untuk menampilkan teks di React Native — setara dengan <...
+  Text, // Text adalah komponen untuk menampilkan teks di React Native — setara dengan <p> atau <span>
   // Text adalah komponen untuk menampilkan teks di React Native — setara dengan <p> atau <span>
-  TouchableOpacity, // TouchableOpacity adalah tombol yang bisa diklik, tampilan sedikit transparan ...
+  TouchableOpacity, // TouchableOpacity adalah tombol yang bisa diklik, tampilan sedikit transparan saat ditekan
   // TouchableOpacity adalah tombol yang bisa diklik, tampilan sedikit transparan saat ditekan
   ScrollView, // ScrollView adalah container yang bisa di-scroll vertikal maupun horizontal
   // ScrollView adalah container yang bisa di-scroll vertikal maupun horizontal
-  Alert, // Alert adalah dialog popup native Android/iOS untuk menampilkan pesan atau kon...
+  Alert, // Alert adalah dialog popup native Android/iOS untuk menampilkan pesan atau konfirmasi
   // Alert adalah dialog popup native Android/iOS untuk menampilkan pesan atau konfirmasi
-  RefreshControl // RefreshControl adalah komponen untuk fitur pull-to-refresh (tarik ke bawah un...
+  RefreshControl // RefreshControl adalah komponen untuk fitur pull-to-refresh (tarik ke bawah untuk refresh)
   // RefreshControl adalah komponen untuk fitur pull-to-refresh (tarik ke bawah untuk refresh)
-} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI na...
+} from 'react-native'; // menutup blok import dari library react-native yang menyediakan komponen UI native
 // menutup blok import dari library react-native yang menyediakan komponen UI native
-import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library eksternal; SafeAreaView adalah wrapper yang ...
+import { SafeAreaView } from 'react-native-safe-area-context'; // import SafeAreaView dari library eksternal; SafeAreaView adalah wrapper yang otomatis memberi padding agar konten tidak tertutup notch, status bar, atau home indicator
 // import SafeAreaView dari library eksternal; SafeAreaView adalah wrapper yang otomatis memberi padding agar konten tidak tertutup notch, status bar, atau home indicator
-import { useFocusEffect } from '@react-navigation/native'; // import useFocusEffect dari React Navigation; hook ini menjalankan callback se...
+import { useFocusEffect } from '@react-navigation/native'; // import useFocusEffect dari React Navigation; hook ini menjalankan callback setiap kali screen ini mendapat fokus (misalnya setelah kembali dari screen lain)
 // import useFocusEffect dari React Navigation; hook ini menjalankan callback setiap kali screen ini mendapat fokus (misalnya setelah kembali dari screen lain)
-import { getUserById, getUserTransactions } from '../utils/database'; // import dua fungsi dari database.ts: getUserById ambil data user segar dari ba...
+import { getUserById, getUserTransactions } from '../utils/database'; // import dua fungsi dari database.ts: getUserById ambil data user segar dari backend, getUserTransactions ambil riwayat transaksi
 // import dua fungsi dari database.ts: getUserById ambil data user segar dari backend, getUserTransactions ambil riwayat transaksi
-import styles from './DashboardScreen.styles'; // import stylesheet dari file terpisah — memisahkan logika dan tampilan agar ko...
+import styles from './DashboardScreen.styles'; // import stylesheet dari file terpisah — memisahkan logika dan tampilan agar kode lebih rapi
 // import stylesheet dari file terpisah — memisahkan logika dan tampilan agar kode lebih rapi
 
-interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan tipe data objek; D...
+interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk mendefinisikan tipe data objek; DashboardScreenProps mendefinisikan props (parameter) yang WAJIB dan opsional diterima komponen DashboardScreen
   // interface adalah blueprint TypeScript untuk mendefinisikan tipe data objek; DashboardScreenProps mendefinisikan props (parameter) yang WAJIB dan opsional diterima komponen DashboardScreen
-  user: any; // props user bertipe any (fleksibel) — berisi data user aktif yang dikirim dari...
+  user: any; // props user bertipe any (fleksibel) — berisi data user aktif yang dikirim dari App.tsx: id, name, username, balance
   // props user bertipe any (fleksibel) — berisi data user aktif yang dikirim dari App.tsx: id, name, username, balance
-  onLogout: () => void; // props onLogout adalah callback function (fungsi) yang dipanggil ketika user t...
+  onLogout: () => void; // props onLogout adalah callback function (fungsi) yang dipanggil ketika user tap tombol logout; () => void berarti tidak menerima argumen dan tidak mengembalikan nilai
   // props onLogout adalah callback function (fungsi) yang dipanggil ketika user tap tombol logout; () => void berarti tidak menerima argumen dan tidak mengembalikan nilai
   onNavigateToNFC: () => void; // props onNavigateToNFC adalah callback untuk navigasi ke screen pembayaran NFC
   // props onNavigateToNFC adalah callback untuk navigasi ke screen pembayaran NFC
-  onNavigateToRegisterCard?: () => void; // props opsional (tanda ?) — callback untuk navigasi ke screen pendaftaran kart...
+  onNavigateToRegisterCard?: () => void; // props opsional (tanda ?) — callback untuk navigasi ke screen pendaftaran kartu NFC; tanda ? berarti boleh tidak dikirim
   // props opsional (tanda ?) — callback untuk navigasi ke screen pendaftaran kartu NFC; tanda ? berarti boleh tidak dikirim
   onNavigateToMyCards?: () => void; // props opsional — callback untuk navigasi ke screen daftar kartu milik user
   // props opsional — callback untuk navigasi ke screen daftar kartu milik user
@@ -41,7 +41,7 @@ interface DashboardScreenProps { // interface adalah blueprint TypeScript untuk 
   // props opsional — callback untuk navigasi ke screen top-up saldo kartu NFC
 }
 
-export default function DashboardScreen({ // export default mengekspor komponen ini sebagai ekspor utama file sehingga bis...
+export default function DashboardScreen({ // export default mengekspor komponen ini sebagai ekspor utama file sehingga bisa diimport tanpa kurung kurawal; function DashboardScreen adalah komponen React fungsional yang menerima props dalam bentuk destructuring
   // export default mengekspor komponen ini sebagai ekspor utama file sehingga bisa diimport tanpa kurung kurawal; function DashboardScreen adalah komponen React fungsional yang menerima props dalam bentuk destructuring
   user, // props user: data user dari App.tsx (id, name, username, balance)
   // props user: data user dari App.tsx (id, name, username, balance)
@@ -55,22 +55,22 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   // props opsional untuk pindah ke screen daftar kartu saya
   onNavigateToTopUp, // props opsional untuk pindah ke screen top-up saldo
   // props opsional untuk pindah ke screen top-up saldo
-}: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props s...
+}: DashboardScreenProps) { // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
   // : DashboardScreenProps adalah type annotation TypeScript — memastikan props sesuai interface
-  const [currentUser, setCurrentUser] = useState(user || null); // state: data user aktif; diinisialisasi dari props user; diperbarui setiap ref...
+  const [currentUser, setCurrentUser] = useState(user || null); // state: data user aktif; diinisialisasi dari props user; diperbarui setiap refresh dari backend
   // state: data user aktif; diinisialisasi dari props user; diperbarui setiap refresh dari backend
-  const [transactions, setTransactions] = useState<any[]>([]); // state: array riwayat transaksi user; <any[]> adalah tipe TypeScript array of ...
+  const [transactions, setTransactions] = useState<any[]>([]); // state: array riwayat transaksi user; <any[]> adalah tipe TypeScript array of any; [] inisialisasi array kosong
   // state: array riwayat transaksi user; <any[]> adalah tipe TypeScript array of any; [] inisialisasi array kosong
-  const [loading, setLoading] = useState(false); // state: flag loading saat refreshData berjalan; true = tombol dinonaktifkan da...
+  const [loading, setLoading] = useState(false); // state: flag loading saat refreshData berjalan; true = tombol dinonaktifkan dan spinner ditampilkan
   // state: flag loading saat refreshData berjalan; true = tombol dinonaktifkan dan spinner ditampilkan
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // state: waktu terakhir data berhasil disinkronkan; null = belum pernah sync; <...
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null); // state: waktu terakhir data berhasil disinkronkan; null = belum pernah sync; <Date | null> = bisa Date atau null
   // state: waktu terakhir data berhasil disinkronkan; null = belum pernah sync; <Date | null> = bisa Date atau null
-  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // state: status sinkronisasi data; union type tiga nilai; 'never' = belum perna...
+  const [syncStatus, setSyncStatus] = useState<'success' | 'failed' | 'never'>('never'); // state: status sinkronisasi data; union type tiga nilai; 'never' = belum pernah dicoba
   // state: status sinkronisasi data; union type tiga nilai; 'never' = belum pernah dicoba
   // Timestamp refresh terakhir — mencegah burst API call saat navigasi cepat antar screen
   const lastRefreshRef = useRef<number>(0); // useRef = menyimpan timestamp refresh terakhir; mencegah burst API call saat navigasi cepat
 
-  const refreshData = async () => { // fungsi async untuk refresh saldo dan riwayat transaksi dari backend; dipanggi...
+  const refreshData = async () => { // fungsi async untuk refresh saldo dan riwayat transaksi dari backend; dipanggil saat screen fokus dan setiap 60 detik otomatis
   // fungsi async untuk refresh saldo dan riwayat transaksi dari backend; dipanggil saat screen fokus dan setiap 60 detik otomatis
     if (!user || !user.id) return; // guard: hentikan jika tidak ada user atau user.id tidak valid
     // guard: hentikan jika tidak ada user atau user.id tidak valid
@@ -131,64 +131,64 @@ export default function DashboardScreen({ // export default mengekspor komponen 
   };
 
   // Ref yang selalu menunjuk ke versi terbaru refreshData — mencegah stale closure di setInterval
-  const refreshDataRef = useRef(refreshData); // const membuat variabel tetap; useRef(refreshData) membuat ref yang menyimpan ...
+  const refreshDataRef = useRef(refreshData); // const membuat variabel tetap; useRef(refreshData) membuat ref yang menyimpan referensi ke fungsi refreshData; ref tidak memicu re-render saat nilainya berubah
   // const membuat variabel tetap; useRef(refreshData) membuat ref yang menyimpan referensi ke fungsi refreshData; ref tidak memicu re-render saat nilainya berubah
-  useEffect(() => { // useEffect tanpa dependency array khusus — dijalankan setiap kali render untuk...
+  useEffect(() => { // useEffect tanpa dependency array khusus — dijalankan setiap kali render untuk memperbarui ref
     // useEffect tanpa dependency array khusus — dijalankan setiap kali render untuk memperbarui ref
-    refreshDataRef.current = refreshData; // .current adalah property ref yang menyimpan nilai aktual; diperbarui setiap r...
+    refreshDataRef.current = refreshData; // .current adalah property ref yang menyimpan nilai aktual; diperbarui setiap render agar setInterval selalu memanggil versi terbaru fungsi
     // .current adalah property ref yang menyimpan nilai aktual; diperbarui setiap render agar setInterval selalu memanggil versi terbaru fungsi
   });
 
-  useEffect(() => { // useEffect dengan array dependency [] — dijalankan SEKALI saat komponen pertam...
+  useEffect(() => { // useEffect dengan array dependency [] — dijalankan SEKALI saat komponen pertama kali mount; [] berarti tidak ada dependency yang memicu ulang efek ini
     // useEffect dengan array dependency [] — dijalankan SEKALI saat komponen pertama kali mount; [] berarti tidak ada dependency yang memicu ulang efek ini
     // refreshData() awal ditangani oleh useFocusEffect di bawah (mencegah double-call saat mount)
 
-    const dataRefreshInterval = setInterval(() => { // setInterval menjalankan fungsi secara berulang setiap interval tertentu; cons...
+    const dataRefreshInterval = setInterval(() => { // setInterval menjalankan fungsi secara berulang setiap interval tertentu; const membuat variabel tetap
       // setInterval menjalankan fungsi secara berulang setiap interval tertentu; const membuat variabel tetap
-      console.log('\ud83d\udd04 Auto-refreshing balance and transactions...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('\ud83d\udd04 Auto-refreshing balance and transactions...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      refreshDataRef.current(); // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure ...
+      refreshDataRef.current(); // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure yang terjadi jika langsung pakai refreshData di dalam setInterval
       // memanggil fungsi refreshData terbaru melalui ref — menghindari stale closure yang terjadi jika langsung pakai refreshData di dalam setInterval
-    }, 60000); // ✅ DIPERBAIKI: Interval dinaikkan 15s → 60s. Sebelumnya 15s × 3 API call = 180...
+    }, 60000); // ✅ DIPERBAIKI: Interval dinaikkan 15s → 60s. Sebelumnya 15s × 3 API call = 180 req/15mnt — melebihi rate limit backend, menyebabkan error 429.
     // ✅ DIPERBAIKI: Interval dinaikkan 15s → 60s. Sebelumnya 15s × 3 API call = 180 req/15mnt — melebihi rate limit backend, menyebabkan error 429.
     
-    return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat ...
+    return () => { // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen di-unmount
       // return function di dalam useEffect adalah cleanup function — dijalankan saat komponen di-unmount
-      clearInterval(dataRefreshInterval); // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setI...
+      clearInterval(dataRefreshInterval); // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setInterval — mencegah memory leak
       // clearInterval(id) menghentikan interval berdasarkan ID yang dikembalikan setInterval — mencegah memory leak
-      console.log('\u23f0 Stopped all auto-refresh timers'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('\u23f0 Stopped all auto-refresh timers'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     };
-  }, []); // array kosong [] memastikan efek ini HANYA berjalan sekali saat mount dan clea...
+  }, []); // array kosong [] memastikan efek ini HANYA berjalan sekali saat mount dan cleanup saat unmount
   // array kosong [] memastikan efek ini HANYA berjalan sekali saat mount dan cleanup saat unmount
 
-  useFocusEffect( // useFocusEffect adalah hook React Navigation yang menjalankan callback setiap ...
+  useFocusEffect( // useFocusEffect adalah hook React Navigation yang menjalankan callback setiap kali screen ini mendapat fokus — berbeda dengan useEffect yang hanya jalan saat mount
   // useFocusEffect adalah hook React Navigation yang menjalankan callback setiap kali screen ini mendapat fokus — berbeda dengan useEffect yang hanya jalan saat mount
-    React.useCallback(() => { // React.useCallback(fn, deps) membuat fungsi yang hanya dibuat ulang jika depen...
+    React.useCallback(() => { // React.useCallback(fn, deps) membuat fungsi yang hanya dibuat ulang jika dependency berubah; di sini array kosong [] berarti fungsi tidak pernah dibuat ulang
       // React.useCallback(fn, deps) membuat fungsi yang hanya dibuat ulang jika dependency berubah; di sini array kosong [] berarti fungsi tidak pernah dibuat ulang
-      console.log('\ud83d\udcf1 Dashboard focused - refreshing balance...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+      console.log('\ud83d\udcf1 Dashboard focused - refreshing balance...'); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
       refreshDataRef.current(); // memanggil refreshData terkini melalui ref — aman dari stale closure
       // memanggil refreshData terkini melalui ref — aman dari stale closure
-    }, []) // array dependency kosong [] berarti fungsi callback ini tidak bergantung pada ...
+    }, []) // array dependency kosong [] berarti fungsi callback ini tidak bergantung pada state/props manapun
     // array dependency kosong [] berarti fungsi callback ini tidak bergantung pada state/props manapun
   );
 
-  const formatCurrency = (amount: number) => { // const membuat variabel tetap; arrow function (amount: number) => {...} meneri...
+  const formatCurrency = (amount: number) => { // const membuat variabel tetap; arrow function (amount: number) => {...} menerima parameter angka dan mengembalikan string format Rupiah
     // const membuat variabel tetap; arrow function (amount: number) => {...} menerima parameter angka dan mengembalikan string format Rupiah
-    return new Intl.NumberFormat('id-ID', { // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia — men...
+    return new Intl.NumberFormat('id-ID', { // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia — menentukan format titik sebagai pemisah ribuan
       // new membuat instance Intl.NumberFormat; 'id-ID' adalah locale Indonesia — menentukan format titik sebagai pemisah ribuan
       style: 'currency', // style: 'currency' memberitahu Intl bahwa ini format mata uang
       // style: 'currency' memberitahu Intl bahwa ini format mata uang
       currency: 'IDR', // currency: 'IDR' adalah kode ISO 4217 untuk Indonesian Rupiah
       // currency: 'IDR' adalah kode ISO 4217 untuk Indonesian Rupiah
-      minimumFractionDigits: 0, // minimumFractionDigits: 0 menghilangkan angka desimal — Rp 50.000 bukan Rp 50....
+      minimumFractionDigits: 0, // minimumFractionDigits: 0 menghilangkan angka desimal — Rp 50.000 bukan Rp 50.000,00
       // minimumFractionDigits: 0 menghilangkan angka desimal — Rp 50.000 bukan Rp 50.000,00
-    }).format(amount); // .format(amount) menjalankan pemformatan pada nilai angka dan mengembalikan st...
+    }).format(amount); // .format(amount) menjalankan pemformatan pada nilai angka dan mengembalikan string
     // .format(amount) menjalankan pemformatan pada nilai angka dan mengembalikan string
   };
 
-  const formatDate = (dateString: string) => { // const membuat variabel tetap; arrow function menerima string tanggal ISO dan ...
+  const formatDate = (dateString: string) => { // const membuat variabel tetap; arrow function menerima string tanggal ISO dan mengembalikan teks tanggal yang ramah pengguna
     // const membuat variabel tetap; arrow function menerima string tanggal ISO dan mengembalikan teks tanggal yang ramah pengguna
     const date = new Date(dateString); // new Date(string) mem-parse string ISO 8601 menjadi objek Date JavaScript
     // new Date(string) mem-parse string ISO 8601 menjadi objek Date JavaScript
@@ -198,17 +198,17 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     // Bandingkan tanggal kalender (bukan selisih jam) agar "Hari ini" dan "Kemarin" akurat
     const yesterday = new Date(now); // menyalin objek Date now ke variabel baru
     // menyalin objek Date now ke variabel baru
-    yesterday.setDate(now.getDate() - 1); // setDate mengubah hari dalam bulan; getDate() mengembalikan angka hari; -1 mun...
+    yesterday.setDate(now.getDate() - 1); // setDate mengubah hari dalam bulan; getDate() mengembalikan angka hari; -1 mundur satu hari
     // setDate mengubah hari dalam bulan; getDate() mengembalikan angka hari; -1 mundur satu hari
 
-    const isToday = date.toDateString() === now.toDateString(); // toDateString() mengubah Date ke string tanggal saja tanpa jam; === membanding...
+    const isToday = date.toDateString() === now.toDateString(); // toDateString() mengubah Date ke string tanggal saja tanpa jam; === membandingkan string keduanya
     // toDateString() mengubah Date ke string tanggal saja tanpa jam; === membandingkan string keduanya
     const isYesterday = date.toDateString() === yesterday.toDateString(); // cek apakah tanggal transaksi sama dengan kemarin
     // cek apakah tanggal transaksi sama dengan kemarin
 
-    if (isToday || isYesterday) { // if memeriksa kondisi; || berarti ATAU — jika salah satu benar, blok ini dijal...
+    if (isToday || isYesterday) { // if memeriksa kondisi; || berarti ATAU — jika salah satu benar, blok ini dijalankan
       // if memeriksa kondisi; || berarti ATAU — jika salah satu benar, blok ini dijalankan
-      return date.toLocaleString('id-ID', { // toLocaleString memformat Date ke string sesuai locale; 'id-ID' untuk format I...
+      return date.toLocaleString('id-ID', { // toLocaleString memformat Date ke string sesuai locale; 'id-ID' untuk format Indonesia
         // toLocaleString memformat Date ke string sesuai locale; 'id-ID' untuk format Indonesia
         hour: '2-digit', // '2-digit' menampilkan jam dengan dua angka, contoh: 09, 14
         // '2-digit' menampilkan jam dengan dua angka, contoh: 09, 14
@@ -230,7 +230,7 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     }
   };
 
-  const handleLogout = () => { // const membuat variabel tetap; arrow function () => {...} tanpa parameter; fun...
+  const handleLogout = () => { // const membuat variabel tetap; arrow function () => {...} tanpa parameter; fungsi ini memicu dialog konfirmasi sebelum logout
     // const membuat variabel tetap; arrow function () => {...} tanpa parameter; fungsi ini memicu dialog konfirmasi sebelum logout
     Alert.alert( // Alert.alert() menampilkan dialog native dengan judul, pesan, dan tombol pilihan
     // Alert.alert() menampilkan dialog native dengan judul, pesan, dan tombol pilihan
@@ -239,17 +239,17 @@ export default function DashboardScreen({ // export default mengekspor komponen 
       'Apakah Anda yakin ingin keluar?', // argumen kedua: pesan konfirmasi
       // argumen kedua: pesan konfirmasi
       [
-        { text: 'Batal', style: 'cancel' }, // objek tombol pertama; style: 'cancel' membuat tombol tampil lebih redup sebag...
+        { text: 'Batal', style: 'cancel' }, // objek tombol pertama; style: 'cancel' membuat tombol tampil lebih redup sebagai opsi sekunder
         // objek tombol pertama; style: 'cancel' membuat tombol tampil lebih redup sebagai opsi sekunder
-        { text: 'Keluar', onPress: onLogout, style: 'destructive' }, // objek tombol kedua; onPress: onLogout memanggil callback logout dari App.tsx;...
+        { text: 'Keluar', onPress: onLogout, style: 'destructive' }, // objek tombol kedua; onPress: onLogout memanggil callback logout dari App.tsx; style: 'destructive' menampilkan teks merah (Android)
         // objek tombol kedua; onPress: onLogout memanggil callback logout dari App.tsx; style: 'destructive' menampilkan teks merah (Android)
       ]
     );
   };
 
-  const handleNotification = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat ...
+  const handleNotification = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan ikon lonceng notifikasi
     // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan ikon lonceng notifikasi
-    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
     // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       '🔔 Notifikasi', // argumen pertama Alert.alert: judul dialog yang ditampilkan di atas
       // argumen pertama Alert.alert: judul dialog yang ditampilkan di atas
@@ -260,9 +260,9 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     );
   };
 
-  const handleBalanceHistory = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat ...
+  const handleBalanceHistory = () => { // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan tombol riwayat saldo
     // const membuat variabel tetap; arrow function tanpa parameter; dipanggil saat user menekan tombol riwayat saldo
-    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
     // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
       '📊 Riwayat Saldo', // judul dialog
       // judul dialog
@@ -273,20 +273,20 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     );
   };
 
-  const handleSeeAllTransactions = () => { // arrow function tanpa parameter; dipanggil saat user menekan link "Lihat Semua...
+  const handleSeeAllTransactions = () => { // arrow function tanpa parameter; dipanggil saat user menekan link "Lihat Semua" di section transaksi
     // arrow function tanpa parameter; dipanggil saat user menekan link "Lihat Semua" di section transaksi
-    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ...
+    Alert.alert( // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
     // Alert.alert() menampilkan dialog popup native kepada user; title dan message ditentukan oleh argumen
-      '📋 Semua Transaksi', // judul Alert untuk menampilkan daftar semua transaksi; menggunakan emoji 📋 se...
+      '📋 Semua Transaksi', // judul Alert untuk menampilkan daftar semua transaksi; menggunakan emoji 📋 sebagai indikator visual
       // judul Alert untuk menampilkan daftar semua transaksi; menggunakan emoji 📋 sebagai indikator visual
-      `Total ${transactions.length} transaksi\n\nFitur detail transaksi akan segera hadir!`, // template literal ${} menyisipkan nilai dinamis; transactions.length adalah ju...
+      `Total ${transactions.length} transaksi\n\nFitur detail transaksi akan segera hadir!`, // template literal ${} menyisipkan nilai dinamis; transactions.length adalah jumlah elemen dalam array transactions
       // template literal ${} menyisipkan nilai dinamis; transactions.length adalah jumlah elemen dalam array transactions
       [{ text: 'OK' }] // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
       // tombol tunggal 'OK' di Alert; menutup dialog saat user menekan OK
     );
   };
 
-  const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up di ...
+  const handleTopUp = () => { // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up di balance card
     // arrow function tanpa parameter; dipanggil saat user menekan tombol Top Up di balance card
     if (onNavigateToTopUp) { // cek apakah callback onNavigateToTopUp disediakan oleh parent (App.tsx)
       // cek apakah callback onNavigateToTopUp disediakan oleh parent (App.tsx)
@@ -298,7 +298,7 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     }
   };
 
-  if (!currentUser) { // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undef...
+  if (!currentUser) { // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undefined; tampilkan loading screen jika data user belum ada
     // if memeriksa kondisi; !currentUser berarti currentUser adalah null atau undefined; tampilkan loading screen jika data user belum ada
     return ( // early return: mengembalikan UI loading sebelum data user tersedia
     // early return: mengembalikan UI loading sebelum data user tersedia
@@ -310,14 +310,14 @@ export default function DashboardScreen({ // export default mengekspor komponen 
     );
   }
 
-  return ( // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() ...
+  return ( // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() adalah yang akan dirender ke layar
   // return JSX — mengembalikan tampilan komponen; semua elemen di dalam return() adalah yang akan dirender ke layar
     <SafeAreaView style={styles.container}>
       <ScrollView // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
       // ScrollView: View yang bisa discroll jika konten melebihi tinggi layar
-        style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke ele...
+        style={styles.scrollView} // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
         // style={} menerapkan objek style yang sudah didefinisikan di StyleSheet ke elemen ini
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />} // RefreshControl: komponen pull-to-refresh; refreshing={loading} = animasi akti...
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshData} />} // RefreshControl: komponen pull-to-refresh; refreshing={loading} = animasi aktif saat loading; onRefresh={refreshData} = fungsi yang dipanggil saat user tarik ke bawah
         // RefreshControl: komponen pull-to-refresh; refreshing={loading} = animasi aktif saat loading; onRefresh={refreshData} = fungsi yang dipanggil saat user tarik ke bawah
         showsVerticalScrollIndicator={false} // menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
         // menyembunyikan scrollbar vertikal untuk tampilan lebih bersih
@@ -390,7 +390,7 @@ export default function DashboardScreen({ // export default mengekspor komponen 
               <Text style={styles.emptyIcon}>📭</Text>
               <Text style={styles.emptyText}>Belum ada transaksi</Text>
             </View>
-          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary b...
+          ) : ( // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
           // bagian else dari ternary operator; tampilan alternatif saat kondisi ternary bernilai false
             transactions.slice(0, 4).map((transaction) => { // .slice(0,4) ambil 4 transaksi terakhir; .map() render satu item per transaksi
               // .slice(0,4) ambil 4 transaksi terakhir; .map() render satu item per transaksi

@@ -24,16 +24,16 @@
 // Server save device info -> Return success -> App siap digunakan
 // ============================================================
 
-const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js ...
+const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router HTTP endpoint devices
 // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router HTTP endpoint devices
-const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ...
+const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman tanpa SQL mentah
 // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman tanpa SQL mentah
-const { authenticateDevice } = require('../middleware/auth'); // destructuring { authenticateDevice } dari middleware auth.js — middleware yan...
+const { authenticateDevice } = require('../middleware/auth'); // destructuring { authenticateDevice } dari middleware auth.js — middleware yang memvalidasi x-app-key header sebelum endpoint device sensitif bisa diakses
 // destructuring { authenticateDevice } dari middleware auth.js — middleware yang memvalidasi x-app-key header sebelum endpoint device sensitif bisa diakses
 
-const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru u...
+const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/devices
 // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/devices
-const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneks...
+const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
 // const membuat variabel tetap; new PrismaClient() membuat instance baru koneksi Prisma ke database
 
 // ============================================================
@@ -64,16 +64,16 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   "device": { ... }
 // }
 // ============================================================
-router.post('/register', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POS...
+router.post('/register', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId, deviceName, platform, appVersion } = req.body; // Destructuring data perangkat dari request body
     // Destructuring data perangkat dari request body
     
     if (!deviceId) { // Validasi: deviceId wajib ada
       // Validasi: deviceId wajib ada
-      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
@@ -85,7 +85,7 @@ router.post('/register', async (req, res) => { // router.post() mendaftarkan end
       // UPSERT: update jika ada, create jika belum ada
       where: { deviceId: deviceId }, // Cari berdasarkan deviceId unik
       // Cari berdasarkan deviceId unik
-      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
+      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
         // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
         deviceName: deviceName || `Perangkat ${platform} ${deviceId.slice(-6)}`, // Nama perangkat, ambil 6 karakter terakhir jika tidak ada nama
         // Nama perangkat, ambil 6 karakter terakhir jika tidak ada nama
@@ -99,7 +99,7 @@ router.post('/register', async (req, res) => { // router.post() mendaftarkan end
         // Update waktu terakhir aktif
         // Simpan data pengguna/saldo yang ada saat update
       },
-      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
+      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
         // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
         deviceId: deviceId, // ID unik perangkat
         // ID unik perangkat
@@ -120,14 +120,14 @@ router.post('/register', async (req, res) => { // router.post() mendaftarkan end
       }
     });
 
-    console.log(`📱 Device registered: ${deviceId} (${platform})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`📱 Device registered: ${deviceId} (${platform})`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
       // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-      message: 'Perangkat berhasil didaftarkan', // pesan sukses registrasi perangkat; dikirim ke frontend setelah device berhasi...
+      message: 'Perangkat berhasil didaftarkan', // pesan sukses registrasi perangkat; dikirim ke frontend setelah device berhasil disimpan ke database
       // pesan sukses registrasi perangkat; dikirim ke frontend setelah device berhasil disimpan ke database
       device: deviceRecord // Kembalikan data perangkat yang baru didaftarkan
       // Kembalikan data perangkat yang baru didaftarkan
@@ -135,11 +135,11 @@ router.post('/register', async (req, res) => { // router.post() mendaftarkan end
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan pendaftaran perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan pendaftaran perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesa...
+    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
       // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
-      error: 'Gagal mendaftarkan perangkat', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend u...
+      error: 'Gagal mendaftarkan perangkat', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       details: error.message // Detail error untuk debugging
       // Detail error untuk debugging
@@ -148,16 +148,16 @@ router.post('/register', async (req, res) => { // router.post() mendaftarkan end
 });
 
 // Sinkronkan data perangkat (kompatibel dengan aplikasi mobile yang ada)
-router.post('/sync-device', authenticateDevice, async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POS...
+router.post('/sync-device', authenticateDevice, async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { device, users, recentTransactions, stats } = req.body; // Destructuring data sync dari request body
     // Destructuring data sync dari request body
     
     if (!device || !device.deviceId) { // Validasi: data device dan deviceId wajib ada
       // Validasi: data device dan deviceId wajib ada
-      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response err...
+      return res.status(400).json({ error: 'ID Perangkat diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
@@ -169,7 +169,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
       // UPSERT device: update atau buat baru
       where: { deviceId: device.deviceId }, // Cari berdasarkan deviceId
       // Cari berdasarkan deviceId
-      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
+      update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
         // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
         deviceName: device.deviceName || `Android Device ${device.deviceId.slice(-6)}`, // Nama perangkat dengan fallback
         // Nama perangkat dengan fallback
@@ -186,7 +186,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
         totalBalance: stats?.totalBalance || 0 // Total saldo dari stats
         // Total saldo dari stats
       },
-      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
+      create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
         // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
         deviceId: device.deviceId, // ID unik perangkat
         // ID unik perangkat
@@ -216,7 +216,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
           // UPSERT user: update atau buat baru
           where: { id: userData.id }, // Cari berdasarkan id user
           // Cari berdasarkan id user
-          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
+          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
             // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
             name: userData.name, // Update nama user
             // Update nama user
@@ -225,7 +225,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
             deviceId: device.deviceId // Update deviceId
             // Update deviceId
           },
-          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
+          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
             // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
             id: userData.id, // ID user dari mobile
             // ID user dari mobile
@@ -253,7 +253,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
           // UPSERT transaksi
           where: { id: txData.id }, // Cari berdasarkan id transaksi
           // Cari berdasarkan id transaksi
-          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ad...
+          update: { // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
             // update: { } dalam upsert menentukan data yang diperbarui jika record sudah ada; digunakan saat data conflict (duplicate key)
             amount: txData.amount, // Update jumlah transaksi
             // Update jumlah transaksi
@@ -262,7 +262,7 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
             deviceId: device.deviceId // Update deviceId
             // Update deviceId
           },
-          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; d...
+          create: { // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
             // create: { } dalam upsert menentukan data yang dibuat jika record belum ada; digunakan saat insert baru dalam operasi upsert
             id: txData.id, // ID transaksi dari mobile
             // ID transaksi dari mobile
@@ -283,17 +283,17 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
       }
     }
 
-    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai...
+    console.log(`📱 Device sync: ${device.deviceId.slice(-8)} | Users: ${stats?.totalUsers || 0} | Balance: Rp ${(stats?.totalBalance || 0).toLocaleString('id-ID')} | IP: ${req.ip}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Periksa pembaruan saldo yang tertunda
     const pendingUpdates = await prisma.adminLog.findMany({ // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
       // Cari log admin dengan aksi BALANCE_UPDATE_PENDING
-      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
+      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
         action: 'BALANCE_UPDATE_PENDING', // Filter berdasarkan tipe aksi
         // Filter berdasarkan tipe aksi
-        details: { // objek details berisi informasi tambahan kondisi filter; digunakan untuk WHERE...
+        details: { // objek details berisi informasi tambahan kondisi filter; digunakan untuk WHERE dengan kondisi nested di Prisma
           // objek details berisi informasi tambahan kondisi filter; digunakan untuk WHERE dengan kondisi nested di Prisma
           contains: device.deviceId // Filter yang berkaitan dengan deviceId ini
           // Filter yang berkaitan dengan deviceId ini
@@ -317,11 +317,11 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
       });
     }
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk...
+      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
       // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-      message: 'Perangkat berhasil disinkronkan', // pesan sukses sinkronisasi perangkat; dikonfirmasi setelah data perangkat dipe...
+      message: 'Perangkat berhasil disinkronkan', // pesan sukses sinkronisasi perangkat; dikonfirmasi setelah data perangkat diperbarui dari backend
       // pesan sukses sinkronisasi perangkat; dikonfirmasi setelah data perangkat diperbarui dari backend
       balanceUpdates: pendingUpdates.map(update => JSON.parse(update.details)), // Parse details dari JSON string
       // Parse details dari JSON string
@@ -333,21 +333,21 @@ router.post('/sync-device', authenticateDevice, async (req, res) => { // router.
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan sinkronisasi perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan sinkronisasi perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menyinkronkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal menyinkronkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan semua perangkat
-router.get('/', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
+router.get('/', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const devices = await prisma.device.findMany({ // Ambil semua record Device dari database
       // Ambil semua record Device dari database
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya ...
+      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
         lastSeen: 'desc' // Urutkan dari yang paling baru sync
         // Urutkan dari yang paling baru sync
@@ -369,17 +369,17 @@ router.get('/', async (req, res) => { // router.get() mendaftarkan endpoint HTTP
     // Kirim array devices dengan status online
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan perangkat berdasarkan ID
-router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
+router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
@@ -392,7 +392,7 @@ router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endp
 
     if (!device) { // Jika device tidak ditemukan
       // Jika device tidak ditemukan
-      return res.status(404).json({ error: 'Perangkat tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke...
+      return res.status(404).json({ error: 'Perangkat tidak ditemukan' }); // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
       // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
     }
 
@@ -401,7 +401,7 @@ router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endp
       // Ambil semua user yang terhubung ke device ini
       where: { deviceId }, // Filter berdasarkan deviceId
       // Filter berdasarkan deviceId
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yan...
+      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
         id: true, // Hanya ambil field yang diperlukan (tidak include password)
         // Hanya ambil field yang diperlukan (tidak include password)
@@ -423,7 +423,7 @@ router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endp
       // Ambil transaksi yang dilakukan dari device ini
       where: { deviceId }, // Filter berdasarkan deviceId
       // Filter berdasarkan deviceId
-      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambi...
+      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         sender: { // Join data pengirim
           // Join data pengirim
@@ -447,7 +447,7 @@ router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endp
     const isOnline = (now - new Date(device.lastSeen)) < 300000; // Device online jika sync dalam 5 menit terakhir
     // Device online jika sync dalam 5 menit terakhir
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       ...device, // Spread semua field device
       // Spread semua field device
@@ -461,17 +461,17 @@ router.get('/:deviceId', async (req, res) => { // router.get() mendaftarkan endp
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan mendapatkan perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal mendapatkan perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Perbarui status perangkat
-router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang suda...
+router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
   // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
@@ -482,7 +482,7 @@ router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftark
       // Update record device di database
       where: { deviceId }, // Cari berdasarkan deviceId
       // Cari berdasarkan deviceId
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         isOnline: Boolean(isOnline), // Konversi ke boolean (true/false)
         // Konversi ke boolean (true/false)
@@ -498,9 +498,9 @@ router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftark
       // Broadcast perubahan status ke admin
     }
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      message: 'Status perangkat berhasil diperbarui', // pesan sukses perubahan status perangkat; dikirim setelah field status device ...
+      message: 'Status perangkat berhasil diperbarui', // pesan sukses perubahan status perangkat; dikirim setelah field status device diperbarui di database
       // pesan sukses perubahan status perangkat; dikirim setelah field status device diperbarui di database
       device // Kembalikan data device yang sudah diupdate
       // Kembalikan data device yang sudah diupdate
@@ -508,9 +508,9 @@ router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftark
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan memperbarui status perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan memperbarui status perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui status perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal memperbarui status perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -518,7 +518,7 @@ router.put('/:deviceId/status', async (req, res) => { // router.put() mendaftark
 // Hapus perangkat (khusus admin)
 router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarkan endpoint HTTP DELETE; untuk menghapus data
   // router.delete() mendaftarkan endpoint HTTP DELETE; untuk menghapus data
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const { deviceId } = req.params; // Ambil deviceId dari URL parameter
     // Ambil deviceId dari URL parameter
@@ -528,7 +528,7 @@ router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarka
     // Verifikasi password admin
     if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password admin dari env atau default
       // Cek password admin dari env atau default
-      return res.status(401).json({ error: 'Password admin tidak valid' }); // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika passw...
+      return res.status(401).json({ error: 'Password admin tidak valid' }); // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika password admin salah
       // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika password admin salah
     }
 
@@ -541,7 +541,7 @@ router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarka
     // Catat aksi admin
     await prisma.adminLog.create({ // Simpan log bahwa admin menghapus device
       // Simpan log bahwa admin menghapus device
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat updat...
+      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
         action: 'DEVICE_DELETE', // Tipe aksi
         // Tipe aksi
@@ -561,7 +561,7 @@ router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarka
       // Broadcast penghapusan ke semua admin
     }
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       message: 'Perangkat berhasil dihapus' // Konfirmasi penghapusan
       // Konfirmasi penghapusan
@@ -569,17 +569,17 @@ router.delete('/:deviceId', async (req, res) => { // router.delete() mendaftarka
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan menghapus perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan menghapus perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menghapus perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal menghapus perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Dapatkan statistik perangkat
-router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET k...
+router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangka...
+  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     const [totalDevices, onlineDevices, totalUsers, totalBalance] = await Promise.all([ // Jalankan 4 query secara paralel
     // Jalankan 4 query secara paralel
@@ -587,9 +587,9 @@ router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan 
       // Hitung total semua device
       prisma.device.count({ // Hitung device yang sedang online (sync dalam 5 menit terakhir)
         // Hitung device yang sedang online (sync dalam 5 menit terakhir)
-        where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record...
+        where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
           // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-          lastSeen: { // field lastSeen: timestamp terakhir kali device melakukan sinkronisasi; filter...
+          lastSeen: { // field lastSeen: timestamp terakhir kali device melakukan sinkronisasi; filter untuk menentukan device 'online'
             // field lastSeen: timestamp terakhir kali device melakukan sinkronisasi; filter untuk menentukan device 'online'
             gte: new Date(Date.now() - 300000) // 5 menit terakhir dalam milliseconds
             // 5 menit terakhir dalam milliseconds
@@ -610,7 +610,7 @@ router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan 
       })
     ]);
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengo...
+    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
       totalDevices, // Total semua device yang pernah terdaftar
       // Total semua device yang pernah terdaftar
@@ -626,9 +626,9 @@ router.get('/stats/summary', async (req, res) => { // router.get() mendaftarkan 
 
   } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debu...
+    console.error('❌ Kesalahan mendapatkan statistik perangkat:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan statistik perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terd...
+    res.status(500).json({ error: 'Gagal mendapatkan statistik perangkat' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });

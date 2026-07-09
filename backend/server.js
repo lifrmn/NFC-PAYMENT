@@ -75,7 +75,7 @@ const MAX_REQS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 500); // Max requ
 
 // Daftar origin yang diizinkan (dari .env). Format: comma-separated URLs.
 // Contoh .env: ALLOWED_ORIGINS=http://localhost:3000,https://ngrok-url.app
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS // baca ALLOWED_ORIGINS dari .env, split per koma jadi array URL; wildcard '*' j...
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS // baca ALLOWED_ORIGINS dari .env, split per koma jadi array URL; wildcard '*' jika tidak di-set
 // baca ALLOWED_ORIGINS dari .env, split per koma jadi array URL; wildcard '*' jika tidak di-set
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
   : ['*']; // Fallback ke semua origin jika .env tidak di-set
@@ -376,7 +376,7 @@ app.get('/api/users/me', async (req, res) => {
 app.get('/api/users/all', async (req, res) => {
   try { // STEP 13.1: Query semua user dari database
     // STEP 13.1: Query semua user dari database
-    const users = await prisma.user.findMany({ // findMany mengembalikan array semua record yang cocok; array kosong [] jika ti...
+    const users = await prisma.user.findMany({ // findMany mengembalikan array semua record yang cocok; array kosong [] jika tidak ada data
     // findMany mengembalikan array semua record yang cocok; array kosong [] jika tidak ada data
       select: { // SELECT hanya field yang diperlukan
         // SELECT hanya field yang diperlukan
@@ -550,11 +550,11 @@ app.use('/api/nfc-cards', nfcCardRoutes); // NFC Card management: /api/nfc-cards
 // Protected endpoints (require auth)
 app.use('/api/users', authenticateToken, userRoutes); // User endpoints (perlu JWT): /api/users/:id, /api/users/me
 // User endpoints (perlu JWT): /api/users/:id, /api/users/me
-app.use('/api/transactions', authenticateToken, transactionRoutes); // Transaction endpoints (perlu JWT): /api/transactions/send, /api/transactions/...
+app.use('/api/transactions', authenticateToken, transactionRoutes); // Transaction endpoints (perlu JWT): /api/transactions/send, /api/transactions/history
 // Transaction endpoints (perlu JWT): /api/transactions/send, /api/transactions/history
 app.use('/api/fraud', authenticateToken, fraudRoutes); // Fraud endpoints (perlu JWT): /api/fraud/alert, /api/fraud/check
 // Fraud endpoints (perlu JWT): /api/fraud/alert, /api/fraud/check
-app.use('/api/admin', authenticateAdmin, adminRoutes); // Admin endpoints (perlu admin password): /api/admin/dashboard, /api/admin/bulk...
+app.use('/api/admin', authenticateAdmin, adminRoutes); // Admin endpoints (perlu admin password): /api/admin/dashboard, /api/admin/bulk-topup
 // Admin endpoints (perlu admin password): /api/admin/dashboard, /api/admin/bulk-topup
 
 // STEP 16.4: Error handling middleware (generic)
@@ -659,7 +659,7 @@ app.post('/api/update-balance', async (req, res) => {
     const { deviceId, amount, adminPassword } = req.body;
     
     // STEP 19.2: Validasi admin password
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB ...
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB diganti di production)
     // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB diganti di production)
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' }); // 401 Unauthorized
@@ -698,7 +698,7 @@ app.post('/api/update-balance', async (req, res) => {
     }
     
     // STEP 19.6: Update balance user (increment balance dengan amount)
-    const updatedUser = await prisma.user.update({ // update saldo user secara atomic di DB; mengembalikan data user setelah diperb...
+    const updatedUser = await prisma.user.update({ // update saldo user secara atomic di DB; mengembalikan data user setelah diperbarui
     // update saldo user secara atomic di DB; mengembalikan data user setelah diperbarui
       where: { id: targetUser.id }, // WHERE id = targetUser.id
       // WHERE id = targetUser.id
@@ -734,7 +734,7 @@ app.delete('/api/delete-device/:deviceId', async (req, res) => {
     const { adminPassword } = req.body;
     
     // STEP 20.3: Validasi admin password
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB ...
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'; // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB diganti di production)
     // ambil admin password dari .env; fallback 'admin123' jika tidak di-set (WAJIB diganti di production)
     if (adminPassword !== ADMIN_PASSWORD) {
       return res.status(401).json({ error: 'Invalid admin password' });
@@ -823,7 +823,7 @@ app.use(errorHandler);
 // STEP 23: Helper function untuk get LAN IP addresses
 // Fungsi ini digunakan untuk menampilkan IP laptop ke console saat server start
 // Berguna untuk tahu IP mana yang harus diakses dari Android
-function getLanIPs() { // fungsi helper untuk mendapatkan semua IP LAN; digunakan saat server start unt...
+function getLanIPs() { // fungsi helper untuk mendapatkan semua IP LAN; digunakan saat server start untuk tampilkan URL akses dari Android
   // fungsi helper untuk mendapatkan semua IP LAN; digunakan saat server start untuk tampilkan URL akses dari Android
   const ifaces = os.networkInterfaces(); // Ambil semua network interfaces
   // Ambil semua network interfaces
@@ -831,7 +831,7 @@ function getLanIPs() { // fungsi helper untuk mendapatkan semua IP LAN; digunaka
   // Array untuk menyimpan IP addresses
   
   // Loop semua interfaces (WiFi, Ethernet, dll)
-  const names = Object.keys(ifaces); // Object.keys() mengembalikan array nama semua network interface (WiFi, Etherne...
+  const names = Object.keys(ifaces); // Object.keys() mengembalikan array nama semua network interface (WiFi, Ethernet, Loopback, dll)
   // Object.keys() mengembalikan array nama semua network interface (WiFi, Ethernet, Loopback, dll)
   for (let i = 0; i < names.length; i++) {
     const addrs = ifaces[names[i]]; // ambil array objek alamat IP untuk interface ke-i
