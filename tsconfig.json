@@ -7,13 +7,6 @@
     "allowSyntheticDefaultImports": true,
     "jsx": "react-jsx",
     "types": ["react-native"],
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
-    "paths": {
-      "@/*": ["src/*"],
-      "@/components/*": ["src/components/*"],
-      "@/screens/*": ["src/screens/*"],
-      "@/utils/*": ["src/utils/*"]
-    }
+    "ignoreDeprecations": "5.0"
   }
 }             

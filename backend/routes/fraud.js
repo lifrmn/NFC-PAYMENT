@@ -11,7 +11,7 @@
 //
 // ENDPOINT:
 // - GET  /api/fraud/alerts          → Ambil semua peringatan fraud (dengan filter & pagination)
-// - POST /api/fraud/alert           → Buat peringatan fraud baru (dikirim dari mobile app)
+// - POST /api/fraud/alert           → Buat peringatan fraud baru melalui akses admin
 // - PUT  /api/fraud/alerts/:id/status → Update status fraud alert (NEW/REVIEWED/RESOLVED)
 // - GET  /api/fraud/stats           → Statistik fraud (total alerts, risk breakdown, dll)
 // - POST /api/fraud/analyze         → Analisa risiko transaksi secara manual (admin)
@@ -50,18 +50,21 @@
 //   Z > 3.0           → ANOMALY   → Decision: BLOCK  (transaksi diblokir)
 //
 // EDGE CASES (kasus khusus):
-//   1. Riwayat < 2 transaksi:
+//   1. Riwayat < 20 transaksi:
 //      - Tidak cukup data untuk hitung Z-Score
 //      - Hasil: NORMAL (ALLOW) karena belum ada pola yang bisa dibandingkan
 //
 //   2. σ = 0 (semua transaksi historis jumlahnya sama persis):
 //      - Jika X = μ (transaksi baru sama dengan rata-rata) → Z = 0 → NORMAL
-//      - Jika X ≠ μ (berbeda meski sedikit) → Z = -1 (sentinel/penanda khusus) → BLOCK
+//      - Jika X ≠ μ (berbeda meski sedikit) → Z = null di hasil analisis → BLOCK
+//        Saat disimpan ke kolom Float wajib, null dinormalisasi menjadi sentinel -1
 //        Alasan: distribusi terdegenerasi, penyimpangan sekecil apapun dianggap anomali
 //
 // SUMBER DATA HISTORIS:
-//   - Diambil 20 transaksi terakhir user dengan status 'completed'
-//   - Semakin banyak data historis, semakin akurat deteksi fraud
+//   - Diambil maksimal 20 transaksi keluar terbaru milik sender dengan status 'completed'
+//   - Urutan terbaru memastikan window mengikuti perilaku terkini dan membatasi biaya query
+//   - Transaksi yang sedang diperiksa belum disimpan sehingga tidak mencemari baseline
+//   - Transaksi masuk dan transaksi gagal tidak digunakan oleh filter sender/status ini
 // ============================================================
 //
 // FLOW LENGKAP FRAUD DETECTION:
@@ -79,16 +82,25 @@
 //
 // ============================================================
 
-const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router endpoint fraud
+const express = require('express');
+const { authenticateAdmin } = require('../middleware/auth');
 // const membuat variabel tetap; require('express') memanggil module Express.js dari node_modules; digunakan untuk membuat router endpoint fraud
-const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang menyediakan akses type-safe ke database SQLite
+const { PrismaClient } = require('@prisma/client');
 // destructuring { PrismaClient } dari module Prisma; PrismaClient adalah kelas ORM yang menyediakan akses type-safe ke database SQLite
-const { analyzeZScoreAnomaly } = require('../utils/fraudDetection'); // destructuring { analyzeZScoreAnomaly } dari file lokal fraudDetection.js — mengambil fungsi utama perhitungan Z-Score yang akan dipanggil di endpoint /analyze dan /check
-// destructuring { analyzeZScoreAnomaly } dari file lokal fraudDetection.js — mengambil fungsi utama perhitungan Z-Score yang akan dipanggil di endpoint /analyze dan /check
+const { analyzeZScoreAnomaly, HISTORY_SIZE } = require('../utils/fraudDetection');
+// Fungsi dan ukuran window berasal dari satu engine agar endpoint tidak menyimpan konfigurasi duplikat.
 
-const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/fraud
+const router = express.Router();
+// Tolak route admin ketika middleware autentikasi sebelumnya tidak mengisi identitas admin.
+const requireAdmin = (req, res, next) => req.admin
+  ? next()
+  : res.status(403).json({ error: 'ADMIN_REQUIRED' });
+// Tolak pemeriksaan mobile tanpa identitas pengguna yang telah diverifikasi dari JWT.
+const requireUser = (req, res, next) => req.user
+  ? next()
+  : res.status(401).json({ error: 'USER_AUTH_REQUIRED' });
 // const membuat variabel tetap; express.Router() membuat instance router baru untuk menampung semua endpoint /api/fraud
-const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance Prisma baru untuk koneksi ke database
+const prisma = new PrismaClient();
 // const membuat variabel tetap; new PrismaClient() membuat instance Prisma baru untuk koneksi ke database
 
 // ============================================================
@@ -137,44 +149,53 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   di dalam riskFactors JSON (key: "amount") → diekstrak saat response
 // - Field `userName` dan `userEmail` di-flatten dari relasi user (JOIN)
 // ============================================================
-router.get('/alerts', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+router.get('/alerts', requireAdmin, async (req, res) => {
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // Ambil query parameters dengan nilai default jika tidak diberikan
-    const { limit = 50, offset = 0, status, riskLevel } = req.query; // destructuring req.query dengan default: mengambil parameter URL query string; default 50 dan 0 jika tidak disertakan
+    const { limit = 50, offset = 0, status, riskLevel } = req.query;
     // destructuring req.query dengan default: mengambil parameter URL query string; default 50 dan 0 jika tidak disertakan
+
+    const limitNum = Number(limit);
+    const offsetNum = Number(offset);
+    if (!Number.isInteger(limitNum) || limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({ error: 'limit harus bilangan bulat antara 1 dan 100' });
+    }
+    if (!Number.isInteger(offsetNum) || offsetNum < 0) {
+      return res.status(400).json({ error: 'offset harus bilangan bulat minimal 0' });
+    }
     
     // Bangun filter WHERE secara dinamis (hanya tambahkan jika parameter ada)
-    const whereClause = {}; // whereClause: objek kosong yang akan diisi kondisi WHERE secara dinamis berdasarkan query parameter yang dikirim
+    const whereClause = {};
     // whereClause: objek kosong yang akan diisi kondisi WHERE secara dinamis berdasarkan query parameter yang dikirim
-    if (status) whereClause.status = status; // Filter by status jika ada
+    if (status) whereClause.status = status;
     // Filter by status jika ada
-    if (riskLevel) whereClause.riskLevel = riskLevel; // Filter by risk level jika ada
+    if (riskLevel) whereClause.riskLevel = riskLevel;
     // Filter by risk level jika ada
 
     // Query ke database: ambil alert dengan relasi user dan urut dari terbaru
-    const alerts = await prisma.fraudAlert.findMany({ // await prisma.fraudAlert.findMany(): mengambil banyak record FraudAlert dari database; await menunggu query selesai
+    const alerts = await prisma.fraudAlert.findMany({
       // await prisma.fraudAlert.findMany(): mengambil banyak record FraudAlert dari database; await menunggu query selesai
-      where: whereClause, // where: meneruskan objek kondisi filter yang dibangun secara dinamis dari query parameter
+      where: whereClause,
       // where: meneruskan objek kondisi filter yang dibangun secara dinamis dari query parameter
-      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
+      include: {
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
         // JOIN ke tabel User: ambil hanya field yang diperlukan (bukan password dll)
-        user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
+        user: {
           // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
-          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
+          select: { id: true, name: true, username: true }
           // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
         }
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
+      orderBy: {
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        createdAt: 'desc' // Terbaru di atas (descending)
+        createdAt: 'desc'
         // Terbaru di atas (descending)
       },
-      take: parseInt(limit), // Batasi jumlah data (LIMIT SQL)
+      take: limitNum,
       // Batasi jumlah data (LIMIT SQL)
-      skip: parseInt(offset) // Lewati N data pertama (OFFSET SQL, untuk pagination)
+      skip: offsetNum
       // Lewati N data pertama (OFFSET SQL, untuk pagination)
     });
 
@@ -182,54 +203,53 @@ router.get('/alerts', async (req, res) => { // router.get() mendaftarkan endpoin
     // NORMALISASI RESPONSE
     // Mengubah format raw DB menjadi format yang mudah dibaca frontend
     // ---------------------------------------------------------------
-    const normalized = alerts.map(alert => { // .map(alert => {}: iterasi setiap alert dalam array dan mengubah strukturnya ke format yang konsisten untuk respons API
+    const normalized = alerts.map(alert => {
       // .map(alert => {}: iterasi setiap alert dalam array dan mengubah strukturnya ke format yang konsisten untuk respons API
-      let parsedReasons = []; // Array alasan fraud (e.g. ["Z-Score tinggi", "..."])
+      let parsedReasons = [];
       // Array alasan fraud (e.g. ["Z-Score tinggi", "..."])
-      let parsedRiskFactors = {}; // Object detail faktor risiko (e.g. {mean, stdDev, amount})
+      let parsedRiskFactors = {};
       // Object detail faktor risiko (e.g. {mean, stdDev, amount})
-      let amount = null; // Jumlah transaksi yang akan diekstrak dari riskFactors
+      let amount = null;
       // Jumlah transaksi yang akan diekstrak dari riskFactors
 
       // Parse reasons: DB menyimpan sebagai string JSON → ubah ke array JavaScript
       // Contoh DB: '["Transaksi mencurigakan"]' → ['Transaksi mencurigakan']
-      try { parsedReasons = JSON.parse(alert.reasons); } catch { parsedReasons = [alert.reasons]; } // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
+      try { parsedReasons = JSON.parse(alert.reasons); } catch { parsedReasons = [alert.reasons]; }
       // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
 
       // Parse riskFactors: DB menyimpan sebagai string JSON → ubah ke object JavaScript
       // Contoh DB: '{"mean":10000,"stdDev":1200,"amount":50000}' → object
-      try { parsedRiskFactors = JSON.parse(alert.riskFactors); } catch { parsedRiskFactors = {}; } // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
+      try { parsedRiskFactors = JSON.parse(alert.riskFactors); } catch { parsedRiskFactors = {}; }
       // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
 
-      // Ekstrak amount dari riskFactors (tidak ada kolom amount tersendiri di DB)
-      // Operator ?? = nullish coalescing: pakai null jika amount undefined/null
-      amount = parsedRiskFactors.amount ?? null; // ?? null: nullish coalescing operator; menggunakan amount dari riskFactors jika ada, null jika property tidak terdefinisi
-      // ?? null: nullish coalescing operator; menggunakan amount dari riskFactors jika ada, null jika property tidak terdefinisi
+      // Alert dari endpoint umum memakai `amount`, sedangkan alert transaksi internal memakai `currentAmount`.
+      amount = parsedRiskFactors.amount ?? parsedRiskFactors.currentAmount ?? null;
+      // Nullish coalescing memilih nominal yang tersedia tanpa mengubah nilai 0 menjadi null.
 
-      return { // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
+      return {
         // return { }: mengembalikan objek berisi properti-properti yang relevan dari fungsi ini
-        ...alert, // Semua field asli dari DB
+        ...alert,
         // Semua field asli dari DB
-        reasons: parsedReasons, // Override: dari string → array
+        reasons: parsedReasons,
         // Override: dari string → array
-        riskFactors: parsedRiskFactors, // Override: dari string → object
+        riskFactors: parsedRiskFactors,
         // Override: dari string → object
-        amount, // Tambah field amount yang diekstrak
+        amount,
         // Tambah field amount yang diekstrak
-        userName: alert.user?.name || null, // Flatten: dari relasi user.name
+        userName: alert.user?.name || null,
         // Flatten: dari relasi user.name
-        userEmail: alert.user?.username || null // Flatten: dari relasi user.username
+        userEmail: alert.user?.username || null
         // Flatten: dari relasi user.username
       };
     });
 
-    res.json(normalized); // Kirim response JSON ke client
+    res.json(normalized);
     // Kirim response JSON ke client
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan mendapatkan peringatan fraud:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan peringatan fraud' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal mendapatkan peringatan fraud' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -237,12 +257,12 @@ router.get('/alerts', async (req, res) => { // router.get() mendaftarkan endpoin
 // ============================================================
 // ENDPOINT 2: POST /alert - BUAT PERINGATAN FRAUD BARU
 // ============================================================
-// Endpoint ini dipanggil oleh MOBILE APP setelah deteksi fraud di sisi client.
+// Endpoint administratif untuk menyimpan hasil deteksi yang sudah dihitung oleh pemanggil tepercaya.
 //
 // ALUR PEMANGGILAN:
-//   1. User melakukan transaksi di mobile app
-//   2. Mobile app hitung Z-Score secara lokal (atau via /check endpoint)
-//   3. Jika hasil = SUSPICIOUS atau ANOMALY → mobile app POST ke sini
+//   1. Sistem tepercaya memperoleh hasil deteksi fraud
+//   2. Admin atau layanan dengan kredensial admin mengirim hasil tersebut
+//   3. Route memvalidasi bentuk hasil sebelum menyimpannya
 //   4. Alert disimpan ke database
 //   5. Admin dashboard menerima notifikasi real-time (via Socket.IO)
 //
@@ -282,92 +302,121 @@ router.get('/alerts', async (req, res) => { // router.get() mendaftarkan endpoin
 // - Admin dashboard langsung update tanpa refresh halaman
 // ============================================================
 
-// Buat peringatan fraud (dari aplikasi mobile)
-router.post('/alert', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+// Buat peringatan fraud dari request yang telah melewati guard admin.
+router.post('/alert', requireAdmin, async (req, res) => {
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { device, fraudDetection } = req.body; // destructuring req.body: mengambil objek device dan fraudDetection yang dikirim dalam body POST request
+    const { device, fraudDetection } = req.body;
     // destructuring req.body: mengambil objek device dan fraudDetection yang dikirim dalam body POST request
     
     // Validasi: pastikan data fraud ada
-    if (!fraudDetection) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    if (!fraudDetection) {
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(400).json({ error: 'Data deteksi fraud diperlukan' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+      return res.status(400).json({ error: 'Data deteksi fraud diperlukan' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+    }
+
+    const riskScore = fraudDetection.riskScore === null
+      ? -1
+      : Number(fraudDetection.riskScore);
+    const confidence = Number(fraudDetection.confidence);
+    const validRiskLevels = ['NORMAL', 'SUSPICIOUS', 'ANOMALY'];
+    const validDecisions = ['ALLOW', 'REVIEW', 'BLOCK'];
+
+    if (!Number.isFinite(riskScore)) {
+      return res.status(400).json({ error: 'riskScore harus berupa angka finite atau null' });
+    }
+    if (!validRiskLevels.includes(fraudDetection.riskLevel)) {
+      return res.status(400).json({ error: 'riskLevel tidak valid' });
+    }
+    if (!validDecisions.includes(fraudDetection.decision)) {
+      return res.status(400).json({ error: 'decision tidak valid' });
+    }
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      return res.status(400).json({ error: 'confidence harus berupa angka antara 0 dan 1' });
+    }
+    if (fraudDetection.reasons !== undefined && !Array.isArray(fraudDetection.reasons)) {
+      return res.status(400).json({ error: 'reasons harus berupa array' });
+    }
+    if (fraudDetection.riskFactors !== undefined && fraudDetection.riskFactors !== null) {
+      const riskFactorsType = typeof fraudDetection.riskFactors;
+      if (riskFactorsType !== 'object' || Array.isArray(fraudDetection.riskFactors)) {
+        return res.status(400).json({ error: 'riskFactors harus berupa object' });
+      }
     }
 
     // Simpan alert ke database via Prisma ORM
     // reasons dan riskFactors di-stringify karena DB menyimpan sebagai text/JSON string
-    const alert = await prisma.fraudAlert.create({ // await prisma.fraudAlert.create(): membuat record FraudAlert baru di database; await karena operasi async ke database
+    const alert = await prisma.fraudAlert.create({
       // await prisma.fraudAlert.create(): membuat record FraudAlert baru di database; await karena operasi async ke database
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
+      data: {
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        userId: fraudDetection.userId || null, // null jika tidak ada user login
+        userId: fraudDetection.userId || null,
         // null jika tidak ada user login
-        transactionId: fraudDetection.transactionId || null, // null jika belum ada ID transaksi
+        transactionId: fraudDetection.transactionId || null,
         // null jika belum ada ID transaksi
-        deviceId: device?.deviceId || 'unknown', // ID perangkat Android (default 'unknown' jika tidak ada)
+        deviceId: device?.deviceId || 'unknown',
         // ID perangkat Android (default 'unknown' jika tidak ada)
-        deviceName: device?.deviceName || 'Unknown Device', // Nama perangkat (default jika tidak dikirim)
+        deviceName: device?.deviceName || 'Unknown Device',
         // Nama perangkat (default jika tidak dikirim)
-        riskScore: fraudDetection.riskScore, // Nilai Z-Score (atau -1 untuk edge case)
+        riskScore,
         // Nilai Z-Score (atau -1 untuk edge case)
-        riskLevel: fraudDetection.riskLevel, // NORMAL / SUSPICIOUS / ANOMALY
+        riskLevel: fraudDetection.riskLevel,
         // NORMAL / SUSPICIOUS / ANOMALY
-        decision: fraudDetection.decision, // ALLOW / REVIEW / BLOCK
+        decision: fraudDetection.decision,
         // ALLOW / REVIEW / BLOCK
-        reasons: JSON.stringify(fraudDetection.reasons || []), // Array → JSON string
+        reasons: JSON.stringify(fraudDetection.reasons || []),
         // Array → JSON string
-        confidence: fraudDetection.confidence, // Tingkat kepercayaan (0-1)
+        confidence,
         // Tingkat kepercayaan (0-1)
-        riskFactors: JSON.stringify(fraudDetection.riskFactors || {}), // Object → JSON string
+        riskFactors: JSON.stringify(fraudDetection.riskFactors || {}),
         // Object → JSON string
-        ipAddress: req.ip, // IP perangkat yang kirim request
+        ipAddress: req.ip,
         // IP perangkat yang kirim request
-        userAgent: req.headers['user-agent'] // Info browser/app pengirim
+        userAgent: req.headers['user-agent']
         // Info browser/app pengirim
       }
     });
 
     // Kirim notifikasi real-time ke admin dashboard via Socket.IO
     // req.io diset oleh server.js saat setup Socket.IO
-    if (req.io) { // memeriksa apakah Socket.IO (req.io) tersedia; jika ada kirim notifikasi real-time ke admin dashboard yang terhubung
+    if (req.io) {
       // memeriksa apakah Socket.IO (req.io) tersedia; jika ada kirim notifikasi real-time ke admin dashboard yang terhubung
-      req.io.to('admin-room').emit('fraud-alert', { // Socket.IO emit: mengirim event 'fraud-alert' ke semua client di room 'admin-room'; admin dashboard menerima notifikasi real-time
+      req.io.to('admin-room').emit('fraud-alert', {
         // Socket.IO emit: mengirim event 'fraud-alert' ke semua client di room 'admin-room'; admin dashboard menerima notifikasi real-time
-        alert: { // objek alert yang dikirim ke dashboard; berisi semua field alert plus reasons dan riskFactors yang sudah di-parse
+        alert: {
           // objek alert yang dikirim ke dashboard; berisi semua field alert plus reasons dan riskFactors yang sudah di-parse
-          ...alert, // ...alert spread operator: menyebarkan semua properti objek alert ke dalam objek yang sedang dibuat
+          ...alert,
           // ...alert spread operator: menyebarkan semua properti objek alert ke dalam objek yang sedang dibuat
           // Parse kembali ke array/object sebelum dikirim ke dashboard
-          reasons: JSON.parse(alert.reasons), // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
+          reasons: JSON.parse(alert.reasons),
           // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
-          riskFactors: JSON.parse(alert.riskFactors) // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
+          riskFactors: JSON.parse(alert.riskFactors)
           // JSON.parse() mengubah string JSON menjadi objek JavaScript; untuk membaca data tersimpan
         }
       });
     }
 
     // Log ke console untuk monitoring server
-    console.log(`🚨 PERINGATAN FRAUD: risiko ${fraudDetection.riskLevel} (Z=${fraudDetection.riskScore}) dari perangkat ${device?.deviceId?.slice(-8) || 'unknown'}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    console.log(`🚨 PERINGATAN FRAUD: risiko ${fraudDetection.riskLevel} (Z=${riskScore}) dari perangkat ${device?.deviceId?.slice(-8) || 'unknown'}`);
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
+    res.json({
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      success: true, // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
+      success: true,
       // success: true menandakan operasi berhasil; frontend memeriksa field ini untuk menentukan apakah perlu tampilkan sukses atau error
-      message: 'Peringatan fraud diterima dan disimpan', // pesan sukses menyimpan fraud alert; dikonfirmasi setelah record FraudAlert berhasil dibuat di database
+      message: 'Peringatan fraud diterima dan disimpan',
       // pesan sukses menyimpan fraud alert; dikonfirmasi setelah record FraudAlert berhasil dibuat di database
-      alertId: alert.id // Kembalikan ID alert yang baru dibuat
+      alertId: alert.id
       // Kembalikan ID alert yang baru dibuat
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan membuat peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan membuat peringatan fraud:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memproses peringatan fraud' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal memproses peringatan fraud' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -390,8 +439,7 @@ router.post('/alert', async (req, res) => { // router.post() mendaftarkan endpoi
 //
 // REQUEST BODY:
 // {
-//   "status": "REVIEWED",        → Status baru: NEW | REVIEWED | RESOLVED
-//   "adminPassword": "admin123"  → Password admin untuk verifikasi (keamanan)
+//   "status": "REVIEWED"         → Status baru: NEW | REVIEWED | RESOLVED
 // }
 //
 // STATUS LIFECYCLE:
@@ -404,7 +452,7 @@ router.post('/alert', async (req, res) => { // router.post() mendaftarkan endpoi
 // { "message": "Peringatan fraud berhasil diperbarui", "alert": {...} }
 //
 // RESPONSE (error):
-// 401 → Password admin salah
+// 401 → Bearer JWT admin tidak valid atau identitas admin tidak tersedia
 // 400 → Status tidak valid (selain NEW/REVIEWED/RESOLVED)
 // 500 → Error database
 //
@@ -417,91 +465,145 @@ router.post('/alert', async (req, res) => { // router.post() mendaftarkan endpoi
 // ============================================================
 
 // Perbarui status peringatan fraud
-router.put('/alerts/:id/status', async (req, res) => { // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
+router.put('/alerts/:id/status', authenticateAdmin, async (req, res) => {
   // router.put() mendaftarkan endpoint HTTP PUT; untuk memperbarui data yang sudah ada
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis; id berasal dari route pattern seperti /users/:id
+    const { id } = req.params;
     // destructuring req.params: mengambil parameter URL dinamis; id berasal dari route pattern seperti /users/:id
-    const { status, adminPassword } = req.body; // destructuring req.body: mengambil status baru dan password admin dari body request PUT untuk update status alert
-    // destructuring req.body: mengambil status baru dan password admin dari body request PUT untuk update status alert
+    const { status, note } = req.body;
+    // Authorization berasal dari bearer admin JWT yang diverifikasi middleware.
 
-    // Verifikasi password admin sebelum izinkan perubahan
-    // ADMIN_PASSWORD diambil dari environment variable (.env)
-    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // validasi admin password dari body request; !== memastikan kecocokan persis; fallback ke 'admin123' jika env tidak ada
-      // validasi admin password dari body request; !== memastikan kecocokan persis; fallback ke 'admin123' jika env tidak ada
-      return res.status(401).json({ error: 'Password admin tidak valid' }); // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika password admin salah
-      // return + 401: menghentikan eksekusi dan mengirim error autentikasi jika password admin salah
+    // Verifikasi identitas admin dari bearer JWT sebelum izinkan perubahan.
+    if (!req.admin) {
+      // Guard defensif ini menolak request jika identitas admin tidak tersedia setelah middleware.
+      return res.status(401).json({ error: 'Password admin tidak valid' });
+      // Return menghentikan perubahan status sebelum query database dijalankan.
     }
 
     // Validasi status harus salah satu dari enum yang valid
-    if (!['NEW', 'REVIEWED', 'RESOLVED'].includes(status)) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    if (!['NEW', 'REVIEWED', 'RESOLVED'].includes(status)) {
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(400).json({ error: 'Status tidak valid' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+      return res.status(400).json({ error: 'Status tidak valid' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
-    // Update status di database
-    const alert = await prisma.fraudAlert.update({ // await prisma.fraudAlert.update(): memperbarui record FraudAlert berdasarkan ID; await menunggu operasi database selesai
+    if (note !== undefined && (typeof note !== 'string' || note.length > 1000)) {
+      return res.status(400).json({ error: 'Catatan admin maksimal 1000 karakter' });
+    }
+
+    const alertId = Number(id);
+    if (!Number.isSafeInteger(alertId) || alertId <= 0) {
+      return res.status(400).json({ error: 'ID alert tidak valid' });
+    }
+
+    const existingAlert = await prisma.fraudAlert.findUnique({ where: { id: alertId } });
+    if (!existingAlert) return res.status(404).json({ error: 'Fraud alert tidak ditemukan' });
+
+    const statusOrder = { NEW: 0, REVIEWED: 1, RESOLVED: 2 };
+    const adminNote = note === undefined ? undefined : (note.trim() || null);
+    if (statusOrder[status] < statusOrder[existingAlert.status]) {
+      return res.status(409).json({ error: 'STATUS_DOWNGRADE_NOT_ALLOWED' });
+    }
+    if (status === existingAlert.status && (adminNote === undefined || adminNote === existingAlert.adminNote)) {
+      return res.json({ message: 'Status alert sudah sesuai', replayed: true, alert: existingAlert });
+    }
+
+    // Bandingkan status dan updatedAt agar dua tindakan admin tidak saling menimpa diam-diam.
+    const now = new Date();
+    // Perubahan FraudAlert dan AdminLog berada dalam satu transaksi agar keduanya commit atau rollback bersama.
+    const result = await prisma.$transaction(async tx => {
+      const updateResult = await tx.fraudAlert.updateMany({
       // await prisma.fraudAlert.update(): memperbarui record FraudAlert berdasarkan ID; await menunggu operasi database selesai
-      where: { id: parseInt(id) }, // Cari by ID (konversi string → integer)
+      where: { id: alertId, status: existingAlert.status, updatedAt: existingAlert.updatedAt },
       // Cari by ID (konversi string → integer)
-      data: { status }, // Hanya update field status
-      // Hanya update field status
-      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
+      data: {
+        status,
+        ...(status === 'REVIEWED' && !existingAlert.reviewedAt ? { reviewedAt: now } : {}),
+        ...(status === 'RESOLVED' ? {
+          reviewedAt: existingAlert.reviewedAt || now,
+          resolvedAt: existingAlert.resolvedAt || now
+        } : {}),
+        ...(adminNote !== undefined ? { adminNote } : {})
+      }
+      });
+      const updatedAlert = await tx.fraudAlert.findUnique({
+      where: { id: alertId },
+      include: {
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
-        user: { // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
+        user: {
           // user: prop objek data user yang dikirim dari komponen induk ke komponen ini
-          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
+          select: { id: true, name: true, username: true }
           // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
         }
       }
-    });
+      });
+
+      if (updateResult.count === 0) {
+        const samePayload = updatedAlert.status === status &&
+          (adminNote === undefined || updatedAlert.adminNote === adminNote);
+        if (samePayload) return { alert: updatedAlert, replayed: true };
+        return { alert: updatedAlert, conflict: true };
+      }
 
     // Catat aksi admin ke tabel AdminLog (audit trail)
     // Berguna untuk tracking siapa yang mengubah apa dan kapan
-    await prisma.adminLog.create({ // await prisma.adminLog.create(): mencatat aksi admin ke tabel AdminLog untuk audit trail; setiap aksi admin dicatat
+      await tx.adminLog.create({
       // await prisma.adminLog.create(): mencatat aksi admin ke tabel AdminLog untuk audit trail; setiap aksi admin dicatat
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
+      data: {
         // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        action: 'FRAUD_ALERT_UPDATE', // action: konstanta string yang mendeskripsikan aksi admin; digunakan untuk kategori log di dashboard audit
+        action: 'FRAUD_ALERT_UPDATE',
         // action: konstanta string yang mendeskripsikan aksi admin; digunakan untuk kategori log di dashboard audit
-        details: JSON.stringify({ // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
+        details: JSON.stringify({
           // JSON.stringify() mengubah objek JavaScript menjadi string JSON; untuk logging atau API request
-          alertId: alert.id, // alertId: menyertakan ID alert yang diubah ke dalam log; memungkinkan investigasi perubahan status alert tertentu
+          alertId: updatedAlert.id,
           // alertId: menyertakan ID alert yang diubah ke dalam log; memungkinkan investigasi perubahan status alert tertentu
-          newStatus: status, // newStatus: status baru yang ditetapkan oleh admin ke fraud alert ini
+          oldStatus: existingAlert.status,
+          newStatus: status,
           // newStatus: status baru yang ditetapkan oleh admin ke fraud alert ini
-          riskLevel: alert.riskLevel // riskLevel: tingkat risiko alert yang diperbarui; disimpan ke log untuk referensi audit
+          riskLevel: updatedAlert.riskLevel
           // riskLevel: tingkat risiko alert yang diperbarui; disimpan ke log untuk referensi audit
         }),
-        ipAddress: req.ip, // req.ip: alamat IP admin yang melakukan aksi; direkam untuk audit trail keamanan
+        ipAddress: req.ip,
         // req.ip: alamat IP admin yang melakukan aksi; direkam untuk audit trail keamanan
-        userAgent: req.headers['user-agent'] // req.headers['user-agent']: string identifikasi browser/OS admin; dicatat di log untuk investigasi
+        userAgent: req.headers['user-agent']
         // req.headers['user-agent']: string identifikasi browser/OS admin; dicatat di log untuk investigasi
       }
+      });
+      return { alert: updatedAlert, replayed: false };
     });
+    if (result.replayed) {
+      return res.json({ message: 'Status alert sudah sesuai', replayed: true, alert: result.alert });
+    }
+    if (result.conflict) {
+      const downgrade = statusOrder[status] < statusOrder[result.alert.status];
+      return res.status(409).json({
+        error: downgrade ? 'STATUS_DOWNGRADE_NOT_ALLOWED' : 'ALERT_STATE_CHANGED_RETRY',
+        alert: result.alert
+      });
+    }
+    const alert = result.alert;
 
     // Kirim notifikasi real-time ke dashboard (agar tabel langsung update)
-    if (req.io) { // memeriksa apakah Socket.IO (req.io) tersedia; jika ada kirim notifikasi real-time ke admin dashboard yang terhubung
+    if (req.io) {
       // memeriksa apakah Socket.IO (req.io) tersedia; jika ada kirim notifikasi real-time ke admin dashboard yang terhubung
-      req.io.to('admin-room').emit('fraud-alert-updated', { alert }); // Socket.IO emit: mengirim event ke admin room agar dashboard memperbarui tampilan status alert tanpa refresh
+      req.io.to('admin-room').emit('fraud-alert-updated', { alert });
       // Socket.IO emit: mengirim event ke admin room agar dashboard memperbarui tampilan status alert tanpa refresh
     }
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
+    res.json({
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      message: 'Peringatan fraud berhasil diperbarui', // pesan sukses untuk admin bahwa status alert telah berhasil diperbarui di database
+      message: 'Peringatan fraud berhasil diperbarui',
       // pesan sukses untuk admin bahwa status alert telah berhasil diperbarui di database
-      alert // objek alert lengkap yang dikembalikan setelah update; termasuk relasi user
+      alert
       // objek alert lengkap yang dikembalikan setelah update; termasuk relasi user
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan memperbarui peringatan fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan memperbarui peringatan fraud:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui peringatan fraud' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal memperbarui peringatan fraud' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -547,91 +649,91 @@ router.put('/alerts/:id/status', async (req, res) => { // router.put() mendaftar
 // ============================================================
 
 // Dapatkan statistik fraud
-router.get('/stats', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+router.get('/stats', requireAdmin, async (req, res) => {
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { period = '7d' } = req.query; // destructuring req.query dengan default '7d'; parameter period menentukan rentang waktu statistik yang dihitung
+    const { period = '7d' } = req.query;
     // destructuring req.query dengan default '7d'; parameter period menentukan rentang waktu statistik yang dihitung
     
     // Hitung batas waktu berdasarkan period yang dipilih
-    let dateFilter; // variabel yang akan diisi dengan objek Date sebagai batas waktu awal filter; tipenya Date, nilainya ditentukan oleh switch di bawah
+    let dateFilter;
     // variabel yang akan diisi dengan objek Date sebagai batas waktu awal filter; tipenya Date, nilainya ditentukan oleh switch di bawah
-    const now = new Date(); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
+    const now = new Date();
     // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
     
-    switch (period) { // switch: memilih blok kode berdasarkan nilai string period; lebih rapi dari if-else berantai untuk multiple kondisi string
+    switch (period) {
       // switch: memilih blok kode berdasarkan nilai string period; lebih rapi dari if-else berantai untuk multiple kondisi string
-      case '1d': // case '1d': periode 1 hari (24 jam terakhir) dipilih oleh user di dashboard
+      case '1d':
         // case '1d': periode 1 hari (24 jam terakhir) dipilih oleh user di dashboard
         // 24 jam terakhir (24 * 60 menit * 60 detik * 1000 ms)
-        dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
+        dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
-        break; // break: keluar dari switch setelah case cocok; mencegah fall-through ke case berikutnya
+        break;
         // break: keluar dari switch setelah case cocok; mencegah fall-through ke case berikutnya
-      case '7d': // case '7d': periode 7 hari terakhir (default jika parameter tidak disertakan)
+      case '7d':
         // case '7d': periode 7 hari terakhir (default jika parameter tidak disertakan)
         // 7 hari terakhir
-        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
+        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
-        break; // break: keluar dari switch setelah case 7d dieksekusi
+        break;
         // break: keluar dari switch setelah case 7d dieksekusi
-      case '30d': // case '30d': periode 30 hari terakhir; menampilkan statistik bulanan
+      case '30d':
         // case '30d': periode 30 hari terakhir; menampilkan statistik bulanan
         // 30 hari terakhir
-        dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
+        dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
-        break; // break: keluar dari switch setelah case 30d dieksekusi
+        break;
         // break: keluar dari switch setelah case 30d dieksekusi
-      default: // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk case yang tidak terdefinisi
+      default:
       // default: nilai kembalian jika tidak ada case yang cocok; nilai fallback untuk case yang tidak terdefinisi
-        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
+        dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         // new Date() membuat objek tanggal JavaScript dari timestamp atau string; untuk format tanggal transaksi
     }
 
     // Jalankan 4 query database secara PARALEL (lebih cepat dari serial)
-    const [totalAlerts, riskLevelStats, decisionStats, recentAlerts] = await Promise.all([ // Promise.all(): menjalankan 4 query database SECARA PARALEL; lebih cepat dari serial; hasil di-destructure ke 4 variabel
+    const [totalAlerts, riskLevelStats, decisionStats, recentAlerts] = await Promise.all([
     // Promise.all(): menjalankan 4 query database SECARA PARALEL; lebih cepat dari serial; hasil di-destructure ke 4 variabel
       
       // Query 1: Hitung total alert dalam periode
-      prisma.fraudAlert.count({ // prisma.fraudAlert.count(): menghitung jumlah record FraudAlert yang memenuhi kondisi where; setara SELECT COUNT(*) di SQL
+      prisma.fraudAlert.count({
         // prisma.fraudAlert.count(): menghitung jumlah record FraudAlert yang memenuhi kondisi where; setara SELECT COUNT(*) di SQL
-        where: { createdAt: { gte: dateFilter } } // gte = greater than or equal
+        where: { createdAt: { gte: dateFilter } }
         // gte = greater than or equal
       }),
       
       // Query 2: Group by riskLevel → hitung jumlah per level risiko
       // Hasil: [{ riskLevel: 'NORMAL', _count: 7 }, { riskLevel: 'ANOMALY', _count: 10 }, ...]
-      prisma.fraudAlert.groupBy({ // prisma.fraudAlert.groupBy(): mengelompokkan record berdasarkan field dan menghitung jumlah; setara GROUP BY di SQL
+      prisma.fraudAlert.groupBy({
         // prisma.fraudAlert.groupBy(): mengelompokkan record berdasarkan field dan menghitung jumlah; setara GROUP BY di SQL
-        by: ['riskLevel'], // by: ['riskLevel'] menentukan field pengelompokan; setiap nilai unik riskLevel jadi satu grup
+        by: ['riskLevel'],
         // by: ['riskLevel'] menentukan field pengelompokan; setiap nilai unik riskLevel jadi satu grup
-        where: { createdAt: { gte: dateFilter } }, // filter periode waktu; gte = greater than or equal
+        where: { createdAt: { gte: dateFilter } },
         // filter periode waktu; gte = greater than or equal
-        _count: true // _count: true menghitung jumlah record per grup; ditambahkan ke setiap hasil groupBy
+        _count: true
         // _count: true menghitung jumlah record per grup; ditambahkan ke setiap hasil groupBy
       }),
       
       // Query 3: Group by decision → hitung jumlah per keputusan
       // Hasil: [{ decision: 'ALLOW', _count: 7 }, { decision: 'BLOCK', _count: 10 }, ...]
-      prisma.fraudAlert.groupBy({ // query groupBy kedua: mengelompokkan berdasarkan decision (ALLOW/REVIEW/BLOCK) dan menghitung jumlah masing-masing
+      prisma.fraudAlert.groupBy({
         // query groupBy kedua: mengelompokkan berdasarkan decision (ALLOW/REVIEW/BLOCK) dan menghitung jumlah masing-masing
-        by: ['decision'], // by: ['decision'] mengelompokkan berdasarkan field decision
+        by: ['decision'],
         // by: ['decision'] mengelompokkan berdasarkan field decision
-        where: { createdAt: { gte: dateFilter } }, // filter periode waktu yang sama dengan query sebelumnya
+        where: { createdAt: { gte: dateFilter } },
         // filter periode waktu yang sama dengan query sebelumnya
-        _count: true // menghitung jumlah fraud alert per keputusan dalam periode
+        _count: true
         // menghitung jumlah fraud alert per keputusan dalam periode
       }),
       
       // Query 4: Ambil 10 alert terbaru untuk preview
-      prisma.fraudAlert.findMany({ // prisma.fraudAlert.findMany(): mengambil banyak alert terbaru untuk ditampilkan sebagai preview di dashboard
+      prisma.fraudAlert.findMany({
         // prisma.fraudAlert.findMany(): mengambil banyak alert terbaru untuk ditampilkan sebagai preview di dashboard
-        where: { createdAt: { gte: dateFilter } }, // filter hanya alert dalam periode yang dipilih
+        where: { createdAt: { gte: dateFilter } },
         // filter hanya alert dalam periode yang dipilih
-        orderBy: { createdAt: 'desc' }, // urutkan dari terbaru ke terlama; 'desc' = descending
+        orderBy: { createdAt: 'desc' },
         // urutkan dari terbaru ke terlama; 'desc' = descending
-        take: 10 // LIMIT 10: ambil maksimal 10 alert terbaru untuk preview
+        take: 10
         // LIMIT 10: ambil maksimal 10 alert terbaru untuk preview
       })
     ]);
@@ -639,51 +741,51 @@ router.get('/stats', async (req, res) => { // router.get() mendaftarkan endpoint
     // Ekstrak jumlah transaksi BLOCK dan REVIEW dari hasil groupBy
     // Operator ?. = optional chaining (tidak error jika tidak ada data BLOCK)
     // Operator || 0 = default ke 0 jika undefined
-    const blockedTransactions = decisionStats.find(d => d.decision === 'BLOCK')?._count || 0; // .find() mencari item dengan decision='BLOCK'; ?._count optional chaining jika tidak ada; || 0 default jika undefined
+    const blockedTransactions = decisionStats.find(d => d.decision === 'BLOCK')?._count || 0;
     // .find() mencari item dengan decision='BLOCK'; ?._count optional chaining jika tidak ada; || 0 default jika undefined
-    const reviewTransactions = decisionStats.find(d => d.decision === 'REVIEW')?._count || 0; // .find() mencari item REVIEW; optional chaining dan default 0 jika tidak ada transaksi REVIEW
+    const reviewTransactions = decisionStats.find(d => d.decision === 'REVIEW')?._count || 0;
     // .find() mencari item REVIEW; optional chaining dan default 0 jika tidak ada transaksi REVIEW
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
+    res.json({
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      period, // field period: periode waktu yang diminta ('1d','7d','30d'); dikembalikan agar frontend tahu untuk filter mana data ini
+      period,
       // field period: periode waktu yang diminta ('1d','7d','30d'); dikembalikan agar frontend tahu untuk filter mana data ini
-      totalAlerts, // total alert dalam periode; hasil dari prisma.fraudAlert.count()
+      totalAlerts,
       // total alert dalam periode; hasil dari prisma.fraudAlert.count()
-      blockedTransactions, // jumlah transaksi yang diblokir (decision=BLOCK) dalam periode; dari decisionStats
+      blockedTransactions,
       // jumlah transaksi yang diblokir (decision=BLOCK) dalam periode; dari decisionStats
-      reviewTransactions, // jumlah transaksi yang perlu review (decision=REVIEW) dalam periode; dari decisionStats
+      reviewTransactions,
       // jumlah transaksi yang perlu review (decision=REVIEW) dalam periode; dari decisionStats
       // Ubah array hasil groupBy menjadi object yang mudah dibaca
       // Dari: [{ riskLevel: 'NORMAL', _count: 7 }]
       // Ke:   { NORMAL: 7, SUSPICIOUS: 8, ANOMALY: 10 }
-      riskLevelBreakdown: riskLevelStats.reduce((acc, item) => { // .reduce() mengubah array groupBy ke object; acc=accumulator, item=setiap hasil grup; hasil: {NORMAL:7, SUSPICIOUS:8, ANOMALY:10}
+      riskLevelBreakdown: riskLevelStats.reduce((acc, item) => {
         // .reduce() mengubah array groupBy ke object; acc=accumulator, item=setiap hasil grup; hasil: {NORMAL:7, SUSPICIOUS:8, ANOMALY:10}
-        acc[item.riskLevel] = item._count; // dynamic key: menggunakan nilai riskLevel sebagai key dan jumlahnya sebagai value
+        acc[item.riskLevel] = item._count;
         // dynamic key: menggunakan nilai riskLevel sebagai key dan jumlahnya sebagai value
-        return acc; // mengembalikan accumulator yang telah diperbarui untuk iterasi berikutnya
+        return acc;
         // mengembalikan accumulator yang telah diperbarui untuk iterasi berikutnya
-      }, {}), // {} adalah nilai awal accumulator — objek kosong yang diisi di setiap iterasi
+      }, {}),
       // {} adalah nilai awal accumulator — objek kosong yang diisi di setiap iterasi
-      decisionBreakdown: decisionStats.reduce((acc, item) => { // .reduce() mengubah array groupBy decision ke object; hasil: {ALLOW:7, REVIEW:8, BLOCK:10}
+      decisionBreakdown: decisionStats.reduce((acc, item) => {
         // .reduce() mengubah array groupBy decision ke object; hasil: {ALLOW:7, REVIEW:8, BLOCK:10}
-        acc[item.decision] = item._count; // dynamic key: menggunakan nilai decision sebagai key dan jumlahnya sebagai value
+        acc[item.decision] = item._count;
         // dynamic key: menggunakan nilai decision sebagai key dan jumlahnya sebagai value
-        return acc; // mengembalikan accumulator untuk iterasi berikutnya
+        return acc;
         // mengembalikan accumulator untuk iterasi berikutnya
-      }, {}), // {} nilai awal accumulator kosong yang diisi setiap iterasi .reduce()
+      }, {}),
       // {} nilai awal accumulator kosong yang diisi setiap iterasi .reduce()
-      recentAlerts: recentAlerts.slice(0, 5), // Hanya 5 terbaru untuk response
+      recentAlerts: recentAlerts.slice(0, 5),
       // Hanya 5 terbaru untuk response
-      lastAlert: recentAlerts[0]?.createdAt || null // Waktu alert paling baru
+      lastAlert: recentAlerts[0]?.createdAt || null
       // Waktu alert paling baru
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan mendapatkan statistik fraud:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan mendapatkan statistik fraud:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan statistik fraud' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal mendapatkan statistik fraud' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -718,17 +820,17 @@ router.get('/stats', async (req, res) => { // router.get() mendaftarkan endpoint
 //   "analysis": {
 //     "algorithm": "Z-Score Anomaly Detection",
 //     "zScore": 3.75,          → Nilai Z = |X - μ| / σ yang dihitung
-//                                 (-1 = edge case σ=0 dengan X≠μ)
+//                                 (null jika σ≈0 dan X≠μ karena Z tidak terdefinisi)
 //     "decision": "BLOCK",     → ALLOW / REVIEW / BLOCK
 //     "riskLevel": "ANOMALY",  → NORMAL / SUSPICIOUS / ANOMALY
 //     "mean": 10000,           → μ = rata-rata 20 transaksi historis
 //     "stdDev": 1200,          → σ = simpangan baku historis
 //     "variance": 1440000,     → σ² = kuadrat dari stdDev
 //     "n": 20,                 → Jumlah data historis yang dipakai
-//     "historySize": 20,       → Sama dengan n
+//     "historySize": 20,       → Ukuran minimum/window baseline yang dikonfigurasi
 //     "thresholds": {          → Batas klasifikasi Z-Score
-//       "suspicious": 2,       → Z > 2 → SUSPICIOUS
-//       "anomaly": 3           → Z > 3 → ANOMALY
+//       "allow": 2,            → Z ≤ 2 → ALLOW
+//       "review": 3            → 2 < Z ≤ 3 → REVIEW; Z > 3 → BLOCK
 //     },
 //     "reasons": ["Z-Score 3.75 melebihi threshold ANOMALY (3)"]
 //   }
@@ -738,41 +840,47 @@ router.get('/stats', async (req, res) => { // router.get() mendaftarkan endpoint
 //   /analyze → Untuk admin (response detail, ada field variance, historySize, dll)
 //   /check   → Untuk mobile app (response ringkas, hanya field yang dibutuhkan)
 // ============================================================
-router.post('/analyze', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+router.post('/analyze', requireAdmin, async (req, res) => {
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { senderId, amount } = req.body; // destructuring req.body: mengambil senderId (ID user) dan amount (nominal transaksi) dari body POST request
+    const { senderId, amount } = req.body;
     // destructuring req.body: mengambil senderId (ID user) dan amount (nominal transaksi) dari body POST request
 
     // Validasi input wajib
-    if (!senderId || !amount) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    if (senderId === undefined || senderId === null || amount === undefined || amount === null) {
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(400).json({ error: 'senderId dan amount wajib diisi' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+      return res.status(400).json({ error: 'senderId dan amount wajib diisi' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
-    // Validasi amount harus angka positif (tidak bisa transaksi negatif atau nol)
-    const amountNum = parseFloat(amount); // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
-    // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
-    if (isNaN(amountNum) || amountNum <= 0) { // validasi: isNaN cek apakah bukan angka; <= 0 memastikan jumlah positif; mencegah perhitungan Z-Score dengan nilai tidak valid
-      // validasi: isNaN cek apakah bukan angka; <= 0 memastikan jumlah positif; mencegah perhitungan Z-Score dengan nilai tidak valid
-      return res.status(400).json({ error: 'amount harus angka positif' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+    const senderIdNum = Number(senderId);
+    // Number() mengubah senderId menjadi number dan menolak teks campuran seperti "5abc"
+    if (!Number.isInteger(senderIdNum) || senderIdNum <= 0) {
+      return res.status(400).json({ error: 'senderId harus bilangan bulat positif' });
+    }
+
+    // Validasi amount harus angka finite positif (tidak bisa negatif, nol, Infinity, atau teks campuran)
+    const amountNum = Number(amount);
+    // Number() melakukan konversi penuh; berbeda dari parseFloat(), "100abc" tidak diterima
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      // Number.isFinite memastikan hasil berupa angka normal yang aman untuk perhitungan Z-Score
+      return res.status(400).json({ error: 'amount harus angka positif' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
     // Ambil 20 transaksi historis terakhir user dari database
     // Hanya transaksi yang sudah selesai (status: 'completed')
     // Diurutkan terbaru dulu, ambil 20 → ini yang jadi data statistik μ dan σ
-    const historicalTxs = await prisma.transaction.findMany({ // prisma.transaction.findMany(): mengambil riwayat transaksi user untuk baseline Z-Score
+    const historicalTxs = await prisma.transaction.findMany({
       // prisma.transaction.findMany(): mengambil riwayat transaksi user untuk baseline Z-Score
-      where: { senderId: parseInt(senderId), status: 'completed' }, // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
-      // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
-      orderBy: { createdAt: 'desc' }, // urutkan terbaru ke terlama; Z-Score menggunakan 20 transaksi paling recent sebagai baseline
+      where: { senderId: senderIdNum, status: 'completed' },
+      // senderIdNum sudah divalidasi sebagai bilangan bulat positif sebelum query dijalankan
+      orderBy: { createdAt: 'desc' },
       // urutkan terbaru ke terlama; Z-Score menggunakan 20 transaksi paling recent sebagai baseline
-      take: 20, // Maksimal 20 data historis
-      // Maksimal 20 data historis
-      select: { amount: true, createdAt: true } // Hanya ambil field yang diperlukan
+      take: HISTORY_SIZE,
+      // Ukuran window mengikuti engine; perubahan konfigurasi cukup dilakukan di satu tempat.
+      select: { amount: true, createdAt: true }
       // Hanya ambil field yang diperlukan
     });
 
@@ -785,51 +893,49 @@ router.post('/analyze', async (req, res) => { // router.post() mendaftarkan endp
     //
     // Di dalam fungsi tersebut dihitung:
     //   μ (mean)   = jumlah semua amount historis / n
-    //   σ (stdDev) = sqrt( Σ(xi - μ)² / n )
+    //   σ (stdDev) = sqrt( Σ(xi - μ)² / (n - 1) )
     //   Z          = |amount - μ| / σ
     //   decision   = ALLOW/REVIEW/BLOCK berdasarkan Z
     // ---------------------------------------------------------------
-    const analysis = analyzeZScoreAnomaly(amountNum, historicalTxs); // memanggil fungsi Z-Score dari fraudDetection.js; mengembalikan objek lengkap dengan zScore, decision, mean, stdDev
+    const analysis = analyzeZScoreAnomaly(amountNum, historicalTxs);
     // memanggil fungsi Z-Score dari fraudDetection.js; mengembalikan objek lengkap dengan zScore, decision, mean, stdDev
 
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
+    res.json({
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      message: 'Analisis transaksi selesai', // pesan konfirmasi bahwa analisis Z-Score berhasil diselesaikan
+      message: 'Analisis transaksi selesai',
       // pesan konfirmasi bahwa analisis Z-Score berhasil diselesaikan
-      analysis: { // objek analysis berisi seluruh hasil perhitungan Z-Score untuk ditampilkan di frontend
+      analysis: {
         // objek analysis berisi seluruh hasil perhitungan Z-Score untuk ditampilkan di frontend
-        algorithm: analysis.algorithm, // nama algoritma yang digunakan: 'Z-Score Based Anomaly Detection'
+        algorithm: analysis.algorithm,
         // nama algoritma yang digunakan: 'Z-Score Based Anomaly Detection'
-        zScore: analysis.zScore, // Nilai Z (hasil perhitungan utama)
+        zScore: analysis.zScore,
         // Nilai Z (hasil perhitungan utama)
-        decision: analysis.decision, // Keputusan: ALLOW/REVIEW/BLOCK
+        decision: analysis.decision,
         // Keputusan: ALLOW/REVIEW/BLOCK
-        // Mapping decision → riskLevel untuk konsistensi dengan field lain
-        riskLevel: analysis.decision === 'ALLOW' ? 'NORMAL' : analysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY', // ternary berantai: memetakan decision ke label riskLevel untuk response API /check
-        // ternary berantai: memetakan decision ke label riskLevel untuk response API /check
-        // ternary berantai: memetakan decision ke label UI; ALLOW→NORMAL, REVIEW→SUSPICIOUS, BLOCK→ANOMALY
-        mean: analysis.mean, // μ: rata-rata historis
+        riskLevel: analysis.riskLevel,
+        // Gunakan riskLevel dari engine agar response tidak mengulang klasifikasi ALLOW/REVIEW/BLOCK.
+        mean: analysis.mean,
         // μ: rata-rata historis
-        stdDev: analysis.stdDev, // σ: simpangan baku
+        stdDev: analysis.stdDev,
         // σ: simpangan baku
-        variance: analysis.variance, // σ²: varians
+        variance: analysis.variance,
         // σ²: varians
-        n: analysis.n, // Jumlah data historis
+        n: analysis.n,
         // Jumlah data historis
-        historySize: analysis.historySize, // historySize: jumlah transaksi historis yang digunakan sebagai window (20); dikembalikan untuk transparansi
-        // historySize: jumlah transaksi historis yang digunakan sebagai window (20); dikembalikan untuk transparansi
-        thresholds: analysis.thresholds, // { suspicious: 2, anomaly: 3 }
-        // { suspicious: 2, anomaly: 3 }
-        reasons: analysis.reasons // Array penjelasan keputusan
+        historySize: analysis.historySize,
+        // historySize: ukuran minimum/window baseline (20); jumlah aktual tersedia pada field n
+        thresholds: analysis.thresholds,
+        // { allow: 2, review: 3 }
+        reasons: analysis.reasons
         // Array penjelasan keputusan
       }
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan menganalisa transaksi:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan menganalisa transaksi:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menganalisa transaksi' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal menganalisa transaksi' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -866,84 +972,91 @@ router.post('/analyze', async (req, res) => { // router.post() mendaftarkan endp
 //   "n": 20,                  → Jumlah data historis yang dipakai
 //   "reasons": ["..."],       → Alasan keputusan
 //   "algorithm": "Z-Score Anomaly Detection",
-//   "thresholds": { "suspicious": 2, "anomaly": 3 }
+//   "thresholds": { "allow": 2, "review": 3 }
 // }
 //
 // PERBEDAAN RESPONSE vs /analyze:
 //   /check  → TIDAK ada: variance, historySize (field dipersingkat untuk mobile)
 //   /analyze → ADA semua field (lebih lengkap untuk debugging admin)
 // ============================================================
-router.post('/check', async (req, res) => { // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
+router.post('/check', requireUser, async (req, res) => {
   // router.post() mendaftarkan endpoint HTTP POST; dipanggil saat ada request POST ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { senderId, amount } = req.body; // destructuring req.body untuk endpoint /check; mengambil senderId dan amount untuk perhitungan Z-Score sebelum transaksi
-    // destructuring req.body untuk endpoint /check; mengambil senderId dan amount untuk perhitungan Z-Score sebelum transaksi
+    const { amount } = req.body;
+    // Ambil sender dari JWT agar client tidak dapat memeriksa histori milik pengguna lain.
+    const senderId = req.user.id;
+    // Body hanya memasok nominal transaksi; identitas sender tidak dipercaya dari input client.
 
     // Validasi input
-    if (!senderId || !amount) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    if (senderId === undefined || senderId === null || amount === undefined || amount === null) {
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(400).json({ error: 'senderId dan amount wajib diisi' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+      return res.status(400).json({ error: 'senderId dan amount wajib diisi' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
-    const amountNum = parseFloat(amount); // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
-    // parseFloat() mengubah string menjadi angka desimal; digunakan untuk nilai Z-Score atau saldo
-    if (isNaN(amountNum) || amountNum <= 0) { // validasi input /check: isNaN dan <= 0 memastikan amount valid sebelum dikirim ke engine Z-Score
-      // validasi input /check: isNaN dan <= 0 memastikan amount valid sebelum dikirim ke engine Z-Score
-      return res.status(400).json({ error: 'amount harus angka positif' }); // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+    const senderIdNum = Number(senderId);
+    // Number() mengubah senderId menjadi number dan menolak teks campuran seperti "5abc"
+    if (!Number.isInteger(senderIdNum) || senderIdNum <= 0) {
+      return res.status(400).json({ error: 'senderId harus bilangan bulat positif' });
+    }
+
+    const amountNum = amount;
+    if (typeof amountNum !== 'number' || !Number.isFinite(amountNum) || amountNum <= 0) {
+      // Number.isFinite memastikan amount bukan NaN atau Infinity sebelum masuk engine Z-Score
+      return res.status(400).json({ error: 'amount harus angka positif' });
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
     }
 
     // Ambil 20 transaksi historis completed milik sender (sama dengan /analyze)
-    const historicalTxs = await prisma.transaction.findMany({ // prisma.transaction.findMany(): mengambil hingga 20 transaksi historis user sebagai window baseline untuk /check
+    const historicalTxs = await prisma.transaction.findMany({
       // prisma.transaction.findMany(): mengambil hingga 20 transaksi historis user sebagai window baseline untuk /check
-      where: { senderId: parseInt(senderId), status: 'completed' }, // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
-      // parseInt() mengubah string menjadi bilangan bulat; digunakan untuk ID atau jumlah item
-      orderBy: { createdAt: 'desc' }, // urutkan dari terbaru; Z-Score menggunakan transaksi paling recent sebagai baseline statistik
+      where: { senderId: senderIdNum, status: 'completed' },
+      // senderIdNum sudah divalidasi sebagai bilangan bulat positif sebelum query dijalankan
+      orderBy: { createdAt: 'desc' },
       // urutkan dari terbaru; Z-Score menggunakan transaksi paling recent sebagai baseline statistik
-      take: 20, // LIMIT 20: ambil maksimal 20 transaksi; sesuai HISTORY_SIZE dalam fraudDetection.js
-      // LIMIT 20: ambil maksimal 20 transaksi; sesuai HISTORY_SIZE dalam fraudDetection.js
-      select: { amount: true, createdAt: true } // select: hanya ambil amount dan createdAt; cukup untuk perhitungan Z-Score
+      take: HISTORY_SIZE,
+      // Sama dengan /analyze: gunakan window terbaru yang ditentukan engine.
+      select: { amount: true, createdAt: true }
       // select: hanya ambil amount dan createdAt; cukup untuk perhitungan Z-Score
     });
 
     // Panggil engine Z-Score yang sama dengan /analyze
     // Seluruh perhitungan (mean, stdDev, Z, decision) dilakukan di sini
-    const analysis = analyzeZScoreAnomaly(amountNum, historicalTxs); // memanggil fungsi Z-Score dari fraudDetection.js; menghitung mean, stdDev, zScore, dan decision untuk /check
+    const analysis = analyzeZScoreAnomaly(amountNum, historicalTxs);
     // memanggil fungsi Z-Score dari fraudDetection.js; menghitung mean, stdDev, zScore, dan decision untuk /check
 
     // Response lebih ringkas (tanpa variance, historySize) → cocok untuk mobile app
-    res.json({ // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
+    res.json({
       // res.json(): mengirim respons HTTP dengan Content-Type application/json; mengonversi objek JavaScript ke JSON string otomatis
-      zScore: analysis.zScore, // Nilai Z-Score (inti hasil perhitungan)
+      zScore: analysis.zScore,
       // Nilai Z-Score (inti hasil perhitungan)
-      decision: analysis.decision, // ALLOW / REVIEW / BLOCK
+      decision: analysis.decision,
       // ALLOW / REVIEW / BLOCK
-      riskLevel: analysis.decision === 'ALLOW' ? 'NORMAL' : analysis.decision === 'REVIEW' ? 'SUSPICIOUS' : 'ANOMALY', // ternary berantai: memetakan decision ke label riskLevel untuk response /check yang dikonsumsi mobile app
-      // ternary berantai: memetakan decision ke label riskLevel untuk response /check yang dikonsumsi mobile app
-      mean: analysis.mean, // μ: rata-rata historis
+      riskLevel: analysis.riskLevel,
+      // Gunakan riskLevel dari engine yang sama dengan endpoint /analyze dan route transaksi.
+      mean: analysis.mean,
       // μ: rata-rata historis
-      stdDev: analysis.stdDev, // σ: simpangan baku
+      stdDev: analysis.stdDev,
       // σ: simpangan baku
-      n: analysis.n, // Jumlah data historis
+      n: analysis.n,
       // Jumlah data historis
-      reasons: analysis.reasons, // Alasan keputusan
+      reasons: analysis.reasons,
       // Alasan keputusan
-      algorithm: analysis.algorithm, // Nama algoritma: 'Z-Score Anomaly Detection'
+      algorithm: analysis.algorithm,
       // Nama algoritma: 'Z-Score Anomaly Detection'
-      thresholds: analysis.thresholds // Batas Z-Score { suspicious:2, anomaly:3 }
-      // Batas Z-Score { suspicious:2, anomaly:3 }
+      thresholds: analysis.thresholds
+      // Batas Z-Score { allow:2, review:3 }
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('❌ Kesalahan fraud check:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('❌ Kesalahan fraud check:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal melakukan fraud check' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal melakukan fraud check' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
-module.exports = router; // module.exports mengekspor router agar bisa di-import di server.js menggunakan require()
+module.exports = router;
 // module.exports mengekspor router agar bisa di-import di server.js menggunakan require()

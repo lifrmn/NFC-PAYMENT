@@ -14,12 +14,18 @@
     ],
     "android": {
       "package": "com.nfcpayment.app",
-      "versionCode": 14,
+      "versionCode": 15,
+      "allowBackup": false,
       "permissions": [
         "android.permission.NFC",
         "android.permission.WAKE_LOCK",
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -31,16 +37,10 @@
       "expo-dev-client",
       "expo-asset",
       "expo-font",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store"
     ],
     "extra": {
-      "EXPO_PUBLIC_API_BASE": "http://192.168.137.1:4000",
-      "EXPO_PUBLIC_ADMIN_BASE": "http://192.168.137.1:3000",
-      "EXPO_PUBLIC_BACKEND_URL": "http://192.168.137.1:4000",
-      "EXPO_PUBLIC_ADMIN_URL": "http://192.168.137.1:3000",
-      "EXPO_PUBLIC_SERVER_IP": "192.168.137.1",
-      "EXPO_PUBLIC_ADMIN_PORT": "3000",
-      "EXPO_PUBLIC_PORT": "4000",
       "eas": {
         "projectId": "ef194602-4e64-4774-b083-ff91cbb76d8a"
       }

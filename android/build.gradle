@@ -1,24 +1,36 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+// File ini adalah konfigurasi Gradle tingkat root; pengaturannya berlaku untuk modul :app dan modul native lain.
 
 buildscript {
+  // buildscript mendefinisikan repository dan plugin yang dibutuhkan saat Gradle membaca konfigurasi build.
   repositories {
+    // google menyediakan Android Gradle Plugin dan artifact AndroidX/Google lainnya.
     google()
+    // mavenCentral menyediakan Kotlin Gradle Plugin serta library Java/Kotlin umum.
     mavenCentral()
   }
   dependencies {
+    // Android Gradle Plugin menerjemahkan konfigurasi Android menjadi proses compile, package, dan APK/AAB.
     classpath('com.android.tools.build:gradle')
+    // React Native Gradle Plugin mengatur bundling JavaScript, autolinking, dan task native React Native.
     classpath('com.facebook.react:react-native-gradle-plugin')
+    // Kotlin Gradle Plugin mengompilasi MainActivity.kt, MainApplication.kt, dan source Kotlin dependency.
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }
 }
 
 allprojects {
+  // allprojects membuat daftar repository ini tersedia untuk seluruh subproject Android.
   repositories {
+    // Urutan repository dipakai Gradle saat mencari setiap dependency berdasarkan group dan artifact.
     google()
     mavenCentral()
+    // JitPack diperlukan jika suatu dependency dipublikasikan langsung dari repository GitHub.
     maven { url 'https://www.jitpack.io' }
   }
 }
 
+// expo-root-project menambahkan konfigurasi bersama yang dibutuhkan modul-modul native Expo.
 apply plugin: "expo-root-project"
+// react.rootproject menghubungkan root Gradle dengan konfigurasi React Native pada modul aplikasi.
 apply plugin: "com.facebook.react.rootproject"

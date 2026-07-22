@@ -1,39 +1,55 @@
 pluginManagement {
+  // pluginManagement menentukan dari lokasi mana Gradle memuat plugin React Native dan Expo.
   def reactNativeGradlePlugin = new File(
+    // Node require.resolve mencari plugin yang cocok dengan versi react-native di node_modules proyek.
     providers.exec {
+      // workingDir root memastikan resolusi package dimulai dari workspace aplikasi ini.
       workingDir(rootDir)
       commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
     }.standardOutput.asText.get().trim()
   ).getParentFile().absolutePath
+  // includeBuild memuat plugin React Native sebagai composite build tanpa menyalin source plugin.
   includeBuild(reactNativeGradlePlugin)
   
   def expoPluginsPath = new File(
+    // Blok kedua mencari expo-modules-autolinking yang sesuai dengan versi Expo aplikasi.
     providers.exec {
       workingDir(rootDir)
       commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
     }.standardOutput.asText.get().trim(),
     "../android/expo-gradle-plugin"
   ).absolutePath
+  // Path plugin Expo ikut dimuat sebagai composite build agar task autolinking tersedia saat konfigurasi.
   includeBuild(expoPluginsPath)
 }
 
 plugins {
+  // Plugin settings React Native menyediakan ReactSettingsExtension dan konfigurasi autolinking library.
   id("com.facebook.react.settings")
+  // Plugin settings Expo menemukan modul Expo native yang terpasang di node_modules.
   id("expo-autolinking-settings")
 }
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  // Environment variable dapat memilih autolinking komunitas; default memakai perintah autolinking Expo.
   if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
+    // Mode komunitas menjalankan perintah autolinking standar React Native.
     ex.autolinkLibrariesFromCommand()
   } else {
+    // Mode default memakai rnConfigCommand milik Expo agar modul React Native dan Expo terdeteksi bersama.
     ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
   }
 }
+// useExpoModules mendaftarkan seluruh Expo Module yang ditemukan ke build Android.
 expoAutolinking.useExpoModules()
 
+// Nama rootProject muncul pada Gradle dan Android Studio; tidak mengubah applicationId aplikasi.
 rootProject.name = 'NFC Payment App'
 
+// Version catalog Expo menyelaraskan versi dependency native yang dikelola oleh Expo SDK.
 expoAutolinking.useExpoVersionCatalog()
 
+// include ':app' memasukkan modul aplikasi Android utama ke graph build Gradle.
 include ':app'
+// Composite build ini menyediakan React Native Gradle Plugin hasil deteksi autolinking Expo.
 includeBuild(expoAutolinking.reactNativeGradlePlugin)

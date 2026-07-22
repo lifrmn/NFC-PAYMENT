@@ -22,12 +22,109 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
     /* color menetapkan warna teks default seluruh halaman; #1e293b adalah abu-biru tua */
 }
 
+.admin-login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #e8f1ff 0%, #f8fafc 48%, #e9fff5 100%);
+}
+
+.admin-login-overlay[hidden] {
+    display: none;
+}
+
+.admin-login-panel {
+    width: min(100%, 400px);
+    padding: 32px;
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 24px 64px rgba(30, 41, 59, 0.16);
+}
+
+.admin-login-brand {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    margin-bottom: 22px;
+    place-items: center;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.admin-login-panel h1 {
+    margin-bottom: 8px;
+    font-size: 24px;
+}
+
+.admin-login-panel > p:not(.admin-login-error) {
+    margin-bottom: 24px;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.admin-login-panel label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.admin-login-panel input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.admin-login-panel input:focus {
+    border-color: #2563eb;
+    outline: 3px solid #dbeafe;
+}
+
+.admin-login-error {
+    min-height: 20px;
+    margin: 8px 0;
+    color: #b91c1c;
+    font-size: 13px;
+}
+
+.admin-login-panel button {
+    width: 100%;
+    height: 44px;
+    border: 0;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+}
+
+.admin-login-panel button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
 .container { /* selector .container menargetkan elemen dengan class="container" */
 /* selector .container menargetkan elemen dengan class="container" */
     display: flex; /* display: flex mengaktifkan Flexbox layout — konten disusun dalam satu baris a... */
     /* display: flex mengaktifkan Flexbox layout — konten disusun dalam satu baris atau kolom */
     min-height: 100vh; /* min-height: 100vh berarti tinggi minimum = 100% tinggi viewport agar sidebar ... */
     /* min-height: 100vh berarti tinggi minimum = 100% tinggi viewport agar sidebar selalu penuh layar */
+    visibility: hidden;
+}
+
+.admin-authenticated .container {
+    visibility: visible;
 }
 
 /* ========================================
@@ -138,6 +235,11 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
     /* font-weight: 500 adalah medium — lebih tebal dari normal (400) tapi lebih tipis dari bold (700) */
     cursor: pointer; /* cursor: pointer mengubah kursor menjadi tangan saat mouse berada di atas elemen */
     /* cursor: pointer mengubah kursor menjadi tangan saat mouse berada di atas elemen */
+    width: 100%;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
 }
 
 .nav-link:hover { /* selector :hover adalah pseudo-class CSS yang aktif saat mouse berada di atas ... */
@@ -487,6 +589,10 @@ body { /* selector body menargetkan elemen body — area konten yang terlihat di
     /* font-weight: 500 medium */
     cursor: pointer; /* cursor: pointer menampilkan tangan saat hover */
     /* cursor: pointer menampilkan tangan saat hover */
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
 }
 
 /* ========================================
@@ -891,6 +997,9 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
     /* Sedikit lebih besar agar mudah diklik */
     cursor: pointer; /* Kursor tangan saat di-hover */
     /* Kursor tangan saat di-hover */
+    border: 0;
+    background: transparent;
+    font-family: inherit;
 }
 
 /* ========================================
@@ -1572,4 +1681,186 @@ td { /* selector td menargetkan semua sel data tabel (table data) */
 /* :hover menargetkan tombol success saat mouse di atasnya */
     background: #A7F3D0; /* hijau lebih pekat saat hover */
     /* hijau lebih pekat saat hover */
+}
+
+@media (max-width: 1100px) {
+    .sidebar {
+        width: 220px;
+        padding: 20px 16px;
+    }
+
+    .main-content {
+        min-width: 0;
+        margin-left: 220px;
+        padding: 24px;
+    }
+
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .container {
+        display: block;
+    }
+
+    .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        width: 100%;
+        height: auto;
+        padding: 10px 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .logo {
+        display: none;
+    }
+
+    .nav-menu {
+        display: flex;
+        width: max-content;
+        gap: 4px;
+    }
+
+    .nav-item {
+        margin-bottom: 0;
+    }
+
+    .nav-link {
+        width: auto;
+        padding: 9px 12px;
+        white-space: nowrap;
+    }
+
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+        padding: 18px 14px 32px;
+    }
+
+    .content-grid,
+    .content-grid > *,
+    .card,
+    .table-container {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .header-title h1 {
+        font-size: 26px;
+    }
+
+    .header-actions {
+        flex-wrap: wrap;
+    }
+
+    .header-actions .user-profile {
+        margin-left: auto;
+    }
+
+    .stats-grid {
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        min-width: 0;
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .stat-row {
+        gap: 8px;
+    }
+
+    .stat-info h2,
+    .stat-number {
+        font-size: 26px;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        font-size: 20px;
+    }
+
+    .card,
+    .filters {
+        border-radius: 8px;
+    }
+
+    .filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .filter-group,
+    .topup-field {
+        min-width: 0;
+    }
+
+    .btn-filter {
+        width: 100%;
+    }
+
+    .table-container table {
+        min-width: 720px;
+    }
+
+    .pagination {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .setting-key {
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid,
+    .filters {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-export {
+        padding: 9px 12px;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .topup-form-row {
+        display: block;
+    }
+
+    .topup-field + .topup-field {
+        margin-top: 14px;
+    }
+
+    .btn-topup-submit {
+        width: 100%;
+    }
 }

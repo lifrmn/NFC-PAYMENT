@@ -1,15 +1,12 @@
 {
   "cli": {
     "version": ">= 3.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": {
-        "API_URL": "https://unbellicose-troublesomely-miley.ngrok-free.dev"
-      },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
@@ -19,7 +16,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "API_URL": "http://10.3.5.191:4000"
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.13:4000"
       },
       "android": {
         "buildType": "apk",

@@ -5,610 +5,638 @@
 // Kebijakan: 1 user hanya bisa memiliki 1 kartu (ditampilkan slice 0,1)
 // ============================================================
 
-import { StyleSheet } from 'react-native'; // Import API styling React Native
+import { StyleSheet } from 'react-native';
 // Import API styling React Native
 
-const styles = StyleSheet.create({ // StyleSheet.create = membuat kumpulan style tampilan React Native yang dioptimalkan
+const styles = StyleSheet.create({
 
   // ── Layar utama ──
   container: {
-    flex: 1, // Isi seluruh tinggi layar
+    flex: 1,
     // Isi seluruh tinggi layar
-    backgroundColor: '#f8fafc', // Latar abu-abu sangat muda
+    backgroundColor: '#f8fafc',
     // Latar abu-abu sangat muda
   },
 
   // ── Header navigasi (tombol kembali + judul + spacer) ──
   header: {
-    flexDirection: 'row', // Elemen berjajar horizontal
+    flexDirection: 'row',
     // Elemen berjajar horizontal
-    alignItems: 'center', // Rata tengah vertikal
+    alignItems: 'center',
     // Rata tengah vertikal
-    justifyContent: 'space-between', // Kiri, tengah, kanan dipisah rata
+    justifyContent: 'space-between',
     // Kiri, tengah, kanan dipisah rata
-    paddingHorizontal: 20, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 20,
     // Jarak dalam kiri dan kanan
-    paddingVertical: 16, // Jarak dalam atas dan bawah
+    paddingVertical: 16,
     // Jarak dalam atas dan bawah
-    backgroundColor: '#fff', // Warna latar belakang
+    backgroundColor: '#fff',
     // Warna latar belakang
-    borderBottomWidth: 1, // Ketebalan border bawah
+    borderBottomWidth: 1,
     // Ketebalan border bawah
-    borderBottomColor: '#f1f5f9', // warna garis bawah header abu sangat muda
+    borderBottomColor: '#f1f5f9',
     // warna garis bawah header abu sangat muda
   },
 
   // ── Tombol kembali (lingkaran abu) ──
   backButton: {
-    width: 40, // Lebar elemen
+    width: 40,
     // Lebar elemen
-    height: 40, // Tinggi elemen
+    height: 40,
     // Tinggi elemen
-    borderRadius: 20, // Bulat sempurna
+    borderRadius: 20,
     // Bulat sempurna
-    backgroundColor: '#f8fafc', // Warna latar belakang
+    backgroundColor: '#f8fafc',
     // Warna latar belakang
-    justifyContent: 'center', // Perataan konten di sumbu utama (main axis)
+    justifyContent: 'center',
     // Perataan konten di sumbu utama (main axis)
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
   },
 
   // ── Ikon panah kembali ──
-  backIcon: { fontSize: 24, color: '#1e293b' }, // Emoji ikon kembali (tanda <)
+  backIcon: { fontSize: 24, color: '#1e293b' },
   // Emoji ikon kembali (tanda <)
 
   // ── Judul "Kartu Saya" ──
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' }, // Judul header semi-bold warna gelap
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
   // Judul header semi-bold warna gelap
 
   // ── Spacer kanan agar judul presisi di tengah ──
-  headerSpacer: { width: 40 }, // Spacer kanan header agar judul rata tengah
+  headerSpacer: { width: 40 },
   // Spacer kanan header agar judul rata tengah
 
   // ── Container loading spinner ──
   loadingContainer: {
-    flex: 1, // Proporsi flexbox relatif terhadap sibling
+    flex: 1,
     // Proporsi flexbox relatif terhadap sibling
-    justifyContent: 'center', // Spinner di tengah vertikal
+    justifyContent: 'center',
     // Spinner di tengah vertikal
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
   },
 
   // ── Teks "Memuat..." di bawah spinner ──
   loadingText: {
-    marginTop: 16, // Jarak dari spinner di atas
+    marginTop: 16,
     // Jarak dari spinner di atas
-    fontSize: 16, // Ukuran font
+    fontSize: 16,
     // Ukuran font
-    color: '#64748b', // Abu-abu sedang
+    color: '#64748b',
     // Abu-abu sedang
   },
 
   // ── ScrollView area konten ──
-  scrollView: { flex: 1 }, // Area ScrollView mengisi sisa layar
+  scrollView: { flex: 1 },
   // Area ScrollView mengisi sisa layar
 
   // ── Padding dalam ScrollView ──
-  content: { padding: 24 }, // Area konten dengan padding 24dp semua sisi
+  content: { padding: 24 },
   // Area konten dengan padding 24dp semua sisi
 
   // ── Subtitle halaman (misalnya "Kartu NFC terdaftar") ──
   pageSubtitle: {
-    fontSize: 14, // Ukuran font
+    fontSize: 14,
     // Ukuran font
-    color: '#64748b', // Warna teks
+    color: '#64748b',
     // Warna teks
-    marginBottom: 24, // Jarak luar bawah
+    marginBottom: 24,
     // Jarak luar bawah
-    lineHeight: 20, // Spasi baris agar nyaman dibaca
+    lineHeight: 20,
     // Spasi baris agar nyaman dibaca
+  },
+
+  syncWarning: {
+    marginBottom: 20,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+    borderRadius: 8,
+    backgroundColor: '#fffbeb',
+  },
+
+  syncWarningText: {
+    color: '#92400e',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+
+  retryButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+
+  retryButtonText: {
+    color: '#1d4ed8',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   // ── State kosong: belum punya kartu ──
   emptyState: {
-    backgroundColor: '#fff', // Warna latar belakang
+    backgroundColor: '#fff',
     // Warna latar belakang
-    borderRadius: 24, // Kelengkungan sudut elemen
+    borderRadius: 24,
     // Kelengkungan sudut elemen
-    padding: 48, // Padding besar agar terasa lapang
+    padding: 48,
     // Padding besar agar terasa lapang
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    shadowColor: '#000', // Warna bayangan elemen
+    shadowColor: '#000',
     // Warna bayangan elemen
-    shadowOffset: { width: 0, height: 4 }, // Arah dan jarak bayangan
+    shadowOffset: { width: 0, height: 4 },
     // Arah dan jarak bayangan
-    shadowOpacity: 0.1, // Transparansi bayangan
+    shadowOpacity: 0.1,
     // Transparansi bayangan
-    shadowRadius: 12, // Blur radius bayangan
+    shadowRadius: 12,
     // Blur radius bayangan
-    elevation: 5, // Ketinggian bayangan (Android)
+    elevation: 5,
     // Ketinggian bayangan (Android)
   },
 
   // ── Emoji besar di state kosong (misalnya kartu dengan tanda ?) ──
-  emptyIcon: { fontSize: 64, marginBottom: 16 }, // Emoji besar di state daftar kartu kosong
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
   // Emoji besar di state daftar kartu kosong
 
   // ── Judul state kosong ("Belum ada kartu") ──
   emptyTitle: {
-    fontSize: 20, // Ukuran font
+    fontSize: 20,
     // Ukuran font
-    fontWeight: 'bold', // Ketebalan font
+    fontWeight: 'bold',
     // Ketebalan font
-    color: '#1e293b', // Warna teks
+    color: '#1e293b',
     // Warna teks
-    marginBottom: 8, // Jarak luar bawah
+    marginBottom: 8,
     // Jarak luar bawah
   },
 
   // ── Deskripsi state kosong ──
   emptyText: {
-    fontSize: 14, // Ukuran font
+    fontSize: 14,
     // Ukuran font
-    color: '#64748b', // Warna teks
+    color: '#64748b',
     // Warna teks
-    textAlign: 'center', // Perataan teks
+    textAlign: 'center',
     // Perataan teks
-    marginBottom: 24, // Jarak luar bawah
+    marginBottom: 24,
     // Jarak luar bawah
-    paddingHorizontal: 20, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 20,
     // Jarak dalam kiri dan kanan
   },
 
   // ── Tombol "Tambah Kartu" di state kosong ──
   addButton: {
-    flexDirection: 'row', // Ikon + teks berjajar horizontal
+    flexDirection: 'row',
     // Ikon + teks berjajar horizontal
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    backgroundColor: '#3B82F6', // Warna latar belakang
+    backgroundColor: '#3B82F6',
     // Warna latar belakang
-    paddingVertical: 14, // Jarak dalam atas dan bawah
+    paddingVertical: 14,
     // Jarak dalam atas dan bawah
-    paddingHorizontal: 24, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 24,
     // Jarak dalam kiri dan kanan
-    borderRadius: 12, // Kelengkungan sudut elemen
+    borderRadius: 12,
     // Kelengkungan sudut elemen
-    gap: 8, // Jarak antara ikon dan teks
+    gap: 8,
     // Jarak antara ikon dan teks
   },
 
   // ── Emoji ikon di tombol tambah kartu ──
-  addButtonIcon: { fontSize: 18 }, // Emoji ikon + di tombol tambah kartu
+  addButtonIcon: { fontSize: 18 },
   // Emoji ikon + di tombol tambah kartu
 
   // ── Teks "Daftarkan Kartu" di tombol ──
-  addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' }, // Teks putih semi-bold di tombol tambah
+  addButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   // Teks putih semi-bold di tombol tambah
 
   // ── Card representasi satu kartu NFC ──
   cardItem: {
-    backgroundColor: '#fff', // Warna latar belakang
+    backgroundColor: '#fff',
     // Warna latar belakang
-    borderRadius: 24, // Kelengkungan sudut elemen
+    borderRadius: 24,
     // Kelengkungan sudut elemen
-    marginBottom: 20, // Jarak luar bawah
+    marginBottom: 20,
     // Jarak luar bawah
-    shadowColor: '#000', // Warna bayangan elemen
+    shadowColor: '#000',
     // Warna bayangan elemen
-    shadowOffset: { width: 0, height: 4 }, // Arah dan jarak bayangan
+    shadowOffset: { width: 0, height: 4 },
     // Arah dan jarak bayangan
-    shadowOpacity: 0.1, // Transparansi bayangan
+    shadowOpacity: 0.1,
     // Transparansi bayangan
-    shadowRadius: 12, // Blur radius bayangan
+    shadowRadius: 12,
     // Blur radius bayangan
-    elevation: 5, // Ketinggian bayangan (Android)
+    elevation: 5,
     // Ketinggian bayangan (Android)
-    overflow: 'hidden', // Agar konten tidak keluar dari border radius
+    overflow: 'hidden',
     // Agar konten tidak keluar dari border radius
   },
 
   // ── Baris atas card (badge "Kartu Utama" + badge status) ──
   cardHeader: {
-    flexDirection: 'row', // Arah susunan elemen anak (row/column)
+    flexDirection: 'row',
     // Arah susunan elemen anak (row/column)
-    justifyContent: 'space-between', // Perataan konten di sumbu utama (main axis)
+    justifyContent: 'space-between',
     // Perataan konten di sumbu utama (main axis)
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    padding: 20, // Jarak dalam semua sisi
+    padding: 20,
     // Jarak dalam semua sisi
-    paddingBottom: 16, // Padding bawah lebih kecil agar dekat konten
+    paddingBottom: 16,
     // Padding bawah lebih kecil agar dekat konten
   },
 
   // ── Badge biru "Kartu Utama" ──
   cardBadge: {
-    backgroundColor: '#3B82F6', // Warna latar belakang
+    backgroundColor: '#3B82F6',
     // Warna latar belakang
-    paddingVertical: 6, // Jarak dalam atas dan bawah
+    paddingVertical: 6,
     // Jarak dalam atas dan bawah
-    paddingHorizontal: 12, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 12,
     // Jarak dalam kiri dan kanan
-    borderRadius: 8, // Kelengkungan sudut elemen
+    borderRadius: 8,
     // Kelengkungan sudut elemen
   },
 
   // ── Teks dalam badge "Kartu Utama" ──
-  cardBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' }, // Teks putih kecil di badge kartu
+  cardBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   // Teks putih kecil di badge kartu
 
   // ── Badge status AKTIF / DIBLOKIR ──
   statusBadge: {
-    flexDirection: 'row', // Titik warna + teks
+    flexDirection: 'row',
     // Titik warna + teks
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    paddingVertical: 6, // Jarak dalam atas dan bawah
+    paddingVertical: 6,
     // Jarak dalam atas dan bawah
-    paddingHorizontal: 12, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 12,
     // Jarak dalam kiri dan kanan
-    borderRadius: 12, // Berbentuk pil
+    borderRadius: 12,
     // Berbentuk pil
-    gap: 6, // Jarak antar elemen dalam flex/grid
+    gap: 6,
     // Jarak antar elemen dalam flex/grid
     // Warna latar diisi dinamis dari kode
   },
 
   // ── Titik warna status (hijau = aktif, merah = blokir) ──
   statusDot: {
-    width: 8, // Lebar elemen
+    width: 8,
     // Lebar elemen
-    height: 8, // Tinggi elemen
+    height: 8,
     // Tinggi elemen
-    borderRadius: 4, // Bulat sempurna
+    borderRadius: 4,
     // Bulat sempurna
     // Warna diisi dinamis
   },
 
   // ── Teks status (AKTIF / DIBLOKIR) ──
   statusText: {
-    fontSize: 12, // Ukuran font
+    fontSize: 12,
     // Ukuran font
-    fontWeight: '600', // Ketebalan font
+    fontWeight: '600',
     // Ketebalan font
     // Warna diisi dinamis
   },
 
   // ── Area konten detail kartu ──
   cardContent: {
-    padding: 20, // Jarak dalam semua sisi
+    padding: 20,
     // Jarak dalam semua sisi
-    paddingTop: 0, // Tidak perlu padding atas karena cardHeader sudah ada
+    paddingTop: 0,
     // Tidak perlu padding atas karena cardHeader sudah ada
   },
 
   // ── Container visualisasi kartu fisik ──
-  cardVisual: { marginBottom: 20 }, // Visual kartu dengan jarak bawah
+  cardVisual: { marginBottom: 20 },
   // Visual kartu dengan jarak bawah
 
   // ── "Kartu kredit" virtual — representasi kartu fisik NFC ──
   cardVisualGradient: {
-    height: 180, // Tinggi kartu mirip kartu kredit asli
+    height: 180,
     // Tinggi kartu mirip kartu kredit asli
-    backgroundColor: '#1e40af', // Biru tua (navy) untuk kesan premium
+    backgroundColor: '#1e40af',
     // Biru tua (navy) untuk kesan premium
-    borderRadius: 16, // Kelengkungan sudut elemen
+    borderRadius: 16,
     // Kelengkungan sudut elemen
-    padding: 20, // Jarak dalam semua sisi
+    padding: 20,
     // Jarak dalam semua sisi
-    position: 'relative', // Agar elemen dalam bisa absolute
+    position: 'relative',
     // Agar elemen dalam bisa absolute
-    overflow: 'hidden', // Clip konten ke dalam border radius
+    overflow: 'hidden',
     // Clip konten ke dalam border radius
   },
 
   // ── Chip kartu (representasi chip emas fisik) ──
   cardChip: {
-    width: 48, // Lebar elemen
+    width: 48,
     // Lebar elemen
-    height: 48, // Tinggi elemen
+    height: 48,
     // Tinggi elemen
-    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Putih semi-transparan
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     // Putih semi-transparan
-    borderRadius: 8, // Kelengkungan sudut elemen
+    borderRadius: 8,
     // Kelengkungan sudut elemen
   },
 
   // ── Ikon chip ──
-  cardChipIcon: { fontSize: 32 }, // Emoji chip kartu berukuran besar
+  cardChipIcon: { fontSize: 32 },
   // Emoji chip kartu berukuran besar
 
   // ── Ikon NFC di pojok kanan atas kartu virtual ──
   cardNfcIcon: {
-    position: 'absolute', // Bebas dari flow normal
+    position: 'absolute',
     // Bebas dari flow normal
-    right: 20, // Posisi dari tepi kanan
+    right: 20,
     // Posisi dari tepi kanan
-    top: 20, // Posisi dari tepi atas
+    top: 20,
     // Posisi dari tepi atas
   },
 
   // ── Simbol NFC "))" ──
   cardNfcText: {
-    fontSize: 32, // Ukuran font
+    fontSize: 32,
     // Ukuran font
-    color: '#fff', // Warna teks
+    color: '#fff',
     // Warna teks
-    fontWeight: 'bold', // Ketebalan font
+    fontWeight: 'bold',
     // Ketebalan font
   },
 
   // ── Container baris detail kartu (UID, saldo, tipe) ──
-  cardDetails: { gap: 12 }, // Jarak antar baris detail
+  cardDetails: { gap: 12 },
   // Jarak antar baris detail
 
   // ── Satu baris detail (label di kiri, nilai di kanan) ──
   cardRow: {
-    flexDirection: 'row', // Arah susunan elemen anak (row/column)
+    flexDirection: 'row',
     // Arah susunan elemen anak (row/column)
-    justifyContent: 'space-between', // Label kiri, nilai kanan
+    justifyContent: 'space-between',
     // Label kiri, nilai kanan
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    paddingVertical: 8, // Padding atas-bawah tiap baris
+    paddingVertical: 8,
     // Padding atas-bawah tiap baris
   },
 
   // ── Teks label kiri (misalnya "UID:", "Tipe:", "Dibuat:") ──
   cardLabel: {
-    fontSize: 13, // Ukuran font
+    fontSize: 13,
     // Ukuran font
-    color: '#64748b', // Abu-abu sedang agar tidak terlalu dominan
+    color: '#64748b',
     // Abu-abu sedang agar tidak terlalu dominan
-    fontWeight: '500', // Ketebalan font
+    fontWeight: '500',
     // Ketebalan font
   },
 
   // ── Teks nilai kanan ──
   cardValue: {
-    fontSize: 14, // Ukuran font
+    fontSize: 14,
     // Ukuran font
-    color: '#1e293b', // Warna teks
+    color: '#1e293b',
     // Warna teks
-    fontWeight: '600', // Ketebalan font
+    fontWeight: '600',
     // Ketebalan font
   },
 
   // ── Kotak UID (abu dengan border, font monospace) ──
   cardUidBox: {
-    flexDirection: 'row', // UID + tombol copy berjajar
+    flexDirection: 'row',
     // UID + tombol copy berjajar
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    backgroundColor: '#f8fafc', // Warna latar belakang
+    backgroundColor: '#f8fafc',
     // Warna latar belakang
-    paddingVertical: 6, // Jarak dalam atas dan bawah
+    paddingVertical: 6,
     // Jarak dalam atas dan bawah
-    paddingHorizontal: 12, // Jarak dalam kiri dan kanan
+    paddingHorizontal: 12,
     // Jarak dalam kiri dan kanan
-    borderRadius: 8, // Kelengkungan sudut elemen
+    borderRadius: 8,
     // Kelengkungan sudut elemen
-    gap: 8, // Jarak antar elemen dalam flex/grid
+    gap: 8,
     // Jarak antar elemen dalam flex/grid
   },
 
   // ── Teks UID (format monospace agar karakter sejajar) ──
   cardUidText: {
-    fontSize: 12, // Ukuran font
+    fontSize: 12,
     // Ukuran font
-    fontFamily: 'monospace', // Font monospace untuk karakter teknis
+    fontFamily: 'monospace',
     // Font monospace untuk karakter teknis
-    color: '#1e293b', // Warna teks
+    color: '#1e293b',
     // Warna teks
-    fontWeight: '500', // Ketebalan font
+    fontWeight: '500',
     // Ketebalan font
   },
 
   // ── Tombol kecil copy UID ──
-  copyIconButton: { padding: 4 }, // Padding kecil agar mudah disentuh
+  copyIconButton: { padding: 4 },
   // Padding kecil agar mudah disentuh
 
   // ── Ikon copy ──
-  copyIconText: { fontSize: 14 }, // Emoji ikon copy UID kartu
+  copyIconText: { fontSize: 14 },
   // Emoji ikon copy UID kartu
 
   // ── Teks saldo kartu (hijau) ──
   cardBalance: {
-    fontSize: 18, // Ukuran font
+    fontSize: 18,
     // Ukuran font
-    color: '#10B981', // Hijau = saldo positif
+    color: '#10B981',
     // Hijau = saldo positif
-    fontWeight: 'bold', // Ketebalan font
+    fontWeight: 'bold',
     // Ketebalan font
   },
 
   // ── Container tombol aksi kartu (Blokir / Aktifkan) ──
   cardActions: {
-    marginTop: 20, // Jarak dari detail kartu di atas
+    marginTop: 20,
     // Jarak dari detail kartu di atas
-    gap: 12, // Jarak antar tombol
+    gap: 12,
     // Jarak antar tombol
   },
 
   // ── Tombol "Blokir Kartu" (merah muda) ──
   blockButton: {
-    flexDirection: 'row', // Ikon + teks berjajar
+    flexDirection: 'row',
     // Ikon + teks berjajar
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    justifyContent: 'center', // Perataan konten di sumbu utama (main axis)
+    justifyContent: 'center',
     // Perataan konten di sumbu utama (main axis)
-    backgroundColor: '#FEF2F2', // Merah sangat muda agar tidak menakutkan
+    backgroundColor: '#FEF2F2',
     // Merah sangat muda agar tidak menakutkan
-    paddingVertical: 14, // Jarak dalam atas dan bawah
+    paddingVertical: 14,
     // Jarak dalam atas dan bawah
-    borderRadius: 12, // Kelengkungan sudut elemen
+    borderRadius: 12,
     // Kelengkungan sudut elemen
-    gap: 8, // Jarak antar elemen dalam flex/grid
+    gap: 8,
     // Jarak antar elemen dalam flex/grid
   },
 
   // ── Ikon di tombol blokir ──
-  blockButtonIcon: { fontSize: 16 }, // Emoji ikon di tombol blokir kartu
+  blockButtonIcon: { fontSize: 16 },
   // Emoji ikon di tombol blokir kartu
 
   // ── Teks "Blokir Kartu" ──
   blockButtonText: {
-    color: '#EF4444', // Merah agar terasa peringatan
+    color: '#EF4444',
     // Merah agar terasa peringatan
-    fontSize: 15, // Ukuran font
+    fontSize: 15,
     // Ukuran font
-    fontWeight: '600', // Ketebalan font
+    fontWeight: '600',
     // Ketebalan font
   },
 
   // ── Tombol "Aktifkan Kartu" (hijau muda) ──
   activateButton: {
-    flexDirection: 'row', // Arah susunan elemen anak (row/column)
+    flexDirection: 'row',
     // Arah susunan elemen anak (row/column)
-    alignItems: 'center', // Perataan item di sumbu silang (cross axis)
+    alignItems: 'center',
     // Perataan item di sumbu silang (cross axis)
-    justifyContent: 'center', // Perataan konten di sumbu utama (main axis)
+    justifyContent: 'center',
     // Perataan konten di sumbu utama (main axis)
-    backgroundColor: '#F0FDF4', // Hijau sangat muda
+    backgroundColor: '#F0FDF4',
     // Hijau sangat muda
-    paddingVertical: 14, // Jarak dalam atas dan bawah
+    paddingVertical: 14,
     // Jarak dalam atas dan bawah
-    borderRadius: 12, // Kelengkungan sudut elemen
+    borderRadius: 12,
     // Kelengkungan sudut elemen
-    gap: 8, // Jarak antar elemen dalam flex/grid
+    gap: 8,
     // Jarak antar elemen dalam flex/grid
   },
 
   // ── Ikon di tombol aktifkan ──
-  activateButtonIcon: { fontSize: 16 }, // Emoji ikon di tombol aktifkan kartu
+  activateButtonIcon: { fontSize: 16 },
   // Emoji ikon di tombol aktifkan kartu
 
   // ── Teks "Aktifkan Kartu" ──
   activateButtonText: {
-    color: '#10B981', // Hijau emerald
+    color: '#10B981',
     // Hijau emerald
-    fontSize: 15, // Ukuran font
+    fontSize: 15,
     // Ukuran font
-    fontWeight: '600', // Ketebalan font
+    fontWeight: '600',
     // Ketebalan font
   },
 
   // ── Tombol "Hapus Kartu" (abu / destructive) ──
   deleteButton: {
-    flexDirection: 'row', // ikon dan teks berjajar horizontal
+    flexDirection: 'row',
     // ikon dan teks berjajar horizontal
-    alignItems: 'center', // rata tengah vertikal
+    alignItems: 'center',
     // rata tengah vertikal
-    justifyContent: 'center', // rata tengah horizontal
+    justifyContent: 'center',
     // rata tengah horizontal
-    backgroundColor: '#F8FAFC', // latar abu sangat muda untuk aksi destruktif ringan
+    backgroundColor: '#F8FAFC',
     // latar abu sangat muda untuk aksi destruktif ringan
-    paddingVertical: 12, // padding atas-bawah tombol hapus
+    paddingVertical: 12,
     // padding atas-bawah tombol hapus
-    borderRadius: 12, // sudut membulat
+    borderRadius: 12,
     // sudut membulat
-    gap: 8, // jarak antara ikon dan teks
+    gap: 8,
     // jarak antara ikon dan teks
-    marginTop: 8, // jarak dari tombol di atasnya
+    marginTop: 8,
     // jarak dari tombol di atasnya
-    borderWidth: 1, // border tipis agar berbeda dari tombol solid
+    borderWidth: 1,
     // border tipis agar berbeda dari tombol solid
-    borderColor: '#CBD5E1', // border abu-abu muda
+    borderColor: '#CBD5E1',
     // border abu-abu muda
   },
 
-  deleteButtonIcon: { fontSize: 16 }, // emoji ikon hapus di tombol hapus kartu
+  deleteButtonIcon: { fontSize: 16 },
   // emoji ikon hapus di tombol hapus kartu
 
-  deleteButtonText: { // teks di tombol hapus kartu
+  deleteButtonText: {
     // teks di tombol hapus kartu
-    color: '#64748B', // abu-abu sedang untuk aksi destruktif yang tidak terlalu mencolok
+    color: '#64748B',
     // abu-abu sedang untuk aksi destruktif yang tidak terlalu mencolok
-    fontSize: 14, // ukuran teks tombol hapus
+    fontSize: 14,
     // ukuran teks tombol hapus
-    fontWeight: '600', // semi-bold agar terbaca jelas
+    fontWeight: '600',
     // semi-bold agar terbaca jelas
   },
 
   // ── Banner kebijakan 1 kartu per user (latar kuning) ──
   policyInfo: {
-    flexDirection: 'row', // Arah susunan elemen anak (row/column)
+    flexDirection: 'row',
     // Arah susunan elemen anak (row/column)
-    backgroundColor: '#FEF9C3', // Kuning sangat muda
+    backgroundColor: '#FEF9C3',
     // Kuning sangat muda
-    padding: 16, // Jarak dalam semua sisi
+    padding: 16,
     // Jarak dalam semua sisi
-    borderRadius: 16, // Kelengkungan sudut elemen
+    borderRadius: 16,
     // Kelengkungan sudut elemen
-    gap: 12, // Jarak antar elemen dalam flex/grid
+    gap: 12,
     // Jarak antar elemen dalam flex/grid
-    marginBottom: 20, // Jarak luar bawah
+    marginBottom: 20,
     // Jarak luar bawah
   },
 
   // ── Ikon di banner kebijakan ──
-  policyIcon: { fontSize: 20 }, // Emoji ikon di informasi kebijakan
+  policyIcon: { fontSize: 20 },
   // Emoji ikon di informasi kebijakan
 
   // ── Container teks dalam banner kebijakan ──
-  policyTextContainer: { flex: 1 }, // Teks kebijakan mengisi sisa lebar
+  policyTextContainer: { flex: 1 },
   // Teks kebijakan mengisi sisa lebar
 
   // ── Judul kebijakan ("1 Akun = 1 Kartu") ──
   policyTitle: {
-    fontSize: 14, // Ukuran font
+    fontSize: 14,
     // Ukuran font
-    fontWeight: '600', // Ketebalan font
+    fontWeight: '600',
     // Ketebalan font
-    color: '#854d0e', // Cokelat tua agar kontras di latar kuning
+    color: '#854d0e',
     // Cokelat tua agar kontras di latar kuning
-    marginBottom: 4, // Jarak luar bawah
+    marginBottom: 4,
     // Jarak luar bawah
   },
 
   // ── Penjelasan kebijakan ──
   policyText: {
-    fontSize: 13, // Ukuran font
+    fontSize: 13,
     // Ukuran font
-    color: '#a16207', // Cokelat lebih terang
+    color: '#a16207',
     // Cokelat lebih terang
-    lineHeight: 18, // Tinggi baris teks
+    lineHeight: 18,
     // Tinggi baris teks
   },
 
   // ── Banner keamanan NFC (latar hijau muda) ──
   securityInfo: {
-    flexDirection: 'row', // Arah susunan elemen anak (row/column)
+    flexDirection: 'row',
     // Arah susunan elemen anak (row/column)
-    alignItems: 'flex-start', // Rata atas untuk teks panjang
+    alignItems: 'flex-start',
     // Rata atas untuk teks panjang
-    backgroundColor: '#F0FDF4', // Hijau sangat muda
+    backgroundColor: '#F0FDF4',
     // Hijau sangat muda
-    padding: 16, // Jarak dalam semua sisi
+    padding: 16,
     // Jarak dalam semua sisi
-    borderRadius: 12, // Kelengkungan sudut elemen
+    borderRadius: 12,
     // Kelengkungan sudut elemen
-    gap: 12, // Jarak antar elemen dalam flex/grid
+    gap: 12,
     // Jarak antar elemen dalam flex/grid
   },
 
   // ── Ikon gembok keamanan ──
-  securityIcon: { fontSize: 20 }, // Emoji ikon keamanan (sedang)
+  securityIcon: { fontSize: 20 },
   // Emoji ikon keamanan (sedang)
 
   // ── Teks info keamanan ──
   securityText: {
-    flex: 1, // Proporsi flexbox relatif terhadap sibling
+    flex: 1,
     // Proporsi flexbox relatif terhadap sibling
-    fontSize: 13, // Ukuran font
+    fontSize: 13,
     // Ukuran font
-    color: '#15803d', // Hijau gelap kontras di latar hijau muda
+    color: '#15803d',
     // Hijau gelap kontras di latar hijau muda
-    lineHeight: 18, // Tinggi baris teks
+    lineHeight: 18,
     // Tinggi baris teks
   },
 
 });
 
-export default styles; // Ekspor agar bisa digunakan di MyCardsScreen.tsx
+export default styles;
 // Ekspor agar bisa digunakan di MyCardsScreen.tsx

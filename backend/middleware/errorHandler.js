@@ -21,86 +21,93 @@
 // ===============================================================
 // Fungsi ini dipanggil otomatis oleh Express saat ada error
 // Usage: app.use(errorHandler) <- ditaruh di paling akhir setelah semua routes
-const errorHandler = (err, req, res, next) => { // errorHandler: error handling middleware Express dengan 4 parameter (err, req, res, next); 4 param = Express kenali sebagai error handler
+const errorHandler = (err, req, res, next) => {
   // errorHandler: error handling middleware Express dengan 4 parameter (err, req, res, next); 4 param = Express kenali sebagai error handler
+  // JSON malformed dari express.json/body-parser adalah kesalahan request client, bukan kerusakan server.
+  if (err.type === 'entity.parse.failed') {
+    console.warn(`⚠️ JSON request tidak valid: ${req.method} ${req.originalUrl}`);
+    return res.status(400).json({
+      error: 'Format JSON tidak valid'
+    });
+  }
+
   // STEP 1: Log error ke console untuk debugging
-  console.error('Error:', err); // Log full error object
+  console.error('Error:', err);
   // Log full error object
 
   // STEP 2: Handle Prisma errors
   // Prisma error code P2002 = Unique constraint violation (duplicate entry)
-  if (err.code === 'P2002') { // P2002 adalah kode error Prisma untuk unique constraint violation; data yang dimasukkan sudah ada (duplikat)
+  if (err.code === 'P2002') {
     // P2002 adalah kode error Prisma untuk unique constraint violation; data yang dimasukkan sudah ada (duplikat)
-    return res.status(400).json({ // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+    return res.status(400).json({
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
-      error: 'Duplicate entry', // Error message user-friendly
+      error: 'Duplicate entry',
       // Error message user-friendly
-      details: 'A record with this information already exists' // Detail lebih spesifik
+      details: 'A record with this information already exists'
       // Detail lebih spesifik
     });
   }
 
   // Prisma error code P2025 = Record not found
-  if (err.code === 'P2025') { // P2025 adalah kode error Prisma untuk record not found; data yang diminta tidak ada di database
+  if (err.code === 'P2025') {
     // P2025 adalah kode error Prisma untuk record not found; data yang diminta tidak ada di database
-    return res.status(404).json({ // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
+    return res.status(404).json({
       // return + res.status(404): menghentikan eksekusi dan mengirim 404 Not Found ke client
-      error: 'Record not found', // Error message user-friendly
+      error: 'Record not found',
       // Error message user-friendly
-      details: 'The requested record does not exist' // Detail lebih spesifik
+      details: 'The requested record does not exist'
       // Detail lebih spesifik
     });
   }
 
   // STEP 3: Handle validation errors
   // Validation error terjadi saat data tidak sesuai format (dari express-validator)
-  if (err.name === 'ValidationError') { // ValidationError: error validasi input; data yang dikirim tidak sesuai format yang diharapkan
+  if (err.name === 'ValidationError') {
     // ValidationError: error validasi input; data yang dikirim tidak sesuai format yang diharapkan
-    return res.status(400).json({ // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
+    return res.status(400).json({
       // return + res.status: menghentikan eksekusi dan langsung mengirim response error 400 ke client
-      error: 'Validation error', // Error type
+      error: 'Validation error',
       // Error type
-      details: err.message // Detail error (field mana yang salah)
+      details: err.message
       // Detail error (field mana yang salah)
     });
   }
 
   // STEP 4: Handle JWT errors
   // JsonWebTokenError = Token format salah atau signature tidak valid
-  if (err.name === 'JsonWebTokenError') { // JsonWebTokenError: error dari library jsonwebtoken; token JWT tidak valid atau formatnya salah
+  if (err.name === 'JsonWebTokenError') {
     // JsonWebTokenError: error dari library jsonwebtoken; token JWT tidak valid atau formatnya salah
-    return res.status(401).json({ // return menghentikan eksekusi; status 401 Unauthorized karena token tidak valid
+    return res.status(401).json({
       // return menghentikan eksekusi; status 401 Unauthorized karena token tidak valid
-      error: 'Invalid token', // Error message
+      error: 'Invalid token',
       // Error message
-      details: 'The provided token is invalid' // Detail lebih spesifik
+      details: 'The provided token is invalid'
       // Detail lebih spesifik
     });
   }
 
   // TokenExpiredError = Token sudah expired (melewati waktu exp)
-  if (err.name === 'TokenExpiredError') { // TokenExpiredError: token JWT sudah melewati waktu kadaluarsa; user harus login ulang
+  if (err.name === 'TokenExpiredError') {
     // TokenExpiredError: token JWT sudah melewati waktu kadaluarsa; user harus login ulang
-    return res.status(401).json({ // return menghentikan eksekusi; status 401 Unauthorized karena token kadaluarsa
+    return res.status(401).json({
       // return menghentikan eksekusi; status 401 Unauthorized karena token kadaluarsa
-      error: 'Token expired', // Error message
+      error: 'Token expired',
       // Error message
-      details: 'The provided token has expired' // Detail lebih spesifik
+      details: 'The provided token has expired'
       // Detail lebih spesifik
     });
   }
 
   // STEP 5: Default error handler (untuk error yang tidak dikenali)
   // Return 500 Internal Server Error dengan error message generic
-  res.status(err.status || 500).json({ // mengirim response dengan status error (atau 500 jika tidak ada); ini adalah error handler global
+  const status = err.status || 500;
+  res.status(status).json({
     // mengirim response dengan status error (atau 500 jika tidak ada); ini adalah error handler global
-    error: err.message || 'Internal server error', // Error message (dari err.message atau default)
+    error: status >= 500 ? 'Internal server error' : (err.message || 'Request failed')
     // Error message (dari err.message atau default)
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined // Stack trace hanya di development mode
-    // Stack trace hanya di development mode
   });
 };
 
 // Export errorHandler agar bisa diimport di server.js
-module.exports = { errorHandler }; // module.exports mengekspor objek/fungsi dari file ini agar bisa digunakan file lain
+module.exports = { errorHandler };
 // module.exports mengekspor objek/fungsi dari file ini agar bisa digunakan file lain

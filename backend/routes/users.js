@@ -19,17 +19,51 @@
 // 3. REAL-TIME SYNC: Perubahan data langsung dikirim ke client via Socket.IO
 // ============================================================
 
-const express = require('express'); // const membuat variabel tetap; require('express') memanggil module Express.js yang sudah terinstall di node_modules; digunakan untuk membuat router HTTP
+const express = require('express');
 // const membuat variabel tetap; require('express') memanggil module Express.js yang sudah terinstall di node_modules; digunakan untuk membuat router HTTP
-const { body, validationResult } = require('express-validator'); // const dengan destructuring { body, validationResult }; body adalah fungsi untuk mendefinisikan aturan validasi input; validationResult mengambil hasil validasi dari request
+const { body, validationResult } = require('express-validator');
 // const dengan destructuring { body, validationResult }; body adalah fungsi untuk mendefinisikan aturan validasi input; validationResult mengambil hasil validasi dari request
-const { PrismaClient } = require('@prisma/client'); // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman
+const { PrismaClient } = require('@prisma/client');
 // destructuring { PrismaClient } dari module @prisma/client; PrismaClient adalah kelas ORM yang digunakan untuk query database SQLite secara aman
 
-const router = express.Router(); // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/users
+const router = express.Router();
 // const membuat variabel tetap; express.Router() membuat instance router baru yang akan menampung semua endpoint /api/users
-const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke database; operator new memanggil constructor class PrismaClient
+const prisma = new PrismaClient();
 // const membuat variabel tetap; new PrismaClient() membuat instance koneksi ke database; operator new memanggil constructor class PrismaClient
+const requireAdmin = (req, res, next) => req.admin
+  ? next()
+  : res.status(403).json({ error: 'ADMIN_REQUIRED' });
+const requireSelfOrAdmin = (req, res, next) => {
+  const requestedUserId = Number(req.params.id);
+  if (req.admin || (req.user && req.user.id === requestedUserId)) return next();
+  return res.status(403).json({ error: 'USER_ACCESS_DENIED' });
+};
+const parsePagination = (limit, offset) => {
+  const limitNumber = Number(limit);
+  const offsetNumber = Number(offset);
+  if (!Number.isSafeInteger(limitNumber) || limitNumber < 1 || limitNumber > 100) return null;
+  if (!Number.isSafeInteger(offsetNumber) || offsetNumber < 0) return null;
+  return { limit: limitNumber, offset: offsetNumber };
+};
+
+router.param('id', (req, res, next, id) => {
+  const userId = Number(id);
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    return res.status(400).json({ error: 'INVALID_USER_ID' });
+  }
+  req.params.id = String(userId);
+  return next();
+});
+
+// Profil sesi aktif; identitas selalu berasal dari JWT, bukan parameter client.
+router.get('/me', (req, res) => {
+  if (!req.user) return res.status(403).json({ error: 'USER_SESSION_REQUIRED' });
+  const { id, name, username, balance, deviceId, isActive, createdAt, updatedAt } = req.user;
+  return res.json({
+    success: true,
+    user: { id, name, username, balance, deviceId, isActive, createdAt, updatedAt }
+  });
+});
 
 // ============================================================
 // ENDPOINT 1: GET / - AMBIL SEMUA DATA PENGGUNA
@@ -59,56 +93,56 @@ const prisma = new PrismaClient(); // const membuat variabel tetap; new PrismaCl
 //   }
 // ]
 // ============================================================
-router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handler ini adalah fungsi asynchronous yang bisa menggunakan await; req adalah objek request dari client; res adalah objek response untuk mengirim data balik
+router.get('/', requireAdmin, async (req, res) => {
   // router.get mendaftarkan endpoint HTTP GET pada path '/'; async berarti handler ini adalah fungsi asynchronous yang bisa menggunakan await; req adalah objek request dari client; res adalah objek response untuk mengirim data balik
-  try { // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi loncat ke blok catch
+  try {
     // try memulai blok yang akan dicoba; jika ada error di dalam blok ini, eksekusi loncat ke blok catch
     // STEP 1: Query database untuk ambil semua user
     // Gunakan Prisma ORM - lebih aman dari SQL injection
-    const users = await prisma.user.findMany({ // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; prisma.user.findMany() adalah method Prisma ORM yang setara SQL SELECT * FROM users
+    const users = await prisma.user.findMany({
       // const membuat variabel tetap; await menunggu Promise selesai sebelum lanjut; prisma.user.findMany() adalah method Prisma ORM yang setara SQL SELECT * FROM users
-      select: { // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — seperti SELECT id, name, ... di SQL
+      select: {
         // select adalah objek Prisma untuk memilih kolom mana saja yang dikembalikan — seperti SELECT id, name, ... di SQL
-        id: true, // true berarti kolom id IKUT dikembalikan
+        id: true,
         // true berarti kolom id IKUT dikembalikan
-        name: true, // Nama lengkap
+        name: true,
         // Nama lengkap
-        username: true, // Username untuk login
+        username: true,
         // Username untuk login
-        balance: true, // Saldo e-wallet (dalam Rupiah)
+        balance: true,
         // Saldo e-wallet (dalam Rupiah)
-        deviceId: true, // ID perangkat Android yang digunakan
+        deviceId: true,
         // ID perangkat Android yang digunakan
-        isActive: true, // Status aktif/diblokir
+        isActive: true,
         // Status aktif/diblokir
-        createdAt: true, // Tanggal registrasi
+        createdAt: true,
         // Tanggal registrasi
-        _count: { // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
+        _count: {
           // _count adalah fitur Prisma untuk menghitung jumlah relasi — seperti COUNT() di SQL
-          select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
+          select: {
             // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-            sentTransactions: true, // Hitung jumlah transaksi yang dikirim user
+            sentTransactions: true,
             // Hitung jumlah transaksi yang dikirim user
-            receivedTransactions: true // Hitung jumlah transaksi yang diterima user
+            receivedTransactions: true
             // Hitung jumlah transaksi yang diterima user
           }
         }
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
+      orderBy: {
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        createdAt: 'desc' // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
+        createdAt: 'desc'
         // orderBy adalah klausa pengurutan Prisma — setara ORDER BY createdAt DESC di SQL; 'desc' berarti terbaru di atas
       }
     });
 
     // STEP 2: Kirim response berupa array JSON ke client
-    res.json(users); // res.json() mengirim respons dengan Content-Type: application/json dan mengonversi array users ke string JSON otomatis
+    res.json(users);
     // res.json() mengirim respons dengan Content-Type: application/json dan mengonversi array users ke string JSON otomatis
-  } catch (error) { // catch menangkap error yang terjadi di dalam blok try; variabel error berisi objek Error
+  } catch (error) {
     // catch menangkap error yang terjadi di dalam blok try; variabel error berisi objek Error
-    console.error('\u274c Gagal mendapatkan data pengguna:', error); // console.error mencetak pesan error ke terminal server dengan format merah
+    console.error('\u274c Gagal mendapatkan data pengguna:', error);
     // console.error mencetak pesan error ke terminal server dengan format merah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() mengirim pesan error sebagai JSON
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
     // res.status(500) mengatur HTTP status 500 (Internal Server Error); .json() mengirim pesan error sebagai JSON
   }
 });
@@ -120,46 +154,45 @@ router.get('/', async (req, res) => { // router.get mendaftarkan endpoint HTTP G
 // terhalang oleh route dinamis /:id (Express mencocokkan route secara urutan).
 // Contoh: GET /username/john harus cocok di sini, bukan di /:id dengan id="username".
 // ============================================================
-router.get('/username/:username', async (req, res) => { // GET /username/:username → cari user berdasarkan username
+router.get('/username/:username', async (req, res) => {
   // GET /username/:username → cari user berdasarkan username
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
     // STEP 1: Ambil username dari URL parameter
-    const { username } = req.params; // Destructure: ambil value username dari URL params
+    const { username } = req.params;
     // Destructure: ambil value username dari URL params
     
-    const user = await prisma.user.findUnique({ // Query: cari user unik berdasarkan username
+    const user = await prisma.user.findUnique({
       // Query: cari user unik berdasarkan username
-      where: { username }, // Shorthand ES6: sama dengan { username: username }
+      where: { username },
       // Shorthand ES6: sama dengan { username: username }
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
+      select: {
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true, // ID numerik user di database
+        id: true,
         // ID numerik user di database
-        name: true, // Nama lengkap user
+        name: true,
         // Nama lengkap user
-        username: true, // Username untuk login
+        username: true,
         // Username untuk login
-        balance: true, // Saldo e-wallet saat ini
-        // Saldo e-wallet saat ini
-        isActive: true // Status aktif (true) atau diblokir (false)
+        isActive: true
         // Status aktif (true) atau diblokir (false)
       }
     });
 
-    if (!user) { // Jika user tidak ditemukan di database
+    if (!user) {
       // Jika user tidak ditemukan di database
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // Return 404 Not Found
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
+
       // Return 404 Not Found
     }
 
-    res.json(user); // Kirim data user sebagai JSON response
+    res.json(user);
     // Kirim data user sebagai JSON response
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c Gagal mendapatkan pengguna berdasarkan username:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -170,66 +203,36 @@ router.get('/username/:username', async (req, res) => { // GET /username/:userna
 // URL PARAMETER:
 // - id: integer (contoh: /api/users/5)
 // ============================================================
-router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
+router.get('/:id', requireSelfOrAdmin, async (req, res) => {
   // router.get() mendaftarkan endpoint HTTP GET; dipanggil saat ada request GET ke URL tersebut
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // destructuring req.params: mengambil parameter URL dinamis
+    const { id } = req.params;
     // destructuring req.params: mengambil parameter URL dinamis
     
-    const user = await prisma.user.findUnique({ // const user: menyimpan data user yang diambil dari database secara async
+    const user = await prisma.user.findUnique({
       // const user: menyimpan data user yang diambil dari database secara async
-      where: { id: parseInt(id) }, // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karena req.params selalu string
+      where: { id: parseInt(id) },
       // parseInt() mengubah string ID dari URL parameter ke integer; diperlukan karena req.params selalu string
-      select: { // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif seperti password
+      select: {
         // select: { } menentukan field yang diambil; mencegah pengambilan data sensitif seperti password
-        id: true, name: true, username: true, balance: true, // field dasar profil user
+        id: true, name: true, username: true, balance: true,
         // field dasar profil user
-        deviceId: true, isActive: true, createdAt: true, updatedAt: true // field tambahan untuk monitoring
+        deviceId: true, isActive: true, createdAt: true, updatedAt: true
         // field tambahan untuk monitoring
       }
     });
 
-    if (!user) { // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
+    if (!user) {
       // if (!...) validasi bahwa nilai tidak kosong/null sebelum melanjutkan operasi
-      return res.status(404).json({ error: 'Pengguna tidak ditemukan' }); // 404 Not Found jika user tidak ada di database
+      return res.status(404).json({ error: 'Pengguna tidak ditemukan' });
       // 404 Not Found jika user tidak ada di database
     }
 
-    // ✅ DIPERBAIKI: Auto-sync user.balance dari NFC card balance.
-    // Masalah sebelumnya: admin top-up menambah saldo kartu (NFCCard.balance) tapi
-    // user.balance di tabel User tidak selalu ikut update → mobile app tampilkan Rp 0.
-    // Solusi: setiap GET /api/users/:id, cek kartu aktif user, update user.balance jika berbeda.
-    const cards = await prisma.nFCCard.findMany({ // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk pengecekan saldo
-      // prisma.nFCCard.findMany(): mengambil semua kartu aktif milik user untuk pengecekan saldo
-      where: { userId: parseInt(id), cardStatus: 'ACTIVE' }, // ambil semua kartu aktif milik user ini
-      // ambil semua kartu aktif milik user ini
-      select: { balance: true } // hanya butuh field balance, tidak perlu data lain
-      // hanya butuh field balance, tidak perlu data lain
-    }); // Jumlahkan semua saldo kartu aktif user sebagai saldo efektif
-    // Jumlahkan semua saldo kartu aktif user sebagai saldo efektif
-    const cardBalance = cards.reduce((sum, c) => sum + (c.balance || 0), 0); // .reduce() menjumlahkan semua balance kartu; || 0 fallback jika balance null
-    // .reduce() menjumlahkan semua balance kartu; || 0 fallback jika balance null
-
-    if (cardBalance > 0 && cardBalance !== user.balance) { // cek apakah saldo kartu berbeda dengan saldo user dan tidak nol
-      // cek apakah saldo kartu berbeda dengan saldo user dan tidak nol
-      // Saldo kartu berbeda dari saldo user → perbarui user.balance agar sinkron
-      await prisma.user.update({ // prisma.user.update(): memperbarui saldo user di database
-        // prisma.user.update(): memperbarui saldo user di database
-        where: { id: parseInt(id) }, // WHERE id = userId
-        // WHERE id = userId
-        data: { balance: cardBalance } // set user.balance = total saldo kartu aktif
-        // set user.balance = total saldo kartu aktif
-      });
-      user.balance = cardBalance; // perbarui nilai lokal sebelum dikirim ke mobile app
-      // perbarui nilai lokal sebelum dikirim ke mobile app
-      console.log(`\ud83d\udd04 Auto-synced user ${id} balance: ${user.balance} \u2192 ${cardBalance}`); // log sinkronisasi saldo
-      // log sinkronisasi saldo
-    }
-
-    res.json(user); // res.json(user) mengirim data user sebagai JSON response
+    // GET hanya membaca saldo utama User; sinkronisasi saldo dilakukan atomik pada route mutasi.
+    res.json(user);
     // res.json(user) mengirim data user sebagai JSON response
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
     console.error('❌ Gagal mendapatkan data pengguna:', error);
     res.status(500).json({ error: 'Gagal mendapatkan data pengguna' });
@@ -242,8 +245,8 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
 // Endpoint ini untuk mendapatkan semua kartu NFC yang dimiliki pengguna
 //
 // BUSINESS RULE:
-// - 1 user dapat punya banyak kartu NFC (1:N relationship)
-// - Setiap kartu punya saldo sendiri (bisa beda dengan saldo user)
+// - 1 user dapat punya satu kartu NFC aktif sesuai unique constraint userId
+// - Saldo User adalah sumber utama; saldo kartu merupakan salinan yang disinkronkan route mutasi
 // - Kartu bisa dalam status: ACTIVE, BLOCKED, LOST
 //
 // URL PARAMETER:
@@ -263,72 +266,72 @@ router.get('/:id', async (req, res) => { // router.get() mendaftarkan endpoint H
 //   ]
 // }
 // ============================================================
-router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua kartu NFC milik user
+router.get('/:id/cards', requireSelfOrAdmin, async (req, res) => {
   // GET /:id/cards → ambil semua kartu NFC milik user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // Ambil ID user dari URL param
+    const { id } = req.params;
     // Ambil ID user dari URL param
     
     // STEP 1: Cek apakah pengguna ada di database
-    const user = await prisma.user.findUnique({ // Query: cek keberadaan user
+    const user = await prisma.user.findUnique({
       // Query: cek keberadaan user
-      where: { id: parseInt(id) } // Filter by ID (konversi string → integer)
+      where: { id: parseInt(id) }
       // Filter by ID (konversi string → integer)
     });
 
-    if (!user) { // Jika user tidak ditemukan
+    if (!user) {
       // Jika user tidak ditemukan
-      return res.status(404).json({ // Return 404 Not Found
+      return res.status(404).json({
         // Return 404 Not Found
-        success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
+        success: false,
         // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
-        error: 'Pengguna tidak ditemukan' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
+        error: 'Pengguna tidak ditemukan'
         // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
       });
     }
 
     // Ambil semua kartu untuk pengguna ini
-    const cards = await prisma.nFCCard.findMany({ // Query: ambil semua kartu NFC milik user ini
+    const cards = await prisma.nFCCard.findMany({
       // Query: ambil semua kartu NFC milik user ini
-      where: { userId: parseInt(id) }, // Filter: hanya kartu yang dimiliki user ini
+      where: { userId: parseInt(id) },
       // Filter: hanya kartu yang dimiliki user ini
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
+      select: {
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        cardId: true, // UID kartu (hex string, misal "04A1B2C3D4E5F6")
+        cardId: true,
         // UID kartu (hex string, misal "04A1B2C3D4E5F6")
-        cardStatus: true, // Status kartu: ACTIVE / BLOCKED / LOST / EXPIRED
+        cardStatus: true,
         // Status kartu: ACTIVE / BLOCKED / LOST / EXPIRED
-        balance: true, // Saldo kartu (dalam Rupiah)
+        balance: true,
         // Saldo kartu (dalam Rupiah)
-        registeredAt: true, // Tanggal kartu pertama kali didaftarkan
+        registeredAt: true,
         // Tanggal kartu pertama kali didaftarkan
-        lastUsed: true // Tanggal terakhir kartu digunakan
+        lastUsed: true
         // Tanggal terakhir kartu digunakan
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
+      orderBy: {
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        registeredAt: 'desc' // Urutkan: yang terbaru didaftarkan di atas
+        registeredAt: 'desc'
         // Urutkan: yang terbaru didaftarkan di atas
       }
     });
 
-    res.json({ // Kirim response sukses
+    res.json({
       // Kirim response sukses
-      success: true, // Flag sukses
+      success: true,
       // Flag sukses
-      cards: cards // Array kartu milik user
+      cards: cards
       // Array kartu milik user
     });
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal mendapatkan kartu pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c Gagal mendapatkan kartu pengguna:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
+    res.status(500).json({
       // mengirim response error 500 Internal Server Error; status 500 menandakan kesalahan tak terduga di sisi server
-      success: false, // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
+      success: false,
       // success: false menandakan operasi gagal; frontend memeriksa field ini untuk menampilkan pesan error yang sesuai
-      error: 'Gagal mendapatkan kartu pengguna' // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
+      error: 'Gagal mendapatkan kartu pengguna'
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
     });
   }
@@ -340,20 +343,19 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
 // Endpoint ini untuk admin melakukan TOP-UP atau SET saldo pengguna
 //
 // SECURITY:
-// - Memerlukan admin password (ENV: ADMIN_PASSWORD)
+// - Memerlukan bearer admin JWT
 // - Hanya admin yang bisa ubah saldo user
 // - Semua perubahan dicatat di AdminLog (audit trail)
 //
 // REQUEST BODY:
 // {
 //   "amount": 100000,           // Saldo baru (bukan increment!)
-//   "adminPassword": "admin123", // Password admin
 //   "reason": "Top-up manual"   // Alasan (optional)
 // }
 //
 // FLOW:
-// 1. Validasi input (amount harus angka, password wajib)
-// 2. Verifikasi admin password
+// 1. Validasi input (amount harus integer Rupiah)
+// 2. Verifikasi admin JWT pada middleware
 // 3. Validasi amount tidak negatif
 // 4. Update saldo user di database
 // 5. Catat log admin action
@@ -365,114 +367,95 @@ router.get('/:id/cards', async (req, res) => { // GET /:id/cards → ambil semua
 //   "user": { ... }
 // }
 // ============================================================
-router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin only)
+router.put('/:id/balance', requireAdmin, [
 // PUT /:id/balance → update saldo user (admin only)
   // Validasi input menggunakan express-validator
-  body('amount').isNumeric().withMessage('Jumlah harus berupa angka'), // amount harus berupa angka
-  // amount harus berupa angka
-  body('adminPassword').notEmpty().withMessage('Password admin diperlukan') // adminPassword wajib ada
-  // adminPassword wajib ada
-], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
+  body('amount').custom(value => typeof value === 'number' && Number.isFinite(value) && value >= 0)
+    .withMessage('Jumlah harus berupa angka non-negatif')
+], async (req, res) => {
   // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const errors = validationResult(req); // Cek hasil validasi dari middleware di atas
+    const errors = validationResult(req);
     // Cek hasil validasi dari middleware di atas
-    if (!errors.isEmpty()) { // Jika ada error validasi
+    if (!errors.isEmpty()) {
       // Jika ada error validasi
-      return res.status(400).json({ errors: errors.array() }); // Return 400 dengan detail error
+      return res.status(400).json({ errors: errors.array() });
       // Return 400 dengan detail error
     }
 
-    const { id } = req.params; // Ambil ID user dari URL
+    const { id } = req.params;
     // Ambil ID user dari URL
-    const { amount, adminPassword, reason } = req.body; // Ambil data dari request body
+    const { amount, reason } = req.body;
     // Ambil data dari request body
 
-    // Verifikasi password admin
-    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password dari .env
-      // Cek password dari .env
-      return res.status(401).json({ error: 'Password admin tidak valid' }); // Return 401 jika salah
-      // Return 401 jika salah
+    // Verifikasi bahwa middleware bearer JWT telah mengisi identitas admin.
+    if (!req.admin) {
+      // Guard defensif menolak mutasi saldo jika identitas admin tidak tersedia.
+      return res.status(401).json({ error: 'Password admin tidak valid' });
+      // Return menghentikan route sebelum saldo diperbarui.
     }
 
     // Validasi jumlah
-    if (amount < 0) { // Saldo tidak boleh negatif
+    if (amount < 0) {
       // Saldo tidak boleh negatif
-      return res.status(400).json({ error: 'Jumlah tidak boleh negatif' }); // Return 400
+      return res.status(400).json({ error: 'Jumlah tidak boleh negatif' });
       // Return 400
     }
 
-    // Perbarui saldo pengguna
-    const user = await prisma.user.update({ // Update record user di database
-      // Update record user di database
-      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
-      // Identifikasi user berdasarkan ID
-      data: { balance: amount }, // Set saldo ke nilai baru (bukan increment)
-      // Set saldo ke nilai baru (bukan increment)
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true, // Kembalikan ID
-        // Kembalikan ID
-        name: true, // Kembalikan nama
-        // Kembalikan nama
-        username: true, // Kembalikan username
-        // Kembalikan username
-        balance: true // Kembalikan saldo baru
-        // Kembalikan saldo baru
-      }
-    });
-
-    // Catat aksi admin
-    await prisma.adminLog.create({ // Simpan log ke tabel AdminLog
-      // Simpan log ke tabel AdminLog
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        action: 'BALANCE_UPDATE', // Jenis aksi
-        // Jenis aksi
-        details: JSON.stringify({ // Detail aksi sebagai JSON string
-          // Detail aksi sebagai JSON string
-          userId: user.id, // ID user yang diubah saldonya
-          // ID user yang diubah saldonya
-          username: user.username, // Username untuk referensi
-          // Username untuk referensi
-          newBalance: amount, // Saldo baru yang diset
-          // Saldo baru yang diset
-          reason: reason || 'Pembaruan saldo oleh admin' // Alasan (default jika tidak diisi)
-          // Alasan (default jika tidak diisi)
-        }),
-        ipAddress: req.ip, // IP address admin
-        // IP address admin
-        userAgent: req.headers['user-agent'] // Browser/device admin
-        // Browser/device admin
-      }
+    const user = await prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: parseInt(id) },
+        data: { balance: amount },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          balance: true,
+          deviceId: true
+        }
+      });
+      await tx.adminLog.create({
+        data: {
+          action: 'BALANCE_UPDATE',
+          details: JSON.stringify({
+            userId: updatedUser.id,
+            username: updatedUser.username,
+            newBalance: amount,
+            reason: reason || 'Pembaruan saldo oleh admin'
+          }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      });
+      return updatedUser;
     });
 
     // Kirim notifikasi ke dashboard admin dan perangkat pengguna
-    if (req.io) { // Cek apakah Socket.IO tersedia
+    if (req.io) {
       // Cek apakah Socket.IO tersedia
-      req.io.to('admin-room').emit('balance-updated', { user }); // Notifikasi admin dashboard
+      req.io.to('admin-room').emit('balance-updated', { user });
       // Notifikasi admin dashboard
-      req.io.to(`device-${user.deviceId}`).emit('balance-updated', { // Notifikasi device user
+      req.io.to(`device-${user.deviceId}`).emit('balance-updated', {
         // Notifikasi device user
-        balance: user.balance // Saldo terbaru
+        balance: user.balance
         // Saldo terbaru
       });
     }
 
-    res.json({ // Return response sukses
+    res.json({
       // Return response sukses
-      message: 'Saldo berhasil diperbarui', // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperbarui di database
+      message: 'Saldo berhasil diperbarui',
       // pesan sukses update saldo; dikonfirmasi setelah balance user berhasil diperbarui di database
-      user // Data user dengan saldo baru
+      user
       // Data user dengan saldo baru
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal memperbarui saldo:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c Gagal memperbarui saldo:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui saldo' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal memperbarui saldo' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -511,204 +494,198 @@ router.put('/:id/balance', [ // PUT /:id/balance → update saldo user (admin on
 //   }
 // ]
 // ============================================================
-router.get('/:id/transactions', async (req, res) => { // GET /:id/transactions → riwayat transaksi user
+router.get('/:id/transactions', requireSelfOrAdmin, async (req, res) => {
   // GET /:id/transactions → riwayat transaksi user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // Ambil ID user dari URL param
+    const { id } = req.params;
     // Ambil ID user dari URL param
-    const { limit = 10, offset = 0 } = req.query; // Pagination: default 10 data, mulai dari awal
+    const { limit = 10, offset = 0 } = req.query;
     // Pagination: default 10 data, mulai dari awal
+    const userId = Number(id);
+    if (!Number.isSafeInteger(userId) || userId <= 0) {
+      return res.status(400).json({ error: 'INVALID_USER_ID' });
+    }
+    const pagination = parsePagination(limit, offset);
+    if (!pagination) return res.status(400).json({ error: 'INVALID_PAGINATION' });
 
-    const transactions = await prisma.transaction.findMany({ // Query: ambil transaksi yang melibatkan user
+    const transactions = await prisma.transaction.findMany({
       // Query: ambil transaksi yang melibatkan user
-      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
+      where: {
         // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-        OR: [ // Kondisi OR: user bisa sebagai sender ATAU receiver
+        OR: [
         // Kondisi OR: user bisa sebagai sender ATAU receiver
-          { senderId: parseInt(id) }, // Transaksi yang dikirim user (user = pengirim)
+          { senderId: userId },
           // Transaksi yang dikirim user (user = pengirim)
-          { receiverId: parseInt(id) } // Transaksi yang diterima user (user = penerima)
+          { receiverId: userId }
           // Transaksi yang diterima user (user = penerima)
         ]
       },
-      include: { // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
+      include: {
         // include: { } melakukan JOIN dengan tabel relasi; setara JOIN di SQL; mengambil data dari tabel terkait sekaligus
-        sender: { // Sertakan data pengirim
+        sender: {
           // Sertakan data pengirim
-          select: { id: true, name: true, username: true } // Hanya field yang aman
+          select: { id: true, name: true, username: true }
           // Hanya field yang aman
         },
-        receiver: { // Sertakan data penerima
+        receiver: {
           // Sertakan data penerima
-          select: { id: true, name: true, username: true } // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
+          select: { id: true, name: true, username: true }
           // select { id, name, username } memilih hanya 3 field yang diperlukan; tidak mengambil password atau field sensitif lainnya
         }
       },
-      orderBy: { // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
+      orderBy: {
         // orderBy: { } menentukan urutan hasil query; setara ORDER BY di SQL; biasanya berdasarkan createdAt DESC untuk menampilkan terbaru
-        createdAt: 'desc' // Terbaru di atas
+        createdAt: 'desc'
         // Terbaru di atas
       },
-      take: parseInt(limit), // LIMIT: maksimal N transaksi
+      take: pagination.limit,
       // LIMIT: maksimal N transaksi
-      skip: parseInt(offset) // OFFSET: skip N transaksi (untuk pagination)
+      skip: pagination.offset
       // OFFSET: skip N transaksi (untuk pagination)
     });
 
-    res.json(transactions); // Kirim array transaksi sebagai JSON
+    res.json(transactions);
     // Kirim array transaksi sebagai JSON
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('Get user transactions error:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('Get user transactions error:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Failed to get transactions' }); // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 menandakan error server
+    res.status(500).json({ error: 'Failed to get transactions' });
     // mengirim response error 500 dengan pesan gagal ambil transaksi; status 500 menandakan error server
   }
 });
 
 // Perbarui profil pengguna
-router.put('/:id', [ // PUT /:id → update profil user (nama)
+router.put('/:id', requireSelfOrAdmin, [
 // PUT /:id → update profil user (nama)
-  body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter') // Nama opsional, min 2 char
+  body('name').optional().trim().isLength({ min: 2 }).withMessage('Nama minimal 2 karakter')
   // Nama opsional, min 2 char
-], async (req, res) => { // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
+], async (req, res) => {
   // array middleware diikuti route handler; [] berisi middleware yang dijalankan sebelum handler utama async (req, res)
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const errors = validationResult(req); // Cek hasil validasi
+    const errors = validationResult(req);
     // Cek hasil validasi
-    if (!errors.isEmpty()) { // Jika ada error
+    if (!errors.isEmpty()) {
       // Jika ada error
-      return res.status(400).json({ errors: errors.array() }); // Return detail error
+      return res.status(400).json({ errors: errors.array() });
       // Return detail error
     }
 
-    const { id } = req.params; // Ambil ID user dari URL
+    const { id } = req.params;
     // Ambil ID user dari URL
-    const { name } = req.body; // Ambil nama baru dari request body
+    const { name } = req.body;
     // Ambil nama baru dari request body
 
     // Cek apakah pengguna dapat memperbarui profil ini (hanya profil sendiri atau admin)
-    if (req.user && req.user.id !== parseInt(id)) { // Jika ada token tapi bukan pemilik profil
-      // Jika ada token tapi bukan pemilik profil
-      return res.status(403).json({ error: 'Akses ditolak' }); // Return 403 Forbidden
+    if (req.user && req.user.id !== parseInt(id)) {
+      // Jika ada token tapi bukan akun profil terkait
+      return res.status(403).json({ error: 'Akses ditolak' });
       // Return 403 Forbidden
     }
 
-    const user = await prisma.user.update({ // Update record user di database
+    const user = await prisma.user.update({
       // Update record user di database
-      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
+      where: { id: parseInt(id) },
       // Identifikasi user berdasarkan ID
-      data: { name }, // Update hanya field nama
+      data: { name },
       // Update hanya field nama
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
+      select: {
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true, // Kembalikan ID
+        id: true,
         // Kembalikan ID
-        name: true, // Kembalikan nama baru
+        name: true,
         // Kembalikan nama baru
-        username: true, // Kembalikan username
+        username: true,
         // Kembalikan username
-        balance: true // Kembalikan saldo
+        balance: true
         // Kembalikan saldo
       }
     });
 
-    res.json({ // Return response sukses
+    res.json({
       // Return response sukses
-      message: 'Profil berhasil diperbarui', // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbarui di database
+      message: 'Profil berhasil diperbarui',
       // pesan sukses update profil; dikonfirmasi setelah data user berhasil diperbarui di database
-      user // Data user dengan nama baru
+      user
       // Data user dengan nama baru
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal memperbarui profil:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c Gagal memperbarui profil:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal memperbarui profil' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal memperbarui profil' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
 
 // Nonaktifkan pengguna (khusus admin)
-router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → blokir akun user
+router.put('/:id/deactivate', requireAdmin, async (req, res) => {
   // PUT /:id/deactivate → blokir akun user
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // Ambil ID user dari URL
+    const { id } = req.params;
     // Ambil ID user dari URL
-    const { adminPassword } = req.body; // Ambil admin password dari request body
-    // Ambil admin password dari request body
-
-    // Verify admin password
-    if (adminPassword !== (process.env.ADMIN_PASSWORD || 'admin123')) { // Cek password dari environment variable
-      // Cek password dari environment variable
-      return res.status(401).json({ error: 'Invalid admin password' }); // Return 401 jika salah
-      // Return 401 jika salah
+    // Verifikasi bahwa middleware bearer JWT telah mengisi identitas admin.
+    if (!req.admin) {
+      // Guard defensif menolak penonaktifan jika identitas admin tidak tersedia.
+      return res.status(401).json({ error: 'Invalid admin password' });
+      // Return menghentikan route sebelum status user diperbarui.
     }
 
-    const user = await prisma.user.update({ // Update record user di database
-      // Update record user di database
-      where: { id: parseInt(id) }, // Identifikasi user berdasarkan ID
-      // Identifikasi user berdasarkan ID
-      data: { isActive: false }, // Set isActive = false (menonaktifkan akun)
-      // Set isActive = false (menonaktifkan akun)
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true, // Kembalikan ID
-        // Kembalikan ID
-        name: true, // Kembalikan nama
-        // Kembalikan nama
-        username: true, // Kembalikan username
-        // Kembalikan username
-        isActive: true // Kembalikan status baru (false)
-        // Kembalikan status baru (false)
-      }
+    const user = await prisma.$transaction(async tx => {
+      const updatedUser = await tx.user.update({
+        where: { id: parseInt(id) },
+        data: { isActive: false },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          isActive: true
+        }
+      });
+      await tx.userSession.updateMany({
+        where: { userId: updatedUser.id, isActive: true },
+        data: { isActive: false }
+      });
+      await tx.adminLog.create({
+        data: {
+          action: 'USER_DEACTIVATE',
+          details: JSON.stringify({
+            userId: updatedUser.id,
+            username: updatedUser.username
+          }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      });
+      return updatedUser;
     });
 
-    // Catat aksi admin
-    await prisma.adminLog.create({ // Simpan log ke tabel AdminLog untuk audit trail
-      // Simpan log ke tabel AdminLog untuk audit trail
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        action: 'USER_DEACTIVATE', // Jenis aksi: nonaktifkan user
-        // Jenis aksi: nonaktifkan user
-        details: JSON.stringify({ // Detail sebagai JSON string
-          // Detail sebagai JSON string
-          userId: user.id, // ID user yang dinonaktifkan
-          // ID user yang dinonaktifkan
-          username: user.username // Username untuk referensi
-          // Username untuk referensi
-        }),
-        ipAddress: req.ip, // IP address admin
-        // IP address admin
-        userAgent: req.headers['user-agent'] // Browser/device admin
-        // Browser/device admin
-      }
-    });
+    req.realtimeSessions?.disconnectByUserId(user.id);
 
     // Kirim notifikasi ke dashboard admin
-    if (req.io) { // Cek apakah Socket.IO tersedia
+    if (req.io) {
       // Cek apakah Socket.IO tersedia
-      req.io.to('admin-room').emit('user-deactivated', { user }); // Notifikasi real-time ke admin
+      req.io.to('admin-room').emit('user-deactivated', { user });
       // Notifikasi real-time ke admin
     }
 
-    res.json({ // Return response sukses
+    res.json({
       // Return response sukses
-      message: 'Pengguna berhasil dinonaktifkan', // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi INACTIVE di database
+      message: 'Pengguna berhasil dinonaktifkan',
       // pesan sukses deactivate user; dikonfirmasi setelah status user diubah menjadi INACTIVE di database
-      user // Data user dengan isActive = false
+      user
       // Data user dengan isActive = false
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c Gagal menonaktifkan pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c Gagal menonaktifkan pengguna:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' }); // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
+    res.status(500).json({ error: 'Gagal menonaktifkan pengguna' });
     // mengirim response error 500 Internal Server Error jika terjadi error tak terduga di server
   }
 });
@@ -754,194 +731,138 @@ router.put('/:id/deactivate', async (req, res) => { // PUT /:id/deactivate → b
 //   "user": { ... }
 // }
 // ============================================================
-router.delete('/:id', async (req, res) => { // DELETE /:id → hapus user permanen beserta semua data terkait
+router.delete('/:id', requireAdmin, async (req, res) => {
   // DELETE /:id → hapus user permanen beserta semua data terkait
-  try { // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
+  try {
     // try: membungkus operasi yang berisiko error; jika terjadi error akan ditangkap oleh catch
-    const { id } = req.params; // Ambil ID user dari URL
+    const { id } = req.params;
     // Ambil ID user dari URL
-    const userId = parseInt(id); // Konversi string → integer untuk query Prisma
+    const userId = parseInt(id);
     // Konversi string → integer untuk query Prisma
 
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Delete user request for ID: ${userId}`);
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // Check if user exists
-    const user = await prisma.user.findUnique({ // Cari user yang akan dihapus
+    const user = await prisma.user.findUnique({
       // Cari user yang akan dihapus
-      where: { id: userId }, // Filter berdasarkan ID
+      where: { id: userId },
       // Filter berdasarkan ID
-      select: { // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
+      select: {
         // select: { } menentukan field mana yang diambil dari database; hanya field yang didaftarkan yang dikembalikan (lebih efisien dari SELECT *)
-        id: true, // ID untuk referensi di log
+        id: true,
         // ID untuk referensi di log
-        name: true, // Nama untuk log
+        name: true,
         // Nama untuk log
-        username: true // Username untuk log
+        username: true
         // Username untuk log
       }
     });
 
-    if (!user) { // Jika user tidak ditemukan
+    if (!user) {
       // Jika user tidak ditemukan
-      console.log(`\u274c [Backend] User ${userId} not found`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+      console.log(`\u274c [Backend] User ${userId} not found`);
       // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      return res.status(404).json({ error: 'User tidak ditemukan' }); // Return 404
+      return res.status(404).json({ error: 'User tidak ditemukan' });
       // Return 404
     }
 
-    console.log(`\u2705 [Backend] User found: ${user.username}`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    console.log(`\u2705 [Backend] User found: ${user.username}`);
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
     // CASCADE DELETE: Hapus semua record terkait terlebih dahulu
     // URUTAN PENTING: Hapus dari tabel anak ke tabel induk
     
     // 1. Hapus transaksi NFC (anak dari NFCCard)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    const userCards = await prisma.nFCCard.findMany({ // Ambil semua kartu NFC milik user
-      // Ambil semua kartu NFC milik user
-      where: { userId: userId }, // Filter: hanya kartu user ini
-      // Filter: hanya kartu user ini
-      select: { cardId: true } // Hanya perlu cardId untuk delete transaksinya
-      // Hanya perlu cardId untuk delete transaksinya
-    });
-    
-    if (userCards.length > 0) { // Jika user punya kartu NFC
-      // Jika user punya kartu NFC
-      const cardIds = userCards.map(card => card.cardId); // Ekstrak array cardId
-      // Ekstrak array cardId
-      await prisma.nFCTransaction.deleteMany({ // Hapus semua transaksi dari semua kartu user
-        // Hapus semua transaksi dari semua kartu user
-        where: { cardId: { in: cardIds } } // Filter: cardId ada di array cardIds
-        // Filter: cardId ada di array cardIds
+    console.log(`\uD83D\uDDD1\uFE0F [Backend] Deleting NFC transactions for user ${userId}...`);
+    await prisma.$transaction(async tx => {
+      const userCards = await tx.nFCCard.findMany({
+        where: { userId },
+        select: { cardId: true }
       });
-      console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-      // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    }
-    
-    // 2. Hapus kartu NFC pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.nFCCard.deleteMany({ // Hapus semua kartu NFC milik user
-      // Hapus semua kartu NFC milik user
-      where: { userId: userId } // Filter: hanya kartu user ini
-      // Filter: hanya kartu user ini
-    });
 
-    // 3. Hapus transaksi pengguna (yang dikirim dan diterima)
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.transaction.deleteMany({ // Hapus semua transaksi yang melibatkan user
-      // Hapus semua transaksi yang melibatkan user
-      where: { // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-        // where: { } menentukan kondisi filter query; setara WHERE di SQL; hanya record yang memenuhi kondisi yang dikembalikan
-        OR: [ // User bisa sebagai sender ATAU receiver
-        // User bisa sebagai sender ATAU receiver
-          { senderId: userId }, // Transaksi di mana user adalah pengirim
-          // Transaksi di mana user adalah pengirim
-          { receiverId: userId } // Transaksi di mana user adalah penerima
-          // Transaksi di mana user adalah penerima
-        ]
+      if (userCards.length > 0) {
+        const cardIds = userCards.map(card => card.cardId);
+        await tx.nFCTransaction.deleteMany({
+          where: { cardId: { in: cardIds } }
+        });
+        console.log(`\u2705 [Backend] Deleted ${cardIds.length} card transactions`);
       }
-    });
 
-    // 4. Hapus peringatan fraud pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.fraudAlert.deleteMany({ // Hapus semua fraud alert milik user
-      // Hapus semua fraud alert milik user
-      where: { userId: userId } // Filter: hanya fraud alert user ini
-      // Filter: hanya fraud alert user ini
-    });
+      console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus kartu NFC untuk pengguna ${userId}...`);
+      await tx.nFCCard.deleteMany({ where: { userId } });
 
-    // 5. Hapus sesi pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.userSession.deleteMany({ // Hapus semua sesi login user
-      // Hapus semua sesi login user
-      where: { userId: userId } // Filter: hanya sesi user ini
-      // Filter: hanya sesi user ini
-    });
+      console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus transaksi untuk pengguna ${userId}...`);
+      await tx.transaction.deleteMany({
+        where: { OR: [{ senderId: userId }, { receiverId: userId }] }
+      });
 
-    // 6. Hapus pengguna
-    console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.user.delete({ // Hapus record user dari tabel User
-      // Hapus record user dari tabel User
-      where: { id: userId } // Identifikasi berdasarkan ID
-      // Identifikasi berdasarkan ID
-    });
+      console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus peringatan fraud untuk pengguna ${userId}...`);
+      await tx.fraudAlert.deleteMany({ where: { userId } });
 
-    // 7. Catat aksi admin
-    console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
-    await prisma.adminLog.create({ // Simpan log aksi delete ke tabel AdminLog
-      // Simpan log aksi delete ke tabel AdminLog
-      data: { // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        // data: { } berisi field yang akan diisi saat create atau diperbarui saat update; setara VALUES di INSERT atau SET di UPDATE
-        action: 'USER_DELETE', // Jenis aksi: hapus user
-        // Jenis aksi: hapus user
-        details: JSON.stringify({ // Detail aksi sebagai JSON string
-          // Detail aksi sebagai JSON string
-          userId: user.id, // ID user yang dihapus
-          // ID user yang dihapus
-          username: user.username, // Username
-          // Username
-          name: user.name // Nama lengkap
-          // Nama lengkap
-        }),
-        ipAddress: req.ip, // IP address admin
-        // IP address admin
-        userAgent: req.headers['user-agent'] // Browser/device admin
-        // Browser/device admin
-      }
+      console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus sesi untuk pengguna ${userId}...`);
+      await tx.userSession.deleteMany({ where: { userId } });
+
+      console.log(`\uD83D\uDDD1\uFE0F [Backend] Menghapus pengguna ${userId}...`);
+      await tx.user.delete({ where: { id: userId } });
+
+      console.log(`\uD83D\uDCDD [Backend] Mencatat aksi admin...`);
+      await tx.adminLog.create({
+        data: {
+          action: 'USER_DELETE',
+          details: JSON.stringify({
+            userId: user.id,
+            username: user.username,
+            name: user.name
+          }),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      });
     });
 
     // Kirim notifikasi ke dashboard admin
-    if (req.io) { // Cek apakah Socket.IO tersedia
+    if (req.io) {
       // Cek apakah Socket.IO tersedia
-      req.io.to('admin-room').emit('user-deleted', { userId: user.id }); // Notifikasi ke admin dashboard
+      req.io.to('admin-room').emit('user-deleted', { userId: user.id });
       // Notifikasi ke admin dashboard
     }
 
-    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`); // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
+    console.log(`\u2705 [Backend] Pengguna ${user.username} (ID: ${user.id}) berhasil dihapus (cascade complete)`);
     // console.log mencetak pesan debug ke terminal; membantu melacak alur dan nilai variabel
 
-    res.json({ // Return response sukses
+    res.json({
       // Return response sukses
-      success: true, // Flag sukses
+      success: true,
       // Flag sukses
-      message: 'Pengguna berhasil dihapus', // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dari database
+      message: 'Pengguna berhasil dihapus',
       // pesan konfirmasi bahwa user dan semua data terkait telah dihapus permanen dari database
-      user: { // Data user yang dihapus (untuk konfirmasi)
+      user: {
         // Data user yang dihapus (untuk konfirmasi)
-        id: user.id, // ID
+        id: user.id,
         // ID
-        name: user.name, // Nama
+        name: user.name,
         // Nama
-        username: user.username // Username
+        username: user.username
         // Username
       }
     });
 
-  } catch (error) { // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
+  } catch (error) {
     // catch (error): menangkap semua error dari blok try untuk penanganan yang aman
-    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c [Backend] Kesalahan saat menghapus pengguna:', error);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    console.error('\u274c [Backend] Detail kesalahan:', error.message); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c [Backend] Detail kesalahan:', error.message);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    console.error('\u274c [Backend] Stack trace:', error.stack); // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
+    console.error('\u274c [Backend] Stack trace:', error.stack);
     // console.error mencetak pesan error ke terminal dengan tanda merah; untuk debugging masalah
-    res.status(500).json({ // Return 500 dengan detail error untuk debugging
+    res.status(500).json({
       // Return 500 dengan detail error untuk debugging
-      error: 'Gagal menghapus pengguna', // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
+      error: 'Gagal menghapus pengguna'
       // field error: berisi kode atau pesan error singkat yang dibaca oleh frontend untuk menentukan jenis kesalahan
-      details: error.message // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungkap penyebab teknis error
-      // menyertakan pesan error JavaScript asli untuk memudahkan debugging; mengungkap penyebab teknis error
     });
   }
 });
 
-module.exports = router; // Export router agar bisa di-mount di server.js sebagai /api/users
+module.exports = router;
 // Export router agar bisa di-mount di server.js sebagai /api/users

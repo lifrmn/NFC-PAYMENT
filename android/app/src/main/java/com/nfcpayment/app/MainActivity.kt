@@ -12,6 +12,7 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
+  // MainActivity adalah Activity Android utama yang menjadi wadah tampilan React Native.
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
@@ -23,16 +24,13 @@ class MainActivity : ReactActivity() {
     super.onCreate(null)
   }
 
-  /**
-   * Returns the name of the main component registered from JavaScript. This is used to schedule
-   * rendering of the component.
-   */
+  // getMainComponentName mengembalikan nama komponen root yang didaftarkan dari JavaScript.
+  // React Native memakai nama "main" ini untuk memilih komponen pertama yang dirender ke Activity.
   override fun getMainComponentName(): String = "main"
 
-  /**
-   * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
-   * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]
-   */
+  // createReactActivityDelegate membuat penghubung antara lifecycle Activity Android dan React Native.
+  // ReactActivityDelegateWrapper menambahkan integrasi Expo, sedangkan fabricEnabled mengikuti
+  // konfigurasi New Architecture agar renderer Fabric aktif hanya ketika build mengaktifkannya.
   override fun createReactActivityDelegate(): ReactActivityDelegate {
     return ReactActivityDelegateWrapper(
           this,
@@ -44,11 +42,9 @@ class MainActivity : ReactActivity() {
           ){})
   }
 
-  /**
-    * Align the back button behavior with Android S
-    * where moving root activities to background instead of finishing activities.
-    * @see <a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()">onBackPressed</a>
-    */
+  // invokeDefaultOnBackPressed menyamakan perilaku tombol Back pada berbagai versi Android.
+  // Android 11 atau lebih lama memindahkan root Activity ke background; Activity non-root tetap
+  // ditutup oleh implementasi bawaan. Android 12 ke atas memakai perilaku Back bawaan sistem.
   override fun invokeDefaultOnBackPressed() {
       if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
           if (!moveTaskToBack(false)) {
